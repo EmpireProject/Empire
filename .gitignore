@@ -1,0 +1,5 @@
+data/empire.db
+./data/empire.pem
+empire.debug
+*.pyc
+downloads/*

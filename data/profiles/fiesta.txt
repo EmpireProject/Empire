@@ -1,0 +1,5 @@
+# Fiesta Exploit Kit traffic profile
+#   http://malware-traffic-analysis.net/2014/04/05/index.html
+#   https://github.com/rsmudge/Malleable-C2-Profiles/blob/master/crimeware/fiesta.profile
+
+"/rmvk30g/|Mozilla/4.0 (Windows 7 6.1) Java/1.7.0_11|Accept:text/html, image/gif, image/jpeg, *; q=.2, */*; q=.2"

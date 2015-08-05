@@ -1,0 +1,5 @@
+# Basic Pitty Tiger RAT profile
+#   http://bitbucket.cassidiancybersecurity.com/whitepapers/downloads/Pitty%20Tiger%20Final%20Report.pdf
+#   https://github.com/rsmudge/Malleable-C2-Profiles/blob/master/APT/pitty_tiger.profile
+
+"/FC001/JOHN|Microsoft Internet Explorer"
