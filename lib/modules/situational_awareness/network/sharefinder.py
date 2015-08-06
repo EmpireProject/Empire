@@ -86,7 +86,7 @@ class Module:
     def generate(self):
         
         # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/Network/Invoke-ShareFinder.ps1"
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Invoke-ShareFinder.ps1"
 
         try:
             f = open(moduleSource, 'r')
