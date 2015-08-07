@@ -1,5 +1,4 @@
 Function Invoke-VoiceTroll
-
 {
     [CmdletBinding()]
     Param (
