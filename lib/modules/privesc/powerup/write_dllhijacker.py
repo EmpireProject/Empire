@@ -7,7 +7,7 @@ class Module:
         self.info = {
             'Name': 'Write-DllHijacker',
 
-            'Author': ['@harmj0y'],
+            'Author': ['leechristensen (@tifkin_)', '@harmj0y'],
 
             'Description': ("Writes out a hijackable .dll to the specified path "
                             "along with a stager.bat that's called by the .dll. "
