@@ -1035,7 +1035,7 @@ class Agents:
                     sessionKey = self.agents[sessionID][0]
 
                     # encrypt the tasking packets with the agent's session key
-                    encryptedData = encryption.aes_encrypt(sessionKey, allTaskPackets)
+                    encryptedData = encryption.aes_encrypt_then_mac(sessionKey, allTaskPackets)
 
                     return (200, encryptedData)
 
@@ -1112,8 +1112,8 @@ class Agents:
                 sessionKey = self.agents[sessionID][0]
 
                 try:
-                    # decrypt and depad the packet
-                    packet = encryption.aes_decrypt(sessionKey, postData)
+                    # verify, decrypt and depad the packet
+                    packet = encryption.aes_decrypt_and_verify(sessionKey, postData)
 
                     # update the client's last seen time
                     self.update_agent_lastseen(sessionID)
