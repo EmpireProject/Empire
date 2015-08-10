@@ -1,0 +1,15 @@
+8/10/2015
+---------
+-Fixed tab completion of usestager module
+-Added dependencies for Ubuntu 14.04
+-Fixed IP Whitelisting set from file
+
+8/9/2015
+----------
+-Fixed flaw in crypto allowing a DOS condition. 
+-Added authentication to the AES crypto scheme to verify integrity of messages
+
+8/6/2015
+-----------
+-Initial release. All components released
+-Commited path fix to correct bug in certain modules
