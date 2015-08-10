@@ -98,7 +98,7 @@ class Agents:
         cur.close()
 
 
-    def add_agent(self, sessionID, externalIP, delay, jitter, profile, killDate, workingHours):
+    def add_agent(self, sessionID, externalIP, delay, jitter, profile, killDate, workingHours,missedCBLimit):
         """
         Add an agent to the internal cache and database.
         """
@@ -128,7 +128,7 @@ class Agents:
             userAgent = parts[1]
             additionalHeaders = parts[2]
 
-        cur.execute("INSERT INTO agents (name,session_id,delay,jitter,external_ip,session_key,checkin_time,lastseen_time,uris,user_agent,headers,kill_date,working_hours) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", (sessionID,sessionID,delay,jitter,externalIP,sessionKey,checkinTime,lastSeenTime,requestUris,userAgent,additionalHeaders,killDate,workingHours))
+        cur.execute("INSERT INTO agents (name,session_id,delay,jitter,external_ip,session_key,checkin_time,lastseen_time,uris,user_agent,headers,kill_date,working_hours,missed_cb_limit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (sessionID,sessionID,delay,jitter,externalIP,sessionKey,checkinTime,lastSeenTime,requestUris,userAgent,additionalHeaders,killDate,workingHours,missedCBLimit))
         cur.close()
 
         # initialize the tasking/result buffers along with the client session key
@@ -1052,7 +1052,7 @@ class Agents:
                 dispatcher.send("[*] Sending stager (stage 1) to "+str(clientIP), sender="Agents")
 
             # get the staging information for the given listener, keyed by port
-            #   results: host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,istener_type,redirect_target
+            #   results: host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,istener_type,redirect_target,missed_cb_limit
             config = self.listeners.get_staging_information(port=port)
             host = config[0]
             stagingkey = config[3]
@@ -1124,7 +1124,7 @@ class Agents:
 
                     counter = responsePackets[-1][1]
 
-                    # validate the counter in the packet in the set
+                    # validate the counter in the packet in the setcode.replace
                     if counter and packets.validate_counter(counter):
                         
                         for responsePacket in responsePackets:
@@ -1155,7 +1155,7 @@ class Agents:
                 dispatcher.send("[*] Agent "+str(sessionID)+" from "+str(clientIP)+" posted to public key URI", sender="Agents")
 
             # get the staging key for the given listener, keyed by port
-            #   results: host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours 
+            #   results: host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,missed_cb_limit 
             stagingKey = self.listeners.get_staging_information(port=port)[3]
 
             # decrypt the agent's public key
@@ -1187,9 +1187,10 @@ class Agents:
                     profile = config[6]
                     killDate = config[7]
                     workingHours = config[8]
+                    missedCBLimit = config[11]
 
                     # add the agent to the database now that it's "checked in"
-                    self.add_agent(sessionID, clientIP, delay, jitter, profile, killDate, workingHours)
+                    self.add_agent(sessionID, clientIP, delay, jitter, profile, killDate, workingHours,missedCBLimit)
 
                     # step 4 of negotiation -> return epoch+aes_session_key
                     clientSessionKey = self.get_agent_session_key(sessionID)
@@ -1218,7 +1219,7 @@ class Agents:
                         decoded = helpers.decode_base64(parts[1])
 
                         # get the staging key for the given listener, keyed by port
-                        #   results: host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours 
+                        #   results: host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,missed_cb_limit 
                         config = self.listeners.get_staging_information(host=decoded)
 
                 else:
@@ -1229,6 +1230,7 @@ class Agents:
                 profile = config[6]
                 killDate = config[7]
                 workingHours = config[8]
+                missedCBLimit = config[11]
 
                 # get the session key for the agent
                 sessionKey = self.agents[sessionID][0]
@@ -1272,7 +1274,7 @@ class Agents:
                     dispatcher.send("[*] Sending agent (stage 2) to "+str(sessionID)+" at "+clientIP, sender="Agents")
 
                 # step 6 of negotiation -> server sends patched agent.ps1
-                agentCode = self.stagers.generate_agent(delay, jitter, profile, killDate, workingHours)
+                agentCode = self.stagers.generate_agent(delay, jitter, profile, killDate,workingHours,missedCBLimit)
 
                 username = str(domainname)+"\\"+str(username)
 
@@ -1289,7 +1291,7 @@ class Agents:
                 # set basic initial information to display for the agent
                 agent = self.mainMenu.agents.get_agent(sessionID)
 
-                keys = ["ID", "sessionID", "listener", "name", "delay", "jitter", "external_ip", "internal_ip", "username", "high_integrity", "process_name", "process_id", "hostname", "os_details", "session_key", "checkin_time", "lastseen_time", "parent", "children", "servers", "uris", "old_uris", "user_agent", "headers", "functions", "kill_date", "working_hours", "ps_version"]
+                keys = ["ID", "sessionID", "listener", "name", "delay", "jitter","missed_cb_limit","external_ip", "internal_ip", "username", "high_integrity", "process_name", "process_id", "hostname", "os_details", "session_key", "checkin_time", "lastseen_time", "parent", "children", "servers", "uris", "old_uris", "user_agent", "headers", "functions", "kill_date", "working_hours", "ps_version"]
                 agentInfo = dict(zip(keys, agent))
 
                 for key in agentInfo:
