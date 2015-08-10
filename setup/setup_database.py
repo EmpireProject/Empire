@@ -61,6 +61,9 @@ IP_WHITELIST = ""
 #   format is 192.168.1.1,192.168.1.10-192.168.1.100,10.0.0.0/8
 IP_BLACKLIST = ""
 
+#number of times an agent will call back without an answer prior to exiting
+DEFAULT_MISSED_CB_LIMIT = 60 
+
 
 
 ###################################################
@@ -90,11 +93,12 @@ c.execute('''CREATE TABLE config (
     "install_path" text,
     "server_version" text,
     "ip_whitelist" text,
-    "ip_blacklist" text
+    "ip_blacklist" text,
+    "default_missed_cb_limit" integer
     )''')
 
 # kick off the config component of the database
-c.execute("INSERT INTO config VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", (STAGING_KEY,STAGE0_URI,STAGE1_URI,STAGE2_URI,DEFAULT_DELAY,DEFAULT_JITTER,DEFAULT_PROFILE,DEFAULT_CERT_PATH,DEFAULT_PORT,INSTALL_PATH,SERVER_VERSION,IP_WHITELIST,IP_BLACKLIST))
+c.execute("INSERT INTO config VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (STAGING_KEY,STAGE0_URI,STAGE1_URI,STAGE2_URI,DEFAULT_DELAY,DEFAULT_JITTER,DEFAULT_PROFILE,DEFAULT_CERT_PATH,DEFAULT_PORT,INSTALL_PATH,SERVER_VERSION,IP_WHITELIST,IP_BLACKLIST, DEFAULT_MISSED_CB_LIMIT))
 
 c.execute('''CREATE TABLE "agents" (
     "id" integer PRIMARY KEY,
@@ -124,7 +128,8 @@ c.execute('''CREATE TABLE "agents" (
     "functions" text,
     "kill_date" text,
     "working_hours" text,
-    "ps_version" text
+    "ps_version" text,
+    "missed_cb_limit" integer
     )''')
 
 c.execute('''CREATE TABLE "listeners" (
@@ -140,7 +145,8 @@ c.execute('''CREATE TABLE "listeners" (
     "kill_date" text,
     "working_hours" text,
     "listener_type" text,
-    "redirect_target" text
+    "redirect_target" text,
+    "default_missed_cb_limit" integer
     )''')
 
 # type = hash, plaintext, token
