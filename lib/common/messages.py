@@ -126,7 +126,7 @@ def display_agents(agents):
         print "  ---------          -----------     ------------    ---------           -------             -----    --------------------"
 
         for agent in agents:
-            [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, missed_cb_limit] = agent
+            [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit] = agent
             if str(high_integrity) == "1":
                 # add a * to the username if it's high integrity 
                 username = "*" + username
@@ -146,7 +146,7 @@ def display_agent(agent):
     """
 
     # extract out database fields.
-    keys = ["ID", "sessionID", "listener", "name", "delay", "jitter", "external_ip", "internal_ip", "username", "high_integrity", "process_name", "process_id", "hostname", "os_details", "session_key", "checkin_time", "lastseen_time", "parent", "children", "servers", "uris", "old_uris", "user_agent", "headers", "functions", "kill_date", "working_hours", "ps_version", "MissedCBLimit"]
+    keys = ["ID", "sessionID", "listener", "name", "delay", "jitter", "external_ip", "internal_ip", "username", "high_integrity", "process_name", "process_id", "hostname", "os_details", "session_key", "checkin_time", "lastseen_time", "parent", "children", "servers", "uris", "old_uris", "user_agent", "headers", "functions", "kill_date", "working_hours", "ps_version", "lost_limit"]
 
     print helpers.color("\n[*] Agent info:\n")
 
@@ -173,7 +173,7 @@ def display_listeners(listeners):
 
         for listener in listeners:
 
-            [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_missed_cb_limit] = listener
+            [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit] = listener
 
             if not host.startswith("http"):
                 if cert_path and cert_path != "":
@@ -196,15 +196,15 @@ def display_listener(options):
     """
 
     print "\nListener Options:\n"
-    print "  Name           Required    Value                            Description"
-    print "  ----           --------    -------                          -----------"
+    print "  Name              Required    Value                            Description"
+    print "  ----              --------    -------                          -----------"
 
     for option,values in options.iteritems():
         # if there's a long value length, wrap it
         if len(str(values['Value'])) > 33:
-            print "  %s%s%s" % ('{0: <15}'.format(option), '{0: <12}'.format(("True" if values['Required'] else "False")), '{0: <33}'.format(wrap_string(values['Value'], width=32, indent=29, followingHeader=values['Description'])))
+            print "  %s%s%s" % ('{0: <18}'.format(option), '{0: <12}'.format(("True" if values['Required'] else "False")), '{0: <33}'.format(wrap_string(values['Value'], width=32, indent=32, followingHeader=values['Description'])))
         else:
-            print "  %s%s%s%s" % ('{0: <15}'.format(option), '{0: <12}'.format(("True" if values['Required'] else "False")), '{0: <33}'.format(values['Value']), values['Description'])
+            print "  %s%s%s%s" % ('{0: <18}'.format(option), '{0: <12}'.format(("True" if values['Required'] else "False")), '{0: <33}'.format(values['Value']), values['Description'])
 
     print "\n"
 
@@ -216,7 +216,7 @@ def display_listener_database(listener):
     Transforms the tuple set to an options dictionary and calls display_listener().
     """
 
-    [ID,name,host,port,certPath,stagingKey,defaultDelay,defaultJitter,defaultProfile,killDate,workingHours,listenerType,redirectTarget, defaultMissedCBLimit] = listener
+    [ID,name,host,port,certPath,stagingKey,defaultDelay,defaultJitter,defaultProfile,killDate,workingHours,listenerType,redirectTarget, defaultLostLimit] = listener
 
     options = {
         'ID' : {
@@ -259,8 +259,8 @@ def display_listener_database(listener):
             'Required'      :   True,
             'Value'         :   ''
         },
-        'DefaultMissedCBLimit' : {
-            'Description'   :   'Number of missed callbacks before exiting',
+        'DefaultLostLimit' : {
+            'Description'   :   'Number of missed checkins before exiting',
             'Required'      :   True,
             'Value'         :   ''
         },
@@ -304,7 +304,7 @@ def display_listener_database(listener):
     options['WorkingHours']['Value'] = workingHours
     options['Type']['Value'] = listenerType
     options['RedirectTarget']['Value'] = redirectTarget
-    options['DefaultMissedCBLimit']['Value'] = defaultMissedCBLimit
+    options['DefaultLostLimit']['Value'] = defaultLostLimit
 
     display_listener(options)
 

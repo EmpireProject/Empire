@@ -3,6 +3,7 @@
 -Fixed tab completion of usestager module
 -Added dependencies for Ubuntu 14.04
 -Fixed IP Whitelisting set from file
+-Added "Lost Agent Detection". Allows the ability for an agent to die after a certain number of missed checkins. This is implemented via the "lostlimit" command. Default set to 60 missed checkins. 
 
 8/9/2015
 ----------

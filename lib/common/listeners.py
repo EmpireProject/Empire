@@ -42,7 +42,7 @@ class Listeners:
         # set the initial listener config to be the config defaults
         self.conn.row_factory = dict_factory
         cur = self.conn.cursor()
-        cur.execute("SELECT staging_key,default_delay,default_jitter,default_profile,default_cert_path,default_port,default_missed_cb_limit FROM config")
+        cur.execute("SELECT staging_key,default_delay,default_jitter,default_profile,default_cert_path,default_port,default_lost_limit FROM config")
         defaults = cur.fetchone()
         cur.close()
         self.conn.row_factory = None
@@ -84,10 +84,10 @@ class Listeners:
                 'Required'      :   True,
                 'Value'         :   defaults['default_jitter']
             },
-            'DefaultMissedCBLimit' : {
-                'Description'   :   'Number of missed callbacks before exiting',
+            'DefaultLostLimit' : {
+                'Description'   :   'Number of missed checkins before exiting',
                 'Required'      :   True,
-                'Value'         :   defaults['default_missed_cb_limit']
+                'Value'         :   defaults['default_lost_limit']
             },
             'DefaultProfile' : {
                 'Description'   :   'Default communication profile for the agent.',
@@ -123,7 +123,7 @@ class Listeners:
         """
 
         cur = self.conn.cursor()
-        cur.execute("SELECT id,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_missed_cb_limit FROM listeners")
+        cur.execute("SELECT id,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit FROM listeners")
         results = cur.fetchall()
         cur.close()
 
@@ -276,7 +276,7 @@ class Listeners:
         
         try:
             # get the listener information
-            [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_missed_cb_limit] = self.get_listener(listenerId)
+            [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit] = self.get_listener(listenerId)
 
             listenerId = int(ID)
 
@@ -310,7 +310,7 @@ class Listeners:
         if nameid : listenerId = nameid
 
         cur = self.conn.cursor()
-        cur.execute("SELECT id,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_missed_cb_limit FROM listeners WHERE id=?", [listenerId])
+        cur.execute("SELECT id,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit FROM listeners WHERE id=?", [listenerId])
         listener = cur.fetchone()
 
         cur.close()
@@ -404,20 +404,20 @@ class Listeners:
 
         if(listenerId):
             cur = self.conn.cursor()
-            cur.execute('SELECT host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_missed_cb_limit FROM listeners WHERE id=? or name=? limit 1', [listenerID, listenerID])
+            cur.execute('SELECT host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit FROM listeners WHERE id=? or name=? limit 1', [listenerID, listenerID])
             stagingInformation = cur.fetchone()
             cur.close()
 
         elif(port):
             cur = self.conn.cursor()
-            cur.execute("SELECT host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_missed_cb_limit FROM listeners WHERE port=?", [port])
+            cur.execute("SELECT host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit FROM listeners WHERE port=?", [port])
             stagingInformation = cur.fetchone()
             cur.close()
 
         # used to get staging info for hop.php relays
         elif(host):
             cur = self.conn.cursor()
-            cur.execute("SELECT host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_missed_cb_limit FROM listeners WHERE host=?", [host])
+            cur.execute("SELECT host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit FROM listeners WHERE host=?", [host])
             stagingInformation = cur.fetchone()
             cur.close()            
 
@@ -516,7 +516,7 @@ class Listeners:
         workingHours = self.options['WorkingHours']['Value']
         listenerType = self.options['Type']['Value']
         redirectTarget = self.options['RedirectTarget']['Value']
-        defaultMissedCBLimit = self.options['DefaultMissedCBLimit']['Value']
+        defaultLostLimit = self.options['DefaultLostLimit']['Value']
 
         # validate all of the options
         if self.validate_listener_options():
@@ -543,7 +543,7 @@ class Listeners:
                         return False
 
                 cur = self.conn.cursor()
-                results = cur.execute("INSERT INTO listeners (name, host, port, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, listener_type, redirect_target,default_missed_cb_limit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", [name, host, port, certPath, stagingKey, defaultDelay, defaultJitter, defaultProfile, killDate, workingHours, listenerType, redirectTarget,defaultMissedCBLimit] )
+                results = cur.execute("INSERT INTO listeners (name, host, port, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, listener_type, redirect_target,default_lost_limit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", [name, host, port, certPath, stagingKey, defaultDelay, defaultJitter, defaultProfile, killDate, workingHours, listenerType, redirectTarget,defaultLostLimit] )
 
                 # get the ID for the listener
                 cur.execute("SELECT id FROM listeners where name=?", [name])
@@ -564,7 +564,7 @@ class Listeners:
 
                         # add the listener to the database if start up
                         cur = self.conn.cursor()
-                        results = cur.execute("INSERT INTO listeners (name, host, port, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, listener_type, redirect_target, default_missed_cb_limit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", [name, host, port, certPath, stagingKey, defaultDelay, defaultJitter, defaultProfile, killDate, workingHours, listenerType, redirectTarget,defaultMissedCBLimit] )
+                        results = cur.execute("INSERT INTO listeners (name, host, port, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, listener_type, redirect_target, default_lost_limit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", [name, host, port, certPath, stagingKey, defaultDelay, defaultJitter, defaultProfile, killDate, workingHours, listenerType, redirectTarget,defaultLostLimit] )
 
                         # get the ID for the listener
                         cur.execute("SELECT id FROM listeners where name=?", [name])
@@ -599,7 +599,7 @@ class Listeners:
 
         else:
             # get the existing listener options
-            [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,defaultMissedCBLimit] = self.get_listener(listenerName)
+            [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,defaultLostLimit] = self.get_listener(listenerName)
 
             cur = self.conn.cursor()
 
@@ -610,7 +610,7 @@ class Listeners:
             pivotHost += internalIP + ":" + str(listenPort)
 
             # insert the pivot listener with name=sessionID for the pivot agent
-            cur.execute("INSERT INTO listeners (name, host, port, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, listener_type, redirect_target,default_missed_cb_limit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)", [sessionID, pivotHost, listenPort, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, "pivot", name,defaultMissedCBLimit] )
+            cur.execute("INSERT INTO listeners (name, host, port, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, listener_type, redirect_target,default_lost_limit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", [sessionID, pivotHost, listenPort, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, "pivot", name,defaultLostLimit] )
 
             # get the ID for the listener
             cur.execute("SELECT id FROM listeners where name=?", [sessionID])

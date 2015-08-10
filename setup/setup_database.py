@@ -62,7 +62,7 @@ IP_WHITELIST = ""
 IP_BLACKLIST = ""
 
 #number of times an agent will call back without an answer prior to exiting
-DEFAULT_MISSED_CB_LIMIT = 60 
+DEFAULT_LOST_LIMIT = 60 
 
 
 
@@ -94,11 +94,11 @@ c.execute('''CREATE TABLE config (
     "server_version" text,
     "ip_whitelist" text,
     "ip_blacklist" text,
-    "default_missed_cb_limit" integer
+    "default_lost_limit" integer
     )''')
 
 # kick off the config component of the database
-c.execute("INSERT INTO config VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (STAGING_KEY,STAGE0_URI,STAGE1_URI,STAGE2_URI,DEFAULT_DELAY,DEFAULT_JITTER,DEFAULT_PROFILE,DEFAULT_CERT_PATH,DEFAULT_PORT,INSTALL_PATH,SERVER_VERSION,IP_WHITELIST,IP_BLACKLIST, DEFAULT_MISSED_CB_LIMIT))
+c.execute("INSERT INTO config VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (STAGING_KEY,STAGE0_URI,STAGE1_URI,STAGE2_URI,DEFAULT_DELAY,DEFAULT_JITTER,DEFAULT_PROFILE,DEFAULT_CERT_PATH,DEFAULT_PORT,INSTALL_PATH,SERVER_VERSION,IP_WHITELIST,IP_BLACKLIST, DEFAULT_LOST_LIMIT))
 
 c.execute('''CREATE TABLE "agents" (
     "id" integer PRIMARY KEY,
@@ -129,7 +129,7 @@ c.execute('''CREATE TABLE "agents" (
     "kill_date" text,
     "working_hours" text,
     "ps_version" text,
-    "missed_cb_limit" integer
+    "lost_limit" integer
     )''')
 
 c.execute('''CREATE TABLE "listeners" (
@@ -146,7 +146,7 @@ c.execute('''CREATE TABLE "listeners" (
     "working_hours" text,
     "listener_type" text,
     "redirect_target" text,
-    "default_missed_cb_limit" integer
+    "default_lost_limit" integer
     )''')
 
 # type = hash, plaintext, token
