@@ -526,7 +526,7 @@ class MainMenu(cmd.Cmd):
 
         stagers = self.stagers.stagers.keys()
 
-        if line.split(" ")[1].lower() in stagers:
+        if (line.split(" ")[1].lower() in stagers) and line.endswith(" "):
             # if we already have a stager name, tab-complete listener names
             listenerNames = self.listeners.get_listener_names()
 
