@@ -19,6 +19,7 @@ import encryption
 import helpers
 
 
+#TODO: place this in a config
 def default_page():
     """
     Returns the default page for this server.

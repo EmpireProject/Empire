@@ -776,8 +776,8 @@ class AgentsMenu(cmd.Cmd):
             else:
                 print helpers.color("[!] Invalid agent name")
 
-    def do_changelostlimit(self, line):
-        "Task one or more agents to 'changemisslimit [agent/all] <#ofCBs> '"
+    def do_lostlimit(self, line):
+        "Task one or more agents to 'lostlimit [agent/all] <#ofCBs> '"
 
         parts = line.strip().split(" ")
 
@@ -785,32 +785,32 @@ class AgentsMenu(cmd.Cmd):
             print helpers.color("[!] Please enter a valid '#ofCBs'")
 
         elif parts[0].lower() == "all":
-            MissedCBLimit = parts[1]
+            lostLimit = parts[1]
             agents = self.mainMenu.agents.get_agents()
 
             for agent in agents:
                 sessionID = agent[1]
                 # update this agent info in the database
-                self.mainMenu.agents.set_agent_field("missed_cb_limit", MissedCBLimit, sessionID)
+                self.mainMenu.agents.set_agent_field("lost_limit", lostLimit, sessionID)
                 # task the agent
-                self.mainMenu.agents.add_agent_task(sessionID, "TASK_SHELL", "Set-MissedCBLimit " + str(MissedCBLimit))
+                self.mainMenu.agents.add_agent_task(sessionID, "TASK_SHELL", "Set-LostLimit " + str(lostLimit))
                 # update the agent log
-                msg = "Tasked agent to change callback limit " + str(MissedCBLimit)
+                msg = "Tasked agent to change lost limit " + str(lostLimit)
                 self.mainMenu.agents.save_agent_log(sessionID, msg)
 
         else:
             # extract the sessionID and clear the agent tasking
             sessionID = self.mainMenu.agents.get_agent_id(parts[0])
 
-            MissedCBLimit = parts[1]
+            lostLimit = parts[1]
 
             if sessionID and len(sessionID) != 0:
                 # update this agent's information in the database
-                self.mainMenu.agents.set_agent_field("missed_cb_limit", MissedCBLimit, sessionID)
+                self.mainMenu.agents.set_agent_field("lost_limit", lostLimit, sessionID)
 
-                self.mainMenu.agents.add_agent_task(sessionID, "TASK_SHELL", "Set-MissedCBLimit " + str(MissedCBLimit)) 
+                self.mainMenu.agents.add_agent_task(sessionID, "TASK_SHELL", "Set-LostLimit " + str(lostLimit)) 
                 # update the agent log
-                msg = "Tasked agent to change callback limit " + str(MissedCBLimit)
+                msg = "Tasked agent to change lost limit " + str(lostLimit)
                 self.mainMenu.agents.save_agent_log(sessionID, msg)
 
             else:
@@ -1020,8 +1020,8 @@ class AgentsMenu(cmd.Cmd):
 
         return self.complete_clear(text, line, begidx, endidx)
 
-    def complete_changelostlimit(self, text, line, begidx, endidx):
-        "Tab-complete a sleep command"
+    def complete_lostlimit(self, text, line, begidx, endidx):
+        "Tab-complete a lostlimit command"
 
         return self.complete_clear(text, line, begidx, endidx)
 
@@ -1228,19 +1228,18 @@ class AgentMenu(cmd.Cmd):
             msg = "Tasked agent to delay sleep/jitter " + str(delay) + "/" + str(jitter)
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
 
-    def do_changelostlimit(self, line):
-        "Task an agent to change the limit on missed CBs"
+    def do_lostlimit(self, line):
+        "Task an agent to change the limit on lost agent detection"
 
         parts = line.strip().split(" ")
         if len(parts) > 0 and parts[0] != "":
-            MissedCBLimit = parts[0]
+            lostLimit = parts[0]
 
         # update this agent's information in the database
-        self.mainMenu.agents.set_agent_field("missed_cb_limit", MissedCBLimit, self.sessionID)
-
-        self.mainMenu.agents.add_agent_task(self.sessionID, "TASK_SHELL", "Set-MissedCBLimit " + str(MissedCBLimit)) 
+        self.mainMenu.agents.set_agent_field("lost_limit", lostLimit, self.sessionID)
+        self.mainMenu.agents.add_agent_task(self.sessionID, "TASK_SHELL", "Set-LostLimit " + str(lostLimit)) 
         # update the agent log
-        msg = "Tasked agent to change callback limit " + str(MissedCBLimit)
+        msg = "Tasked agent to change lost limit " + str(lostLimit)
         self.mainMenu.agents.save_agent_log(self.sessionID, msg)
 
 
