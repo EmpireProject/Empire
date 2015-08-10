@@ -453,7 +453,7 @@ class MainMenu(cmd.Cmd):
                     f = open(parts[1], 'r')
                     ipData = f.read()
                     f.close()
-                    self.agents.ipBlackList = helpers.generate_ip_list(ipData)
+                    self.agents.ipWhiteList = helpers.generate_ip_list(ipData)
                 else:
                     self.agents.ipWhiteList = helpers.generate_ip_list(",".join(parts[1:]))
             elif parts[0].lower() == "ip_blacklist":
