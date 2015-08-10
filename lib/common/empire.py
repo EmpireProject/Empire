@@ -453,7 +453,7 @@ class MainMenu(cmd.Cmd):
                     f = open(parts[1], 'r')
                     ipData = f.read()
                     f.close()
-                    self.agents.ipBlackList = helpers.generate_ip_list(ipData)
+                    self.agents.ipWhiteList = helpers.generate_ip_list(ipData)
                 else:
                     self.agents.ipWhiteList = helpers.generate_ip_list(",".join(parts[1:]))
             elif parts[0].lower() == "ip_blacklist":
@@ -526,7 +526,7 @@ class MainMenu(cmd.Cmd):
 
         stagers = self.stagers.stagers.keys()
 
-        if line.split(" ")[1].lower() in stagers:
+        if (line.split(" ")[1].lower() in stagers) and line.endswith(" "):
             # if we already have a stager name, tab-complete listener names
             listenerNames = self.listeners.get_listener_names()
 
