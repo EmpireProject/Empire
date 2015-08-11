@@ -113,7 +113,7 @@ class Module:
                     print helpers.color("[!] Meterpreter/Beacon listener required!")
                     return ""
 
-                [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target] = self.mainMenu.listeners.get_listener(listenerName)
+                [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit] = self.mainMenu.listeners.get_listener(listenerName)
                 
                 MSFpayload = "reverse_http"
                 if "https" in host:
