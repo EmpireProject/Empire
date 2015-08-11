@@ -776,6 +776,45 @@ class AgentsMenu(cmd.Cmd):
             else:
                 print helpers.color("[!] Invalid agent name")
 
+    def do_lostlimit(self, line):
+        "Task one or more agents to 'lostlimit [agent/all] <#ofCBs> '"
+
+        parts = line.strip().split(" ")
+
+        if len(parts) == 1:
+            print helpers.color("[!] Please enter a valid '#ofCBs'")
+
+        elif parts[0].lower() == "all":
+            lostLimit = parts[1]
+            agents = self.mainMenu.agents.get_agents()
+
+            for agent in agents:
+                sessionID = agent[1]
+                # update this agent info in the database
+                self.mainMenu.agents.set_agent_field("lost_limit", lostLimit, sessionID)
+                # task the agent
+                self.mainMenu.agents.add_agent_task(sessionID, "TASK_SHELL", "Set-LostLimit " + str(lostLimit))
+                # update the agent log
+                msg = "Tasked agent to change lost limit " + str(lostLimit)
+                self.mainMenu.agents.save_agent_log(sessionID, msg)
+
+        else:
+            # extract the sessionID and clear the agent tasking
+            sessionID = self.mainMenu.agents.get_agent_id(parts[0])
+
+            lostLimit = parts[1]
+
+            if sessionID and len(sessionID) != 0:
+                # update this agent's information in the database
+                self.mainMenu.agents.set_agent_field("lost_limit", lostLimit, sessionID)
+
+                self.mainMenu.agents.add_agent_task(sessionID, "TASK_SHELL", "Set-LostLimit " + str(lostLimit)) 
+                # update the agent log
+                msg = "Tasked agent to change lost limit " + str(lostLimit)
+                self.mainMenu.agents.save_agent_log(sessionID, msg)
+
+            else:
+                print helpers.color("[!] Invalid agent name")
 
     def do_killdate(self, line):
         "Set the killdate for one or more agents (killdate [agent/all] 01/01/2016)."
@@ -981,6 +1020,10 @@ class AgentsMenu(cmd.Cmd):
 
         return self.complete_clear(text, line, begidx, endidx)
 
+    def complete_lostlimit(self, text, line, begidx, endidx):
+        "Tab-complete a lostlimit command"
+
+        return self.complete_clear(text, line, begidx, endidx)
 
     def complete_killdate(self, text, line, begidx, endidx):
         "Tab-complete a killdate command"
@@ -1184,6 +1227,20 @@ class AgentMenu(cmd.Cmd):
             # update the agent log
             msg = "Tasked agent to delay sleep/jitter " + str(delay) + "/" + str(jitter)
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+
+    def do_lostlimit(self, line):
+        "Task an agent to change the limit on lost agent detection"
+
+        parts = line.strip().split(" ")
+        if len(parts) > 0 and parts[0] != "":
+            lostLimit = parts[0]
+
+        # update this agent's information in the database
+        self.mainMenu.agents.set_agent_field("lost_limit", lostLimit, self.sessionID)
+        self.mainMenu.agents.add_agent_task(self.sessionID, "TASK_SHELL", "Set-LostLimit " + str(lostLimit)) 
+        # update the agent log
+        msg = "Tasked agent to change lost limit " + str(lostLimit)
+        self.mainMenu.agents.save_agent_log(self.sessionID, msg)
 
 
     def do_kill(self, line):
@@ -1932,7 +1989,7 @@ class ListenerMenu(cmd.Cmd):
 
         elif line.split(" ")[1].lower() == "type":
             # if we're tab-completing the listener type
-            listenerTypes = ["native", "pivot", "hop", "foreign"]
+            listenerTypes = ["native", "pivot", "hop", "foreign", "meter"]
             endLine = " ".join(line.split(" ")[1:])
             mline = endLine.partition(' ')[2]
             offs = len(mline) - len(text)
