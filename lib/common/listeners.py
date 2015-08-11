@@ -131,7 +131,7 @@ class Listeners:
         for result in results:
             
             # don't start the listener unless it's a native one
-            if result[-2] != "native":
+            if result[11] != "native":
                 self.listeners[result[0]] = None
 
             else:

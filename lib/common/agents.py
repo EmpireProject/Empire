@@ -1180,7 +1180,7 @@ class Agents:
                     epoch = packets.get_counter()
 
                     # get the staging key for the given listener, keyed by port
-                    #   results: host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours 
+                    #   results: host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit
                     config = self.listeners.get_staging_information(port=port)
                     delay = config[4]
                     jitter = config[5]
@@ -1291,7 +1291,7 @@ class Agents:
                 # set basic initial information to display for the agent
                 agent = self.mainMenu.agents.get_agent(sessionID)
 
-                keys = ["ID", "sessionID", "listener", "name", "delay", "jitter","lost_limit","external_ip", "internal_ip", "username", "high_integrity", "process_name", "process_id", "hostname", "os_details", "session_key", "checkin_time", "lastseen_time", "parent", "children", "servers", "uris", "old_uris", "user_agent", "headers", "functions", "kill_date", "working_hours", "ps_version"]
+                keys = ["ID", "sessionID", "listener", "name", "delay", "jitter","lost_limit","external_ip", "internal_ip", "username", "high_integrity", "process_name", "process_id", "hostname", "os_details", "session_key", "checkin_time", "lastseen_time", "parent", "children", "servers", "uris", "old_uris", "user_agent", "headers", "functions", "kill_date", "working_hours", "ps_version", "lost_limit"]
                 agentInfo = dict(zip(keys, agent))
 
                 for key in agentInfo:

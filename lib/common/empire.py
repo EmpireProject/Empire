@@ -1989,7 +1989,7 @@ class ListenerMenu(cmd.Cmd):
 
         elif line.split(" ")[1].lower() == "type":
             # if we're tab-completing the listener type
-            listenerTypes = ["native", "pivot", "hop", "foreign"]
+            listenerTypes = ["native", "pivot", "hop", "foreign", "meter"]
             endLine = " ".join(line.split(" ")[1:])
             mline = endLine.partition(' ')[2]
             offs = len(mline) - len(text)
