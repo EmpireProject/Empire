@@ -1291,7 +1291,8 @@ class Agents:
                 # set basic initial information to display for the agent
                 agent = self.mainMenu.agents.get_agent(sessionID)
 
-                keys = ["ID", "sessionID", "listener", "name", "delay", "jitter","lost_limit","external_ip", "internal_ip", "username", "high_integrity", "process_name", "process_id", "hostname", "os_details", "session_key", "checkin_time", "lastseen_time", "parent", "children", "servers", "uris", "old_uris", "user_agent", "headers", "functions", "kill_date", "working_hours", "ps_version", "lost_limit"]
+                keys = ["ID", "sessionID", "listener", "name", "delay", "jitter","external_ip", "internal_ip", "username", "high_integrity", "process_name", "process_id", "hostname", "os_details", "session_key", "checkin_time", "lastseen_time", "parent", "children", "servers", "uris", "old_uris", "user_agent", "headers", "functions", "kill_date", "working_hours", "ps_version", "lost_limit"]
+
                 agentInfo = dict(zip(keys, agent))
 
                 for key in agentInfo:
