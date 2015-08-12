@@ -637,11 +637,10 @@ class AgentsMenu(cmd.Cmd):
                 sessionID = self.mainMenu.agents.get_agent_id(agent[3])
 
                 # max check in -> delay + delay*jitter
-                intervalMax = agent[4] + agent[4] * agent[5]
+                intervalMax = (agent[4] + agent[4] * agent[5])+30
 
                 # get the agent last check in time
                 agentTime = time.mktime(time.strptime(agent[16],"%Y-%m-%d %H:%M:%S"))
-
                 if agentTime < time.mktime(time.localtime()) - intervalMax:
                     # if the last checkin time exceeds the limit, remove it
                     displayAgents.append(agent)
@@ -944,7 +943,7 @@ class AgentsMenu(cmd.Cmd):
                 sessionID = self.mainMenu.agents.get_agent_id(agent[3])
 
                 # max check in -> delay + delay*jitter
-                intervalMax = agent[4] + agent[4] * agent[5]
+                intervalMax = (agent[4] + agent[4] * agent[5])+30
 
                 # get the agent last check in time
                 agentTime = time.mktime(time.strptime(agent[16],"%Y-%m-%d %H:%M:%S"))
