@@ -645,7 +645,7 @@ class AgentsMenu(cmd.Cmd):
                     # if the last checkin time exceeds the limit, remove it
                     displayAgents.append(agent)
 
-            messages.display_agents(displayAgents)
+            messages.display_staleagents(displayAgents)
 
 
         elif line.strip() != "":
