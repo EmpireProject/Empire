@@ -113,29 +113,50 @@ def display_options(options, color=True):
         else:
             print "\t%s\t%s" % ('{0: <16}'.format(key), wrap_string(options[key]))
 
+def agent_print (agents):
+    """
+    Take an agent dictionary and display everything nicely.
+    """
+    print ""    
+    print helpers.color("[*] Active agents:\n")
+    print "  Name               Internal IP     Machine Name    Username            Process             Delay    Last Seen"
+    print "  ---------          -----------     ------------    ---------           -------             -----    --------------------"
+
+    for agent in agents:
+        [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit] = agent
+        if str(high_integrity) == "1":
+            # add a * to the username if it's high integrity 
+            username = "*" + username
+        print "  %.19s%.16s%.16s%.20s%.20s%.9s%.20s" % ('{0: <19}'.format(name),'{0: <16}'.format(internal_ip),'{0: <16}'.format(hostname),'{0: <20}'.format(username), '{0: <20}'.format(str(process_name)+"/"+str(process_id)), '{0: <9}'.format(str(delay)+"/"+str(jitter)), lastseen_time)
+
+    print ""
 
 def display_agents(agents):
+
+    if len(agents)>0:
+        agent_print(agents)
+    else:
+        print helpers.color("[!] No agents currently registered ")
+
+
+
+def display_staleagents(agents):
     """
     Take an agent dictionary and display everything nicely.
     """
 
     if len(agents)>0:
-        print ""    
-        print helpers.color("[*] Active agents:\n")
-        print "  Name               Internal IP     Machine Name    Username            Process             Delay    Last Seen"
-        print "  ---------          -----------     ------------    ---------           -------             -----    --------------------"
-
-        for agent in agents:
-            [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit] = agent
-            if str(high_integrity) == "1":
-                # add a * to the username if it's high integrity 
-                username = "*" + username
-            print "  %.19s%.16s%.16s%.20s%.20s%.9s%.20s" % ('{0: <19}'.format(name),'{0: <16}'.format(internal_ip),'{0: <16}'.format(hostname),'{0: <20}'.format(username), '{0: <20}'.format(str(process_name)+"/"+str(process_id)), '{0: <9}'.format(str(delay)+"/"+str(jitter)), lastseen_time)
-
-        print ""
-
+        agent_print(agents)
     else:
-        print helpers.color("[!] No agents currently registered ")
+        print helpers.color("[!] No stale agents currently registered ")
+
+
+
+
+
+
+
+
 
 
 def display_agent(agent):
