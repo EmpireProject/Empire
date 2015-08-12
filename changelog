@@ -1,7 +1,7 @@
 8/11/2015
 ---------
 -Merged in Lost Agent Detection
-
+-"agents> remove X" now removes agents that checked in > X minutes ago
 
 8/10/2015
 ---------
