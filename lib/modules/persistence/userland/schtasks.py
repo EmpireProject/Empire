@@ -59,7 +59,7 @@ class Module:
             'RegPath' : {
                 'Description'   :   'Registry location to store the script code. Last element is the key name.',
                 'Required'      :   False,
-                'Value'         :   'HKCU:\Software\Microsoft\Installer\debug'
+                'Value'         :   'HKCU:\Software\Microsoft\Windows\CurrentVersion\debug'
             },
             'ADSPath' : {
                 'Description'   :   'Alternate-data-stream location to store the script code.',
