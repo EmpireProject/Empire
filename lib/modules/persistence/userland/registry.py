@@ -39,7 +39,7 @@ class Module:
             },
             'Listener' : {
                 'Description'   :   'Listener to use.',
-                'Required'      :   False,
+                'Required'      :   True,
                 'Value'         :   ''
             },
             'KeyName' : {
