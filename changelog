@@ -3,6 +3,7 @@
 -Merged in list stale and remove stale functionality
 -Fixed delay in list stale feature
 -Fixed active agent message in list stale feature
+-Fixed registry storage in schtasks and registry persistence modules (userland and elevated)
 
 8/11/2015
 ---------
