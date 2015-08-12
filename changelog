@@ -1,7 +1,8 @@
 8/11/2015
 ---------
 -Merged in Lost Agent Detection
-
+-"agents> remove X" now removes agents that checked in > X minutes ago
+-"agents> list stale" and "agents> remove stale" now list/remove stale agents past their max checkins
 
 8/10/2015
 ---------

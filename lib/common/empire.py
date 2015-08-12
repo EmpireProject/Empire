@@ -628,7 +628,27 @@ class AgentsMenu(cmd.Cmd):
 
         agents = self.mainMenu.agents.get_agents()
 
-        if line.strip() != "":
+        if line.strip().lower() == "stale":
+
+            displayAgents = []
+
+            for agent in agents:
+
+                sessionID = self.mainMenu.agents.get_agent_id(agent[3])
+
+                # max check in -> delay + delay*jitter
+                intervalMax = (agent[4] + agent[4] * agent[5])+30
+
+                # get the agent last check in time
+                agentTime = time.mktime(time.strptime(agent[16],"%Y-%m-%d %H:%M:%S"))
+                if agentTime < time.mktime(time.localtime()) - intervalMax:
+                    # if the last checkin time exceeds the limit, remove it
+                    displayAgents.append(agent)
+
+            messages.display_agents(displayAgents)
+
+
+        elif line.strip() != "":
             # if we're listing an agents active in the last X minutes
             try:
                 minutes = int(line.strip())
@@ -776,6 +796,7 @@ class AgentsMenu(cmd.Cmd):
             else:
                 print helpers.color("[!] Invalid agent name")
 
+
     def do_lostlimit(self, line):
         "Task one or more agents to 'lostlimit [agent/all] <#ofCBs> '"
 
@@ -815,6 +836,7 @@ class AgentsMenu(cmd.Cmd):
 
             else:
                 print helpers.color("[!] Invalid agent name")
+
 
     def do_killdate(self, line):
         "Set the killdate for one or more agents (killdate [agent/all] 01/01/2016)."
@@ -911,8 +933,50 @@ class AgentsMenu(cmd.Cmd):
                     self.mainMenu.agents.remove_agent('%')
             except KeyboardInterrupt as e: print ""
 
-        else:
+        elif name.lower() == "stale":
+            # remove 'stale' agents that have missed their checkin intervals
+            
+            agents = self.mainMenu.agents.get_agents()
 
+            for agent in agents:
+
+                sessionID = self.mainMenu.agents.get_agent_id(agent[3])
+
+                # max check in -> delay + delay*jitter
+                intervalMax = (agent[4] + agent[4] * agent[5])+30
+
+                # get the agent last check in time
+                agentTime = time.mktime(time.strptime(agent[16],"%Y-%m-%d %H:%M:%S"))
+
+                if agentTime < time.mktime(time.localtime()) - intervalMax:
+                    # if the last checkin time exceeds the limit, remove it
+                    self.mainMenu.agents.remove_agent(sessionID) 
+
+
+        elif name.isdigit():
+            # if we're removing agents that checked in longer than X minutes ago
+            agents = self.mainMenu.agents.get_agents()
+
+            try:
+                minutes = int(line.strip())
+                
+                # grab just the agents active within the specified window (in minutes)
+                for agent in agents:
+
+                    sessionID = self.mainMenu.agents.get_agent_id(agent[3])
+
+                    # get the agent last check in time
+                    agentTime = time.mktime(time.strptime(agent[16],"%Y-%m-%d %H:%M:%S"))
+
+                    if agentTime < time.mktime(time.localtime()) - (int(minutes) * 60):
+                        # if the last checkin time exceeds the limit, remove it
+                        self.mainMenu.agents.remove_agent(sessionID)
+
+            except:
+                print helpers.color("[!] Please enter the minute window for agent checkin.")
+
+        else:
+            print "agent name!"
             # extract the sessionID and clear the agent tasking
             sessionID = self.mainMenu.agents.get_agent_id(name)
 
@@ -1050,6 +1114,7 @@ class AgentsMenu(cmd.Cmd):
     def complete_creds(self, text, line, begidx, endidx):
         "Tab-complete 'creds' commands."
         return self.mainMenu.complete_creds(text, line, begidx, endidx)
+
 
 
 class AgentMenu(cmd.Cmd):
