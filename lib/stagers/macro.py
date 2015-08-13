@@ -75,7 +75,7 @@ class Stager:
         else:
             chunks = list(helpers.chunks(launcher, 50))
             payload = "\tDim Str As String\n"
-            payload += "\tSet str = \"" + str(chunks[0]) + "\"\n"
+            payload += "\tstr = \"" + str(chunks[0]) + "\"\n"
             for chunk in chunks[1:]:
                 payload += "\tstr = str + \"" + str(chunk) + "\"\n"
 
