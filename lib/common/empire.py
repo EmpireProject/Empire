@@ -9,7 +9,7 @@ menu loops.
 """
 
 # make version for Empire
-VERSION = "1.0.0"
+VERSION = "1.1"
 
 
 from pydispatch import dispatcher
@@ -976,7 +976,6 @@ class AgentsMenu(cmd.Cmd):
                 print helpers.color("[!] Please enter the minute window for agent checkin.")
 
         else:
-            print "agent name!"
             # extract the sessionID and clear the agent tasking
             sessionID = self.mainMenu.agents.get_agent_id(name)
 
@@ -1061,7 +1060,6 @@ class AgentsMenu(cmd.Cmd):
         "Tab-complete a clear command"
 
         names = self.mainMenu.agents.get_agent_names() + ["all"]
-
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
         return [s[offs:] for s in names if s.startswith(mline)]
@@ -1070,7 +1068,10 @@ class AgentsMenu(cmd.Cmd):
     def complete_remove(self, text, line, begidx, endidx):
         "Tab-complete a remove command"
 
-        return self.complete_clear(text, line, begidx, endidx)
+        names = self.mainMenu.agents.get_agent_names() + ["all", "stale"]
+        mline = line.partition(' ')[2]
+        offs = len(mline) - len(text)
+        return [s[offs:] for s in names if s.startswith(mline)]
 
 
     def complete_kill(self, text, line, begidx, endidx):
@@ -1084,10 +1085,12 @@ class AgentsMenu(cmd.Cmd):
 
         return self.complete_clear(text, line, begidx, endidx)
 
+
     def complete_lostlimit(self, text, line, begidx, endidx):
         "Tab-complete a lostlimit command"
 
         return self.complete_clear(text, line, begidx, endidx)
+
 
     def complete_killdate(self, text, line, begidx, endidx):
         "Tab-complete a killdate command"
