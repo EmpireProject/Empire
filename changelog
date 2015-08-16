@@ -1,6 +1,17 @@
+============
+8/16/2015 - RELEASE 1.1
+============
+-Encompasses all changes below
+--- Crypto patch to prevent DOS condition
+--- Numerous bug fixes throughout code
+--- Extra modules added and HTA stager
+--- Ability for agents to die after certain number of failed checkins
+--- Added ability to easily remove "stale" agents
+
 8/15/2015
 ---------
 -Added modules management/timestomp, trollsploit/process_killer, persistence/elevated/wmi, situational_awareness/network/smbscanner, lateral_movement/invoke_psexec
+-Accepted HTA Stager from subtee
 
 8/12/2015
 --------
