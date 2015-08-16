@@ -976,7 +976,6 @@ class AgentsMenu(cmd.Cmd):
                 print helpers.color("[!] Please enter the minute window for agent checkin.")
 
         else:
-            print "agent name!"
             # extract the sessionID and clear the agent tasking
             sessionID = self.mainMenu.agents.get_agent_id(name)
 
