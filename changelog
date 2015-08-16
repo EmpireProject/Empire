@@ -1,6 +1,6 @@
 8/15/2015
 ---------
--Added modules management/timestomp, trollsploit/process_killer, persistence/elevated/wmi, situational_awareness/network/smbscanner
+-Added modules management/timestomp, trollsploit/process_killer, persistence/elevated/wmi, situational_awareness/network/smbscanner, lateral_movement/invoke_psexec
 
 8/12/2015
 --------
