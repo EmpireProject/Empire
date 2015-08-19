@@ -1247,8 +1247,8 @@ class AgentMenu(cmd.Cmd):
                 self.mainMenu.agents.add_agent_task(self.sessionID, "TASK_EXIT")
                 # update the agent log
                 self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to exit")
-		a = AgentsMenu(self.mainMenu)
-        	a.cmdloop()
+                return True
+
         except KeyboardInterrupt as e: print ""
 
 

