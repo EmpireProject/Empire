@@ -2,6 +2,8 @@
 ---------
 -Added collection/netripper, port of the NetRipper project
 -Added collection/packet_capture for netsh event tracing
+-Added management/zipfolder for native folder compression
+-Corrected menu behavior on agent exit, bug fix on some dir behavior
 
 ============
 8/16/2015 - RELEASE 1.1
