@@ -55,7 +55,7 @@ class Module:
 
     def generate(self):
         
-                # read in the common module source code
+        # read in the common module source code
         moduleSource = self.mainMenu.installPath + "/data/module_source/collection/Get-IndexedItem.ps1"
 
         try:
