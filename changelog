@@ -1,3 +1,8 @@
+8/19/2015
+---------
+-Added collection/netripper, port of the NetRipper project
+-Added collection/packet_capture for netsh event tracing
+
 ============
 8/16/2015 - RELEASE 1.1
 ============
