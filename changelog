@@ -1,3 +1,9 @@
+8/20/2015
+---------
+-Continued porting native shell commands to WMI replacents in agent core
+-In agent menu, 'shell CMD' now runs straight IEX CMD, and 'help agentcmds' shows safe aliases
+-Modified ./setup/reset.sh to work from parent or ./setup/ folders
+
 8/19/2015
 ---------
 -Added collection/netripper, port of the NetRipper project
