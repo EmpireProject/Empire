@@ -2397,6 +2397,11 @@ class ModuleMenu(cmd.Cmd):
                 self.mainMenu.agents.save_agent_log(agentName, msg)
 
 
+    def do_run(self, line):
+        "Execute the given Empire module."
+        self.do_execute(line)
+
+
     def complete_set(self, text, line, begidx, endidx):
         "Tab-complete a module option to set."
 
