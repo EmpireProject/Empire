@@ -58,6 +58,11 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   ''
             },
+            'sids' : {
+                'Description'   :   'External SIDs to add as sidhistory to the ticket.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
             'id' : {
                 'Description'   :   'id to impersonate, defaults to 500.',
                 'Required'      :   False,
