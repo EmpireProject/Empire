@@ -1,5 +1,12 @@
 #!/bin/bash
 
+IFS='/' read -a array <<< pwd
+
+if [[ "$(pwd)" != *setup ]]
+then
+	cd ./setup
+fi
+
 # reset the database
 rm ../data/empire.db
 ./setup_database.py
@@ -11,5 +18,5 @@ rm empire.debug
 # remove the download folders
 rm -rf ./downloads/
 
-# start up Empire in debug mode
-./empire --debug
+# start up Empire
+./empire
