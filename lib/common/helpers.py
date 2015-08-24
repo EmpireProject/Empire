@@ -244,11 +244,12 @@ def parse_mimikatz(data):
             for line in lines2:
                 try:
                     if "Username" in line:
-                        username = line.split(":")[1].strip()
+                        username = line.split(":",1)[1].strip()
                     elif "Domain" in line:
-                        domain = line.split(":")[1].strip()
+                        domain = line.split(":",1)[1].strip()
                     elif "NTLM" in line or "Password" in line:
-                        password = line.split(":")[1].strip()
+                        print line.split(":")
+                        password = line.split(":",1)[1].strip()
                 except:
                     pass
 
