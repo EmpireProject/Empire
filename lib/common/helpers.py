@@ -361,8 +361,17 @@ def lhost():
                     )[20:24])
             except IOError as e:
                 return ""
-    ip = socket.gethostbyname(socket.gethostname())
-    if ip.startswith("127.") and os.name != "nt":
+
+    ip = ""
+    try:
+        ip = socket.gethostbyname(socket.gethostname())
+    except socket.gaierror:
+        pass
+    except:
+        print "Unexpected error:", sys.exc_info()[0]
+        return ip
+
+    if (ip == "" or ip.startswith("127.")) and os.name != "nt":
         interfaces = ["eth0","eth1","eth2","wlan0","wlan1","wifi0","ath0","ath1","ppp0"]
         for ifname in interfaces:
             try:

