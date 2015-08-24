@@ -244,11 +244,12 @@ def parse_mimikatz(data):
             for line in lines2:
                 try:
                     if "Username" in line:
-                        username = line.split(":")[1].strip()
+                        username = line.split(":",1)[1].strip()
                     elif "Domain" in line:
-                        domain = line.split(":")[1].strip()
+                        domain = line.split(":",1)[1].strip()
                     elif "NTLM" in line or "Password" in line:
-                        password = line.split(":")[1].strip()
+                        print line.split(":")
+                        password = line.split(":",1)[1].strip()
                 except:
                     pass
 
@@ -271,32 +272,56 @@ def parse_mimikatz(data):
                 if not (credType == "plaintext" and username.endswith("$")):
                     creds.append((credType, domain, username, password, hostName, sid))
 
-    # check if we have lsadump output to check for krbtgt
-    #   happens on domain controller hashdumps
-    for x in xrange(8,13):
-        if lines[x].startswith("Domain :"):
+    if len(creds) == 0:
+        # check if we have lsadump output to check for krbtgt
+        #   happens on domain controller hashdumps
+        for x in xrange(8,13):
+            if lines[x].startswith("Domain :"):
 
-            domain, sid, krbtgtHash = "", "", ""
+                domain, sid, krbtgtHash = "", "", ""
 
-            try:
-                domainParts = lines[x].split(":")[1]
-                domain = domainParts.split("/")[0].strip()
-                sid = domainParts.split("/")[1].strip()
+                try:
+                    domainParts = lines[x].split(":")[1]
+                    domain = domainParts.split("/")[0].strip()
+                    sid = domainParts.split("/")[1].strip()
 
-                # substitute the FQDN in if it matches
-                if hostDomain.startswith(domain.lower()):
-                    domain = hostDomain
-                    sid = domainSid
+                    # substitute the FQDN in if it matches
+                    if hostDomain.startswith(domain.lower()):
+                        domain = hostDomain
+                        sid = domainSid
 
-                for x in xrange(0, len(lines)):
-                    if lines[x].startswith("User : krbtgt"):
-                        krbtgtHash = lines[x+2].split(":")[1].strip()
-                        break
+                    for x in xrange(0, len(lines)):
+                        if lines[x].startswith("User : krbtgt"):
+                            krbtgtHash = lines[x+2].split(":")[1].strip()
+                            break
 
-                if krbtgtHash != "":
-                    creds.append(("hash", domain, "krbtgt", krbtgtHash, hostName, sid))
-            except Exception as e:
-                pass
+                    if krbtgtHash != "":
+                        creds.append(("hash", domain, "krbtgt", krbtgtHash, hostName, sid))
+                except Exception as e:
+                    pass
+
+    if len(creds) == 0:
+        # check if we get lsadump::dcsync output
+        if '** SAM ACCOUNT **' in lines:
+            domain, user, userHash, dcName, sid = "", "", "", "", ""
+            for line in lines:
+                try:
+                    if line.strip().endswith("will be the domain"):
+                        domain = line.split("'")[1]
+                    elif line.strip().endswith("will be the DC server"):
+                        dcName = line.split("'")[1].split(".")[0]
+                    elif line.strip().startswith("SAM Username"):
+                        user = line.split(":")[1].strip()
+                    elif line.strip().startswith("Object Security ID"):
+                        parts = line.split(":")[1].strip().split("-")
+                        sid = "-".join(parts[0:-1])
+                    elif line.strip().startswith("Hash NTLM:"):
+                        userHash = line.split(":")[1].strip()
+                except:
+                    pass
+
+            if domain != "" and userHash != "":
+                creds.append(("hash", domain, user, userHash, dcName, sid))
 
     return uniquify_tuples(creds)
 
