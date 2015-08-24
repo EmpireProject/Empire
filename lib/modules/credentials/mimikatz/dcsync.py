@@ -41,9 +41,14 @@ class Module:
                 'Value'         :   ''
             },
             'Username' : {
-                'Description'   :   'Username to extract the hash for, blank for all local passwords.',
+                'Description'   :   'Username to extract the hash for.',
                 'Required'      :   True,
                 'Value'         :   'krbtgt'
+            },
+            'Domain' : {
+                'Description'   :   'Specified (fqdn) domain to pull for the primary DC.',
+                'Required'      :   False,
+                'Value'         :   ''
             }
         }
 
