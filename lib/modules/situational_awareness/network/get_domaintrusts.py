@@ -5,11 +5,12 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Get-NetUser',
+            'Name': 'Get-NetDomainTrusts',
 
             'Author': ['@harmj0y'],
 
-            'Description': ('Query information for a given user or users in the specified domain.'),
+            'Description': ('Return all domain trusts for the current domain or '
+                            'a specified domain. Part of PowerView.'),
 
             'Background' : True,
 
@@ -35,23 +36,13 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'OU' : {
-                'Description'   :   'The OU to pull users from.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'UserName' : {
-                'Description'   :   'Username filter string, wildcards accepted.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'Filter' : {
-                'Description'   :   'The complete LDAP query string to use to query for users.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
             'Domain' : {
-                'Description'   :   'The domain to query for computers.',
+                'Description'   :   'Specific domain to query for trusts, defaults to current.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'LDAP' : {
+                'Description'   :   'Switch. Use LDAP for domain queries (less accurate).',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -71,7 +62,7 @@ class Module:
     def generate(self):
         
         # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Get-NetUser.ps1"
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Invoke-MapDomainTrusts.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -84,17 +75,9 @@ class Module:
 
         script = moduleCode
 
-        script += "Get-NetUser "
+        if self.options['LDAP']['Value'].lower() == "true":
+            script += "Get-NetDomainTrustsLDAP | Out-String | %{$_ + \"`n\"};"
+        else:
+            script += "Get-NetDomainTrusts | Out-String | %{$_ + \"`n\"};"
 
-        for option,values in self.options.iteritems():
-            if option.lower() != "agent":
-                if values['Value'] and values['Value'] != '':
-                    if values['Value'].lower() == "true":
-                        # if we're just adding a switch
-                        script += " -" + str(option)
-                    else:
-                        script += " -" + str(option) + " " + str(values['Value']) 
-        
-        script += " | Out-String"
-        
         return script

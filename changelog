@@ -1,3 +1,12 @@
+8/24/2015
+---------
+-Added credentials/mimikatz/dcsync for remote DC credential extraction
+-Added situational_awareness/network/get_domaintrusts
+-Added /sids argument for credentials/mimikatz/golden_ticket
+-Added credential parsing for dcsync output
+-updated links for PowerTools
+-Fixed bug in credential parsing with ":" inside of the password,username, or domain
+
 8/20/2015
 ---------
 -Continued porting native shell commands to WMI replacents in agent core
