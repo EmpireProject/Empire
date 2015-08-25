@@ -6,6 +6,7 @@
 -Added credential parsing for dcsync output
 -updated links for PowerTools
 -Fixed bug in credential parsing with ":" inside of the password,username, or domain
+-Fixed international locale bug with unicode text in agent.ps1. Now all results are base64 encoded prior to being packetized. Encoding will be handled at server.
 
 8/20/2015
 ---------
