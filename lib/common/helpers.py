@@ -234,7 +234,7 @@ def parse_credentials(data):
         else:
             print helpers.color("[!] Error in parsing prompted credential output.")
             return None
-    
+
     else:
         return None
 
@@ -284,7 +284,6 @@ def parse_mimikatz(data):
                     elif "Domain" in line:
                         domain = line.split(":",1)[1].strip()
                     elif "NTLM" in line or "Password" in line:
-                        print line.split(":")
                         password = line.split(":",1)[1].strip()
                 except:
                     pass
