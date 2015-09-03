@@ -49,6 +49,11 @@ class Module:
                 'Description'   :   'Specified (fqdn) domain to pull for the primary domain/DC.',
                 'Required'      :   False,
                 'Value'         :   ''
+            },
+            'dc' : {
+                'Description'   :   'Specified (fqdn) domain controller to pull replication data from.',
+                'Required'      :   False,
+                'Value'         :   ''
             }
         }
 
