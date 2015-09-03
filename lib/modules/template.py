@@ -19,7 +19,7 @@ class Module:
             # True if the module needs to run in the background
             'Background' : False,
 
-            # File extension to save the screenshot as
+            # File extension to save the file as
             'OutputExtension' : None,
 
             # True if the module needs admin rights to run
