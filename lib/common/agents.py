@@ -197,8 +197,6 @@ class Agents:
 
         # fix for 'skywalker' exploit by @zeroSteiner
         safePath = os.path.abspath("%s/downloads/%s/" %(self.installPath, sessionID))
-        print "safePath: ",safePath
-        print "save:",savePath+"/"+filename
         if not os.path.abspath(savePath+"/"+filename).startswith(safePath):
             dispatcher.send("[!] WARNING: agent %s attempted skywalker exploit!" %(sessionID), sender="Agents")
             dispatcher.send("[!] attempted overwrite of %s with data %s" %(path, data), sender="Agents")
