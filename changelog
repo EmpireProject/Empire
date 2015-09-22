@@ -1,3 +1,7 @@
+9/21/2015
+---------
+-Fix for 'skywalker' file overwrite exploit on control server (thanks @zeroSteiner!)
+
 9/12/2015
 ---------
 -Added credentials/mimikatz/mimitokens to take advantage of Mimikatz' token listing/elevation
