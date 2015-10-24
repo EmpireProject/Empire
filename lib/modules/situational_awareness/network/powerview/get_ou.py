@@ -5,12 +5,11 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-Netview',
+            'Name': 'Get-NetOU',
 
             'Author': ['@harmj0y'],
 
-            'Description': ('Queries the domain for all hosts, and retrieves open shares, '
-                            'sessions, and logged on users for each host. Part of PowerView.'),
+            'Description': ('Gets a list of all current OUs in a domain. Part of PowerView.'),
 
             'Background' : True,
 
@@ -23,8 +22,7 @@ class Module:
             'MinPSVersion' : '2',
             
             'Comments': [
-                'https://github.com/PowerShellEmpire/PowerTools/tree/master/PowerView',
-                'https://github.com/mubix/netview'
+                'https://github.com/PowerShellEmpire/PowerTools/tree/master/PowerView'
             ]
         }
 
@@ -37,38 +35,33 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Hosts' : {
-                'Description'   :   'Hosts to enumerate.',
+            'OUName' : {
+                'Description'   :   'The OU name to query for, wildcards accepted.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'HostList' : {
-                'Description'   :   'Hostlist to enumerate.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'HostFilter' : {
-                'Description'   :   'Host filter name to query AD for, wildcards accepted.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'NoPing' : {
-                'Description'   :   'Don\'t ping each host to ensure it\'s up before enumerating.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'CheckShareAccess' : {
-                'Description'   :   'Switch. Only display found shares that the local user has access to.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'Delay' : {
-                'Description'   :   'Delay between enumerating hosts, defaults to 0.',
+            'GUID' : {
+                'Description'   :   'Only return OUs with the specified GUID in their gplink property.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
             'Domain' : {
-                'Description'   :   'Domain to enumerate for hosts.',
+                'Description'   :   'The domain to use for the query, defaults to the current domain.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'DomainController' : {
+                'Description'   :   'Domain controller to reflect LDAP queries through.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'ADSpath' : {
+                'Description'   :   'The LDAP source to search through.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'FullData' : {
+                'Description'   :   'Switch. Return full OU objects instead of just object names (the default).',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -87,8 +80,10 @@ class Module:
 
     def generate(self):
         
-        # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Invoke-Netview.ps1"
+        moduleName = self.info["Name"]
+        
+        # read in the common powerview.ps1 module source code
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/powerview.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -99,9 +94,10 @@ class Module:
         moduleCode = f.read()
         f.close()
 
-        script = moduleCode
+        # get just the code needed for the specified function
+        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
 
-        script += "Invoke-NetView "
+        script += moduleName + " "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
@@ -111,7 +107,7 @@ class Module:
                         script += " -" + str(option)
                     else:
                         script += " -" + str(option) + " " + str(values['Value']) 
-        
-        script += '| Out-String | %{$_ + \"`n\"};"`nInvoke-Netview completed"'
+
+        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         return script

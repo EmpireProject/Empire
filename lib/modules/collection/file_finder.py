@@ -35,23 +35,18 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Hosts' : {
-                'Description'   :   "Host array to enumerate.",
+            'ComputerName' : {
+                'Description'   :   'Hosts to enumerate.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'HostList' : {
-                'Description'   :   "List of hostnames/IPs to search.",
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'HostFilter' : {
-                'Description'   :   "Host filter name to query AD for, wildcards accepted.",
+            'ComputerFilter' : {
+                'Description'   :   'Host filter name to query AD for, wildcards accepted.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
             'ShareList' : {
-                'Description'   :   "List if \\HOST\shares to search through.",
+                'Description'   :   "List of '\\\\HOST\shares' (on the target) to search through.",
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -70,6 +65,21 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   ''
             },
+            'LastAccessTime' : {
+                'Description'   :   "Only return files with a LastAccessTime greater than this date value.",
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'CreationTime' : {
+                'Description'   :   "Only return files with a CreationDate greater than this date value.",
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'FreshEXES' : {
+                'Description'   :   "Switch. Find .EXEs accessed in the last week.",
+                'Required'      :   False,
+                'Value'         :   ''
+            },
             'ExcludeHidden' : {
                 'Description'   :   "Switch. Exclude hidden files and folders from the search results.",
                 'Required'      :   False,
@@ -77,16 +87,6 @@ class Module:
             },
             'CheckWriteAccess' : {
                 'Description'   :   "Switch. Only returns files the current user has write access to.",
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'AccessDateLimit' : {
-                'Description'   :   "Only return files with a LastAccessTime greater than this date value.",
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'CreateDateLimit' : {
-                'Description'   :   "Only return files with a CreationDate greater than this date value.",
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -102,6 +102,16 @@ class Module:
             },
             'Domain' : {
                 'Description'   :   "Domain to query for machines.",
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'SearchSYSVOL' : {
+                'Description'   :   "Switch. Search for login scripts on the SYSVOL of the primary DCs for each specified domain.",
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'Threads' : {
+                'Description'   :   "The maximum concurrent threads to execute.",
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -120,8 +130,10 @@ class Module:
 
     def generate(self):
 
-        # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/collection/Invoke-FileFinder.ps1"
+        moduleName = self.info["Name"]
+        
+        # read in the common powerview.ps1 module source code
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/powerview.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -132,15 +144,20 @@ class Module:
         moduleCode = f.read()
         f.close()
 
-        script = moduleCode
+        # get just the code needed for the specified function
+        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
 
-        script += "Invoke-FileFinder "
+        script += moduleName + " "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
                 if values['Value'] and values['Value'] != '':
-                    script += " -" + str(option) + " " + str(values['Value']) 
+                    if values['Value'].lower() == "true":
+                        # if we're just adding a switch
+                        script += " -" + str(option)
+                    else:
+                        script += " -" + str(option) + " " + str(values['Value']) 
 
-        script += " | Out-String"
-
+        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+        
         return script

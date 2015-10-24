@@ -5,11 +5,11 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Get-NetComputer',
+            'Name': 'Find-GPOLocation',
 
             'Author': ['@harmj0y'],
 
-            'Description': ('Queries the domain for current computer objects.'),
+            'Description': ('Takes a user/group name and optional domain, and determines the computers in the domain the user/group has local admin (or RDP) rights to. Part of PowerView.'),
 
             'Background' : True,
 
@@ -35,28 +35,28 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'FullData' : {
-                'Description'   :   'Switch. Return full user computer objects instead of just system names.',
+            'UserName' : {
+                'Description'   :   'A (single) user name name to query for access.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'Ping' : {
-                'Description'   :   'Switch. Only return hosts that respond to ping.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'HostName' : {
-                'Description'   :   'Return computers with a specific name, wildcards accepted.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'OperatingSystem' : {
-                'Description'   :   'Return computers with a specific operating system, wildcards accepted.',
+            'GroupName' : {
+                'Description'   :   'A (single) group name name to query for access.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
             'Domain' : {
-                'Description'   :   'The domain to query for computers.',
+                'Description'   :   'The domain to use for the query, defaults to the current domain.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'DomainController' : {
+                'Description'   :   'Domain controller to reflect LDAP queries through.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'LocalGroup' : {
+                'Description'   :   'The local group to check access against, "Administrators", "RDP/Remote Desktop Users", or a custom SID. Defaults to "Administrators".',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -75,8 +75,10 @@ class Module:
 
     def generate(self):
         
-        # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Get-NetComputer.ps1"
+        moduleName = self.info["Name"]
+        
+        # read in the common powerview.ps1 module source code
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/powerview.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -87,9 +89,10 @@ class Module:
         moduleCode = f.read()
         f.close()
 
-        script = moduleCode
+        # get just the code needed for the specified function
+        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
 
-        script += "Get-NetComputer "
+        script += moduleName + " "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
@@ -99,5 +102,7 @@ class Module:
                         script += " -" + str(option)
                     else:
                         script += " -" + str(option) + " " + str(values['Value']) 
-        
+
+        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+
         return script

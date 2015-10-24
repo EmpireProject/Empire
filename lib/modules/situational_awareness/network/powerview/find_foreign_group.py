@@ -5,12 +5,11 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Get-NetDomainTrusts',
+            'Name': 'Find-ForeignGroup',
 
             'Author': ['@harmj0y'],
 
-            'Description': ('Return all domain trusts for the current domain or '
-                            'a specified domain. Part of PowerView.'),
+            'Description': ("Enumerates all the members of a given domain's groups and finds users that are not in the queried domain. Part of PowerView."),
 
             'Background' : True,
 
@@ -36,13 +35,18 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Domain' : {
-                'Description'   :   'Specific domain to query for trusts, defaults to current.',
+            'GroupName' : {
+                'Description'   :   'Groupname to filter results for, wildcards accepted.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'LDAP' : {
-                'Description'   :   'Switch. Use LDAP for domain queries (less accurate).',
+            'Domain' : {
+                'Description'   :   'The domain to use for the query, defaults to the current domain.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'DomainController' : {
+                'Description'   :   'Domain controller to reflect LDAP queries through.',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -61,8 +65,10 @@ class Module:
 
     def generate(self):
         
-        # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Invoke-MapDomainTrusts.ps1"
+        moduleName = self.info["Name"]
+        
+        # read in the common powerview.ps1 module source code
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/powerview.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -73,11 +79,20 @@ class Module:
         moduleCode = f.read()
         f.close()
 
-        script = moduleCode
+        # get just the code needed for the specified function
+        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
 
-        if self.options['LDAP']['Value'].lower() == "true":
-            script += "Get-NetDomainTrustsLDAP | Out-String | %{$_ + \"`n\"};"
-        else:
-            script += "Get-NetDomainTrusts | Out-String | %{$_ + \"`n\"};"
+        script += moduleName + " "
+
+        for option,values in self.options.iteritems():
+            if option.lower() != "agent":
+                if values['Value'] and values['Value'] != '':
+                    if values['Value'].lower() == "true":
+                        # if we're just adding a switch
+                        script += " -" + str(option)
+                    else:
+                        script += " -" + str(option) + " " + str(values['Value']) 
+
+        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         return script

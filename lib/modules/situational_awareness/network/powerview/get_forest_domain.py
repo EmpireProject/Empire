@@ -5,11 +5,11 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-MapDomainTrusts',
+            'Name': 'Get-NetForestDomain',
 
             'Author': ['@harmj0y'],
 
-            'Description': ('Maps all reachable domain trusts with .CSV output. Part of PowerView.'),
+            'Description': ('Return all domains for a given forest. Part of PowerView.'),
 
             'Background' : True,
 
@@ -35,8 +35,8 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'LDAP' : {
-                'Description'   :   'Switch. Use LDAP for domain queries (less accurate).',
+            'Forest' : {
+                'Description'   :   'The forest name to query domain for, defaults to the current forest.',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -55,8 +55,10 @@ class Module:
 
     def generate(self):
         
-        # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Invoke-MapDomainTrusts.ps1"
+        moduleName = self.info["Name"]
+        
+        # read in the common powerview.ps1 module source code
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/powerview.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -67,13 +69,20 @@ class Module:
         moduleCode = f.read()
         f.close()
 
-        script = moduleCode
+        # get just the code needed for the specified function
+        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
 
-        if self.options['LDAP']['Value'].lower() == "true":
-            script += "Invoke-MapDomainTrustsLDAP | ConvertTo-Csv -NoTypeInformation"
-            script += '| Out-String | %{$_ + \"`n\"};"`nInvoke-MapDomainTrustsLDAP completed"'
-        else:
-            script += "Invoke-MapDomainTrusts | ConvertTo-Csv -NoTypeInformation"
-            script += '| Out-String | %{$_ + \"`n\"};"`nInvoke-MapDomainTrusts completed"'
+        script += moduleName + " "
+
+        for option,values in self.options.iteritems():
+            if option.lower() != "agent":
+                if values['Value'] and values['Value'] != '':
+                    if values['Value'].lower() == "true":
+                        # if we're just adding a switch
+                        script += " -" + str(option)
+                    else:
+                        script += " -" + str(option) + " " + str(values['Value']) 
+
+        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         return script
