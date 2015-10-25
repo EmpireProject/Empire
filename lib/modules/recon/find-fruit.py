@@ -57,7 +57,7 @@ class Module:
     def generate(self):
         
         script = """
-function Get-HttpStatus
+function Find-Fruit
 {
 <#
 .SYNOPSIS
