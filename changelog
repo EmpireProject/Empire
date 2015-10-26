@@ -1,3 +1,7 @@
+10/26/2015
+----------
+-Fix for psinject bug due to lack of .NET 4.0 on target.
+
 9/21/2015
 ---------
 -Fix for 'skywalker' file overwrite exploit on control server (thanks @zeroSteiner!)
