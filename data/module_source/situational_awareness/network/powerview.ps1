@@ -4020,10 +4020,16 @@ function Get-NetGroupMember {
                 $GroupMember | Add-Member Noteproperty 'GroupDomain' $Domain
                 $GroupMember | Add-Member Noteproperty 'GroupName' $GroupFoundName
 
-                $MemberDN = $Properties.distinguishedname[0]
-                
-                # extract the FQDN from the Distinguished Name
-                $MemberDomain = $MemberDN.subString($MemberDN.IndexOf("DC=")) -replace 'DC=','' -replace ',','.'
+                try {
+                    $MemberDN = $Properties.distinguishedname[0]
+                    
+                    # extract the FQDN from the Distinguished Name
+                    $MemberDomain = $MemberDN.subString($MemberDN.IndexOf("DC=")) -replace 'DC=','' -replace ',','.'
+                }
+                catch {
+                    $MemberDN = $Null
+                    $MemberDomain = $Null
+                }
 
                 if ($Properties.samaccountname) {
                     # forest users have the samAccountName set
@@ -4040,17 +4046,24 @@ function Get-NetGroupMember {
                     }
                 }
                 
+                if($Properties.objectSid) {
+                    $MemberSid = ((New-Object System.Security.Principal.SecurityIdentifier $Properties.objectSid[0],0).Value)
+                }
+                else {
+                    $MemberSid = $Null                  
+                }
+
                 $GroupMember | Add-Member Noteproperty 'MemberDomain' $MemberDomain
                 $GroupMember | Add-Member Noteproperty 'MemberName' $MemberName
-                $GroupMember | Add-Member Noteproperty 'MemberSid' ((New-Object System.Security.Principal.SecurityIdentifier $Properties.objectSid[0],0).Value)
+                $GroupMember | Add-Member Noteproperty 'MemberSid' $MemberSid
                 $GroupMember | Add-Member Noteproperty 'IsGroup' $IsGroup
                 $GroupMember | Add-Member Noteproperty 'MemberDN' $MemberDN
 
                 $GroupMember
 
                 # if we're doing manual recursion
-                if ($Recurse -and !$UseMatchingRule -and $IsGroup) {
-                    Get-NetGroupMember -Domain $MemberDomain -DomainController $DomainController -GroupName $MemberName
+                if ($Recurse -and !$UseMatchingRule -and $IsGroup -and $MemberName) {
+                    Get-NetGroupMember -Domain $MemberDomain -DomainController $DomainController -GroupName $MemberName -Recurse
                 }
             }
         }
