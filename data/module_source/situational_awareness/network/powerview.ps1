@@ -2,7 +2,7 @@
 
 <#
 
-    PowerView v2.0
+    PowerView v2.0.1
 
     See README.md for more information.
 
@@ -1279,14 +1279,13 @@ function Convert-LDAPProperty {
     param(
         [Parameter(Mandatory=$True,ValueFromPipeline=$True)]
         [ValidateNotNullOrEmpty()]
-        [System.Collections.DictionaryBase]
         $Properties
     )
 
     $ObjectProperties = @{}
 
     $Properties.PropertyNames | ForEach-Object {
-        if ($_ -eq "objectsid") {
+        if (($_ -eq "objectsid") -or ($_ -eq "sidhistory")) {
             # convert the SID to a string
             $ObjectProperties[$_] = (New-Object System.Security.Principal.SecurityIdentifier($Properties[$_][0],0)).Value
         }
@@ -1294,9 +1293,32 @@ function Convert-LDAPProperty {
             # convert the GUID to a string
             $ObjectProperties[$_] = (New-Object Guid (,$Properties[$_][0])).Guid
         }
-        elseif( ($_ -eq "lastlogon") -or ($_ -eq "lastlogontimestamp") -or ($_ -eq "pwdlastset") ) {
+        elseif( ($_ -eq "lastlogon") -or ($_ -eq "lastlogontimestamp") -or ($_ -eq "pwdlastset") -or ($_ -eq "lastlogoff") -or ($_ -eq "badPasswordTime") ) {
             # convert timestamps
-            $ObjectProperties[$_] = ([datetime]::FromFileTime(($Properties[$_][0])))
+            if ($Properties[$_][0] -is [System.MarshalByRefObject]) {
+                # if we have a System.__ComObject
+                $Temp = $Properties[$_][0]
+                [Int32]$High = $Temp.GetType().InvokeMember("HighPart", [System.Reflection.BindingFlags]::GetProperty, $null, $Temp, $null)
+                [Int32]$Low  = $Temp.GetType().InvokeMember("LowPart",  [System.Reflection.BindingFlags]::GetProperty, $null, $Temp, $null)
+                $ObjectProperties[$_] = ([datetime]::FromFileTime([Int64]("0x{0:x8}{1:x8}" -f $High, $Low)))
+            }
+            else {
+                $ObjectProperties[$_] = ([datetime]::FromFileTime(($Properties[$_][0])))
+            }
+        }
+        elseif($Properties[$_][0] -is [System.MarshalByRefObject]) {
+            # convert misc com objects
+            $Prop = $Properties[$_]
+            try {
+                $Temp = $Prop[$_][0]
+                Write-Verbose $_
+                [Int32]$High = $Temp.GetType().InvokeMember("HighPart", [System.Reflection.BindingFlags]::GetProperty, $null, $Temp, $null)
+                [Int32]$Low  = $Temp.GetType().InvokeMember("LowPart",  [System.Reflection.BindingFlags]::GetProperty, $null, $Temp, $null)
+                $ObjectProperties[$_] = [Int64]("0x{0:x8}{1:x8}" -f $High, $Low)
+            }
+            catch {
+                $ObjectProperties[$_] = $Prop[$_]
+            }
         }
         elseif($Properties[$_].count -eq 1) {
             $ObjectProperties[$_] = $Properties[$_][0]
@@ -2301,7 +2323,7 @@ function Get-ObjectAcl {
 
     .PARAMETER RightsFilter
 
-        Only return results with the associated rights, "All", "ResetPassword","ChangePassword","WriteMembers"
+        Only return results with the associated rights, "All", "ResetPassword","WriteMembers"
 
     .PARAMETER Domain
 
@@ -2351,7 +2373,7 @@ function Get-ObjectAcl {
         $ADSprefix,
 
         [String]
-        [ValidateSet("All","ResetPassword","ChangePassword","WriteMembers")]
+        [ValidateSet("All","ResetPassword","WriteMembers")]
         $RightsFilter,
 
         [String]
@@ -2393,7 +2415,6 @@ function Get-ObjectAcl {
                 } | ForEach-Object {
                     if($RightsFilter) {
                         $GuidFilter = Switch ($RightsFilter) {
-                            "ChangePassword" { "ab721a53-1e2f-11d0-9819-00aa0040529b" }
                             "ResetPassword" { "00299570-246d-11d0-a768-00aa006e0529" }
                             "WriteMembers" { "bf9679c0-0de6-11d0-a285-00aa003049e2" }
                             Default { "00000000-0000-0000-0000-000000000000"}
@@ -2445,7 +2466,10 @@ function Add-ObjectAcl {
         AdminSDHolder ACL approach from Sean Metcalf (@pyrotek3)
             https://adsecurity.org/?p=1906
 
-        ACE setting method adapted from https://social.technet.microsoft.com/Forums/windowsserver/en-US/df3bfd33-c070-4a9c-be98-c4da6e591a0a/forum-faq-using-powershell-to-assign-permissions-on-active-directory-objects
+        ACE setting method adapted from https://social.technet.microsoft.com/Forums/windowsserver/en-US/df3bfd33-c070-4a9c-be98-c4da6e591a0a/forum-faq-using-powershell-to-assign-permissions-on-active-directory-objects.
+
+        'ResetPassword' doesn't need to know the user's current password
+        'WriteMembers' allows for the modification of group membership
 
     .PARAMETER TargetSamAccountName
 
@@ -2485,7 +2509,7 @@ function Add-ObjectAcl {
 
     .PARAMETER Rights
 
-        Rights to add for the principal, "All","ResetPassword","ChangePassword","WriteMembers"
+        Rights to add for the principal, "All","ResetPassword","WriteMembers","DCSync"
 
     .PARAMETER Domain
 
@@ -2503,9 +2527,9 @@ function Add-ObjectAcl {
 
     .EXAMPLE
 
-        Add-ObjectAcl -TargetSamAccountName matt -PrincipalSamAccountName john -Rights ChangePassword
+        Add-ObjectAcl -TargetSamAccountName matt -PrincipalSamAccountName john -Rights ResetPassword
 
-        Grants 'john' the right to change the password for the 'matt' account.
+        Grants 'john' the right to reset the password for the 'matt' account.
 
     .LINK
 
@@ -2546,8 +2570,11 @@ function Add-ObjectAcl {
         $PrincipalSamAccountName,
 
         [String]
-        [ValidateSet("All","ResetPassword","ChangePassword","WriteMembers")]
+        [ValidateSet("All","ResetPassword","WriteMembers","DCSync")]
         $Rights = "All",
+
+        [String]
+        $RightsGUID,
 
         [String]
         $Domain,
@@ -2595,27 +2622,48 @@ function Add-ObjectAcl {
                     $Identity = [System.Security.Principal.IdentityReference] ([System.Security.Principal.SecurityIdentifier]$PrincipalSID)
                     $InheritanceType = [System.DirectoryServices.ActiveDirectorySecurityInheritance] "None"
                     $ControlType = [System.Security.AccessControl.AccessControlType] "Allow"
+                    $ACEs = @()
 
-                    if($Rights -eq "All") {
-                        $ADRights = [System.DirectoryServices.ActiveDirectoryRights] "GenericAll"
-                        $Ace = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $Identity,$adRights,$ControlType,$InheritanceType 
+                    if($RightsGUID) {
+                        $GUIDs = @($RightsGUID)
                     }
                     else {
-                        $GUID = Switch ($Rights) {
-                            "ChangePassword" { "ab721a53-1e2f-11d0-9819-00aa0040529b" }
+                        $GUIDs = Switch ($Rights) {
+                            # ResetPassword doesn't need to know the user's current password
                             "ResetPassword" { "00299570-246d-11d0-a768-00aa006e0529" }
+                            # allows for the modification of group membership
                             "WriteMembers" { "bf9679c0-0de6-11d0-a285-00aa003049e2" }
+                            # 'DS-Replication-Get-Changes' = 1131f6aa-9c07-11d1-f79f-00c04fc2dcd2
+                            # 'DS-Replication-Get-Changes-All' = 1131f6ad-9c07-11d1-f79f-00c04fc2dcd2
+                            # 'DS-Replication-Get-Changes-In-Filtered-Set' = 89e95b76-444d-4c62-991a-0facbeda640c
+                            #   when applied to a domain's ACL, allows for the use of DCSync
+                            "DCSync" { "1131f6aa-9c07-11d1-f79f-00c04fc2dcd2", "1131f6ad-9c07-11d1-f79f-00c04fc2dcd2", "89e95b76-444d-4c62-991a-0facbeda640c"}
                         }
-                        $RightsGuid = New-Object Guid $GUID
-                        $ADRights = [System.DirectoryServices.ActiveDirectoryRights] "ExtendedRight"
-                        $Ace = New-Object System.DirectoryServices.ActiveDirectoryAccessRule $Identity,$ADRights,$ControlType,$RightsGuid,$InheritanceType
+                    }
+
+                    if($GUIDs) {
+                        foreach($GUID in $GUIDs) {
+                            $NewGUID = New-Object Guid $GUID
+                            $ADRights = [System.DirectoryServices.ActiveDirectoryRights] "ExtendedRight"
+                            $ACEs += New-Object System.DirectoryServices.ActiveDirectoryAccessRule $Identity,$ADRights,$ControlType,$NewGUID,$InheritanceType
+                        }
+                    }
+                    else {
+                        # deault to GenericAll rights
+                        $ADRights = [System.DirectoryServices.ActiveDirectoryRights] "GenericAll"
+                        $ACEs += New-Object System.DirectoryServices.ActiveDirectoryAccessRule $Identity,$ADRights,$ControlType,$InheritanceType
                     }
 
                     Write-Verbose "Granting principal $PrincipalSID '$Rights' on $($_.Properties.distinguishedname)"
+
                     try {
-                        $Object = [adsi]($_.path)
-                        $Object.PsBase.ObjectSecurity.AddAccessRule($Ace)
-                        $Object.PsBase.commitchanges()
+                        # add all the new ACEs to the specified object
+                        ForEach ($ACE in $ACEs) {
+                            Write-Verbose "Granting principal $PrincipalSID '$($ACE.ObjectType)' rights on $($_.Properties.distinguishedname)"
+                            $Object = [adsi]($_.path)
+                            $Object.PsBase.ObjectSecurity.AddAccessRule($ACE)
+                            $Object.PsBase.commitchanges()
+                        }
                     }
                     catch {
                         Write-Warning "Error granting principal $PrincipalSID '$Rights' on $TargetDN : $_"
@@ -2728,15 +2776,15 @@ function Get-NetComputer {
 
     .PARAMETER Printers
 
-        Return only printers.
+        Switch. Return only printers.
 
     .PARAMETER Ping
 
-        Ping each host to ensure it's up before enumerating.
+        Switch. Ping each host to ensure it's up before enumerating.
 
     .PARAMETER FullData
 
-        Return full computer objects instead of just system names (the default).
+        Switch. Return full computer objects instead of just system names (the default).
 
     .PARAMETER Domain
 
@@ -2921,6 +2969,15 @@ function Get-ADObject {
         The LDAP source to search through, e.g. "LDAP://OU=secret,DC=testlab,DC=local"
         Useful for OU queries.
 
+    .PARAMETER Filter
+
+        Additional LDAP filter string for the query.
+
+    .PARAMETER ReturnRaw
+
+        Switch. Return the raw object instead of translating its properties.
+        Used by Set-ADObject to modify object properties.
+
     .EXAMPLE
 
         PS C:\> Get-ADObject -SID "S-1-5-21-2620891829-2411261497-1773853088-1110"
@@ -2936,7 +2993,6 @@ function Get-ADObject {
 
     [CmdletBinding()]
     Param (
-        [ValidatePattern('^S-1-5-21-[0-9]+-[0-9]+-[0-9]+-[0-9]+')]
         [Parameter(ValueFromPipeline=$True)]
         [String]
         $SID,
@@ -2954,7 +3010,13 @@ function Get-ADObject {
         $DomainController,
 
         [String]
-        $ADSpath
+        $ADSpath,
+
+        [String]
+        $Filter,
+
+        [Switch]
+        $ReturnRaw
     )
     process {
         if($SID) {
@@ -2983,22 +3045,142 @@ function Get-ADObject {
         if($ObjectSearcher) {
 
             if($SID) {
-                $ObjectSearcher.filter = "(&(objectsid=$SID))"
+                $ObjectSearcher.filter = "(&(objectsid=$SID)$Filter)"
             }
             elseif($Name) {
-                $ObjectSearcher.filter = "(&(name=$Name))"
+                $ObjectSearcher.filter = "(&(name=$Name)$Filter)"
             }
             elseif($SamAccountName) {
-                $ObjectSearcher.filter = "(&(samAccountName=$SamAccountName))"
+                $ObjectSearcher.filter = "(&(samAccountName=$SamAccountName)$Filter)"
             }
 
             $ObjectSearcher.PageSize = 200
 
             $ObjectSearcher.FindAll() | ForEach-Object {
-                # convert/process the LDAP fields for each result
-                Convert-LDAPProperty -Properties $_.Properties
+                if($ReturnRaw) {
+                    $_
+                }
+                else {
+                    # convert/process the LDAP fields for each result
+                    Convert-LDAPProperty -Properties $_.Properties
+                }
             }
         }
+    }
+}
+
+
+function Set-ADObject {
+<#
+    .SYNOPSIS
+
+        Takes a SID, name, or SamAccountName to query for a specified
+        domain object, and then sets a specified 'PropertyName' to a
+        specified 'PropertyValue'.
+
+    .PARAMETER SID
+
+        The SID of the domain object you're querying for.
+
+    .PARAMETER Name
+
+        The Name of the domain object you're querying for.
+
+    .PARAMETER SamAccountName
+
+        The SamAccountName of the domain object you're querying for. 
+
+    .PARAMETER Domain
+
+        The domain to query for objects, defaults to the current domain.
+
+    .PARAMETER DomainController
+
+        Domain controller to reflect LDAP queries through.
+
+    .PARAMETER PropertyName
+
+        The property name to set.
+
+    .PARAMETER PropertyValue
+
+        The value to set for PropertyName
+
+    .PARAMETER ClearValue
+
+        Switch. Clear the value of PropertyName
+
+    .EXAMPLE
+
+        PS C:\> Set-ADObject -SamAccountName matt.admin -PropertyName countrycode -PropertyValue 0
+        
+        Set the countrycode for matt.admin to 0
+#>
+
+    [CmdletBinding()]
+    Param (
+        [String]
+        $SID,
+
+        [String]
+        $Name,
+
+        [String]
+        $SamAccountName,
+
+        [String]
+        $Domain,
+
+        [String]
+        $DomainController,
+
+        [Parameter(Mandatory = $True)]
+        [String]
+        $PropertyName,
+
+        $PropertyValue,
+
+        [Switch]
+        $ClearValue
+    )
+
+    $Arguments = @{
+        'SID' = $SID
+        'Name' = $Name
+        'SamAccountName' = $SamAccountName
+        'Domain' = $Domain
+        'DomainController' = $DomainController
+    }
+    # splat the appropriate arguments to Get-ADObject
+    $RawObject = Get-ADObject -ReturnRaw @Arguments
+    
+    try {
+        # get the modifiable object for this search result
+        $Entry = $RawObject.GetDirectoryEntry()
+        
+        # if the property name doesn't already exist
+        if(!$Entry.$PropertyName) {
+            $Entry.put($PropertyName, $PropertyValue)
+            $Entry.setinfo()
+        }
+
+        else {
+            if($ClearValue) {
+                # remove the value fromt the entry
+                Write-Verbose "Clearing value"
+                $Entry.$PropertyName.clear()
+            }
+            else {
+                # resolve this property's type name so as can properly set it
+                $TypeName = $Entry.$PropertyName[0].GetType().name
+                $Entry.$PropertyName = $PropertyValue -as $TypeName
+            }
+
+            $Entry.commitchanges()
+        }
+    }
+    catch {
+        Write-Warning "Error setting property $PropertyName to value '$PropertyValue' for object $($RawObject.Properties.samaccountname) : $_"
     }
 }
 
@@ -3152,7 +3334,7 @@ function Get-NetOU {
 
     .PARAMETER FullData
 
-        Return full OU objects instead of just object names (the default).
+        Switch. Return full OU objects instead of just object names (the default).
 
     .EXAMPLE
 
@@ -3253,7 +3435,7 @@ function Get-NetSite {
 
     .PARAMETER FullData
 
-        Return full site objects instead of just object names (the default).
+        Switch. Return full site objects instead of just object names (the default).
 
     .EXAMPLE
 
@@ -3344,7 +3526,7 @@ function Get-NetSubnet {
 
     .PARAMETER FullData
 
-        Return full subnet objects instead of just object names (the default).
+        Switch. Return full subnet objects instead of just object names (the default).
 
     .EXAMPLE
 
@@ -3494,11 +3676,11 @@ function Get-NetGroup {
 
     .PARAMETER AdminCount
 
-        Switch. Return users with adminCount=1.
+        Switch. Return group with adminCount=1.
 
     .PARAMETER FullData
 
-        Return full group objects instead of just object names (the default).
+        Switch. Return full group objects instead of just object names (the default).
 
     .EXAMPLE
 
@@ -3563,12 +3745,29 @@ function Get-NetGroup {
             }
 
             if ($UserName) {
-                # get the user objects so we can determine its distinguished name for the ldap query
-                $UserDN = (Get-NetUser -UserName $UserName -Domain $Domain -ADSpath $ADSpath).distinguishedname
+                # get the raw user object
+                $User = Get-ADObject -SamAccountName $UserName -Domain $Domain -DomainController $DomainController -Filter '(samAccountType=805306368)' -ReturnRaw
 
-                # recurse "up" the nested group structure and get all groups 
-                #   this user/group object is effectively a member of
-                $GroupSearcher.filter = "(&(samAccountType=268435456)(member:1.2.840.113556.1.4.1941:=$UserDN)$Filter)"
+                # convert the user to a directory entry
+                $UserDirectoryEntry = $User.GetDirectoryEntry()
+
+                # cause the cache to calculate the token groups for the user
+                $UserDirectoryEntry.RefreshCache("tokenGroups")
+
+                $UserDirectoryEntry.TokenGroups | Foreach-Object {
+                    # convert the token group sid
+                    $GroupSid = (New-Object System.Security.Principal.SecurityIdentifier($_,0)).Value
+                    
+                    # ignore the built in users and default domain user group
+                    if(!($GroupSid -match '^S-1-5-32-545|-513$')) {
+                        if($FullData) {
+                            Get-ADObject -SID $GroupSid
+                        }
+                        else {
+                            Convert-SidToName $GroupSid
+                        }
+                    }
+                }
             }
             else {
                 if ($SID) {
@@ -3577,21 +3776,19 @@ function Get-NetGroup {
                 else {
                     $GroupSearcher.filter = "(&(samAccountType=268435456)(name=$GroupName)$Filter)"
                 }
-            }
+            
+                $GroupSearcher.PageSize = 200
 
-            Write-Verbose "Group filter: $($GroupSearcher.filter)"
-
-            $GroupSearcher.PageSize = 200
-
-            $GroupSearcher.FindAll() | ForEach-Object {
-                # if we're returning full data objects
-                if ($FullData) {
-                    # convert/process the LDAP fields for each result
-                    Convert-LDAPProperty -Properties $_.Properties
-                }
-                else {
-                    # otherwise we're just returning the group name
-                    $_.properties.samaccountname
+                $GroupSearcher.FindAll() | ForEach-Object {
+                    # if we're returning full data objects
+                    if ($FullData) {
+                        # convert/process the LDAP fields for each result
+                        Convert-LDAPProperty -Properties $_.Properties
+                    }
+                    else {
+                        # otherwise we're just returning the group name
+                        $_.properties.samaccountname
+                    }
                 }
             }
         }
@@ -3641,6 +3838,11 @@ function Get-NetGroupMember {
 
         Switch. If the group member is a group, recursively try to query its members as well.
 
+    .PARAMETER UseMatchingRule
+
+        Switch. Use LDAP_MATCHING_RULE_IN_CHAIN in the LDAP search query when -Recurse is specified.
+        Much faster than manual recursion, but doesn't reveal cross-domain groups.
+
     .EXAMPLE
 
         PS C:\> Get-NetGroupMember
@@ -3680,12 +3882,15 @@ function Get-NetGroupMember {
         $FullData,
 
         [Switch]
-        $Recurse
+        $Recurse,
+
+        [Switch]
+        $UseMatchingRule
     )
 
     begin {
         # so this isn't repeated if users are passed on the pipeline
-        $GroupSearcher = Get-DomainSearcher -Domain $Domain -DomainController $DomainController  -ADSpath $ADSpath
+        $GroupSearcher = Get-DomainSearcher -Domain $Domain -DomainController $DomainController -ADSpath $ADSpath
     }
 
     process {
@@ -3694,7 +3899,7 @@ function Get-NetGroupMember {
 
             $GroupSearcher.PageSize = 200
 
-            if ($Recurse) {
+            if ($Recurse -and $UseMatchingRule) {
                 # resolve the group to a distinguishedname
                 if ($GroupName) {
                     $Group = Get-NetGroup -GroupName $GroupName -Domain $Domain -FullData
@@ -3785,8 +3990,8 @@ function Get-NetGroupMember {
             }
 
             $Members | Where-Object {$_} | ForEach-Object {
-                # for each user/member, do a quick adsi object grab
-                if ($Recurse) {
+                # if we're doing the LDAP_MATCHING_RULE_IN_CHAIN recursion
+                if ($Recurse -and $UseMatchingRule) {
                     $Properties = $_.Properties
                 } 
                 else {
@@ -3805,58 +4010,48 @@ function Get-NetGroupMember {
                     $IsGroup = $False
                 }
 
-                $GroupMember = New-Object PSObject
+                if ($FullData) {
+                    $GroupMember = Convert-LDAPProperty -Properties $Properties
+                }
+                else {
+                    $GroupMember = New-Object PSObject
+                }
+
                 $GroupMember | Add-Member Noteproperty 'GroupDomain' $Domain
                 $GroupMember | Add-Member Noteproperty 'GroupName' $GroupFoundName
 
-                if ($FullData) {
-                    $Properties.PropertyNames | ForEach-Object {
+                $MemberDN = $Properties.distinguishedname[0]
+                
+                # extract the FQDN from the Distinguished Name
+                $MemberDomain = $MemberDN.subString($MemberDN.IndexOf("DC=")) -replace 'DC=','' -replace ',','.'
 
-                        # TODO: errors on cross-domain users?
-                        if ($_ -eq "objectsid") {
-                            # convert the SID to a string
-                            $GroupMember | Add-Member Noteproperty $_ ((New-Object System.Security.Principal.SecurityIdentifier($Properties[$_][0],0)).Value)
-                        }
-                        elseif($_ -eq "objectguid") {
-                            # convert the GUID to a string
-                            $GroupMember | Add-Member Noteproperty $_ (New-Object Guid (,$Properties[$_][0])).Guid
-                        }
-                        else {
-                            if ($Properties[$_].count -eq 1) {
-                                $GroupMember | Add-Member Noteproperty $_ $Properties[$_][0]
-                            }
-                            else {
-                                $GroupMember | Add-Member Noteproperty $_ $Properties[$_]
-                            }
-                        }
-                    }
-                }
+                if ($Properties.samaccountname) {
+                    # forest users have the samAccountName set
+                    $MemberName = $Properties.samaccountname[0]
+                } 
                 else {
-                    $MemberDN = $Properties.distinguishedname[0]
-                    
-                    # extract the FQDN from the Distinguished Name
-                    $MemberDomain = $MemberDN.subString($MemberDN.IndexOf("DC=")) -replace 'DC=','' -replace ',','.'
-
-                    if ($Properties.samaccountname) {
-                        # forest users have the samAccountName set
-                        $MemberName = $Properties.samaccountname[0]
-                    } 
-                    else {
-                        # external trust users have a SID, so convert it
-                        try {
-                            $MemberName = Convert-SidToName $Properties.cn[0]
-                        }
-                        catch {
-                            # if there's a problem contacting the domain to resolve the SID
-                            $MemberName = $Properties.cn
-                        }
+                    # external trust users have a SID, so convert it
+                    try {
+                        $MemberName = Convert-SidToName $Properties.cn[0]
                     }
-                    $GroupMember | Add-Member Noteproperty 'MemberDomain' $MemberDomain
-                    $GroupMember | Add-Member Noteproperty 'MemberName' $MemberName
-                    $GroupMember | Add-Member Noteproperty 'IsGroup' $IsGroup
-                    $GroupMember | Add-Member Noteproperty 'MemberDN' $MemberDN
+                    catch {
+                        # if there's a problem contacting the domain to resolve the SID
+                        $MemberName = $Properties.cn
+                    }
                 }
+                
+                $GroupMember | Add-Member Noteproperty 'MemberDomain' $MemberDomain
+                $GroupMember | Add-Member Noteproperty 'MemberName' $MemberName
+                $GroupMember | Add-Member Noteproperty 'MemberSid' ((New-Object System.Security.Principal.SecurityIdentifier $Properties.objectSid[0],0).Value)
+                $GroupMember | Add-Member Noteproperty 'IsGroup' $IsGroup
+                $GroupMember | Add-Member Noteproperty 'MemberDN' $MemberDN
+
                 $GroupMember
+
+                # if we're doing manual recursion
+                if ($Recurse -and !$UseMatchingRule -and $IsGroup) {
+                    Get-NetGroupMember -Domain $MemberDomain -DomainController $DomainController -GroupName $MemberName
+                }
             }
         }
     }
@@ -6121,11 +6316,11 @@ function Find-InterestingFile {
 
     .PARAMETER OfficeDocs
 
-        Search for office documents (*.doc*, *.xls*, *.ppt*)
+        Switch. Search for office documents (*.doc*, *.xls*, *.ppt*)
 
     .PARAMETER FreshEXEs
 
-        Find .EXEs accessed within the last week.
+        Switch. Find .EXEs accessed within the last week.
 
     .PARAMETER LastAccessTime
 
@@ -6141,15 +6336,15 @@ function Find-InterestingFile {
 
     .PARAMETER ExcludeFolders
 
-        Exclude folders from the search results.
+        Switch. Exclude folders from the search results.
 
     .PARAMETER ExcludeHidden
 
-        Exclude hidden files and folders from the search results.
+        Switch. Exclude hidden files and folders from the search results.
 
     .PARAMETER CheckWriteAccess
 
-        Only returns files the current user has write access to.
+        Switch. Only returns files the current user has write access to.
 
     .PARAMETER OutFile
 
@@ -6536,6 +6731,10 @@ function Invoke-UserHunter {
         The LDAP source to search through for hosts, e.g. "LDAP://OU=secret,DC=testlab,DC=local"
         Useful for OU queries.
 
+    .PARAMETER Unconstrained
+
+        Switch. Only enumerate computers that have unconstrained delegation.
+
     .PARAMETER GroupName
 
         Group name to query for target users.
@@ -6561,9 +6760,17 @@ function Invoke-UserHunter {
 
         File of usernames to search for.
 
+    .PARAMETER AdminCount
+
+        Switch. Hunt for users with adminCount=1.
+
+    .PARAMETER AllowDelegation
+
+        Switch. Return user accounts that are not marked as 'sensitive and not allowed for delegation'
+
     .PARAMETER StopOnSuccess
 
-        Stop hunting after finding after finding a target user.
+        Switch. Stop hunting after finding after finding a target user.
 
     .PARAMETER NoPing
 
@@ -6571,7 +6778,7 @@ function Invoke-UserHunter {
 
     .PARAMETER CheckAccess
 
-        Check if the current user has local admin access to found machines.
+        Switch. Check if the current user has local admin access to found machines.
 
     .PARAMETER Delay
 
@@ -6591,16 +6798,16 @@ function Invoke-UserHunter {
 
     .PARAMETER ShowAll
 
-        Return all user location results, i.e. Invoke-UserView functionality.
+        Switch. Return all user location results, i.e. Invoke-UserView functionality.
 
     .PARAMETER SearchForest
 
-        Search all domains in the forest for target users instead of just
+        Switch. Search all domains in the forest for target users instead of just
         a single domain.
 
     .PARAMETER Stealth
 
-        Only enumerate sessions from connonly used target servers.
+        Switch. Only enumerate sessions from connonly used target servers.
 
     .PARAMETER StealthSource
 
@@ -6687,6 +6894,9 @@ function Invoke-UserHunter {
         [String]
         $ComputerADSpath,
 
+        [Switch]
+        $Unconstrained,
+
         [String]
         $GroupName = 'Domain Admins',
 
@@ -6705,6 +6915,12 @@ function Invoke-UserHunter {
         [ValidateScript({Test-Path -Path $_ })]
         [String]
         $UserFile,
+
+        [Switch]
+        $AdminCount,
+
+        [Switch]
+        $AllowDelegation,
 
         [Switch]
         $CheckAccess,
@@ -6803,7 +7019,16 @@ function Invoke-UserHunter {
             else {
                 ForEach ($Domain in $TargetDomains) {
                     Write-Verbose "[*] Querying domain $Domain for hosts"
-                    $ComputerName += Get-NetComputer -Domain $Domain -DomainController $DomainController -Filter $ComputerFilter -ADSpath $ComputerADSpath
+
+                    $Arguments = @{
+                        'Domain' = $Domain
+                        'DomainController' = $DomainController
+                        'ADSpath' = $ADSpath
+                        'Filter' = $ComputerFilter
+                        'Unconstrained' = $Unconstrained
+                    }
+
+                    $ComputerName += Get-NetComputer @Arguments
                 }
             }
 
@@ -6860,15 +7085,26 @@ function Invoke-UserHunter {
                 $User
             }  | Where-Object {$_}
         }
-        elseif($UserADSpath -or $UserFilter) {
+        elseif($UserADSpath -or $UserFilter -or $AdminCount) {
             ForEach ($Domain in $TargetDomains) {
+
+                $Arguments = @{
+                    'Domain' = $Domain
+                    'DomainController' = $DomainController
+                    'ADSpath' = $UserADSpath
+                    'Filter' = $UserFilter
+                    'AdminCount' = $AdminCount
+                    'AllowDelegation' = $AllowDelegation
+                }
+
                 Write-Verbose "[*] Querying domain $Domain for users"
-                $TargetUsers += Get-NetUser -Domain $Domain -DomainController $DomainController -ADSpath $UserADSpath -Filter $UserFilter | ForEach-Object {
+                $TargetUsers += Get-NetUser @Arguments | ForEach-Object {
                     $User = New-Object PSObject
                     $User | Add-Member Noteproperty 'MemberDomain' $Domain
                     $User | Add-Member Noteproperty 'MemberName' $_.samaccountname
                     $User
                 }  | Where-Object {$_}
+
             }            
         }
         else {
@@ -7155,11 +7391,11 @@ function Invoke-ProcessHunter {
 
     .PARAMETER StopOnSuccess
 
-        Stop hunting after finding after finding a target user/process.
+        Switch. Stop hunting after finding after finding a target user/process.
 
     .PARAMETER NoPing
 
-        Don't ping each host to ensure it's up before enumerating.
+        Switch. Don't ping each host to ensure it's up before enumerating.
 
     .PARAMETER Delay
 
@@ -7179,11 +7415,11 @@ function Invoke-ProcessHunter {
 
     .PARAMETER ShowAll
 
-        Return all user location results, i.e. Invoke-UserView functionality.
+        Switch. Return all user location results.
 
     .PARAMETER SearchForest
 
-        Search all domains in the forest for target users instead of just
+        Switch. Search all domains in the forest for target users instead of just
         a single domain.
 
     .PARAMETER Threads
@@ -7559,7 +7795,7 @@ function Invoke-EventHunter {
 
     .PARAMETER SearchForest
 
-        Search all domains in the forest for target users instead of just
+        Switch. Search all domains in the forest for target users instead of just
         a single domain.
 
     .PARAMETER Threads
@@ -7825,27 +8061,27 @@ function Invoke-ShareFinder {
 
     .PARAMETER ExcludeStandard
 
-        Exclude standard shares from display (C$, IPC$, print$ etc.)
+        Switch. Exclude standard shares from display (C$, IPC$, print$ etc.)
 
     .PARAMETER ExcludePrint
 
-        Exclude the print$ share.
+        Switch. Exclude the print$ share.
 
     .PARAMETER ExcludeIPC
 
-        Exclude the IPC$ share.
+        Switch. Exclude the IPC$ share.
 
     .PARAMETER CheckShareAccess
 
-        Only display found shares that the local user has access to.
+        Switch. Only display found shares that the local user has access to.
 
     .PARAMETER CheckAdmin
 
-        Only display ADMIN$ shares the local user has access to.
+        Switch. Only display ADMIN$ shares the local user has access to.
 
     .PARAMETER NoPing
 
-        Don't ping each host to ensure it's up before enumerating.
+        Switch. Don't ping each host to ensure it's up before enumerating.
 
     .PARAMETER Delay
 
@@ -7865,7 +8101,7 @@ function Invoke-ShareFinder {
 
     .PARAMETER SearchForest
 
-        Search all domains in the forest for target users instead of just
+        Switch. Search all domains in the forest for target users instead of just
         a single domain.
 
     .PARAMETER Threads
@@ -8157,11 +8393,11 @@ function Invoke-FileFinder {
 
     .PARAMETER OfficeDocs
 
-        Search for office documents (*.doc*, *.xls*, *.ppt*)
+        Switch. Search for office documents (*.doc*, *.xls*, *.ppt*)
 
     .PARAMETER FreshEXEs
 
-        Find .EXEs accessed within the last week.
+        Switch. Find .EXEs accessed within the last week.
 
     .PARAMETER LastAccessTime
 
@@ -8177,23 +8413,23 @@ function Invoke-FileFinder {
 
     .PARAMETER IncludeC
 
-        Include any C$ shares in recursive searching (default ignore).
+        Switch. Include any C$ shares in recursive searching (default ignore).
 
     .PARAMETER IncludeAdmin
 
-        Include any ADMIN$ shares in recursive searching (default ignore).
+        Switch. Include any ADMIN$ shares in recursive searching (default ignore).
 
     .PARAMETER ExcludeFolders
 
-        Exclude folders from the search results.
+        Switch. Exclude folders from the search results.
 
     .PARAMETER ExcludeHidden
 
-        Exclude hidden files and folders from the search results.
+        Switch. Exclude hidden files and folders from the search results.
 
     .PARAMETER CheckWriteAccess
 
-        Only returns files the current user has write access to.
+        Switch. Only returns files the current user has write access to.
 
     .PARAMETER OutFile
 
@@ -8201,11 +8437,11 @@ function Invoke-FileFinder {
 
     .PARAMETER NoClobber
 
-        Don't overwrite any existing output file.
+        Switch. Don't overwrite any existing output file.
 
     .PARAMETER NoPing
 
-        Don't ping each host to ensure it's up before enumerating.
+        Switch. Don't ping each host to ensure it's up before enumerating.
 
     .PARAMETER Delay
 
@@ -8230,7 +8466,7 @@ function Invoke-FileFinder {
 
     .PARAMETER SearchSYSVOL
 
-        Search for login scripts on the SYSVOL of the primary DCs for each specified domain.
+        Switch. Search for login scripts on the SYSVOL of the primary DCs for each specified domain.
 
     .PARAMETER Threads
 
@@ -8645,7 +8881,7 @@ function Find-LocalAdminAccess {
 
     .PARAMETER NoPing
 
-        Don't ping each host to ensure it's up before enumerating.
+        Switch. Don't ping each host to ensure it's up before enumerating.
 
     .PARAMETER Delay
 
@@ -8665,7 +8901,7 @@ function Find-LocalAdminAccess {
 
     .PARAMETER SearchForest
 
-        Search all domains in the forest for target users instead of just
+        Switch. Search all domains in the forest for target users instead of just
         a single domain.
 
     .PARAMETER Threads
@@ -8885,7 +9121,7 @@ function Get-ExploitableSystem {
 
     .PARAMETER Ping
 
-        Ping each host to ensure it's up before enumerating.
+        Switch. Ping each host to ensure it's up before enumerating.
 
     .PARAMETER Domain
 
@@ -9196,7 +9432,7 @@ function Invoke-EnumerateLocalAdmin {
 
     .PARAMETER NoPing
 
-        Don't ping each host to ensure it's up before enumerating.
+        Switch. Don't ping each host to ensure it's up before enumerating.
 
     .PARAMETER Delay
 
@@ -9212,11 +9448,11 @@ function Invoke-EnumerateLocalAdmin {
 
     .PARAMETER NoClobber
 
-        Don't overwrite any existing output file.
+        Switch. Don't overwrite any existing output file.
 
     .PARAMETER TrustGroups
 
-        Only return results that are not part of the local machine
+        Switch. Only return results that are not part of the local machine
         or the machine's domain. Old Invoke-EnumerateLocalTrustGroup
         functionality.
 
@@ -9230,7 +9466,7 @@ function Invoke-EnumerateLocalAdmin {
 
     .PARAMETER SearchForest
 
-        Search all domains in the forest for target users instead of just
+        Switch. Search all domains in the forest for target users instead of just
         a single domain.
 
     .PARAMETER Threads
@@ -9476,7 +9712,7 @@ function Get-NetDomainTrust {
 
     .PARAMETER LDAP
 
-        Use LDAP queries to enumerate the trusts instead of direct domain connections.
+        Switch. Use LDAP queries to enumerate the trusts instead of direct domain connections. 
         More likely to get around network segmentation, but not as accurate.
 
     .EXAMPLE
@@ -9632,12 +9868,12 @@ function Find-ForeignUser {
 
     .PARAMETER LDAP
 
-        Use LDAP queries to enumerate the trusts instead of direct domain connections.
+        Switch. Use LDAP queries to enumerate the trusts instead of direct domain connections.
         More likely to get around network segmentation, but not as accurate.
 
     .PARAMETER Recurse
 
-        Enumerate all user trust groups from all reachable domains recursively.
+        Switch. Enumerate all user trust groups from all reachable domains recursively.
 
     .LINK
 
@@ -9751,12 +9987,12 @@ function Find-ForeignGroup {
 
     .PARAMETER LDAP
 
-        Use LDAP queries to enumerate the trusts instead of direct domain connections.
+        Switch. Use LDAP queries to enumerate the trusts instead of direct domain connections.
         More likely to get around network segmentation, but not as accurate.
 
     .PARAMETER Recurse
 
-        Enumerate all group trust users from all reachable domains recursively.
+        Switch. Enumerate all group trust users from all reachable domains recursively.
 
     .LINK
 
