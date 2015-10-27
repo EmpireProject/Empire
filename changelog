@@ -1,6 +1,18 @@
 10/26/2015
 ----------
 -Fix for psinject bug due to lack of .NET 4.0 on target.
+-Fix for bug in persistence/misc/add_sid_history
+
+10/23/15
+-Updated powerview.ps1 source to Version 2.0
+-Built a way to dynamically generate the stripped PowerView code for functions needed by PowerView modules (helpers -> generate_dynamic_powershell_script), and updated all relevant PowerView modules
+-Renamed PowerView modules to better match PowerView 2.0 naming scheme and moved to situational_awareness/network/powerview/*
+-Removed old split-out PowerView source files
+-Removed situational_awareness/network/netview
+-Combined stealth_userhunter into option for userhunter
+-Added situational_awareness/network/get_forest_domain, situational_awareness/network/powerview/get_object_acl, situational_awareness/network/powerview/find_computer_field, situational_awareness/network/powerview/find_user_field, situational_awareness/network/powerview/get_ou, situational_awareness/network/powerview/get_group, situational_awareness/network/powerview/get_group_member, situational_awareness/network/powerview/get_gpo, situational_awareness/network/powerview/find_gpo_location, situational_awareness/network/powerview/find_gpo_computer_admin, situational_awareness/network/powerview/process_hunter, situational_awareness/network/powerview/find_foreign_group, situational_awareness/network/powerview/find_foreign_user
+-renamed collection/filesearch to collection/find_interesting_file
+
 
 9/21/2015
 ---------
