@@ -5,12 +5,11 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-UserHunter',
+            'Name': 'Find-InterestingFile',
 
             'Author': ['@harmj0y'],
 
-            'Description': ('Finds which machines users of a specified group are logged into. '
-                            'Part of PowerView.'),
+            'Description': ('Finds sensitive files on the domain.'),
 
             'Background' : True,
 
@@ -19,9 +18,9 @@ class Module:
             'NeedsAdmin' : False,
 
             'OpsecSafe' : True,
-            
+
             'MinPSVersion' : '2',
-            
+
             'Comments': [
                 'https://github.com/PowerShellEmpire/PowerTools/tree/master/PowerView'
             ]
@@ -36,63 +35,48 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Hosts' : {
-                'Description'   :   'Hosts to enumerate.',
+            'Path' : {
+                'Description'   :   'UNC/local path to recursively search.',
+                'Required'      :   True,
+                'Value'         :   ''
+            },
+            'Terms' : {
+                'Description'   :   "Comma-separated terms to search for (overrides defaults).",
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'HostList' : {
-                'Description'   :   'Hostlist to enumerate.',
+            'OfficeDocs' : {
+                'Description'   :   "Switch. Return only office documents.",
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'HostFilter' : {
-                'Description'   :   'Host filter name to query AD for, wildcards accepted.',
+            'FreshEXES' : {
+                'Description'   :   "Switch. Find .EXEs accessed in the last week.",
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'UserName' : {
-                'Description'   :   'Specific username to search for.',
+            'LastAccessTime' : {
+                'Description'   :   "Only return files with a LastAccessTime greater than this date value.",
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'GroupName' : {
-                'Description'   :   'Group to query for user names.',
-                'Required'      :   False,
-                'Value'         :   ''            
-            },
-            'UserList' : {
-                'Description'   :   'List of usernames to search for.',
+            'CreationTime' : {
+                'Description'   :   "Only return files with a CreationDate greater than this date value.",
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'StopOnSuccess' : {
-                'Description'   :   'Switch. Stop when a target user is found.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },      
-            'NoPing' : {
-                'Description'   :   'Don\'t ping each host to ensure it\'s up before enumerating.',
+            'FreshEXES' : {
+                'Description'   :   "Switch. Find .EXEs accessed in the last week.",
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'CheckAccess' : {
-                'Description'   :   'Switch. Check if the current user has local admin access to found machines.',
+            'ExcludeHidden' : {
+                'Description'   :   "Switch. Exclude hidden files and folders from the search results.",
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'Delay' : {
-                'Description'   :   'Delay between enumerating hosts, defaults to 0.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'ShowAll' : {
-                'Description'   :   'Switch. Show all result output.',
-                'Required'      :   False,
-                'Value'         :   ''            
-            },
-            'Domain' : {
-                'Description'   :   'Domain to enumerate for hosts.',
+            'CheckWriteAccess' : {
+                'Description'   :   "Switch. Only returns files the current user has write access to.",
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -101,7 +85,7 @@ class Module:
         # save off a copy of the mainMenu object to access external functionality
         #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
-
+        
         for param in params:
             # parameter format is [Name, Value]
             option, value = param
@@ -110,9 +94,11 @@ class Module:
 
 
     def generate(self):
+
+        moduleName = self.info["Name"]
         
-        # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Invoke-UserHunter.ps1"
+        # read in the common powerview.ps1 module source code
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/powerview.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -123,9 +109,10 @@ class Module:
         moduleCode = f.read()
         f.close()
 
-        script = moduleCode
+        # get just the code needed for the specified function
+        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
 
-        script += "Invoke-UserHunter "
+        script += moduleName + " "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
@@ -135,9 +122,7 @@ class Module:
                         script += " -" + str(option)
                     else:
                         script += " -" + str(option) + " " + str(values['Value']) 
+
+        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
         
-        script += "| Select-Object TargetUser, Computer, IP, SessionFrom, LocalAdmin | ft -autosize | Out-String | %{$_ + \"`n\"}"
-
-        script += ';"`nInvoke-UserHunter completed"'
-
         return script

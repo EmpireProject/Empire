@@ -5,12 +5,11 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-Filesearch',
+            'Name': 'Get-NetUser',
 
             'Author': ['@harmj0y'],
 
-            'Description': ('Recurively searches a given file path for files with '
-                            'specified terms in their names.'),
+            'Description': ('Query information for a given user or users in the specified domain. Part of PowerView.'),
 
             'Background' : True,
 
@@ -19,9 +18,9 @@ class Module:
             'NeedsAdmin' : False,
 
             'OpsecSafe' : True,
-
+            
             'MinPSVersion' : '2',
-
+            
             'Comments': [
                 'https://github.com/PowerShellEmpire/PowerTools/tree/master/PowerView'
             ]
@@ -36,48 +35,33 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Path' : {
-                'Description'   :   "Path to search, defaults to current dir.",
-                'Required'      :   False,
-                'Value'         :   ''
-            },       
-            'Terms' : {
-                'Description'   :   "Comma-separated terms to search for (overrides defaults).",
+            'UserName' : {
+                'Description'   :   'Username filter string, wildcards accepted.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'OfficeDocs' : {
-                'Description'   :   "Switch. Return only office documents.",
+            'Domain' : {
+                'Description'   :   'The domain to use for the query, defaults to the current domain.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'FreshEXES' : {
-                'Description'   :   "Switch. Find .EXEs accessed in the last week.",
+            'DomainController' : {
+                'Description'   :   'Domain controller to reflect LDAP queries through.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'ExcludeHidden' : {
-                'Description'   :   "Switch. Exclude hidden files and folders from the search results.",
+            'ADSpath' : {
+                'Description'   :   'The LDAP source to search through, e.g. "LDAP://OU=secret,DC=testlab,DC=local"',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'CheckWriteAccess' : {
-                'Description'   :   "Switch. Only returns files the current user has write access to.",
+            'Filter' : {
+                'Description'   :   'A customized ldap filter string to use, e.g. "(description=*admin*)"',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'AccessDateLimit' : {
-                'Description'   :   "Only return files with a LastAccessTime greater than this date value.",
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'CreateDateLimit' : {
-                'Description'   :   "Only return files with a CreationDate greater than this date value.",
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'FreshEXES' : {
-                'Description'   :   "Switch. Find .EXEs accessed within the last week.",
+            'SPN' : {
+                'Description'   :   'Switch. Only return user objects with non-null service principal names.',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -95,9 +79,11 @@ class Module:
 
 
     def generate(self):
-
-        # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/collection/Invoke-Filesearch.ps1"
+        
+        moduleName = self.info["Name"]
+        
+        # read in the common powerview.ps1 module source code
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/powerview.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -108,9 +94,10 @@ class Module:
         moduleCode = f.read()
         f.close()
 
-        script = moduleCode
+        # get just the code needed for the specified function
+        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
 
-        script += "Invoke-Filesearch "
+        script += moduleName + " "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
@@ -119,8 +106,8 @@ class Module:
                         # if we're just adding a switch
                         script += " -" + str(option)
                     else:
-                        script += " -" + str(option) + " " + str(values['Value'])
-        
-        script += " | Out-String"
+                        script += " -" + str(option) + " " + str(values['Value']) 
 
+        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+        
         return script

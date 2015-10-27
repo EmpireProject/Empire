@@ -5,11 +5,11 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-ShareFinder',
+            'Name': 'Invoke-ProcessHunter',
 
             'Author': ['@harmj0y'],
 
-            'Description': ('Finds shares on machines in the domain.'),
+            'Description': ('Query the process lists of remote machines, searching for processes with a specific name or owned by a specific user.'),
 
             'Background' : True,
 
@@ -35,28 +35,48 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Hosts' : {
+            'ComputerName' : {
                 'Description'   :   'Hosts to enumerate.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'HostList' : {
-                'Description'   :   'Hostlist to enumerate.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'HostFilter' : {
+            'ComputerFilter' : {
                 'Description'   :   'Host filter name to query AD for, wildcards accepted.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'NoPing' : {
-                'Description'   :   'Don\'t ping each host to ensure it\'s up before enumerating.',
+            'ProcessName' : {
+                'Description'   :   'The name of the process to hunt, or a comma separated list of names.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'CheckShareAccess' : {
-                'Description'   :   'Switch. Only display found shares that the local user has access to.',
+            'GroupName' : {
+                'Description'   :   'Group name to query for target users.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'TargetServer' : {
+                'Description'   :   'Hunt for users who are effective local admins on a target server.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'UserName' : {
+                'Description'   :   'Specific username to search for.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'UserFilter' : {
+                'Description'   :   'A customized ldap filter string to use for user enumeration, e.g. "(description=*admin*)"',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'StopOnSuccess' : {
+                'Description'   :   'Switch. Stop hunting after finding after finding a target user.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'NoPing' : {
+                'Description'   :   "Don't ping each host to ensure it's up before enumerating.",
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -66,7 +86,17 @@ class Module:
                 'Value'         :   ''
             },
             'Domain' : {
-                'Description'   :   'Domain to enumerate for hosts.',
+                'Description'   :   'The domain to use for the query, defaults to the current domain.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'DomainController' : {
+                'Description'   :   'Domain controller to reflect LDAP queries through.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'Threads' : {
+                'Description'   :   'The maximum concurrent threads to execute.',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -85,8 +115,10 @@ class Module:
 
     def generate(self):
         
-        # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Invoke-ShareFinder.ps1"
+        moduleName = self.info["Name"]
+        
+        # read in the common powerview.ps1 module source code
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/powerview.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -97,9 +129,10 @@ class Module:
         moduleCode = f.read()
         f.close()
 
-        script = moduleCode
+        # get just the code needed for the specified function
+        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
 
-        script += "Invoke-ShareFinder "
+        script += moduleName + " "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
@@ -109,7 +142,7 @@ class Module:
                         script += " -" + str(option)
                     else:
                         script += " -" + str(option) + " " + str(values['Value']) 
-                
-        script += '| Out-String | %{$_ + \"`n\"};"`nInvoke-ShareFinder completed"'
 
+        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+        
         return script

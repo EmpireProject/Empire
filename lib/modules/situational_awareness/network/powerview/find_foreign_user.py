@@ -5,11 +5,11 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Get-NetUser',
+            'Name': 'Find-ForeignUser',
 
             'Author': ['@harmj0y'],
 
-            'Description': ('Query information for a given user or users in the specified domain.'),
+            'Description': ("Enumerates users who are in groups outside of their principal domain. Part of PowerView."),
 
             'Background' : True,
 
@@ -35,23 +35,18 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'OU' : {
-                'Description'   :   'The OU to pull users from.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
             'UserName' : {
-                'Description'   :   'Username filter string, wildcards accepted.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'Filter' : {
-                'Description'   :   'The complete LDAP query string to use to query for users.',
+                'Description'   :   'Username to filter results for, wildcards accepted.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
             'Domain' : {
-                'Description'   :   'The domain to query for computers.',
+                'Description'   :   'The domain to use for the query, defaults to the current domain.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'DomainController' : {
+                'Description'   :   'Domain controller to reflect LDAP queries through.',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -70,8 +65,10 @@ class Module:
 
     def generate(self):
         
-        # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Get-NetUser.ps1"
+        moduleName = self.info["Name"]
+        
+        # read in the common powerview.ps1 module source code
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/powerview.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -82,9 +79,10 @@ class Module:
         moduleCode = f.read()
         f.close()
 
-        script = moduleCode
+        # get just the code needed for the specified function
+        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
 
-        script += "Get-NetUser "
+        script += moduleName + " "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
@@ -94,7 +92,7 @@ class Module:
                         script += " -" + str(option)
                     else:
                         script += " -" + str(option) + " " + str(values['Value']) 
-        
-        script += " | Out-String"
-        
+
+        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+
         return script

@@ -10,7 +10,7 @@ class Module:
             'Author': ['@harmj0y'],
 
             'Description': ('Returns the domain controllers for the current domain or '
-                            'the specified domain.'),
+                            'the specified domain. Part of PowerView.'),
 
             'Background' : True,
 
@@ -40,6 +40,16 @@ class Module:
                 'Description'   :   'The domain to query for domain controllers.',
                 'Required'      :   False,
                 'Value'         :   ''
+            },
+            'DomainController' : {
+                'Description'   :   'Domain controller to reflect LDAP queries through.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'LDAP' : {
+                'Description'   :   'Switch. Use LDAP queries to determine the domain controllers.',
+                'Required'      :   False,
+                'Value'         :   ''
             }
         }
 
@@ -56,45 +66,24 @@ class Module:
 
     def generate(self):
         
-        script = """
-function Get-NetDomain {
+        moduleName = self.info["Name"]
+        
+        # read in the common powerview.ps1 module source code
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/powerview.ps1"
 
-    [CmdletBinding()]
-    param(
-        [String]
-        $Domain
-    )
+        try:
+            f = open(moduleSource, 'r')
+        except:
+            print helpers.color("[!] Could not read module source path at: " + str(moduleSource))
+            return ""
 
-    if($Domain -and ($Domain -ne "")){
-        $DomainContext = New-Object System.DirectoryServices.ActiveDirectory.DirectoryContext('Domain', $Domain)
-        try {
-            [System.DirectoryServices.ActiveDirectory.Domain]::GetDomain($DomainContext)
-        }
-        catch{
-            Write-Warning "The specified domain $Domain does not exist, could not be contacted, or there isn't an existing trust."
-            $Null
-        }
-    }
-    else{
-        [System.DirectoryServices.ActiveDirectory.Domain]::GetCurrentDomain()
-    }
-}
+        moduleCode = f.read()
+        f.close()
 
-function Get-NetDomainController {
-    [CmdletBinding()]
-    param(
-        [string]
-        $Domain
-    )
+        # get just the code needed for the specified function
+        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
 
-    $d = Get-NetDomain -Domain $Domain
-    if($d){
-        $d.DomainControllers
-    }
-}
-"""
-
-        script += "Get-NetDomainController "
+        script += moduleName + " "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
@@ -104,5 +93,7 @@ function Get-NetDomainController {
                         script += " -" + str(option)
                     else:
                         script += " -" + str(option) + " " + str(values['Value']) 
-        
+
+        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+
         return script
