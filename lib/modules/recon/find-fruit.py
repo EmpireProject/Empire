@@ -36,9 +36,29 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'VoiceText' : {
-                'Description'   :   'Text to synthesize on target.',
+            'Rhosts' : {
+                'Description'   :   'Specify the CIDR range or host to scan.',
                 'Required'      :   True,
+                'Value'         :   ''
+            },
+            'Port' : {
+                'Description'   :   'Specify the port to scan.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'Path' : {
+                'Description'   :   'Specify the path to a dictionary file.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'Timeout' : {
+                'Description'   :   'Set timeout for each connection in milliseconds',
+                'Required'      :   False,
+                'Value'         :   '50'
+            },
+            'UseSSL' : {
+                'Description'   :   'Force SSL useage.',
+                'Required'      :   False,
                 'Value'         :   ''
             }
         }
@@ -63,6 +83,7 @@ function Find-Fruit
 .SYNOPSIS
 
 Search for "low hanging fruit".
+
 .DESCRIPTION
 
 A script to find potentially easily exploitable web servers on a target network.
@@ -78,6 +99,10 @@ Specifies the port to connect to.
 .PARAMETER Path
 
 Path to custom dictionary.
+
+.PARAMETER Timeout
+
+Set timeout for each connection.
 
 .PARAMETER UseSSL
 
