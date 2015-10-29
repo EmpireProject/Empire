@@ -5,13 +5,11 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-StealthUserHunter',
+            'Name': 'Get-ObjectAcl',
 
-            'Author': ['@harmj0y'],
+            'Author': ['@harmj0y', '@pyrotek3'],
 
-            'Description': ('Finds which machines users of a specified group are logged into by '
-                            'querying AD for servers likely to have high traffic (file servers, DCs, etc.) '
-                            'and enumerating sessions again each. Part of PowerView.'),
+            'Description': ('Returns the ACLs associated with a specific active directory object. Part of PowerView.'),
 
             'Background' : True,
 
@@ -37,58 +35,53 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Hosts' : {
-                'Description'   :   'Hosts to enumerate.',
+            'SamAccountName' : {
+                'Description'   :   'Object SamAccountName to filter for.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'HostList' : {
-                'Description'   :   'Hostlist to enumerate.',
+            'Name' : {
+                'Description'   :   'Object Name to filter for.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'UserName' : {
-                'Description'   :   'Specific username to search for.',
+            'DistinguishedName' : {
+                'Description'   :   'Object distinguished name to filter for.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'GroupName' : {
-                'Description'   :   'Group to query for user names.',
+            'ResolveGUIDs' : {
+                'Description'   :   'Switch. Resolve GUIDs to their display names.',
                 'Required'      :   False,
-                'Value'         :   ''            
+                'Value'         :   'True'
             },
-            'UserList' : {
-                'Description'   :   'List of usernames to search for.',
+            'Filter' : {
+                'Description'   :   'A customized ldap filter string to use, e.g. "(description=*admin*)"',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'StopOnSuccess' : {
-                'Description'   :   'Switch. Stop when a target user is found.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },      
-            'NoPing' : {
-                'Description'   :   'Don\'t ping each host to ensure it\'s up before enumerating.',
+            'ADSpath' : {
+                'Description'   :   'The LDAP source to search through, e.g. "LDAP://OU=secret,DC=testlab,DC=local"',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'CheckAccess' : {
-                'Description'   :   'Switch. Check if the current user has local admin access to found machines.',
+            'ADSprefix' : {
+                'Description'   :   'Prefix to set for the searcher (like "CN=Sites,CN=Configuration")',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'Delay' : {
-                'Description'   :   'Delay between enumerating hosts, defaults to 0.',
+            'RightsFilter' : {
+                'Description'   :   'Only return results with the associated rights, "All", "ResetPassword","ChangePassword","WriteMembers"',
                 'Required'      :   False,
                 'Value'         :   ''
-            },
-            'ShowAll' : {
-                'Description'   :   'Switch. Show all result output.',
-                'Required'      :   False,
-                'Value'         :   ''            
             },
             'Domain' : {
-                'Description'   :   'Domain to enumerate for hosts.',
+                'Description'   :   'The domain to use for the query, defaults to the current domain.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'DomainController' : {
+                'Description'   :   'Domain controller to reflect LDAP queries through.',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -107,8 +100,10 @@ class Module:
 
     def generate(self):
         
-        # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Invoke-UserHunter.ps1"
+        moduleName = self.info["Name"]
+        
+        # read in the common powerview.ps1 module source code
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/powerview.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -119,9 +114,10 @@ class Module:
         moduleCode = f.read()
         f.close()
 
-        script = moduleCode
+        # get just the code needed for the specified function
+        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
 
-        script += "Invoke-StealthUserHunter "
+        script += moduleName + " "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
@@ -131,9 +127,7 @@ class Module:
                         script += " -" + str(option)
                     else:
                         script += " -" + str(option) + " " + str(values['Value']) 
-        
-        script += "| Select-Object TargetUser, Computer, IP, SessionFrom, LocalAdmin | ft -autosize | Out-String | %{$_ + \"`n\"}"
 
-        script += ';"`nInvoke-StealthUserHunter completed"'
+        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         return script

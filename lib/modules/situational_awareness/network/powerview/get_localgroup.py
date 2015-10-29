@@ -5,11 +5,12 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-WinEnum',
+            'Name': 'Get-NetLocalGroup',
 
-            'Author': ['@xorrior'],
+            'Author': ['@harmj0y'],
 
-            'Description': ('Collects revelant information about a host and the current user context.'),
+            'Description': ('Returns a list of all current users in a specified local group '
+                            'on a local or remote machine. Part of PowerView.'),
 
             'Background' : True,
 
@@ -21,9 +22,7 @@ class Module:
             
             'MinPSVersion' : '2',
             
-            'Comments': [
-                'https://github.com/xorrior/RandomPS-Scripts/blob/master/Invoke-WindowsEnum.ps1'
-            ]
+            'Comments': [ ]
         }
 
         # any options needed by the module, settable during runtime
@@ -35,13 +34,23 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Keywords' : {
-                'Description'   :   'Array of keywords to use in file searches.',
+            'ComputerName' : {
+                'Description'   :   'The hostname or IP to query for local group users.',
+                'Required'      :   False,
+                'Value'         :   'localhost'
+            },
+            'GroupName' : {
+                'Description'   :   'The local group name to query for users, defaults to "Administrators".',
+                'Required'      :   False,
+                'Value'         :   'Administrators'
+            },
+            'ListGroups' : {
+                'Description'   :   'Switch. List all the local groups instead of their members.',
                 'Required'      :   False,
                 'Value'         :   ''
-            },
-            'UserName' : {
-                'Description'   :   'UserName to enumerate. Defaults to the current user context.',
+            },            
+            'Recurse' : {
+                'Description'   :   'Switch. If the local member member is a domain group, recursively try to resolve its members to get a list of domain users who can access this machine.',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -60,8 +69,10 @@ class Module:
 
     def generate(self):
 
-        # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/host/Invoke-WinEnum.ps1"
+        moduleName = self.info["Name"]
+        
+        # read in the common powerview.ps1 module source code
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/powerview.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -72,11 +83,11 @@ class Module:
         moduleCode = f.read()
         f.close()
 
-        script = moduleCode
+        # get just the code needed for the specified function
+        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
 
-        script += "Invoke-WinEnum "
+        script += moduleName + " "
 
-        # add any arguments to the end execution of the script
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
                 if values['Value'] and values['Value'] != '':
@@ -84,6 +95,8 @@ class Module:
                         # if we're just adding a switch
                         script += " -" + str(option)
                     else:
-                        script += " -" + str(option) + " " + str(values['Value'])
+                        script += " -" + str(option) + " " + str(values['Value']) 
+
+        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         return script

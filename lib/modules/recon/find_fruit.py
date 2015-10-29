@@ -1,3 +1,4 @@
+import base64
 from lib.common import helpers
 
 class Module:
@@ -5,24 +6,25 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Get-NetLocalGroup',
+            'Name': 'Find-Fruit',
 
-            'Author': ['@harmj0y'],
+            'Author': ['@424f424f'],
 
-            'Description': ('Returns a list of all current users in a specified local group '
-                            'on a local or remote machine.'),
+            'Description': ("Searches a network range for potentially vulnerable web services."),
 
             'Background' : True,
 
             'OutputExtension' : None,
             
             'NeedsAdmin' : False,
-
+ 
             'OpsecSafe' : True,
-            
+
             'MinPSVersion' : '2',
             
-            'Comments': [ ]
+            'Comments': [
+                'Inspired by mattifestation Get-HttpStatus in PowerSploit'
+            ]
         }
 
         # any options needed by the module, settable during runtime
@@ -34,18 +36,33 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'HostName' : {
-                'Description'   :   'The hostname or IP to query for local group users.',
-                'Required'      :   False,
-                'Value'         :   'localhost'
+            'Rhosts' : {
+                'Description'   :   'Specify the CIDR range or host to scan.',
+                'Required'      :   True,
+                'Value'         :   ''
             },
-            'GroupName' : {
-                'Description'   :   'The local group name to query for users.',
+            'Port' : {
+                'Description'   :   'Specify the port to scan.',
                 'Required'      :   False,
-                'Value'         :   'Administrators'
+                'Value'         :   ''
             },
-            'Recurse' : {
-                'Description'   :   'Switch. If the local member member is a domain group, recursively try to resolve its members to get a list of domain users who can access this machine.',
+            'Path' : {
+                'Description'   :   'Specify the path to a dictionary file.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'Timeout' : {
+                'Description'   :   'Set timeout for each connection in milliseconds',
+                'Required'      :   False,
+                'Value'         :   '50'
+            },
+            'UseSSL' : {
+                'Description'   :   'Force SSL useage.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'ShowAll' : {
+                'Description'   :   'Switch. Show all results (default is to only show 200s).',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -54,7 +71,7 @@ class Module:
         # save off a copy of the mainMenu object to access external functionality
         #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
-        
+
         for param in params:
             # parameter format is [Name, Value]
             option, value = param
@@ -63,9 +80,9 @@ class Module:
 
 
     def generate(self):
-
+        
         # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Get-NetLocalGroup.ps1"
+        moduleSource = self.mainMenu.installPath + "/data/module_source/recon/Find-Fruit.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -78,17 +95,22 @@ class Module:
 
         script = moduleCode
 
-        script += "Get-NetLocalGroup "
+        script += "\nFind-Fruit"
+
+        showAll = self.options['ShowAll']['Value'].lower()
 
         for option,values in self.options.iteritems():
-            if option.lower() != "agent":
+            if option.lower() != "agent" and option.lower() != "showall":
                 if values['Value'] and values['Value'] != '':
                     if values['Value'].lower() == "true":
                         # if we're just adding a switch
                         script += " -" + str(option)
                     else:
-                        script += " -" + str(option) + " " + str(values['Value'])
-        
-        script += "| Out-String"
+                        script += " -" + str(option) + " " + str(values['Value']) 
+
+        if showAll != "true":
+            script += " | ?{$_.Status -eq 'OK'}"
+
+        script += " | Format-Table -AutoSize | Out-String"
 
         return script

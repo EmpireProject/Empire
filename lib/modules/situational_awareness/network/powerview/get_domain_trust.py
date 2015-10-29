@@ -5,11 +5,12 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-WinEnum',
+            'Name': 'Get-NetDomainTrust',
 
-            'Author': ['@xorrior'],
+            'Author': ['@harmj0y'],
 
-            'Description': ('Collects revelant information about a host and the current user context.'),
+            'Description': ('Return all domain trusts for the current domain or '
+                            'a specified domain. Part of PowerView.'),
 
             'Background' : True,
 
@@ -22,7 +23,7 @@ class Module:
             'MinPSVersion' : '2',
             
             'Comments': [
-                'https://github.com/xorrior/RandomPS-Scripts/blob/master/Invoke-WindowsEnum.ps1'
+                'https://github.com/PowerShellEmpire/PowerTools/tree/master/PowerView'
             ]
         }
 
@@ -35,13 +36,18 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Keywords' : {
-                'Description'   :   'Array of keywords to use in file searches.',
+            'Domain' : {
+                'Description'   :   'The domain whose trusts to enumerate, defaults to the current domain.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'UserName' : {
-                'Description'   :   'UserName to enumerate. Defaults to the current user context.',
+            'DomainController' : {
+                'Description'   :   'Domain controller to reflect LDAP queries through.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'LDAP' : {
+                'Description'   :   'Switch. Use LDAP queries to enumerate the trusts instead of direct domain connections.',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -50,7 +56,7 @@ class Module:
         # save off a copy of the mainMenu object to access external functionality
         #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
-        
+
         for param in params:
             # parameter format is [Name, Value]
             option, value = param
@@ -59,9 +65,11 @@ class Module:
 
 
     def generate(self):
-
-        # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/host/Invoke-WinEnum.ps1"
+        
+        moduleName = self.info["Name"]
+        
+        # read in the common powerview.ps1 module source code
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/powerview.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -72,11 +80,11 @@ class Module:
         moduleCode = f.read()
         f.close()
 
-        script = moduleCode
+        # get just the code needed for the specified function
+        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
 
-        script += "Invoke-WinEnum "
+        script += moduleName + " "
 
-        # add any arguments to the end execution of the script
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
                 if values['Value'] and values['Value'] != '':
@@ -84,6 +92,8 @@ class Module:
                         # if we're just adding a switch
                         script += " -" + str(option)
                     else:
-                        script += " -" + str(option) + " " + str(values['Value'])
+                        script += " -" + str(option) + " " + str(values['Value']) 
+
+        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         return script
