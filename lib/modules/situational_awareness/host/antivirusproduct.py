@@ -37,7 +37,7 @@ class Module:
             },
             'ComputerName' : {
                 'Description'   :   'Computername to run the module on, defaults to localhost.',
-                'Required'      :   True,
+                'Required'      :   False,
                 'Value'         :   ''
             }
         }
