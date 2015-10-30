@@ -82,6 +82,10 @@ class Stager:
             macro = "Sub Auto_Open()\n"
             macro += "\tDebugging\n"
             macro += "End Sub\n\n"
+            macro = "Sub AutoOpen()\n"
+            macro += "\tDebugging\n"
+            macro += "End Sub\n\n"
+
             macro += "Sub Document_Open()\n"
             macro += "\tDebugging\n"
             macro += "End Sub\n\n"
