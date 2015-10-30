@@ -9,9 +9,9 @@ class Module:
 
             'Author': ['@mh4x0f', 'Jan Egil Ring'],
 
-            'Description': ('get antivirus product information.'),
+            'Description': ('Get antivirus product information.'),
 
-            'Background' : False,
+            'Background' : True,
 
             'OutputExtension' : None,
             
@@ -32,6 +32,11 @@ class Module:
             #   value_name : {description, required, default_value}
             'Agent' : {
                 'Description'   :   'Agent to run module on.',
+                'Required'      :   True,
+                'Value'         :   ''
+            },
+            'ComputerName' : {
+                'Description'   :   'Computername to run the module on, defaults to localhost.',
                 'Required'      :   True,
                 'Value'         :   ''
             }
@@ -56,9 +61,9 @@ function Get-AntiVirusProduct {
       param ( 
       [parameter(ValueFromPipeline=$true, ValueFromPipelineByPropertyName=$true)] 
       [Alias('name')] 
-      $computername=$env:computername )
+      $ComputerName=$env:computername )
       $Query = 'select * from AntiVirusProduct'
-      $AntivirusProduct = Get-WmiObject -Namespace 'root\SecurityCenter2' -Query $Query  @psboundparameters # -ErrorVariable myError -ErrorAction 'SilentlyContinue'
+      $AntivirusProduct = Get-WmiObject -Namespace 'root\SecurityCenter2' -Query $Query @psboundparameters -ErrorVariable myError -ErrorAction 'SilentlyContinue'
       switch ($AntiVirusProduct.productState) { 
           '262144' {$defstatus = 'Up to date' ;$rtstatus  = 'Disabled'} 
           '262160' {$defstatus = 'Out of date' ;$rtstatus = 'Disabled'} 
@@ -73,13 +78,14 @@ function Get-AntiVirusProduct {
           default {$defstatus = 'Unknown' ;$rtstatus = 'Unknown'} 
           }
       $ht = @{} 
-      $ht.Computername = $computername 
+      $ht.Computername = $ComputerName 
       $ht.Name = $AntiVirusProduct.displayName 
       $ht.ProductExecutable = $AntiVirusProduct.pathToSignedProductExe 
       $ht.'Definition Status' = $defstatus 
       $ht.'Real-time Protection Status' = $rtstatus
       New-Object -TypeName PSObject -Property $ht
 }
+
 Get-AntiVirusProduct """
 
         for option,values in self.options.iteritems():
@@ -90,5 +96,7 @@ Get-AntiVirusProduct """
                         script += " -" + str(option)
                     else:
                         script += " -" + str(option) + " " + str(values['Value'])
+
+        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(self.info["Name"])+' completed!";'
 
         return script
