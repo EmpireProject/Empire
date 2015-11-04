@@ -1,7 +1,9 @@
+11/4/2015
+-Added persistence/misc/add_netuser to add local/domain users
+
 11/2/2015
 ---------
 -Fixed small bug in TASK_CMD_WAIT response parsing
-
 
 10/30/2015
 ----------
