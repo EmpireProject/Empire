@@ -1,4 +1,14 @@
+11/8/2015
+---------
+-All PowerUp modules now dynamically built from a single source file
+-PowerUp bug fixes
+-Added privesc/powerup/service_exe_restore, pulled logic from other modules
+-Added management/spawnas to spawn agents with explicit credentials
+-Debug functionality (--debug) now outputs the source of the last tasked script to ./LastTask.ps1
+-Write-Verbose and Write-Debug lines now stripped from tasked scripts
+
 11/4/2015
+---------
 -Added persistence/misc/add_netuser to add local/domain users
 
 11/2/2015

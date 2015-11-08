@@ -704,6 +704,12 @@ class Agents:
                 dispatcher.send("[*] Tasked " + str(sessionID) + " to run " + str(taskName), sender="Agents")
                 self.agents[sessionID][1].append([taskName, task])
 
+                # write out the last tasked script to "LastTask.ps1" if in debug mode
+                if self.args and self.args.debug:
+                    f = open(self.installPath + '/LastTask.ps1', 'w')
+                    f.write(task)
+                    f.close()
+
                 # report the agent tasking in the reporting database
                 cur = self.conn.cursor()
                 cur.execute("INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (sessionID,"task",taskName + " - " + task[0:30],helpers.get_datetime()))

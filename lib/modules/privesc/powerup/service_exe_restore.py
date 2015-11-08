@@ -5,11 +5,11 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Find-DLLHijack',
+            'Name': 'Restore-ServiceEXE',
 
             'Author': ['@harmj0y'],
 
-            'Description': ('Finds generic .DLL hijacking opportunities.'),
+            'Description': ("Restore a backed up service binary."),
 
             'Background' : True,
 
@@ -17,7 +17,7 @@ class Module:
             
             'NeedsAdmin' : False,
 
-            'OpsecSafe' : True,
+            'OpsecSafe' : False,
             
             'MinPSVersion' : '2',
             
@@ -35,18 +35,13 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'ExcludeWindows' : {
-                'Description'   :   "Switch. Exclude paths from C:\Windows\* instead of just C:\Windows\System32\*",
-                'Required'      :   False,
+            'ServiceName' : {
+                'Description'   :   "The service name to manipulate.",
+                'Required'      :   True,
                 'Value'         :   ''
             },
-            'ExcludeProgramFiles' : {
-                'Description'   :   "Switch. Exclude paths from C:\Program Files\* and C:\Program Files (x86)\*",
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'ExcludeOwned' : {
-                'Description'   :   "Switch. Exclude processes the current user owns.",
+            'BackupPath' : {
+                'Description'   :   "The service name to manipulate.",
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -55,7 +50,7 @@ class Module:
         # save off a copy of the mainMenu object to access external functionality
         #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
-
+        
         for param in params:
             # parameter format is [Name, Value]
             option, value = param
@@ -93,6 +88,6 @@ class Module:
                     else:
                         script += " -" + str(option) + " " + str(values['Value']) 
 
-        script += ' | ft -wrap | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         return script

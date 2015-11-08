@@ -184,15 +184,15 @@ def parse_powershell_script(data):
 
 def strip_powershell_comments(data):
     """
-    Strip block comments, line comments, and emtpy lines from a
-    PowerShell file.
+    Strip block comments, line comments, empty lines, verbose statements,
+    and debug statements from a PowerShell source file.
     """
     
     # strip block comments
     strippedCode = re.sub(re.compile('<#.*?#>', re.DOTALL), '', data)
 
-    # strip blank lines and lines starting with #
-    strippedCode = "\n".join([line for line in strippedCode.split('\n') if ((line.strip() != '') and (not line.strip().startswith("#")))])
+    # strip blank lines, lines starting with #, and verbose/debug statements
+    strippedCode = "\n".join([line for line in strippedCode.split('\n') if ((line.strip() != '') and (not line.strip().startswith("#")) and (not line.strip().lower().startswith("write-verbose ")) and (not line.strip().lower().startswith("write-debug ")) )])
     
     return strippedCode
 
@@ -221,10 +221,10 @@ def get_dependent_functions(code, functionNames):
     dependentFunctions = set()
     for functionName in functionNames:
         # find all function names that aren't followed by another alpha character
-        if re.search(functionName+"[^A-Za-z]+", code, re.IGNORECASE):
+        if re.search("[^A-Za-z']+"+functionName+"[^A-Za-z']+", code, re.IGNORECASE):
             dependentFunctions.add(functionName)
 
-    if re.search(functionName+"|\$Netapi32|\$Advapi32|\$Kernel32\$Wtsapi32", code, re.IGNORECASE):
+    if re.search("\$Netapi32|\$Advapi32|\$Kernel32\$Wtsapi32", code, re.IGNORECASE):
         dependentFunctions |= set(["New-InMemoryModule", "func", "Add-Win32Type", "psenum", "struct"])
 
     return dependentFunctions
@@ -295,7 +295,7 @@ def generate_dynamic_powershell_script(script, functionName):
 
     # recursively enumerate all possible function dependencies and
     #   start building the new result script
-    functionDependencies = find_all_dependent_functions(functions, functionName)
+    functionDependencies = find_all_dependent_functions(functions, functionName, [])
 
     for functionDependency in functionDependencies:
         try:
