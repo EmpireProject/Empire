@@ -151,7 +151,7 @@ Use an SSL connection.
 
 .PARAMETER Threads
 
-The maximum concurrent threads to execute..
+The maximum concurrent threads to execute.
 
 .PARAMETER NoPing
 
@@ -181,7 +181,7 @@ param (
     [String]$Rhosts,
     [Int]$Port,
     [String]$Path,
-    [Int]$Timeout = "110",
+    [Int]$Timeout = 110,
     [Switch]$UseSSL,
     [ValidateRange(1, 100)]
     [Int]$Threads,

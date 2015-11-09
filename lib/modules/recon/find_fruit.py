@@ -66,10 +66,15 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   ''
             },
+            'Threads' : {
+                'Description'   :   'The maximum concurrent threads to execute.',
+                'Required'      :   False,
+                'Value'         :   '10'
+            },
             'FoundOnly' : {
                 'Description'   :   'Switch. Show only found sites',
                 'Required'      :   False,
-                'Value'         :   ''
+                'Value'         :   'True'
             }
         }
 
