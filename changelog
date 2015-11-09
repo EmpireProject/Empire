@@ -6,6 +6,7 @@
 -Added management/spawnas to spawn agents with explicit credentials
 -Debug functionality (--debug) now outputs the source of the last tasked script to ./LastTask.ps1
 -Write-Verbose and Write-Debug lines now stripped from tasked scripts
+-Added situational_awareness/network/powerview/get_forest module
 
 11/4/2015
 ---------
