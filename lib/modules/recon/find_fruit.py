@@ -65,6 +65,11 @@ class Module:
                 'Description'   :   'Switch. Show all results (default is to only show 200s).',
                 'Required'      :   False,
                 'Value'         :   ''
+            },
+            'FoundOnly' : {
+                'Description'   :   'Switch. Show only found sites',
+                'Required'      :   False,
+                'Value'         :   ''
             }
         }
 
