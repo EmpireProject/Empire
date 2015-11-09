@@ -308,6 +308,7 @@ param (
                 $VulnLinks = $VulnLinks + "workorder/FileDownload.jsp" #Manage Engine
                 $VulnLinks = $VulnLinks + "ibm/console/logon.jsp?action=OK" # WebSphere
                 $VulnLinks = $VulnLinks + "data/login" # Dell iDrac
+                $Vulnlinks = $Vulnlinks + "CFIDE/administrator/index.cfm" #ColdFusion
             }
             
             # Check Http status for each entry in the ditionary file
