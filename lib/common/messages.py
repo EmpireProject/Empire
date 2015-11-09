@@ -36,10 +36,6 @@ def title(version):
   |  |____ |  |  |  | |  |      |  | |  |\  \----.|  |____ 
   |_______||__|  |__| | _|      |__| | _| `._____||_______|
 
-  ___
- /   \\
-| >_  | 
- \___/
 """
 
 def wrap_string(data, width=40, indent=32, indentAll=False, followingHeader=None):
