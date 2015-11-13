@@ -2576,19 +2576,21 @@ function Get-ObjectAcl {
             try {
                 $Searcher.FindAll() | Foreach-Object {
                     $Object = [adsi]($_.path)
-                    $Access = $Object.PsBase.ObjectSecurity.access
-                    $Access | ForEach-Object {
-                        $_ | Add-Member NoteProperty 'ObjectDN' ($Object.distinguishedname[0])
+                    if($Object.distinguishedname) {
+                        $Access = $Object.PsBase.ObjectSecurity.access
+                        $Access | ForEach-Object {
+                            $_ | Add-Member NoteProperty 'ObjectDN' ($Object.distinguishedname[0])
 
-                        if($Object.objectsid[0]){
-                            $S = (New-Object System.Security.Principal.SecurityIdentifier($Object.objectsid[0],0)).Value
+                            if($Object.objectsid[0]){
+                                $S = (New-Object System.Security.Principal.SecurityIdentifier($Object.objectsid[0],0)).Value
+                            }
+                            else {
+                                $S = $Null
+                            }
+                            
+                            $_ | Add-Member NoteProperty 'ObjectSID' $S
+                            $_
                         }
-                        else {
-                            $S = $Null
-                        }
-                        
-                        $_ | Add-Member NoteProperty 'ObjectSID' $S
-                        $_
                     }
                 } | ForEach-Object {
                     if($RightsFilter) {
