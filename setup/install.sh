@@ -1,5 +1,12 @@
 #!/bin/bash
 
+IFS='/' read -a array <<< pwd
+
+if [[ "$(pwd)" != *setup ]]
+then
+    cd ./setup
+fi
+
 version=$( lsb_release -r | grep -oP "[0-9]+" | head -1 )
 if lsb_release -d | grep -q "Fedora"; then
 	Release=Fedora
@@ -33,4 +40,12 @@ else
 	 pip install pydispatcher
 fi
 
+# set up the database schema
 ./setup_database.py
+
+# generate a cert
+./cert.sh
+
+cd ..
+
+echo -e '\n [*] Setup complete!\n'

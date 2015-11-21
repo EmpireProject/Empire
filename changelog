@@ -2,6 +2,8 @@
 ----------
 -Merge of exploitation/exploit_jboss, bug fix
 -Fix in case module returns None
+-Merged debian setup.sh fix
+-Merged non-interactive cert generation and added to setup.sh
 
 11/8/2015
 ---------
