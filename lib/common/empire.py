@@ -9,7 +9,7 @@ menu loops.
 """
 
 # make version for Empire
-VERSION = "1.3.3"
+VERSION = "1.3.4"
 
 
 from pydispatch import dispatcher
@@ -2382,13 +2382,13 @@ class ModuleMenu(cmd.Cmd):
         agentName = self.module.options['Agent']['Value']
         moduleData = self.module.generate()
 
-        # strip all comments from the module
-        moduleData = helpers.strip_powershell_comments(moduleData)
-
         if not moduleData or moduleData == "":
             print helpers.color("[!] Error: module produced an empty script")
             dispatcher.send("[!] Error: module produced an empty script", sender="Empire")
             return
+
+        # strip all comments from the module
+        moduleData = helpers.strip_powershell_comments(moduleData)
 
         taskCommand = ""
 
