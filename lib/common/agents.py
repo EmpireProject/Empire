@@ -1161,15 +1161,16 @@ class Agents:
 
                     # validate the counter in the packet in the setcode.replace
                     if counter and packets.validate_counter(counter):
-                        
-                        for responsePacket in responsePackets:
-                            (responseName, counter, length, data) = responsePacket
-                            # process the agent's response
-                            self.handle_agent_response(sessionID, responseName, data)
 
                         # signal that this agent returned results
                         name = self.get_agent_name(sessionID)
                         dispatcher.send("[*] Agent "+str(name)+" returned results.", sender="Agents")
+                        
+                        # process each result packet                        
+                        for responsePacket in responsePackets:
+                            (responseName, counter, length, data) = responsePacket
+                            # process the agent's response
+                            self.handle_agent_response(sessionID, responseName, data)
 
                         # return a 200/valid
                         return (200, "")
@@ -1346,4 +1347,3 @@ class Agents:
         # default behavior, 404
         else:
             return (404, "")
-
