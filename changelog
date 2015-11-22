@@ -4,6 +4,8 @@
 -Fix in case module returns None
 -Merged debian setup.sh fix
 -Merged non-interactive cert generation and added to setup.sh
+-Fixed nested menu bug that caused buildup of "Agent X not active." 
+-Main display menu now shows each time "main" menu is entered
 
 11/8/2015
 ---------
