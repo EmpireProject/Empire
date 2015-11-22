@@ -474,7 +474,83 @@ class Agents:
         else:
             return None
 
+    def get_agent_functions(self, sessionID):
+        """
+        Get the tab-completable functions for an agent.
+        """
 
+        # see if we were passed a name instead of an ID
+        nameid = self.get_agent_id(sessionID)
+        if nameid : sessionID = nameid
+
+        if sessionID in self.agents:
+            return self.agents[sessionID][3]
+        else:
+            return []
+
+
+    def get_agent_functions_database(self, sessionID):
+        """
+        Get the tab-completable functions for an agent from the database.
+        """
+
+        # see if we were passed a name instead of an ID
+        nameid = self.get_agent_id(sessionID)
+        if nameid : sessionID = nameid
+
+        cur = self.conn.cursor()
+        cur.execute("SELECT functions FROM agents WHERE session_id=?", [sessionID])
+        functions = cur.fetchone()[0]
+        cur.close()
+        if functions and functions != None:
+            return functions.split(",")
+        else:
+            return []
+
+
+    def get_agent_uris(self, sessionID):
+        """
+        Get the current and old URIs for an agent from the database.
+        """
+
+        # see if we were passed a name instead of an ID
+        nameid = self.get_agent_id(sessionID)
+        if nameid : sessionID = nameid
+
+        cur = self.conn.cursor()
+        cur.execute("SELECT uris, old_uris FROM agents WHERE session_id=?", [sessionID])
+        uris = cur.fetchone()
+        cur.close()
+
+        return uris
+
+
+    def get_autoruns(self):
+        """
+        Get any global script autoruns.
+        """
+
+        try:
+            cur = self.conn.cursor()
+            cur.execute("SELECT autorun_command FROM config")
+            results = cur.fetchone()
+            if results:
+                autorunCommand = results[0]
+            else:
+                autorunCommand = ''
+
+            cur = self.conn.cursor()
+            cur.execute("SELECT autorun_data FROM config")
+            results = cur.fetchone()
+            if results:
+                autorunData = results[0]
+            else:
+                autorunData = ''
+            cur.close()
+
+            return [autorunCommand, autorunData]
+        except:
+            pass
 
     ###############################################################
     #
@@ -629,55 +705,34 @@ class Agents:
         cur.close()
 
 
-    def get_agent_functions(self, sessionID):
+    def set_autoruns(self, taskCommand, moduleData):
         """
-        Get the tab-completable functions for an agent.
-        """
-
-        # see if we were passed a name instead of an ID
-        nameid = self.get_agent_id(sessionID)
-        if nameid : sessionID = nameid
-
-        if sessionID in self.agents:
-            return self.agents[sessionID][3]
-        else:
-            return []
-
-
-    def get_agent_functions_database(self, sessionID):
-        """
-        Get the tab-completable functions for an agent from the database.
+        Set the global script autorun in the config.
         """
 
-        # see if we were passed a name instead of an ID
-        nameid = self.get_agent_id(sessionID)
-        if nameid : sessionID = nameid
-
-        cur = self.conn.cursor()
-        cur.execute("SELECT functions FROM agents WHERE session_id=?", [sessionID])
-        functions = cur.fetchone()[0]
-        cur.close()
-        if functions and functions != None:
-            return functions.split(",")
-        else:
-            return []
+        try:
+            cur = self.conn.cursor()
+            cur.execute("UPDATE config SET autorun_command=?", [taskCommand])
+            cur.execute("UPDATE config SET autorun_data=?", [moduleData])
+            cur.close()
+        except:
+            print helpers.color("[!] Error: script autoruns not a database field, run ./setup_database.py to reset DB schema.")
+            print helpers.color("[!] Warning: this will reset ALL agent connections!")
 
 
-    def get_agent_uris(self, sessionID):
+    def clear_autoruns(self):
         """
-        Get the current and old URIs for an agent from the database.
+        Clear the currently set global script autoruns in the config.
         """
 
-        # see if we were passed a name instead of an ID
-        nameid = self.get_agent_id(sessionID)
-        if nameid : sessionID = nameid
-
-        cur = self.conn.cursor()
-        cur.execute("SELECT uris, old_uris FROM agents WHERE session_id=?", [sessionID])
-        uris = cur.fetchone()
-        cur.close()
-
-        return uris
+        try:
+            cur = self.conn.cursor()
+            cur.execute("UPDATE config SET autorun_command=''")
+            cur.execute("UPDATE config SET autorun_data=''")
+            cur.close()
+        except:
+            print helpers.color("[!] Error: script autoruns not a database field, run ./setup_database.py to reset DB schema.")
+            print helpers.color("[!] Warning: this will reset ALL agent connections!")
 
 
     ###############################################################
@@ -1337,6 +1392,11 @@ class Agents:
 
                 # save the initial sysinfo information in the agent log
                 self.save_agent_log(sessionID, output + "\n")
+
+                # if a script autorun is set, set that as the agent's first tasking
+                autorun = self.get_autoruns()
+                if autorun[0] != '' and autorun[1] != '':
+                    self.add_agent_task(sessionID, autorun[0], autorun[1])
 
                 return(200, encryptedAgent)
 

@@ -779,6 +779,8 @@ class AgentsMenu(cmd.Cmd):
 
         if name.lower() == "all":
             self.mainMenu.agents.clear_agent_tasks("all")
+        elif name.lower() == "autorun":
+            self.mainMenu.agents.clear_autoruns()
         else:
             # extract the sessionID and clear the agent tasking
             sessionID = self.mainMenu.agents.get_agent_id(name)
@@ -1100,7 +1102,7 @@ class AgentsMenu(cmd.Cmd):
     def complete_clear(self, text, line, begidx, endidx):
         "Tab-complete a clear command"
 
-        names = self.mainMenu.agents.get_agent_names() + ["all"]
+        names = self.mainMenu.agents.get_agent_names() + ["all", "autorun"]
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
         return [s[offs:] for s in names if s.startswith(mline)]
@@ -2221,7 +2223,7 @@ class ModuleMenu(cmd.Cmd):
 
         try:
             # if we're running this module for all agents, skip this validation
-            if sessionID.lower() != "all": 
+            if sessionID.lower() != "all" and sessionID.lower() != "autorun": 
                 modulePSVersion = int(self.module.info['MinPSVersion'])
                 agentPSVersion = int(self.mainMenu.agents.get_ps_version(sessionID))
                 # check if the agent/module PowerShell versions are compatible
@@ -2236,7 +2238,7 @@ class ModuleMenu(cmd.Cmd):
         # check if the module needs admin privs
         if self.module.info['NeedsAdmin']:
             # if we're running this module for all agents, skip this validation
-            if sessionID.lower() != "all":
+            if sessionID.lower() != "all" and sessionID.lower() != "autorun":
                 if not self.mainMenu.agents.is_agent_elevated(sessionID):
                     print helpers.color("[!] Error: module needs to run in an elevated context.")
                     return False
@@ -2459,6 +2461,12 @@ class ModuleMenu(cmd.Cmd):
 
             except KeyboardInterrupt as e: print ""
 
+        # set the script to be the global autorun
+        elif agentName.lower() == "autorun":
+
+            self.mainMenu.agents.set_autoruns(taskCommand, moduleData)
+            dispatcher.send("[*] Set module " + self.moduleName + " to be global script autorun.", sender="Empire")
+
         else:
             if not self.mainMenu.agents.is_agent_present(agentName):
                 print helpers.color("[!] Invalid agent name.")
@@ -2484,7 +2492,7 @@ class ModuleMenu(cmd.Cmd):
 
         if line.split(" ")[1].lower() == "agent":
             # if we're tab-completing "agent", return the agent names
-            agentNames = self.mainMenu.agents.get_agent_names()
+            agentNames = self.mainMenu.agents.get_agent_names() + ["all", "autorun"]
             endLine = " ".join(line.split(" ")[1:])
             
             mline = endLine.partition(' ')[2]
