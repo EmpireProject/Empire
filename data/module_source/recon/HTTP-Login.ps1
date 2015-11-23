@@ -248,6 +248,24 @@ param (
             }
         }
 
+        function Get-UserAgent {
+          # Uses PowerShell's prebuilt UA strings. See
+          # http://goo.gl/9IGloI
+          [CmdletBinding()]
+
+          param (
+            [string]$browsertype
+          )
+          
+          if (!$browsertype) {
+            $browsers    = @('Firefox','Chrome','InternetExplorer','Opera','Safari')
+            $browsertype = Get-Random -InputObject $browsers
+          }
+
+          $script:UserAgent = [Microsoft.PowerShell.Commands.PSUserAgent]::$browsertype
+            
+        }
+
         function Test-Password {
                 param (
                     [Parameter(Mandatory = $True)]
@@ -266,15 +284,16 @@ param (
                 foreach ($Target in $ComputerName)
                 {
                     try {
-
+                        Get-UserAgent
                         $WebTarget = "http$($SSL)://$($Target)$($PortNum)$($Directory)"
                         $URI = New-Object Uri($WebTarget)                    
                         $WebRequest = [System.Net.WebRequest]::Create($URI)
                         $WebRequest.PreAuthenticate=$true
                         $WebRequest.AllowAutoRedirect=$false
-                        $WebRequest.TimeOut = 50000
+                        $WebRequest.TimeOut = 5000
                         $WebRequest.KeepAlive=$true
                         $WebRequest.Method = "GET"
+                        $WebRequest.Headers.Add('UserAgent', $script:UserAgent)
                         $WebRequest.Headers.Add("Authorization", $basicAuthValue);
                         $WebRequest.Headers.Add("Keep-Alive: 300");
                         $WebResponse = $WebRequest.GetResponse()
@@ -288,7 +307,6 @@ param (
 
                     } catch {
                         $WebStatus = $Error[0].Exception.InnerException.Response.StatusCode
-                        Write-Output "[!] $WebStatus Status found with $($Username):$($Password) at $URI"
                         if ($WebStatus -eq $null) {
                             # Not every exception returns a StatusCode.
                             # If that is the case, return the Status.
