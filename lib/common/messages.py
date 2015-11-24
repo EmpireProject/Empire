@@ -23,11 +23,11 @@ def title(version):
     Print the tool title, with version.
     """
     os.system('clear')
-    print "========================================================================="
+    print "===================================================================================="
     print " Empire: PowerShell post-exploitation agent | [Version]: " + version
-    print '========================================================================='
-    print ' [Web]: https://www.PowerShellEmpire.com/ | [Twitter]: @harmj0y, @sixdub'
-    print '========================================================================='
+    print '===================================================================================='
+    print ' [Web]: https://www.PowerShellEmpire.com/ | [Twitter]: @harmj0y, @sixdub, @enigma0x3'
+    print '===================================================================================='
     print """
    _______ .___  ___. .______    __  .______       _______ 
   |   ____||   \/   | |   _  \  |  | |   _  \     |   ____|
@@ -113,29 +113,50 @@ def display_options(options, color=True):
         else:
             print "\t%s\t%s" % ('{0: <16}'.format(key), wrap_string(options[key]))
 
+def agent_print (agents):
+    """
+    Take an agent dictionary and display everything nicely.
+    """
+    print ""    
+    print helpers.color("[*] Active agents:\n")
+    print "  Name               Internal IP     Machine Name    Username            Process             Delay    Last Seen"
+    print "  ---------          -----------     ------------    ---------           -------             -----    --------------------"
+
+    for agent in agents:
+        [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit] = agent
+        if str(high_integrity) == "1":
+            # add a * to the username if it's high integrity 
+            username = "*" + username
+        print "  %.19s%.16s%.16s%.20s%.20s%.9s%.20s" % ('{0: <19}'.format(name),'{0: <16}'.format(internal_ip),'{0: <16}'.format(hostname),'{0: <20}'.format(username), '{0: <20}'.format(str(process_name)+"/"+str(process_id)), '{0: <9}'.format(str(delay)+"/"+str(jitter)), lastseen_time)
+
+    print ""
 
 def display_agents(agents):
+
+    if len(agents)>0:
+        agent_print(agents)
+    else:
+        print helpers.color("[!] No agents currently registered ")
+
+
+
+def display_staleagents(agents):
     """
     Take an agent dictionary and display everything nicely.
     """
 
     if len(agents)>0:
-        print ""    
-        print helpers.color("[*] Active agents:\n")
-        print "  Name               Internal IP     Machine Name    Username            Process             Delay    Last Seen"
-        print "  ---------          -----------     ------------    ---------           -------             -----    --------------------"
-
-        for agent in agents:
-            [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version] = agent
-            if str(high_integrity) == "1":
-                # add a * to the username if it's high integrity 
-                username = "*" + username
-            print "  %.19s%.16s%.16s%.20s%.20s%.9s%.20s" % ('{0: <19}'.format(name),'{0: <16}'.format(internal_ip),'{0: <16}'.format(hostname),'{0: <20}'.format(username), '{0: <20}'.format(str(process_name)+"/"+str(process_id)), '{0: <9}'.format(str(delay)+"/"+str(jitter)), lastseen_time)
-
-        print ""
-
+        agent_print(agents)
     else:
-        print helpers.color("[!] No agents currently registered ")
+        print helpers.color("[!] No stale agents currently registered ")
+
+
+
+
+
+
+
+
 
 
 def display_agent(agent):
@@ -146,7 +167,7 @@ def display_agent(agent):
     """
 
     # extract out database fields.
-    keys = ["ID", "sessionID", "listener", "name", "delay", "jitter", "external_ip", "internal_ip", "username", "high_integrity", "process_name", "process_id", "hostname", "os_details", "session_key", "checkin_time", "lastseen_time", "parent", "children", "servers", "uris", "old_uris", "user_agent", "headers", "functions", "kill_date", "working_hours", "ps_version"]
+    keys = ["ID", "sessionID", "listener", "name", "delay", "jitter", "external_ip", "internal_ip", "username", "high_integrity", "process_name", "process_id", "hostname", "os_details", "session_key", "checkin_time", "lastseen_time", "parent", "children", "servers", "uris", "old_uris", "user_agent", "headers", "functions", "kill_date", "working_hours", "ps_version", "lost_limit"]
 
     print helpers.color("\n[*] Agent info:\n")
 
@@ -173,7 +194,7 @@ def display_listeners(listeners):
 
         for listener in listeners:
 
-            [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target] = listener
+            [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit] = listener
 
             if not host.startswith("http"):
                 if cert_path and cert_path != "":
@@ -196,15 +217,15 @@ def display_listener(options):
     """
 
     print "\nListener Options:\n"
-    print "  Name           Required    Value                            Description"
-    print "  ----           --------    -------                          -----------"
+    print "  Name              Required    Value                            Description"
+    print "  ----              --------    -------                          -----------"
 
     for option,values in options.iteritems():
         # if there's a long value length, wrap it
         if len(str(values['Value'])) > 33:
-            print "  %s%s%s" % ('{0: <15}'.format(option), '{0: <12}'.format(("True" if values['Required'] else "False")), '{0: <33}'.format(wrap_string(values['Value'], width=32, indent=29, followingHeader=values['Description'])))
+            print "  %s%s%s" % ('{0: <18}'.format(option), '{0: <12}'.format(("True" if values['Required'] else "False")), '{0: <33}'.format(wrap_string(values['Value'], width=32, indent=32, followingHeader=values['Description'])))
         else:
-            print "  %s%s%s%s" % ('{0: <15}'.format(option), '{0: <12}'.format(("True" if values['Required'] else "False")), '{0: <33}'.format(values['Value']), values['Description'])
+            print "  %s%s%s%s" % ('{0: <18}'.format(option), '{0: <12}'.format(("True" if values['Required'] else "False")), '{0: <33}'.format(values['Value']), values['Description'])
 
     print "\n"
 
@@ -216,7 +237,7 @@ def display_listener_database(listener):
     Transforms the tuple set to an options dictionary and calls display_listener().
     """
 
-    [ID,name,host,port,certPath,stagingKey,defaultDelay,defaultJitter,defaultProfile,killDate,workingHours,listenerType,redirectTarget] = listener
+    [ID,name,host,port,certPath,stagingKey,defaultDelay,defaultJitter,defaultProfile,killDate,workingHours,listenerType,redirectTarget, defaultLostLimit] = listener
 
     options = {
         'ID' : {
@@ -256,6 +277,11 @@ def display_listener_database(listener):
         },
         'DefaultJitter' : {
             'Description'   :   'Jitter in agent reachback interval (0.0-1.0).',
+            'Required'      :   True,
+            'Value'         :   ''
+        },
+        'DefaultLostLimit' : {
+            'Description'   :   'Number of missed checkins before exiting',
             'Required'      :   True,
             'Value'         :   ''
         },
@@ -299,6 +325,7 @@ def display_listener_database(listener):
     options['WorkingHours']['Value'] = workingHours
     options['Type']['Value'] = listenerType
     options['RedirectTarget']['Value'] = redirectTarget
+    options['DefaultLostLimit']['Value'] = defaultLostLimit
 
     display_listener(options)
 

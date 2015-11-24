@@ -9,7 +9,7 @@ menu loops.
 """
 
 # make version for Empire
-VERSION = "1.0.0"
+VERSION = "1.2"
 
 
 from pydispatch import dispatcher
@@ -453,7 +453,7 @@ class MainMenu(cmd.Cmd):
                     f = open(parts[1], 'r')
                     ipData = f.read()
                     f.close()
-                    self.agents.ipBlackList = helpers.generate_ip_list(ipData)
+                    self.agents.ipWhiteList = helpers.generate_ip_list(ipData)
                 else:
                     self.agents.ipWhiteList = helpers.generate_ip_list(",".join(parts[1:]))
             elif parts[0].lower() == "ip_blacklist":
@@ -501,6 +501,63 @@ class MainMenu(cmd.Cmd):
                 self.modules.reload_module(line)
 
 
+    def do_list(self, line):
+        "Lists active agents or listeners."
+
+        parts = line.split(" ")
+
+        if parts[0].lower() == "agents":        
+
+            line = " ".join(parts[1:])
+            agents = self.agents.get_agents()
+
+            if line.strip().lower() == "stale":
+
+                displayAgents = []
+
+                for agent in agents:
+
+                    sessionID = self.agents.get_agent_id(agent[3])
+
+                    # max check in -> delay + delay*jitter
+                    intervalMax = (agent[4] + agent[4] * agent[5])+30
+
+                    # get the agent last check in time
+                    agentTime = time.mktime(time.strptime(agent[16],"%Y-%m-%d %H:%M:%S"))
+                    if agentTime < time.mktime(time.localtime()) - intervalMax:
+                        # if the last checkin time exceeds the limit, remove it
+                        displayAgents.append(agent)
+
+                messages.display_staleagents(displayAgents)
+
+
+            elif line.strip() != "":
+                # if we're listing an agents active in the last X minutes
+                try:
+                    minutes = int(line.strip())
+                    
+                    # grab just the agents active within the specified window (in minutes)
+                    displayAgents = []
+                    for agent in agents:
+                        agentTime = time.mktime(time.strptime(agent[16],"%Y-%m-%d %H:%M:%S"))
+
+                        if agentTime > time.mktime(time.localtime()) - (int(minutes) * 60):
+                            displayAgents.append(agent)
+                    
+                    messages.display_agents(displayAgents)
+
+                except:
+                    print helpers.color("[!] Please enter the minute window for agent checkin.")
+
+            else:
+                messages.display_agents(agents)
+
+
+        elif parts[0].lower() == "listeners":
+
+            messages.display_listeners(self.listeners.get_listeners())
+
+
     def complete_usemodule(self, text, line, begidx, endidx):
         "Tab-complete an Empire PowerShell module path."
 
@@ -526,7 +583,7 @@ class MainMenu(cmd.Cmd):
 
         stagers = self.stagers.stagers.keys()
 
-        if line.split(" ")[1].lower() in stagers:
+        if (line.split(" ")[1].lower() in stagers) and line.endswith(" "):
             # if we already have a stager name, tab-complete listener names
             listenerNames = self.listeners.get_listener_names()
 
@@ -624,30 +681,14 @@ class AgentsMenu(cmd.Cmd):
 
 
     def do_list(self, line):
-        "Lists all active agents."
+        "Lists all active agents (or listeners)."
 
-        agents = self.mainMenu.agents.get_agents()
-
-        if line.strip() != "":
-            # if we're listing an agents active in the last X minutes
-            try:
-                minutes = int(line.strip())
-                
-                # grab just the agents active within the specified window (in minutes)
-                displayAgents = []
-                for agent in agents:
-                    agentTime = time.mktime(time.strptime(agent[16],"%Y-%m-%d %H:%M:%S"))
-
-                    if agentTime > time.mktime(time.localtime()) - (int(minutes) * 60):
-                        displayAgents.append(agent)
-                
-                messages.display_agents(displayAgents)
-
-            except:
-                print helpers.color("[!] Please enter the minute window for agent checkin.")
-
+        if line.lower().startswith("listeners"):
+            self.mainMenu.do_list("listeners " + str(" ".join(line.split(" ")[1:])))
+        elif line.lower().startswith("agents"):
+            self.mainMenu.do_list("agents " + str(" ".join(line.split(" ")[1:])))
         else:
-            messages.display_agents(agents)
+            self.mainMenu.do_list("agents " + str(line))
 
 
     def do_rename(self, line):
@@ -777,6 +818,47 @@ class AgentsMenu(cmd.Cmd):
                 print helpers.color("[!] Invalid agent name")
 
 
+    def do_lostlimit(self, line):
+        "Task one or more agents to 'lostlimit [agent/all] <#ofCBs> '"
+
+        parts = line.strip().split(" ")
+
+        if len(parts) == 1:
+            print helpers.color("[!] Please enter a valid '#ofCBs'")
+
+        elif parts[0].lower() == "all":
+            lostLimit = parts[1]
+            agents = self.mainMenu.agents.get_agents()
+
+            for agent in agents:
+                sessionID = agent[1]
+                # update this agent info in the database
+                self.mainMenu.agents.set_agent_field("lost_limit", lostLimit, sessionID)
+                # task the agent
+                self.mainMenu.agents.add_agent_task(sessionID, "TASK_SHELL", "Set-LostLimit " + str(lostLimit))
+                # update the agent log
+                msg = "Tasked agent to change lost limit " + str(lostLimit)
+                self.mainMenu.agents.save_agent_log(sessionID, msg)
+
+        else:
+            # extract the sessionID and clear the agent tasking
+            sessionID = self.mainMenu.agents.get_agent_id(parts[0])
+
+            lostLimit = parts[1]
+
+            if sessionID and len(sessionID) != 0:
+                # update this agent's information in the database
+                self.mainMenu.agents.set_agent_field("lost_limit", lostLimit, sessionID)
+
+                self.mainMenu.agents.add_agent_task(sessionID, "TASK_SHELL", "Set-LostLimit " + str(lostLimit)) 
+                # update the agent log
+                msg = "Tasked agent to change lost limit " + str(lostLimit)
+                self.mainMenu.agents.save_agent_log(sessionID, msg)
+
+            else:
+                print helpers.color("[!] Invalid agent name")
+
+
     def do_killdate(self, line):
         "Set the killdate for one or more agents (killdate [agent/all] 01/01/2016)."
 
@@ -872,8 +954,49 @@ class AgentsMenu(cmd.Cmd):
                     self.mainMenu.agents.remove_agent('%')
             except KeyboardInterrupt as e: print ""
 
-        else:
+        elif name.lower() == "stale":
+            # remove 'stale' agents that have missed their checkin intervals
+            
+            agents = self.mainMenu.agents.get_agents()
 
+            for agent in agents:
+
+                sessionID = self.mainMenu.agents.get_agent_id(agent[3])
+
+                # max check in -> delay + delay*jitter
+                intervalMax = (agent[4] + agent[4] * agent[5])+30
+
+                # get the agent last check in time
+                agentTime = time.mktime(time.strptime(agent[16],"%Y-%m-%d %H:%M:%S"))
+
+                if agentTime < time.mktime(time.localtime()) - intervalMax:
+                    # if the last checkin time exceeds the limit, remove it
+                    self.mainMenu.agents.remove_agent(sessionID) 
+
+
+        elif name.isdigit():
+            # if we're removing agents that checked in longer than X minutes ago
+            agents = self.mainMenu.agents.get_agents()
+
+            try:
+                minutes = int(line.strip())
+                
+                # grab just the agents active within the specified window (in minutes)
+                for agent in agents:
+
+                    sessionID = self.mainMenu.agents.get_agent_id(agent[3])
+
+                    # get the agent last check in time
+                    agentTime = time.mktime(time.strptime(agent[16],"%Y-%m-%d %H:%M:%S"))
+
+                    if agentTime < time.mktime(time.localtime()) - (int(minutes) * 60):
+                        # if the last checkin time exceeds the limit, remove it
+                        self.mainMenu.agents.remove_agent(sessionID)
+
+            except:
+                print helpers.color("[!] Please enter the minute window for agent checkin.")
+
+        else:
             # extract the sessionID and clear the agent tasking
             sessionID = self.mainMenu.agents.get_agent_id(name)
 
@@ -958,7 +1081,6 @@ class AgentsMenu(cmd.Cmd):
         "Tab-complete a clear command"
 
         names = self.mainMenu.agents.get_agent_names() + ["all"]
-
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
         return [s[offs:] for s in names if s.startswith(mline)]
@@ -967,7 +1089,10 @@ class AgentsMenu(cmd.Cmd):
     def complete_remove(self, text, line, begidx, endidx):
         "Tab-complete a remove command"
 
-        return self.complete_clear(text, line, begidx, endidx)
+        names = self.mainMenu.agents.get_agent_names() + ["all", "stale"]
+        mline = line.partition(' ')[2]
+        offs = len(mline) - len(text)
+        return [s[offs:] for s in names if s.startswith(mline)]
 
 
     def complete_kill(self, text, line, begidx, endidx):
@@ -978,6 +1103,12 @@ class AgentsMenu(cmd.Cmd):
 
     def complete_sleep(self, text, line, begidx, endidx):
         "Tab-complete a sleep command"
+
+        return self.complete_clear(text, line, begidx, endidx)
+
+
+    def complete_lostlimit(self, text, line, begidx, endidx):
+        "Tab-complete a lostlimit command"
 
         return self.complete_clear(text, line, begidx, endidx)
 
@@ -1009,6 +1140,7 @@ class AgentsMenu(cmd.Cmd):
         return self.mainMenu.complete_creds(text, line, begidx, endidx)
 
 
+
 class AgentMenu(cmd.Cmd):
 
     def __init__(self, mainMenu, sessionID):
@@ -1027,8 +1159,8 @@ class AgentMenu(cmd.Cmd):
         # set the text prompt
         self.prompt = '(Empire: '+helpers.color(name, 'red')+') > '
 
-        # shell commands to tab complete
-        self.shellCmds = ["ls","dir","rm","del","pwd","cat","cd","mkdir","rmdir","mv","arp","netstat","ipconfig","ifconfig","net","route","reboot","restart","shutdown","ps","getpid","whoami", "getuid"]
+        # agent commands that have opsec-safe alises in the agent code
+        self.agentCommands = ["ls","dir","rm","del","cp","copy","pwd","cat","cd","mkdir","rmdir","mv","move","ipconfig","ifconfig","route","reboot","restart","shutdown","ps","tasklist","getpid","whoami","getuid","hostname"]
 
         # listen for messages from this specific agent
         dispatcher.connect( self.handle_agent_event, sender=dispatcher.Any)
@@ -1082,14 +1214,17 @@ class AgentMenu(cmd.Cmd):
         parts = line.split(" ")
 
         if len(parts) > 0:
-            # check if we got a shell command
-            if parts[0] in self.shellCmds:
+            # check if we got an agent command
+            if parts[0] in self.agentCommands:
                 shellcmd = " ".join(parts)
                 # task the agent with this shell command
                 self.mainMenu.agents.add_agent_task(self.sessionID, "TASK_SHELL", shellcmd)
                 # update the agent log
-                msg = "Tasked agent to run shell command " + line
+                msg = "Tasked agent to run command " + line
                 self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+            else:
+                print helpers.color("[!] Command not recognized.")
+                print helpers.color("[*] Use 'help' or 'help agentcmds' to see available commands.")
 
 
     def do_back(self, line):
@@ -1100,6 +1235,27 @@ class AgentMenu(cmd.Cmd):
     def do_main(self, line):
         "Go back to the main menu."
         raise StopIteration
+
+
+    def do_help(self, *args):
+        "Displays the help menu or syntax for particular commands."
+        
+        if args[0].lower() == "agentcmds":
+            print "\n" + helpers.color("[*] Available opsec-safe agent commands:\n")
+            print "     " + messages.wrap_columns(", ".join(self.agentCommands), " ", width1=50, width2=10, indent=5) + "\n"
+        else:
+            cmd.Cmd.do_help(self, *args)
+
+
+    def do_list(self, line):
+        "Lists all active agents (or listeners)."
+
+        if line.lower().startswith("listeners"):
+            self.mainMenu.do_list("listeners " + str(" ".join(line.split(" ")[1:])))
+        elif line.lower().startswith("agents"):
+            self.mainMenu.do_list("agents " + str(" ".join(line.split(" ")[1:])))
+        else:
+            print helpers.color("[!] Please use 'list [agents/listeners] <modifier>'.")
 
 
     def do_rename(self, line):
@@ -1136,8 +1292,8 @@ class AgentMenu(cmd.Cmd):
                 self.mainMenu.agents.add_agent_task(self.sessionID, "TASK_EXIT")
                 # update the agent log
                 self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to exit")
-		a = AgentsMenu(self.mainMenu)
-        	a.cmdloop()
+                return True
+
         except KeyboardInterrupt as e: print ""
 
 
@@ -1184,6 +1340,20 @@ class AgentMenu(cmd.Cmd):
             # update the agent log
             msg = "Tasked agent to delay sleep/jitter " + str(delay) + "/" + str(jitter)
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+
+    def do_lostlimit(self, line):
+        "Task an agent to change the limit on lost agent detection"
+
+        parts = line.strip().split(" ")
+        if len(parts) > 0 and parts[0] != "":
+            lostLimit = parts[0]
+
+        # update this agent's information in the database
+        self.mainMenu.agents.set_agent_field("lost_limit", lostLimit, self.sessionID)
+        self.mainMenu.agents.add_agent_task(self.sessionID, "TASK_SHELL", "Set-LostLimit " + str(lostLimit)) 
+        # update the agent log
+        msg = "Tasked agent to change lost limit " + str(lostLimit)
+        self.mainMenu.agents.save_agent_log(self.sessionID, msg)
 
 
     def do_kill(self, line):
@@ -1262,7 +1432,7 @@ class AgentMenu(cmd.Cmd):
 
         if line != "":
             # task the agent with this shell command
-            self.mainMenu.agents.add_agent_task(self.sessionID, "TASK_SHELL", line)
+            self.mainMenu.agents.add_agent_task(self.sessionID, "TASK_SHELL", "shell " + str(line))
             # update the agent log
             msg = "Tasked agent to run shell command " + line
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
@@ -1697,14 +1867,6 @@ class AgentMenu(cmd.Cmd):
         return [s[offs:] for s in ["kill"] if s.startswith(mline)]
 
 
-    def complete_shell(self, text, line, begidx, endidx):
-        "Tab-complete a shell command"
-
-        mline = line.partition(' ')[2]
-        offs = len(mline) - len(text)
-        return [s[offs:] for s in self.shellCmds if s.startswith(mline)]
-
-
     def complete_scriptimport(self, text, line, begidx, endidx):
         "Tab-complete a PowerShell script path"
         
@@ -1781,8 +1943,14 @@ class ListenerMenu(cmd.Cmd):
 
 
     def do_list(self, line):
-        "List all active listeners."
-        messages.display_listeners(self.mainMenu.listeners.get_listeners())
+        "List all active listeners (or agents)."
+
+        if line.lower().startswith("agents"):
+            self.mainMenu.do_list("agents " + str(" ".join(line.split(" ")[1:])))
+        elif line.lower().startswith("listeners"):
+            self.mainMenu.do_list("listeners " + str(" ".join(line.split(" ")[1:])))
+        else:
+            self.mainMenu.do_list("listeners " + str(line))
 
 
     def do_back(self, line):
@@ -1865,6 +2033,11 @@ class ListenerMenu(cmd.Cmd):
         self.mainMenu.listeners.add_listener_from_config()
 
 
+    def do_run(self, line):
+        "Execute a listener with the currently specified options."
+        self.do_execute(line)
+
+
     def do_agents(self, line):
         "Jump to the Agents menu."
         a = AgentsMenu(self.mainMenu)
@@ -1932,7 +2105,7 @@ class ListenerMenu(cmd.Cmd):
 
         elif line.split(" ")[1].lower() == "type":
             # if we're tab-completing the listener type
-            listenerTypes = ["native", "pivot", "hop", "foreign"]
+            listenerTypes = ["native", "pivot", "hop", "foreign", "meter"]
             endLine = " ".join(line.split(" ")[1:])
             mline = endLine.partition(' ')[2]
             offs = len(mline) - len(text)
@@ -2093,6 +2266,17 @@ class ModuleMenu(cmd.Cmd):
     def do_main(self, line):
         "Return to the main menu."
         return True
+
+
+    def do_list(self, line):
+        "Lists all active agents (or listeners)."
+
+        if line.lower().startswith("listeners"):
+            self.mainMenu.do_list("listeners " + str(" ".join(line.split(" ")[1:])))
+        elif line.lower().startswith("agents"):
+            self.mainMenu.do_list("agents " + str(" ".join(line.split(" ")[1:])))
+        else:
+            print helpers.color("[!] Please use 'list [agents/listeners] <modifier>'.")
 
 
     def do_reload(self, line):
@@ -2267,6 +2451,11 @@ class ModuleMenu(cmd.Cmd):
                 self.mainMenu.agents.save_agent_log(agentName, msg)
 
 
+    def do_run(self, line):
+        "Execute the given Empire module."
+        self.do_execute(line)
+
+
     def complete_set(self, text, line, begidx, endidx):
         "Tab-complete a module option to set."
 
@@ -2388,6 +2577,17 @@ class StagerMenu(cmd.Cmd):
     def do_main(self, line):
         "Return to the main menu."
         return True
+
+
+    def do_list(self, line):
+        "Lists all active agents (or listeners)."
+
+        if line.lower().startswith("listeners"):
+            self.mainMenu.do_list("listeners " + str(" ".join(line.split(" ")[1:])))
+        elif line.lower().startswith("agents"):
+            self.mainMenu.do_list("agents " + str(" ".join(line.split(" ")[1:])))
+        else:
+            print helpers.color("[!] Please use 'list [agents/listeners] <modifier>'.")
 
 
     def do_info(self, line):

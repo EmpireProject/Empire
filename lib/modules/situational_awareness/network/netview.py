@@ -23,7 +23,7 @@ class Module:
             'MinPSVersion' : '2',
             
             'Comments': [
-                'https://github.com/Veil-Framework/PowerTools/tree/master/PowerView',
+                'https://github.com/PowerShellEmpire/PowerTools/tree/master/PowerView',
                 'https://github.com/mubix/netview'
             ]
         }
@@ -88,7 +88,7 @@ class Module:
     def generate(self):
         
         # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/Network/Invoke-Netview.ps1"
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/Invoke-Netview.ps1"
 
         try:
             f = open(moduleSource, 'r')

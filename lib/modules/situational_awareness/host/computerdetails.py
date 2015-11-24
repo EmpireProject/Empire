@@ -76,7 +76,7 @@ class Module:
     def generate(self):
 
         # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/Host/Get-ComputerDetails.ps1"
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/host/Get-ComputerDetails.ps1"
 
         try:
             f = open(moduleSource, 'r')

@@ -22,7 +22,7 @@ class Module:
             'MinPSVersion' : '2',
 
             'Comments': [
-                'https://github.com/Veil-Framework/PowerTools/blob/master/PowerView/powerview.ps1'
+                'https://github.com/PowerShellEmpire/PowerTools/tree/master/PowerView'
             ]
         }
 

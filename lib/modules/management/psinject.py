@@ -8,7 +8,7 @@ class Module:
         self.info = {
             'Name': 'Invoke-PSInject',
 
-            'Author': ['@harmj0y', '@sixdub', 'leechristensen'],
+            'Author': ['@harmj0y', '@sixdub', 'leechristensen (@tifkin_)'],
 
             'Description': ("Utilizes Powershell to to inject a Stephen Fewer "
                             "formed ReflectivePick which executes PS code"

@@ -1,0 +1,97 @@
+9/12/2015
+---------
+-Added credentials/mimikatz/mimitokens to take advantage of Mimikatz' token listing/elevation
+-Added management/enable_multi_rdp to patch terminal services to allow mutiple connections
+-Fixed bug in write_dllhijacker that prevented the dll from being written out
+
+============
+8/30/2015 - RELEASE 1.2
+============
+-Encompasses all changes below
+--- 'Native' shell commands in agent core ported to WMI equivalents
+--- HMAC now uses SHA1 instead of MD5
+--- Numerous bug fixes and UI tweaks throughout code
+--- Six new modules and WAR stager added, /sids option added to golden_ticket
+--- Fixed international locale bug with unicode text in agent.ps1
+
+8/29/2015
+---------
+-HMAC algorithm for packet comms upgraded to use SHA1 instead of MD5
+-credentials collected from collection/prompt now scraped/added to credential model
+
+8/26/2015
+---------
+-Added module privesc/bypassuac_wscript
+-Added module collection/inveigh
+-Added stager war
+
+8/24/2015
+---------
+-Added credentials/mimikatz/dcsync for remote DC credential extraction
+-Added situational_awareness/network/get_domaintrusts
+-Added /sids argument for credentials/mimikatz/golden_ticket
+-Added credential parsing for dcsync output
+-updated links for PowerTools
+-Fixed bug in credential parsing with ":" inside of the password,username, or domain
+-Fixed international locale bug with unicode text in agent.ps1. Now all results are base64 encoded prior to being packetized. Encoding will be handled at server.
+
+8/20/2015
+---------
+-Continued porting native shell commands to WMI replacents in agent core
+-In agent menu, 'shell CMD' now runs straight IEX CMD, and 'help agentcmds' shows safe aliases
+-Modified ./setup/reset.sh to work from parent or ./setup/ folders
+-Agent core functions streamlined
+-"list [agents/listeners] <modifier>" should now be a global command
+
+8/19/2015
+---------
+-Added collection/netripper, port of the NetRipper project
+-Added collection/packet_capture for netsh event tracing
+-Added management/zipfolder for native folder compression
+-Corrected menu behavior on agent exit, bug fix on some dir behavior
+-Started porting native shell commands to WMI in the agent core
+
+============
+8/16/2015 - RELEASE 1.1
+============
+-Encompasses all changes below
+--- Crypto patch to prevent DOS condition
+--- Numerous bug fixes throughout code
+--- Extra modules added and HTA stager
+--- Ability for agents to die after certain number of failed checkins
+--- Added ability to easily remove "stale" agents
+
+8/15/2015
+---------
+-Added modules management/timestomp, trollsploit/process_killer, persistence/elevated/wmi, situational_awareness/network/smbscanner, lateral_movement/invoke_psexec
+-Accepted HTA Stager from subtee
+
+8/12/2015
+--------
+-Merged in list stale and remove stale functionality
+-Fixed delay in list stale feature
+-Fixed active agent message in list stale feature
+-Fixed registry storage in schtasks and registry persistence modules (userland and elevated)
+
+8/11/2015
+---------
+-Merged in Lost Agent Detection
+-"agents> remove X" now removes agents that checked in > X minutes ago
+-"agents> list stale" and "agents> remove stale" now list/remove stale agents past their max checkins
+
+8/10/2015
+---------
+-Fixed tab completion of usestager module
+-Added dependencies for Ubuntu 14.04
+-Fixed IP Whitelisting set from file
+-Added "Lost Agent Detection". Allows the ability for an agent to die after a certain number of missed checkins. This is implemented via the "lostlimit" command. Default set to 60 missed checkins. 
+
+8/9/2015
+----------
+-Fixed flaw in crypto allowing a DOS condition. 
+-Added authentication to the AES crypto scheme to verify integrity of messages
+
+8/6/2015
+-----------
+-Initial release. All components released
+-Commited path fix to correct bug in certain modules

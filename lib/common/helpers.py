@@ -203,6 +203,42 @@ def strip_powershell_comments(data):
 #
 ###############################################################
 
+def parse_credentials(data):
+    """
+    Parse module output, looking for any parseable sections.
+    """
+
+    parts = data.split("\n")
+
+    # tag for Invoke-Mimikatz output
+    if parts[0].startswith("Hostname:"):
+        return parse_mimikatz(data)
+
+    # collection/prompt output
+    elif parts[0].startswith("[+] Prompted credentials:"):
+        
+        parts = parts[0].split("->")
+        if len(parts) == 2:
+            
+            username = parts[1].split(":",1)[0].strip()
+            password = parts[1].split(":",1)[1].strip()
+
+            if "\\" in username:
+                domain = username.split("\\")[0].strip()
+                username = username.split("\\")[1].strip()
+            else:
+                domain = ""
+            
+            return [("plaintext", domain, username, password, "", "")]
+
+        else:
+            print helpers.color("[!] Error in parsing prompted credential output.")
+            return None
+
+    else:
+        return None
+
+
 def parse_mimikatz(data):
     """
     Parse the output from Invoke-Mimikatz to return credential sets.
@@ -244,11 +280,11 @@ def parse_mimikatz(data):
             for line in lines2:
                 try:
                     if "Username" in line:
-                        username = line.split(":")[1].strip()
+                        username = line.split(":",1)[1].strip()
                     elif "Domain" in line:
-                        domain = line.split(":")[1].strip()
+                        domain = line.split(":",1)[1].strip()
                     elif "NTLM" in line or "Password" in line:
-                        password = line.split(":")[1].strip()
+                        password = line.split(":",1)[1].strip()
                 except:
                     pass
 
@@ -271,32 +307,56 @@ def parse_mimikatz(data):
                 if not (credType == "plaintext" and username.endswith("$")):
                     creds.append((credType, domain, username, password, hostName, sid))
 
-    # check if we have lsadump output to check for krbtgt
-    #   happens on domain controller hashdumps
-    for x in xrange(8,13):
-        if lines[x].startswith("Domain :"):
+    if len(creds) == 0:
+        # check if we have lsadump output to check for krbtgt
+        #   happens on domain controller hashdumps
+        for x in xrange(8,13):
+            if lines[x].startswith("Domain :"):
 
-            domain, sid, krbtgtHash = "", "", ""
+                domain, sid, krbtgtHash = "", "", ""
 
-            try:
-                domainParts = lines[x].split(":")[1]
-                domain = domainParts.split("/")[0].strip()
-                sid = domainParts.split("/")[1].strip()
+                try:
+                    domainParts = lines[x].split(":")[1]
+                    domain = domainParts.split("/")[0].strip()
+                    sid = domainParts.split("/")[1].strip()
 
-                # substitute the FQDN in if it matches
-                if hostDomain.startswith(domain.lower()):
-                    domain = hostDomain
-                    sid = domainSid
+                    # substitute the FQDN in if it matches
+                    if hostDomain.startswith(domain.lower()):
+                        domain = hostDomain
+                        sid = domainSid
 
-                for x in xrange(0, len(lines)):
-                    if lines[x].startswith("User : krbtgt"):
-                        krbtgtHash = lines[x+2].split(":")[1].strip()
-                        break
+                    for x in xrange(0, len(lines)):
+                        if lines[x].startswith("User : krbtgt"):
+                            krbtgtHash = lines[x+2].split(":")[1].strip()
+                            break
 
-                if krbtgtHash != "":
-                    creds.append(("hash", domain, "krbtgt", krbtgtHash, hostName, sid))
-            except Exception as e:
-                pass
+                    if krbtgtHash != "":
+                        creds.append(("hash", domain, "krbtgt", krbtgtHash, hostName, sid))
+                except Exception as e:
+                    pass
+
+    if len(creds) == 0:
+        # check if we get lsadump::dcsync output
+        if '** SAM ACCOUNT **' in lines:
+            domain, user, userHash, dcName, sid = "", "", "", "", ""
+            for line in lines:
+                try:
+                    if line.strip().endswith("will be the domain"):
+                        domain = line.split("'")[1]
+                    elif line.strip().endswith("will be the DC server"):
+                        dcName = line.split("'")[1].split(".")[0]
+                    elif line.strip().startswith("SAM Username"):
+                        user = line.split(":")[1].strip()
+                    elif line.strip().startswith("Object Security ID"):
+                        parts = line.split(":")[1].strip().split("-")
+                        sid = "-".join(parts[0:-1])
+                    elif line.strip().startswith("Hash NTLM:"):
+                        userHash = line.split(":")[1].strip()
+                except:
+                    pass
+
+            if domain != "" and userHash != "":
+                creds.append(("hash", domain, user, userHash, dcName, sid))
 
     return uniquify_tuples(creds)
 
@@ -352,19 +412,32 @@ def lhost():
         import fcntl
         import struct
         def get_interface_ip(ifname):
-            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-            return socket.inet_ntoa(fcntl.ioctl(
-                    s.fileno(),
-                    0x8915,  # SIOCGIFADDR
-                    struct.pack('256s', ifname[:15])
-                )[20:24])
-    ip = socket.gethostbyname(socket.gethostname())
-    if ip.startswith("127.") and os.name != "nt":
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                return socket.inet_ntoa(fcntl.ioctl(
+                        s.fileno(),
+                        0x8915,  # SIOCGIFADDR
+                        struct.pack('256s', ifname[:15])
+                    )[20:24])
+            except IOError as e:
+                return ""
+
+    ip = ""
+    try:
+        ip = socket.gethostbyname(socket.gethostname())
+    except socket.gaierror:
+        pass
+    except:
+        print "Unexpected error:", sys.exc_info()[0]
+        return ip
+
+    if (ip == "" or ip.startswith("127.")) and os.name != "nt":
         interfaces = ["eth0","eth1","eth2","wlan0","wlan1","wifi0","ath0","ath1","ppp0"]
         for ifname in interfaces:
             try:
                 ip = get_interface_ip(ifname)
-                break
+                if ip != "":
+                    break
             except:
                 print "Unexpected error:", sys.exc_info()[0]
                 pass

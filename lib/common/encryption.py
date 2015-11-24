@@ -9,7 +9,7 @@ from Crypto.Cipher import AES
 from Crypto import Random
 from Crypto.Random import random
 from binascii import hexlify 
-import base64, string, M2Crypto
+import base64, hashlib, hmac, string, M2Crypto
 
 import helpers
 
@@ -71,6 +71,15 @@ def aes_encrypt(key, data):
     return IV + cipher.encrypt(pad(data))
 
 
+def aes_encrypt_then_mac(key, data):
+    """
+    Encrypt the data then calculate HMAC over the ciphertext.
+    """
+    data = aes_encrypt(key, data)
+    mac = hmac.new(str(key), data, hashlib.sha1).digest()
+    return data + mac
+
+
 def aes_decrypt(key, data):
     """
     Generate an AES cipher object, pull out the IV from the data
@@ -80,6 +89,31 @@ def aes_decrypt(key, data):
         IV = data[0:16]
         cipher = AES.new(key, AES.MODE_CBC, IV)
         return depad(cipher.decrypt(data[16:]))
+
+
+def verify_hmac(key, data):
+    """
+    Verify the HMAC supplied in the data with the given key.
+    """
+    if len(data) > 20:
+        mac = data[-20:]
+        data = data[:-20]
+        expected = hmac.new(str(key), data, hashlib.sha1).digest()
+        # Double HMAC to prevent timing attacks. hmac.compare_digest() is
+        # preferable, but only available since Python 2.7.7.
+        return hmac.new(str(key), expected).digest() == hmac.new(str(key), mac).digest()
+
+    return False
+
+
+def aes_decrypt_and_verify(key, data):
+    """
+    Decrypt the data, but only if it has a valid MAC.
+    """
+    if len(data) > 32 and verify_hmac(key, data):
+        return aes_decrypt(key, data[:-20])
+
+    raise Exception("Invalid ciphertext received.")
 
 
 def generate_aes_key():

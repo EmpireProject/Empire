@@ -164,7 +164,7 @@ Invoke-Redirector"""
                 else:
                     listenerName = values['Value']
                     # get the listener options and set them for the script
-                    [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target] = self.mainMenu.listeners.get_listener(values['Value'])
+                    [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit] = self.mainMenu.listeners.get_listener(values['Value'])
                     script += " -ConnectHost " + str(host)
 
             elif option.lower() != "agent":

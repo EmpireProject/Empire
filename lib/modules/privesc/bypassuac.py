@@ -7,10 +7,12 @@ class Module:
         self.info = {
             'Name': 'Invoke-BypassUAC',
 
-            'Author': ['@harmyj0', '@sixdub'],
+            'Author': ['Leo Davidson', '@meatballs__', '@TheColonial', '@mattifestation', '@harmyj0y', '@sixdub'],
 
-            'Description': ('Runs a BypassUAC attack to escape from a medium integrity process '
-                            'to a high integrity process.'),
+            'Description': ("Runs a BypassUAC attack to escape from a medium integrity process "
+                            "to a high integrity process. This attack was originally discovered by Leo Davidson. "
+                            "Empire uses components of MSF's bypassuac injection implementation as well as "
+                            "an adapted version of PowerSploit's Invoke--Shellcode.ps1 script for backend lifting."),
 
             'Background' : True,
 
@@ -23,7 +25,10 @@ class Module:
             'MinPSVersion' : '2',
             
             'Comments': [
-                'https://github.com/mattifestation/PowerSploit/blob/master/Exfiltration/Get-GPPPassword.ps1'
+                'https://github.com/mattifestation/PowerSploit/blob/master/CodeExecution/Invoke--Shellcode.ps1',
+                'https://github.com/rapid7/metasploit-framework/blob/master/modules/exploits/windows/local/bypassuac_injection.rb',
+                'https://github.com/rapid7/metasploit-framework/tree/master/external/source/exploits/bypassuac_injection/dll/src',
+                'http://www.pretentiousname.com/'
             ]
         }
 
