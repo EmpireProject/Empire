@@ -94,11 +94,13 @@ c.execute('''CREATE TABLE config (
     "server_version" text,
     "ip_whitelist" text,
     "ip_blacklist" text,
-    "default_lost_limit" integer
+    "default_lost_limit" integer,
+    "autorun_command" text,
+    "autorun_data" text
     )''')
 
 # kick off the config component of the database
-c.execute("INSERT INTO config VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (STAGING_KEY,STAGE0_URI,STAGE1_URI,STAGE2_URI,DEFAULT_DELAY,DEFAULT_JITTER,DEFAULT_PROFILE,DEFAULT_CERT_PATH,DEFAULT_PORT,INSTALL_PATH,SERVER_VERSION,IP_WHITELIST,IP_BLACKLIST, DEFAULT_LOST_LIMIT))
+c.execute("INSERT INTO config VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (STAGING_KEY,STAGE0_URI,STAGE1_URI,STAGE2_URI,DEFAULT_DELAY,DEFAULT_JITTER,DEFAULT_PROFILE,DEFAULT_CERT_PATH,DEFAULT_PORT,INSTALL_PATH,SERVER_VERSION,IP_WHITELIST,IP_BLACKLIST, DEFAULT_LOST_LIMIT, "", ""))
 
 c.execute('''CREATE TABLE "agents" (
     "id" integer PRIMARY KEY,
