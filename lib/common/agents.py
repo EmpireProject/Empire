@@ -1159,22 +1159,28 @@ class Agents:
 
                     counter = responsePackets[-1][1]
 
+                    results = False
+
                     # validate the counter in the packet in the setcode.replace
                     if counter and packets.validate_counter(counter):
 
-                        # signal that this agent returned results
-                        name = self.get_agent_name(sessionID)
-                        dispatcher.send("[*] Agent "+str(name)+" returned results.", sender="Agents")
-                        
+                        results = True
+
                         # process each result packet                        
                         for responsePacket in responsePackets:
                             (responseName, counter, length, data) = responsePacket
+
                             # process the agent's response
                             self.handle_agent_response(sessionID, responseName, data)
 
+                        if results:
+                            # signal that this agent returned results
+                            name = self.get_agent_name(sessionID)
+                            dispatcher.send("[*] Agent "+str(name)+" returned results.", sender="Agents")
+
                         # return a 200/valid
                         return (200, "")
-
+                            
                     else:
                         dispatcher.send("[!] Invalid counter value from "+str(sessionID), sender="Agents")
                         return (404, "")

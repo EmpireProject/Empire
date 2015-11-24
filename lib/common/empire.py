@@ -168,10 +168,8 @@ class MainMenu(cmd.Cmd):
             try:
                 if self.menu_state == "Agents":
                     self.do_agents("")
-                    self.menu_state = "Main"
                 elif self.menu_state == "Listeners":
                     self.do_listeners("")
-                    self.menu_state = "Main"
                 else:
                     # display the main title
                     messages.title(VERSION)
@@ -217,17 +215,14 @@ class MainMenu(cmd.Cmd):
             # exception used to signal jumping to "Main" menu
             except NavMain as e:
                 self.menu_state = "Main"
-                continue
 
             # exception used to signal jumping to "Agents" menu
             except NavAgents as e:
                 self.menu_state = "Agents"
-                continue
 
             # exception used to signal jumping to "Listeners" menu
             except NavListeners as e:
                 self.menu_state = "Listeners"
-                continue
 
 
     # print a nicely formatted help menu
@@ -300,47 +295,58 @@ class MainMenu(cmd.Cmd):
 
     def do_agents(self, line):
         "Jump to the Agents menu."
-        a = AgentsMenu(self)
-        a.cmdloop()
+        try:
+            a = AgentsMenu(self)
+            a.cmdloop()
+        except Exception as e:
+            raise e
 
 
     def do_listeners(self, line):
         "Interact with active listeners."
-        l = ListenerMenu(self)
-        l.cmdloop()
+        try:
+            l = ListenerMenu(self)
+            l.cmdloop()
+        except Exception as e:
+            raise e
 
 
     def do_usestager(self, line):
         "Use an Empire stager."
 
-        parts = line.split(" ")
+        try:
+            parts = line.split(" ")
 
-        if parts[0] not in self.stagers.stagers:
-            print helpers.color("[!] Error: invalid stager module")
+            if parts[0] not in self.stagers.stagers:
+                print helpers.color("[!] Error: invalid stager module")
 
-        elif len(parts) == 1:
-            l = StagerMenu(self, parts[0])
-            l.cmdloop()
-        elif len(parts) == 2:
-            listener = parts[1]
-            if not self.listeners.is_listener_valid(listener):
-                print helpers.color("[!] Please enter a valid listener name or ID")
-            else:
-                self.stagers.set_stager_option('Listener', listener)
+            elif len(parts) == 1:
                 l = StagerMenu(self, parts[0])
                 l.cmdloop()
-        else:
-            print helpers.color("[!] Error in MainMenu's do_userstager()")
-
+            elif len(parts) == 2:
+                listener = parts[1]
+                if not self.listeners.is_listener_valid(listener):
+                    print helpers.color("[!] Please enter a valid listener name or ID")
+                else:
+                    self.stagers.set_stager_option('Listener', listener)
+                    l = StagerMenu(self, parts[0])
+                    l.cmdloop()
+            else:
+                print helpers.color("[!] Error in MainMenu's do_userstager()")
+        
+        except Exception as e:
+            raise e
 
     def do_usemodule(self, line):
         "Use an Empire module."
         if line not in self.modules.modules:
             print helpers.color("[!] Error: invalid module")
         else:
-            l = ModuleMenu(self, line)
-            l.cmdloop()
-
+            try:
+                l = ModuleMenu(self, line)
+                l.cmdloop()
+            except Exception as e:
+                raise e
 
     def do_searchmodule(self, line):
         "Search Empire module names/descriptions."
@@ -1259,6 +1265,16 @@ class AgentMenu(cmd.Cmd):
         raise NavMain()
 
 
+    def do_listeners(self, line):
+        "Jump to the listeners menu."
+        raise NavListeners()
+
+
+    def do_agents(self, line):
+        "Jump to the Agents menu."
+        raise NavAgents()
+
+
     def do_help(self, *args):
         "Displays the help menu or syntax for particular commands."
         
@@ -1362,6 +1378,7 @@ class AgentMenu(cmd.Cmd):
             # update the agent log
             msg = "Tasked agent to delay sleep/jitter " + str(delay) + "/" + str(jitter)
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+
 
     def do_lostlimit(self, line):
         "Task an agent to change the limit on lost agent detection"
@@ -1841,16 +1858,6 @@ class AgentMenu(cmd.Cmd):
     def do_creds(self, line):
         "Display/return credentials from the database."
         self.mainMenu.do_creds(line)
-
-
-    def do_listeners(self, line):
-        "Jump to the listeners menu."
-        raise NavListeners()
-
-
-    def do_agents(self, line):
-        "Jump to the Agents menu."
-        raise NavAgents()
 
 
     def complete_psinject(self, text, line, begidx, endidx):
