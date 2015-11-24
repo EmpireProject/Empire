@@ -47,7 +47,7 @@ class Module:
                 'Value'         :   ''
             },
             'Directory' : {
-                'Description'   :   'Specify the path to authentication.',
+                'Description'   :   'Specify the path to authentication (e.g. /manager/html)',
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -77,9 +77,9 @@ class Module:
                 'Value'         :   ''
             },
             'NoPing' : {
-                'Description'   :   'Switch. Disable ing check.',
+                'Description'   :   'Switch. Disable ping check.',
                 'Required'      :   False,
-                'Value'         :   'False'
+                'Value'         :   ''
             }
         }
 
@@ -97,7 +97,7 @@ class Module:
     def generate(self):
         
         # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/recon/Find-Fruit.ps1"
+        moduleSource = self.mainMenu.installPath + "/data/module_source/recon/HTTP-Login.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -110,8 +110,17 @@ class Module:
 
         script = moduleCode
 
-        script += "\nHTTP-Login"
+        script += "\nTest-Login"
 
-        script += " | Format-Table -AutoSize | Out-String"
+        for option,values in self.options.iteritems():
+            if option.lower() != "agent" and option.lower() != "showall":
+                if values['Value'] and values['Value'] != '':
+                    if values['Value'].lower() == "true":
+                        # if we're just adding a switch
+                        script += " -" + str(option)
+                    else:
+                        script += " -" + str(option) + " " + str(values['Value']) 
+
+        script += " | Out-String"
 
         return script
