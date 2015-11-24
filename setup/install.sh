@@ -19,6 +19,7 @@ elif lsb_release -d | grep -q "Kali"; then
 	apt-get install python-dev
 	apt-get install python-m2crypto
 	apt-get install swig
+	apt-get install python-pip
 	pip install pycrypto
 	pip install iptools
 	pip install pydispatcher
