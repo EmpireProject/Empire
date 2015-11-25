@@ -5,7 +5,7 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-FindDLLHijack',
+            'Name': 'Find-DLLHijack',
 
             'Author': ['@harmj0y'],
 
@@ -65,8 +65,10 @@ class Module:
 
     def generate(self):
 
-        # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/privesc/powerup/Invoke-FindDLLHijack.ps1"
+        moduleName = self.info["Name"]
+        
+        # read in the common powerup.ps1 module source code
+        moduleSource = self.mainMenu.installPath + "/data/module_source/privesc/PowerUp.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -77,10 +79,10 @@ class Module:
         moduleCode = f.read()
         f.close()
 
-        script = moduleCode
+        # get just the code needed for the specified function
+        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
 
-        # build the dump command with whatever options we want
-        script += "Invoke-FindDLLHijack"
+        script += moduleName + " "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
@@ -90,5 +92,7 @@ class Module:
                         script += " -" + str(option)
                     else:
                         script += " -" + str(option) + " " + str(values['Value']) 
+
+        script += ' | ft -wrap | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         return script
