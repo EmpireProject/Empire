@@ -1,4 +1,4 @@
-
+from lib.common import helpers
 
 class Module:
 
@@ -35,6 +35,11 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'CredID' : {
+                'Description'   :   'CredID from the store to use.',
+                'Required'      :   False,
+                'Value'         :   ''                
+            },
             'IP' : {
                 'Description'   :   'Address of the target server.',
                 'Required'      :   True,
@@ -42,12 +47,12 @@ class Module:
             },
             'Username' : {
                 'Description'   :   'The username to login with.',
-                'Required'      :   True,
+                'Required'      :   False,
                 'Value'         :   ''
             },
             'Password' : {
                 'Description'   :   'The password to login with.',
-                'Required'      :   True,
+                'Required'      :   False,
                 'Value'         :   ''
             },
             'Command' : {
@@ -81,6 +86,38 @@ class Module:
 
         script = moduleCode
 
-        script += "\nInvoke-SSHCommand"
+        script += "\nInvoke-SSHCommand "
+
+        # if a credential ID is specified, try to parse
+        credID = self.options["CredID"]['Value']
+        if credID != "":
+            
+            if not self.mainMenu.credentials.is_credential_valid(credID):
+                print helpers.color("[!] CredID is invalid!")
+                return ""
+
+            (credID, credType, domainName, userName, password, host, sid, notes) = self.mainMenu.credentials.get_credentials(credID)[0]
+
+            if userName != "":
+                self.options["Username"]['Value'] = str(userName)
+            if password != "":
+                self.options["Password"]['Value'] = str(password)
+
+        if self.options["Username"]['Value'] == "":
+            print helpers.color("[!] Either 'CredId' or Username/Password must be specified.")
+            return ""
+        if self.options["Password"]['Value'] == "":
+            print helpers.color("[!] Either 'CredId' or Username/Password must be specified.")
+            return ""
+            
+        for option,values in self.options.iteritems():
+            if option.lower() != "agent" and option.lower() != "credid":
+                if values['Value'] and values['Value'] != '':
+                    if values['Value'].lower() == "true":
+                        # if we're just adding a switch
+                        script += " -" + str(option)
+                    else:
+                        script += " -" + str(option) + " " + str(values['Value']) 
+
 
         return script
