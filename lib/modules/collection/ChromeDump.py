@@ -34,7 +34,7 @@ class Module:
 
             # list of any references/other comments
             'Comments': [
-                'https://github.com/xorrior/RandomPS-Scripts/blob/master/Get-ChromeInfo.ps1'
+                'https://github.com/xorrior/RandomPS-Scripts/blob/master/Get-ChromeDump.ps1'
             ]
         }
 
