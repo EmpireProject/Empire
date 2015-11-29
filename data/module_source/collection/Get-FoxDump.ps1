@@ -1,4 +1,4 @@
-﻿Function Get-FoxDump 
+Function Get-FoxDump 
 {
     <#
     .SYNOPSIS 

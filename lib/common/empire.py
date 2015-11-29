@@ -2414,6 +2414,12 @@ class ModuleMenu(cmd.Cmd):
             dispatcher.send("[!] Error: module produced an empty script", sender="Empire")
             return
 
+        try:
+            moduleData.decode('ascii')
+        except UnicodeDecodeError:
+            print helpers.color("[!] Error: module source contains non-ascii characters")
+            return
+
         # strip all comments from the module
         moduleData = helpers.strip_powershell_comments(moduleData)
 
