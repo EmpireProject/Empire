@@ -1,3 +1,23 @@
+11/29/2015
+----------
+-Built several modules in management/mailraider/* to integrate @xorrior's MailRaider.ps1
+
+11/28/2015
+----------
+-Merged @xorrior's FoxDump and ChromeDump modules
+
+11/25/2015
+----------
+-Merged @rvrsh3ll's lateral_movement/invoke_sshcommand
+
+11/24/2015
+----------
+-Added script autorun functionality
+
+11/23/2015
+----------
+-Merged @rvrsh3ll's recon/http_login
+
 11/21/2015
 ----------
 -Merge of exploitation/exploit_jboss, bug fix
