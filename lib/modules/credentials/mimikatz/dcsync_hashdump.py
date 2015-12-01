@@ -91,16 +91,16 @@ class Module:
 
         script += "Invoke-DCSync -PWDumpFormat "
 
-        if self.options["domain"]['Value'] != '':
+        if self.options["Domain"]['Value'] != '':
             script += " -Domain " + self.options['domain']['Value']
 
-        if self.options["forest"]['Value'] != '':
+        if self.options["Forest"]['Value'] != '':
             script += " -DumpForest "
 
-        if self.options["computers"]['Value'] != '':
+        if self.options["Computers"]['Value'] != '':
             script += " -GetComputers "
 
-        if self.options["active"]['Value'] == '':
+        if self.options["Active"]['Value'] == '':
             script += " -OnlyActive:$false "
 
         script += "| Out-String;"
