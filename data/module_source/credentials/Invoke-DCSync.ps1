@@ -3073,11 +3073,11 @@ Param(
                         $out = $Output
                     }else{
                         if($Output -match ".*Primary:CLEARTEXT.*" -and (-not $plaintextWarning)){
-                            Write-Warning "PlainText credentials found. HIGHLY recommend you restart with -AllData flag"
+                            "[!] PlainText credentials found. HIGHLY recommend you restart with -AllData flag"
                             $plaintextWarning = $true
                         }
                         if($Output -match "ERROR kuhl_m_lsadump_dcsync.*" -and (-not $permissionsWarning)){
-                            Write-Error "DCSync returned an error. Do you have permissions?" -ErrorAction Continue
+                            "[!] DCSync returned an error. Do you have permissions?"
                             $permissionsWarning = $true
                         }
                         if($Output -match "Object Relative ID   : (.+)"){
@@ -3093,8 +3093,13 @@ Param(
                     }
                 }
 
-                if($PWDumpFormat -and $out.Hash -ne "-"){
-                    "$($out.User):$($out.ID):aad3b435b51404eeaad3b435b51404ee:$($out.Hash):::"
+                if($PWDumpFormat){
+        			if($out.Hash -ne "-"){
+        				"$($out.User):$($out.ID):aad3b435b51404eeaad3b435b51404ee:$($out.Hash):::"
+        			}
+        			else{
+        				"$($out.User):$($out.ID):NONE:::"
+        			}			
                 }
                 else{ $out }
             }

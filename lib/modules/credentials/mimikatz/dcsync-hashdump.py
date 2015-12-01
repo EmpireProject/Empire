@@ -54,7 +54,7 @@ class Module:
                 'Description'   :   'Switch. Pop the big daddy (forest) as well.',
                 'Required'      :   False,
                 'Value'         :   ''
-            }
+            },
             'active' : {
                 'Description'   :   'Switch. Only collect hashes for accounts marked as active.',
                 'Required'      :   False,
@@ -103,6 +103,6 @@ class Module:
         if self.options["active"]['Value'] == '':
             script += " -OnlyActive:$false "
 
-        script += ";"
+        script += "| Out-String;"
 
         return script
