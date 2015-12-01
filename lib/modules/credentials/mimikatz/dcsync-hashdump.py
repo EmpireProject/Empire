@@ -56,7 +56,7 @@ class Module:
                 'Value'         :   ''
             },
             'active' : {
-                'Description'   :   'Switch. Only collect hashes for accounts marked as active.',
+                'Description'   :   'Switch. Only collect hashes for accounts marked as active. Default is True',
                 'Required'      :   False,
                 'Value'         :   ''
             }
