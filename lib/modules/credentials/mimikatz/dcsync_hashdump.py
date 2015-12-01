@@ -40,22 +40,22 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'computers' : {
+            'Computers' : {
                 'Description'   :   'Switch. Include machine hashes in the dump',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'domain' : {
+            'Domain' : {
                 'Description'   :   'Specified (fqdn) domain to pull for the primary domain/DC.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'forest' : {
+            'Forest' : {
                 'Description'   :   'Switch. Pop the big daddy (forest) as well.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'active' : {
+            'Active' : {
                 'Description'   :   'Switch. Only collect hashes for accounts marked as active. Default is True',
                 'Required'      :   False,
                 'Value'         :   ''
