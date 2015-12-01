@@ -11,10 +11,10 @@ from Crypto.Random import random
 ###################################################
 
 # Staging Key is set up via environmental variable
-# or via command line. By setting RANDOM as random
+# or via command line. By setting RANDOM a randomly
 # selected password will automatically be selected
-# or it can be set to any bash acceptable
-# character set for a password.
+# or it can be set to any bash acceptable character
+# set for a password.
 
 STAGING_KEY = os.getenv('STAGING_KEY', "BLANK")
 punctuation = '!#$%&()*+,-./:;<=>?@[\]^_`{|}~'
