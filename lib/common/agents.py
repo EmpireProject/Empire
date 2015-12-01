@@ -1401,7 +1401,7 @@ class Agents:
 
                 # if a script autorun is set, set that as the agent's first tasking
                 autorun = self.get_autoruns()
-                if autorun[0] != '' and autorun[1] != '':
+                if autorun and autorun[0] != '' and autorun[1] != '':
                     self.add_agent_task(sessionID, autorun[0], autorun[1])
 
                 return(200, encryptedAgent)
