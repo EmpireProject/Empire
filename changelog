@@ -1,3 +1,9 @@
+11/30/2015
+----------
+-Combined persistence/debugger/* into persistence/misc/debugger
+-Added SysWow64 option to management/spawn to spawn a 32-bit powershell.exe
+-Added persistence/userland/backdoor_lnk
+
 11/29/2015
 ----------
 -Built several modules in management/mailraider/* to integrate @xorrior's MailRaider.ps1
