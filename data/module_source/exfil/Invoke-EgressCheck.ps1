@@ -1,5 +1,5 @@
 function Invoke-EgressCheck {
-  <#  
+  <#
   .SYNOPSIS
 
   Generates traffic on the ports specified, using the protocol specified.
@@ -17,14 +17,34 @@ function Invoke-EgressCheck {
   .PARAMETER portrange
 
   The ports to try. This accepts comma-separated individual port numbers, ranges
-  or both. 
+  or both.
 
-  Example: -portrange "22,23,53,500-1000,1024,1025-1100"
+  Example: -portrange "22-25,53,80,443,445,3306,3389"
+  Default: "22-25,53,80,443,445,3306,3389"
+
+  .PARAMETER protocol
+
+  The IP protocol to use. This can be one of TCP, UDP or ALL.
+
+  Example: -protocol "TCP"
+  Default: TCP
+
+  .PARAMETER verbose
+
+  The verbosity of the console output.
+  If this is 0, there is no intentional verbosity.
+  If this is 1, it will output:
+    't' - Sending a TCP packet
+    'u' - Sending a UDP packet
+    'W' - Waiting (i.e. sleep/delay)
+
+  Example: -verbose 0
+  Default: 0
 
   #>
 
   [CmdletBinding()]
-  param([string] $ip, [string] $portrange, [string] $protocol) 
+  param([string] $ip, [string] $portrange = "22-25,53,80,443,445,3306,3389", [string] $protocol = "TCP", [int] $verbose=0)
 
     $pr_split = $portrange -split ','
     $ports = @()
@@ -42,9 +62,9 @@ function Invoke-EgressCheck {
     }
 
     foreach ($eachport in $ports) {
-        Write-Output "Sending TCP/$eachport to $ip"
+        if ($verbose>0) { Write-Host -NoNewLine "t" }
 		_tcp -ip $ip -port $eachport
-        Write-Output "Sending UDP/$eachport to $ip"
+        if ($verbose>0) { Write-Host -NoNewLine "t" }
 		_udp -ip $ip -port $eachport
         Start-Sleep -m (0.2*1000)
     }
@@ -53,28 +73,28 @@ function Invoke-EgressCheck {
 
 # Send the TCP packet async
 function _tcp {
-    [CmdletBinding()]                                                                                                                                                                           
+    [CmdletBinding()]
     param([string]$ip, [int]$port)
 
-	try {                                                                                                                                                                                       
-		$t = New-Object System.Net.Sockets.TCPClient                                                                                                                              
+	try {
+		$t = New-Object System.Net.Sockets.TCPClient
 		$t.BeginConnect($ip, $port, $null, $null) | Out-Null
         $t.Close()
-        
+
 	}
-	catch { }  
+	catch { }
 }
 
 # Send the UDP packet async
 function _udp {
-    [CmdletBinding()]                                                                                                                                                                           
+    [CmdletBinding()]
     param([string]$ip, [int]$port)
 
     $d = [system.Text.Encoding]::UTF8.GetBytes(".")
-	try {                                                                                                                                                                                       
-		$t = New-Object System.Net.Sockets.UDPClient       
+	try {
+		$t = New-Object System.Net.Sockets.UDPClient
         $t.Send($d, $d.Length, $ip, $port) | Out-Null
-        $t.Close()        
+        $t.Close()
 	}
-	catch { }  
+	catch { }
 }
