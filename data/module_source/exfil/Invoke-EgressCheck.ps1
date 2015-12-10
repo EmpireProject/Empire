@@ -72,24 +72,22 @@ function Invoke-EgressCheck {
 }
 
 function egress {
-
     [CmdletBinding()]
-    param([string]$ip, [int]$port, [int]$verbosity, [int]$delay, [string]$protocol) {
+    param([string]$ip, [int]$port, [int]$verbosity, [int]$delay, [string]$protocol) 
 
     if ($protocol -eq "TCP" -Or $protocol -eq "ALL") {
 	    generate_tcp -ip $ip -port $port -verbosity $verbosity
-            if ($delay -gt 0) {
-                Start-Sleep -m ($delay)
-                if ($verbosity -gt 0) { Write-Host -NoNewLine "W" }
-            }
+        if ($delay -gt 0) {
+            Start-Sleep -m ($delay)
+            if ($verbosity -gt 0) { Write-Host -NoNewLine "W" }
+        }
      }
 
     if ($protocol -eq "UDP" -Or $protocol -eq "ALL") {
 	    generate_udp -ip $ip -port $port -verbosity $verbosity
-            if ($delay -gt 0) {
-                Start-Sleep -m ($delay)
-                if ($verbosity -gt 0) { Write-Host -NoNewLine "W" }
-            }
+        if ($delay -gt 0) {
+            Start-Sleep -m ($delay)
+            if ($verbosity -gt 0) { Write-Host -NoNewLine "W" }
         }
     }
 
