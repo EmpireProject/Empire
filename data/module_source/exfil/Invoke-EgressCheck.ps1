@@ -62,39 +62,38 @@ function Invoke-EgressCheck {
     }
 
     foreach ($eachport in $ports) {
-        if ($verbose>0) { Write-Host -NoNewLine "t" }
-		_tcp -ip $ip -port $eachport
-        if ($verbose>0) { Write-Host -NoNewLine "t" }
-		_udp -ip $ip -port $eachport
+		generate_tcp -ip $ip -port $eachport -verbose $verbose
+		generate_udp -ip $ip -port $eachport -verbose $verbose
         Start-Sleep -m (0.2*1000)
     }
 
 }
 
 # Send the TCP packet async
-function _tcp {
+function generate_tcp {
     [CmdletBinding()]
-    param([string]$ip, [int]$port)
+    param([string]$ip, [int]$port, [int]$verbose)
 
 	try {
 		$t = New-Object System.Net.Sockets.TCPClient
 		$t.BeginConnect($ip, $port, $null, $null) | Out-Null
         $t.Close()
-
+        if ($verbose>0) { Write-Host -NoNewLine "t" }
 	}
 	catch { }
 }
 
 # Send the UDP packet async
-function _udp {
+function generate_udp {
     [CmdletBinding()]
-    param([string]$ip, [int]$port)
+    param([string]$ip, [int]$port,[int]$verbose)
 
     $d = [system.Text.Encoding]::UTF8.GetBytes(".")
 	try {
 		$t = New-Object System.Net.Sockets.UDPClient
         $t.Send($d, $d.Length, $ip, $port) | Out-Null
         $t.Close()
+        if ($verbose>0) { Write-Host -NoNewLine "u" }
 	}
 	catch { }
 }
