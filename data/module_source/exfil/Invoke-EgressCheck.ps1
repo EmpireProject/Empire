@@ -1,4 +1,5 @@
 function Invoke-EgressCheck {
+
   <#
   .SYNOPSIS
 
@@ -29,7 +30,7 @@ function Invoke-EgressCheck {
   Example: -protocol "TCP"
   Default: TCP
 
-  .PARAMETER verbose
+  .PARAMETER verbosity
 
   The verbosity of the console output.
   If this is 0, there is no intentional verbosity.
@@ -38,13 +39,21 @@ function Invoke-EgressCheck {
     'u' - Sending a UDP packet
     'W' - Waiting (i.e. sleep/delay)
 
-  Example: -verbose 0
+  Example: -verbosity 0
   Default: 0
+
+  .PARAMETER delay
+
+  The delay between sending packets. This injects a delay in milliseconds between
+  packets generated on a per-port per-protocol basis. 
+
+  Example: -delay 100
+  Default: 100
 
   #>
 
   [CmdletBinding()]
-  param([string] $ip, [string] $portrange = "22-25,53,80,443,445,3306,3389", [string] $protocol = "TCP", [int] $verbose=0)
+  param([string] $ip, [string] $portrange = "22-25,53,80,443,445,3306,3389", [string] $protocol = "TCP", [int] $verbosity=0, [int] $delay=100)
 
     $pr_split = $portrange -split ','
     $ports = @()
@@ -62,38 +71,50 @@ function Invoke-EgressCheck {
     }
 
     foreach ($eachport in $ports) {
-		generate_tcp -ip $ip -port $eachport -verbose $verbose
-		generate_udp -ip $ip -port $eachport -verbose $verbose
-        Start-Sleep -m (0.2*1000)
+        if ($protocol.toUpper() -eq 'TCP' -Or $protocol.toUpper() -eq 'ALL') {
+		    generate_tcp -ip $ip -port $eachport -verbosity $verbosity
+            if ($delay -gt 0) {
+                Start-Sleep -m ($delay)
+                if ($verbosity>0) { Write-Host -NoNewLine "W" }
+            }
+        }
+
+        if ($protocol.toUpper() -eq 'UDP' -Or $protocol.toUpper() -eq 'ALL') {
+		    generate_udp -ip $ip -port $eachport -verbosity $verbosity
+            if ($delay -gt 0) {
+                Start-Sleep -m ($delay)
+                if ($verbosity>0) { Write-Host -NoNewLine "W" }
+            }
+        }
     }
 
 }
 
-# Send the TCP packet async
+# Send the TCP packet
 function generate_tcp {
     [CmdletBinding()]
-    param([string]$ip, [int]$port, [int]$verbose)
+    param([string]$ip, [int]$port, [int]$verbosity)
 
 	try {
 		$t = New-Object System.Net.Sockets.TCPClient
 		$t.BeginConnect($ip, $port, $null, $null) | Out-Null
         $t.Close()
-        if ($verbose>0) { Write-Host -NoNewLine "t" }
+        if ($verbosity>0) { Write-Host -NoNewLine "t" }
 	}
 	catch { }
 }
 
-# Send the UDP packet async
+# Send the UDP packet
 function generate_udp {
     [CmdletBinding()]
-    param([string]$ip, [int]$port,[int]$verbose)
+    param([string]$ip, [int]$port,[int]$verbosity)
 
     $d = [system.Text.Encoding]::UTF8.GetBytes(".")
 	try {
 		$t = New-Object System.Net.Sockets.UDPClient
         $t.Send($d, $d.Length, $ip, $port) | Out-Null
         $t.Close()
-        if ($verbose>0) { Write-Host -NoNewLine "u" }
+        if ($verbosity>0) { Write-Host -NoNewLine "u" }
 	}
 	catch { }
 }
