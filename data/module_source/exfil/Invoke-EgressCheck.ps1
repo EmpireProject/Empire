@@ -10,45 +10,38 @@ function Invoke-EgressCheck {
   A listener on the destination IP address will be required.
 
   .PARAMETER ip
-
   The IP address of the target endpoint.
-
   Example: -ip "10.0.0.1"
 
   .PARAMETER portrange
-
   The ports to try. This accepts comma-separated individual port numbers, ranges
   or both.
-
   Example: -portrange "22-25,53,80,443,445,3306,3389"
   Default: "22-25,53,80,443,445,3306,3389"
 
   .PARAMETER protocol
-
   The IP protocol to use. This can be one of TCP, UDP or ALL.
-
   Example: -protocol "TCP"
   Default: TCP
 
   .PARAMETER verbosity
-
   The verbosity of the console output.
   If this is 0, there is no intentional verbosity.
   If this is 1, it will output:
     't' - Sending a TCP packet
     'u' - Sending a UDP packet
     'W' - Waiting (i.e. sleep/delay)
-
   Example: -verbosity 0
   Default: 0
 
   .PARAMETER delay
-
   The delay between sending packets. This injects a delay in milliseconds between
   packets generated on a per-port per-protocol basis. 
-
   Example: -delay 100
   Default: 100
+
+  .EXAMPLE
+    Invoke-EgressCheck -ip 1.2.3.4 -portrange "22-25,53,80,443,445,3306,3389" -protocol ALL -delay 100 -verbosity 0
 
   #>
 
