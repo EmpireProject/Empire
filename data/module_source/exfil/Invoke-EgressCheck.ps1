@@ -71,19 +71,19 @@ function Invoke-EgressCheck {
     }
 
     foreach ($eachport in $ports) {
-        if ($protocol.toUpper() -eq "TCP" -Or $protocol.toUpper() -eq "ALL") {
+        if ($protocol -eq "TCP" -Or $protocol -eq "ALL") {
 		    generate_tcp -ip $ip -port $eachport -verbosity $verbosity
             if ($delay -gt 0) {
                 Start-Sleep -m ($delay)
-                if ($verbosity>0) { Write-Host -NoNewLine "W" }
+                if ($verbosity -gt 0) { Write-Host -NoNewLine "W" }
             }
         }
 
-        if ($protocol.toUpper() -eq "UDP" -Or $protocol.toUpper() -eq "ALL") {
+        if ($protocol -eq "UDP" -Or $protocol -eq "ALL") {
 		    generate_udp -ip $ip -port $eachport -verbosity $verbosity
             if ($delay -gt 0) {
                 Start-Sleep -m ($delay)
-                if ($verbosity>0) { Write-Host -NoNewLine "W" }
+                if ($verbosity -gt 0) { Write-Host -NoNewLine "W" }
             }
         }
     }
@@ -99,7 +99,7 @@ function generate_tcp {
 		$t = New-Object System.Net.Sockets.TCPClient
 		$t.BeginConnect($ip, $port, $null, $null) | Out-Null
         $t.Close()
-        if ($verbosity>0) { Write-Host -NoNewLine "t" }
+        if ($verbosity -gt 0) { Write-Host -NoNewLine "t" }
 	}
 	catch { }
 }
@@ -114,7 +114,7 @@ function generate_udp {
 		$t = New-Object System.Net.Sockets.UDPClient
         $t.Send($d, $d.Length, $ip, $port) | Out-Null
         $t.Close()
-        if ($verbosity>0) { Write-Host -NoNewLine "u" }
+        if ($verbosity -gt 0) { Write-Host -NoNewLine "u" }
 	}
 	catch { }
 }
