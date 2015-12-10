@@ -1,7 +1,30 @@
-# Perform the egress check
-function ec {
-    [CmdletBinding()]                                                                                                                                                                           
-    param([string]$ip, [string]$pr) 
+function Invoke-EgressCheck {
+  <#  
+  .SYNOPSIS
+
+  Generates traffic on the ports specified, using the protocol specified.
+  This is most useful when attempting to identify breaches in a firewall from
+  an egress perspective.
+
+  A listener on the destination IP address will be required.
+
+  .PARAMETER ip
+
+  The IP address of the target endpoint.
+
+  Example: -ip "10.0.0.1"
+
+  .PARAMETER portrange
+
+  The ports to try. This accepts comma-separated individual port numbers, ranges
+  or both. 
+
+  Example: -portrange "22,23,53,500-1000,1024,1025-1100"
+
+  #>
+
+  [CmdletBinding()]
+  param([string] $ip, [string] $portrange, [string] $protocol) 
 
     $pr_split = $portrange -split ','
     $ports = @()
@@ -14,7 +37,6 @@ function ec {
         } elseif ($p -match '^[0-9]+$') {
             $ports += $p
         } else {
-            #Error in port definition
             return
         }
     }
@@ -56,6 +78,3 @@ function _udp {
 	}
 	catch { }  
 }
-
-# Set the parameters
-ec -ip "192.0.2.1" -pr "20-30,40,50"
