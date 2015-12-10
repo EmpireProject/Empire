@@ -56,31 +56,36 @@ function Invoke-EgressCheck {
   param([string] $ip, [string] $portrange = "22-25,53,80,443,445,3306,3389", [string] $protocol = "TCP", [int] $verbosity=0, [int] $delay=100)
 
     $pr_split = $portrange -split ','
-    $ports = @()
     foreach ($p in $pr_split) {
         if ($p -match '^[0-9]+-[0-9]+$') {
             $prange = $p -split '-'
             for ($c = [convert]::ToInt32($prange[0]);$c -le [convert]::ToInt32($prange[1]);$c++) {
-                $ports += $c
+                egress -ip $ip -port $c -verbosity $verbosity -delay $delay -protocol $protocol
             }
         } elseif ($p -match '^[0-9]+$') {
-            $ports += $p
+            egress -ip $ip -port $c -verbosity $verbosity -delay $delay -protocol $protocol
         } else {
             return
         }
     }
 
-    foreach ($eachport in $ports) {
-        if ($protocol -eq "TCP" -Or $protocol -eq "ALL") {
-		    generate_tcp -ip $ip -port $eachport -verbosity $verbosity
+}
+
+function egress {
+
+    [CmdletBinding()]
+    param([string]$ip, [int]$port, [int]$verbosity, [int]$delay, [string]$protocol) {
+
+    if ($protocol -eq "TCP" -Or $protocol -eq "ALL") {
+	    generate_tcp -ip $ip -port $port -verbosity $verbosity
             if ($delay -gt 0) {
                 Start-Sleep -m ($delay)
                 if ($verbosity -gt 0) { Write-Host -NoNewLine "W" }
             }
-        }
+     }
 
-        if ($protocol -eq "UDP" -Or $protocol -eq "ALL") {
-		    generate_udp -ip $ip -port $eachport -verbosity $verbosity
+    if ($protocol -eq "UDP" -Or $protocol -eq "ALL") {
+	    generate_udp -ip $ip -port $port -verbosity $verbosity
             if ($delay -gt 0) {
                 Start-Sleep -m ($delay)
                 if ($verbosity -gt 0) { Write-Host -NoNewLine "W" }
