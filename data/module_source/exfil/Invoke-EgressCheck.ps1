@@ -71,7 +71,7 @@ function Invoke-EgressCheck {
     }
 
     foreach ($eachport in $ports) {
-        if ($protocol.toUpper() -eq 'TCP' -Or $protocol.toUpper() -eq 'ALL') {
+        if ($protocol.toUpper() -eq "TCP" -Or $protocol.toUpper() -eq "ALL") {
 		    generate_tcp -ip $ip -port $eachport -verbosity $verbosity
             if ($delay -gt 0) {
                 Start-Sleep -m ($delay)
@@ -79,7 +79,7 @@ function Invoke-EgressCheck {
             }
         }
 
-        if ($protocol.toUpper() -eq 'UDP' -Or $protocol.toUpper() -eq 'ALL') {
+        if ($protocol.toUpper() -eq "UDP" -Or $protocol.toUpper() -eq "ALL") {
 		    generate_udp -ip $ip -port $eachport -verbosity $verbosity
             if ($delay -gt 0) {
                 Start-Sleep -m ($delay)
