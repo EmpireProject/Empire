@@ -1,3 +1,15 @@
+12/11/2015
+----------
+-Updated powerview.ps1
+-Added situational_awareness/network/powerview/get_cached_rdpconnection
+-Added situational_awareness/network/powerview/set_ad_object
+-Added management/downgrade_account
+
+12/9/2015
+---------
+-Added credentials/mimikatz/cache
+
+
 11/30/2015
 ----------
 -Combined persistence/debugger/* into persistence/misc/debugger
