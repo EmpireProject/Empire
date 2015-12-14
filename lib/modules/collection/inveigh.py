@@ -47,7 +47,7 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   ''
             },
-	    'LLMNR' : {
+            'LLMNR' : {
                 'Description'   :   'Enable/Disable LLMNR spoofing (Y/N).',
                 'Required'      :   False,
                 'Value'         :   'Y'
@@ -57,22 +57,22 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   'Y'
             },
-	    'NBNSTypes' : {
+            'NBNSTypes' : {
                 'Description'   :   'Comma separated list of NBNS types to spoof.',
                 'Required'      :   False,
                 'Value'         :   '00,20'
             },
-	    'Repeat' : {
+            'Repeat' : {
                 'Description'   :   'Enable/Disable repeated LLMNR/NBNS spoofs to a victim system after one user challenge/response has been captured (Y/N).',
                 'Required'      :   False,
                 'Value'         :   'Y'
             },
-	    'SpoofList' : {
+            'SpoofList' : {
                 'Description'   :   'Comma separated list of hostnames to spoof with LLMNR and NBNS.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-	    'HTTP' : {
+            'HTTP' : {
                 'Description'   :   'Enable/Disable HTTP challenge/response capture (Y/N).',
                 'Required'      :   False,
                 'Value'         :   'Y'
@@ -87,7 +87,7 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   ''
             },
-	    'MachineAccounts' : {
+            'MachineAccounts' : {
                 'Description'   :   'Enable/Disable showing NTLM challenge/response captures from machine accounts (Y/N).',
                 'Required'      :   False,
                 'Value'         :   'N'
@@ -97,7 +97,7 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   'Y'
             },
-	    'RunTime' : {
+            'RunTime' : {
                 'Description'   :   'Run time duration in minutes.',
                 'Required'      :   False,
                 'Value'         :   ''
@@ -132,7 +132,7 @@ class Module:
         script = moduleCode
 
         # disable file output
-        script += "\n" + 'Invoke-Inveigh -ConsoleOutput y -Tool 2 '
+        script += "\n" + 'Invoke-Inveigh -ConsoleOutput "Y" -Tool "2" '
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
@@ -141,6 +141,10 @@ class Module:
                         # if we're just adding a switch
                         script += " -" + str(option)
                     else:
-                        script += " -" + str(option) + " " + str(values['Value'])
+                        if "," in str(values['Value']):
+                            quoted = '"' + str(values['Value']).replace(',', '","') + '"'
+                            script += " -" + str(option) + " " + quoted
+                        else:
+                            script += " -" + str(option) + " \"" + str(values['Value']) + "\""
 
         return script
