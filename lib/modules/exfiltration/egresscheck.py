@@ -49,10 +49,30 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Command' : {
-                'Description'   :   'Command to execute',
+            'ip' : {
+                'Description'   :   'Target IP Address',
                 'Required'      :   True,
-                'Value'         :   'test'
+                'Value'         :   ''
+            }
+            'protocol' : {
+                'Description'   :   'The protocol to use. This can be TCP or UDP',
+                'Required'      :   True,
+                'Value'         :   'TCP'
+            }
+            'portrange' : {
+                'Description'   :   'The range of ports to connect on. This can be a comma separated list or dash-separated ranges.',
+                'Required'      :   True,
+                'Value'         :   '22-25,53,80,443,445,3306,3389'
+            }
+            'verbosity' : {
+                'Description'   :   'Verbosity of the script. 0 = quiet, 1 = status',
+                'Required'      :   True,
+                'Value'         :   '0'
+            }
+            'delay' : {
+                'Description'   :   'Delay, in milliseconds, between ports being tested',
+                'Required'      :   True,
+                'Value'         :   '100'
             }
         }
 
@@ -73,24 +93,10 @@ class Module:
 
 
     def generate(self):
-        
-        # the PowerShell script itself, with the command to invoke
-        #   for execution appended to the end. Scripts should output
-        #   everything to the pipeline for proper parsing.
-        #
-        # the script should be stripped of comments, with a link to any
-        #   original reference script included in the comments.
-        script = """
-function Invoke-Something {
-    
-}
-Invoke-Something"""
-
-
         # if you're reading in a large, external script that might be updates,
         #   use the pattern below
         # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/..."
+        moduleSource = self.mainMenu.installPath + "/data/module_source/exfil/Invoke-EgressCheck.ps1"
         try:
             f = open(moduleSource, 'r')
         except:
