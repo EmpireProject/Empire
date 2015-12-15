@@ -108,6 +108,8 @@ class Module:
 
         script = moduleCode
 
+        # Need to actually run the module that has been loaded
+        script += 'Invoke-EgressCheck'
 
         # add any arguments to the end execution of the script
         for option,values in self.options.iteritems():
@@ -117,6 +119,6 @@ class Module:
                         # if we're just adding a switch
                         script += " -" + str(option)
                     else:
-                        script += " -" + str(option) + " " + str(values['Value'])
+                        script += " -" + str(option) + " \"" + str(values['Value']) + "\""
 
         return script
