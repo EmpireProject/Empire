@@ -53,22 +53,22 @@ class Module:
                 'Description'   :   'Target IP Address',
                 'Required'      :   True,
                 'Value'         :   ''
-            }
+            },
             'protocol' : {
                 'Description'   :   'The protocol to use. This can be TCP or UDP',
                 'Required'      :   True,
                 'Value'         :   'TCP'
-            }
+            },
             'portrange' : {
                 'Description'   :   'The range of ports to connect on. This can be a comma separated list or dash-separated ranges.',
                 'Required'      :   True,
                 'Value'         :   '22-25,53,80,443,445,3306,3389'
-            }
+            },
             'verbosity' : {
                 'Description'   :   'Verbosity of the script. 0 = quiet, 1 = status',
                 'Required'      :   True,
                 'Value'         :   '0'
-            }
+            },
             'delay' : {
                 'Description'   :   'Delay, in milliseconds, between ports being tested',
                 'Required'      :   True,
