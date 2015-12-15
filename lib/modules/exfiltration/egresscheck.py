@@ -7,13 +7,13 @@ class Module:
         # metadata info about the module, not modified during runtime
         self.info = {
             # name for the module that will appear in module menus
-            'Name': 'Invoke-Something',
+            'Name': 'Invoke-EgressCheck',
 
             # list of one or more authors for the module
-            'Author': ['@yourname'],
+            'Author': ['@ukstufus'],
 
             # more verbose multi-line description of the module
-            'Description': ('description line 1'
+            'Description': ('This module will generate traffic on a provided range'
                             'description line 2'),
 
             # True if the module needs to run in the background
@@ -26,7 +26,8 @@ class Module:
             'NeedsAdmin' : False,
 
             # True if the method doesn't touch disk/is reasonably opsec safe
-            'OpsecSafe' : True,
+            # Disabled - this can be a relatively noisy module but sometimes useful
+            'OpsecSafe' : False,
             
             # The minimum PowerShell version needed for the module to run
             'MinPSVersion' : '2',
@@ -44,7 +45,7 @@ class Module:
             #   value_name : {description, required, default_value}
             'Agent' : {
                 # The 'Agent' option is the only one that MUST be in a module
-                'Description'   :   'Agent to grab a screenshot from.',
+                'Description'   :   'Agent to generate the source traffic on',
                 'Required'      :   True,
                 'Value'         :   ''
             },
