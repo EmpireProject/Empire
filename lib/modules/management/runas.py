@@ -115,8 +115,8 @@ class Module:
             if password != "":
                 self.options["Password"]['Value'] = password
         
-        if self.options["DomainName"]['Value'] == "" or self.options["UserName"]['Value'] == "" or self.options["Password"]['Value'] == "":
-            print helpers.color("[!] DomainName/UserName/Password or CredID required!")
+        if self.options["Domain"]['Value'] == "" or self.options["UserName"]['Value'] == "" or self.options["Password"]['Value'] == "":
+            print helpers.color("[!] Domain/UserName/Password or CredID required!")
             return ""
 
 
