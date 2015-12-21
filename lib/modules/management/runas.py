@@ -104,6 +104,10 @@ class Module:
 
             (credID, credType, domainName, userName, password, host, sid, notes) = self.mainMenu.credentials.get_credentials(credID)[0]
 
+            if credType != "plaintext":
+                print helpers.color("[!] A CredID with a plaintext password must be used!")
+                return ""
+
             if domainName != "":
                 self.options["Domain"]['Value'] = domainName
             if userName != "":
@@ -111,6 +115,10 @@ class Module:
             if password != "":
                 self.options["Password"]['Value'] = password
         
+        if self.options["Domain"]['Value'] == "" or self.options["UserName"]['Value'] == "" or self.options["Password"]['Value'] == "":
+            print helpers.color("[!] Domain/UserName/Password or CredID required!")
+            return ""
+
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent" and option.lower() != "credid":

