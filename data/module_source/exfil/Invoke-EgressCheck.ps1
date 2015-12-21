@@ -1,3 +1,11 @@
+<#
+
+This module aims to offer the ability to generate 
+Author: Stuart Morgan (@ukstufus)
+Web: https://github.com/stufus
+
+#>
+
 function Invoke-EgressCheck {
 
   <#
@@ -7,11 +15,14 @@ function Invoke-EgressCheck {
 
   .DESCRIPTION
 
-  This will generate a single packet on each port specified, using the protocol specified.
-  This is most useful when attempting to identify breaches in a firewall from an egress 
-  perspective. Note that it is quite noisy, but it may be appropriate in some situations.
+  This will attempt to asynchronously generate a connection on each port specified, using the 
+  protocol specified, to a target. This is most useful when attempting to identify breaches 
+  in a firewall from an egress perspective. Note that it is quite noisy, but it may be 
+  appropriate in some situations.
 
-  A listener on the destination IP address will be required.
+  A listener on the destination IP address will be required. The EgressChecker tool could
+  be useful for this (accessible at https://github.com/stufus/egresscheck-framework) or any
+  other method of identifying incoming connections will be fine.
 
   .PARAMETER ip
 
