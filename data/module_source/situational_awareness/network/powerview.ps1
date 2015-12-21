@@ -8991,6 +8991,18 @@ function Invoke-EventHunter {
     }
 }
 
+function Invoke-FindManagedSecurityGroups {
+<#
+    .SYNOPSIS
+
+        This function uses ADSI to search for security groups with a manager set.
+
+        Author: Stuart Morgan <stuart.morgan@mwrinfosecurity.com>
+        License: BSD 3-Clause
+#>
+
+}
+
 
 function Invoke-ShareFinder {
 <#
