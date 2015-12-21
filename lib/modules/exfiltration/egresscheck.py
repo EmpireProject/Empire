@@ -10,7 +10,7 @@ class Module:
             'Name': 'Invoke-EgressCheck',
 
             # list of one or more authors for the module
-            'Author': ['@ukstufus'],
+            'Author': ['Stuart Morgan <stuart.morgan@mwrinfosecurity.com>'],
 
             # more verbose multi-line description of the module
             'Description': ('This module will generate traffic on a provided range of ports '
