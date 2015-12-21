@@ -3,52 +3,67 @@ function Invoke-EgressCheck {
   <#
   .SYNOPSIS
 
-  Generates traffic on the ports specified, using the protocol specified.
-  This is most useful when attempting to identify breaches in a firewall from
-  an egress perspective.
+  Generates arbitrary traffic on the ports specified, using the protocol specified.
+
+  .DESCRIPTION
+
+  This will generate a single packet on each port specified, using the protocol specified.
+  This is most useful when attempting to identify breaches in a firewall from an egress 
+  perspective. Note that it is quite noisy, but it may be appropriate in some situations.
 
   A listener on the destination IP address will be required.
 
   .PARAMETER ip
+
   The IP address of the target endpoint.
   Example: -ip "10.0.0.1"
 
   .PARAMETER portrange
+
   The ports to try. This accepts comma-separated individual port numbers, ranges
   or both.
   Example: -portrange "22-25,53,80,443,445,3306,3389"
   Default: "22-25,53,80,443,445,3306,3389"
 
   .PARAMETER protocol
+
   The IP protocol to use. This can be one of TCP, UDP or ALL.
   Example: -protocol "TCP"
   Default: TCP
 
-  .PARAMETER verbosity
+  .PARAMETER verbose
+
   The verbosity of the console output.
-  If this is 0, there is no intentional verbosity.
-  If this is 1, it will output:
+  If this is unset, there is no intentional verbosity.
+  If this is set, it will output:
     't' - Sending a TCP packet
     'u' - Sending a UDP packet
     'W' - Waiting (i.e. sleep/delay)
-  Example: -verbosity 0
-  Default: 0
+  Example: -verbose
+  Default: Not set
 
   .PARAMETER delay
+
   The delay between sending packets. This injects a delay in milliseconds between
   packets generated on a per-port per-protocol basis. 
   Example: -delay 100
   Default: 100
 
   .EXAMPLE
-    Invoke-EgressCheck -ip 1.2.3.4 -portrange "22-25,53,80,443,445,3306,3389" -protocol ALL -delay 100 -verbosity 0
+  Invoke-EgressCheck -ip 1.2.3.4 -portrange "22-25,53,80,443,445,3306,3389" -protocol ALL -delay 100 -verbose
+
+  .LINK
+
+    https://github.com/stufus/egresscheck-framework
 
   #>
 
   [CmdletBinding()]
-  param([string] $ip, [string] $portrange = "22-25,53,80,443,445,3306,3389", [string] $protocol = "TCP", [int] $verbosity=0, [int] $delay=100)
+  param([string] $ip, [string] $portrange = "22-25,53,80,443,445,3306,3389", [string] $protocol = "TCP", [int] $delay=100)
 
     $pr_split = $portrange -split ','
+    $verbosity = 0
+    if $verbose { $verbosity = 1 }
     foreach ($p in $pr_split) {
         if ($p -match '^[0-9]+-[0-9]+$') {
             $prange = $p -split '-'
@@ -58,9 +73,11 @@ function Invoke-EgressCheck {
         } elseif ($p -match '^[0-9]+$') {
             egress -ip $ip -port $c -verbosity $verbosity -delay $delay -protocol $protocol
         } else {
+            Write-Error "Bad port range"
             return
         }
     }
+    Write-Verbose ""
 
 }
 
@@ -72,7 +89,7 @@ function egress {
 	    generate_tcp -ip $ip -port $port -verbosity $verbosity
         if ($delay -gt 0) {
             Start-Sleep -m ($delay)
-            if ($verbosity -gt 0) { Write-Host -NoNewLine "W" }
+            if ($verbosity -gt 0) { Write-Verbose -NoNewLine "W" }
         }
      }
 
@@ -80,7 +97,7 @@ function egress {
 	    generate_udp -ip $ip -port $port -verbosity $verbosity
         if ($delay -gt 0) {
             Start-Sleep -m ($delay)
-            if ($verbosity -gt 0) { Write-Host -NoNewLine "W" }
+            if ($verbosity -gt 0) { Write-Verbose -NoNewLine "W" }
         }
     }
 
@@ -95,7 +112,7 @@ function generate_tcp {
 		$t = New-Object System.Net.Sockets.TCPClient
 		$t.BeginConnect($ip, $port, $null, $null) | Out-Null
         $t.Close()
-        if ($verbosity -gt 0) { Write-Host -NoNewLine "t" }
+        if ($verbosity -gt 0) { Write-Verbose -NoNewLine "t" }
 	}
 	catch { }
 }
@@ -110,7 +127,7 @@ function generate_udp {
 		$t = New-Object System.Net.Sockets.UDPClient
         $t.Send($d, $d.Length, $ip, $port) | Out-Null
         $t.Close()
-        if ($verbosity -gt 0) { Write-Host -NoNewLine "u" }
+        if ($verbosity -gt 0) { Write-Verbose -NoNewLine "u" }
 	}
 	catch { }
 }
