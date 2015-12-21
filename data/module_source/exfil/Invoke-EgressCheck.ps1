@@ -78,6 +78,8 @@ function Invoke-EgressCheck {
         return
     }
 
+    Write-Output "EgressCheck started"
+
     $pr_split = $portrange -split ','
     foreach ($p in $pr_split) {
         if ($p -match '^[0-9]+-[0-9]+$') {
@@ -97,15 +99,16 @@ function Invoke-EgressCheck {
             return
         }
     }
-    Write-Verbose ""
-
+    Write-Output "EgressCheck completed"
 }
 
 function egress {
     [CmdletBinding()]
     param([string]$ip, [int]$port, [int]$delay, [string]$protocol) 
 
-    if ($protocol -eq "TCP" -Or $protocol -eq "ALL") {
+    $protocol_case = $protocol.ToUpper()
+
+    if ($protocol_case -eq "TCP" -Or $protocol_case -eq "ALL") {
 	    generate_tcp -ip $ip -port $port
         if ($delay -gt 0) {
             Start-Sleep -m ($delay)
@@ -113,11 +116,11 @@ function egress {
         }
      }
 
-    if ($protocol -eq "UDP" -Or $protocol -eq "ALL") {
+    if ($protocol_case -eq "UDP" -Or $protocol_case -eq "ALL") {
 	    generate_udp -ip $ip -port $port
         if ($delay -gt 0) {
             Start-Sleep -m ($delay)
-            Write-Verbose "W/tcp"
+            Write-Verbose "W/udp"
         }
     }
 

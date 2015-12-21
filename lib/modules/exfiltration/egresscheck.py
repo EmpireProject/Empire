@@ -63,15 +63,10 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   '22-25,53,80,443,445,3306,3389'
             },
-            'verbose' : {
-                'Description'   :   'Verbosity of the script. Set to \'true\' to enable verbosity',
-                'Required'      :   False,
-                'Value'         :   '',
-            },
             'delay' : {
                 'Description'   :   'Delay, in milliseconds, between ports being tested',
                 'Required'      :   True,
-                'Value'         :   '100'
+                'Value'         :   '50'
             }
         }
 
