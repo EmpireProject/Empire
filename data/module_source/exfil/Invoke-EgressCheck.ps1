@@ -62,7 +62,7 @@ function Invoke-EgressCheck {
   Default: 100
 
   .EXAMPLE
-  Invoke-EgressCheck -ip 1.2.3.4 -portrange "22-25,53,80,443,445,3306,3389" -protocol ALL -delay 100 -verbosity
+  Invoke-EgressCheck -ip 1.2.3.4 -portrange "22-25,53,80,443,445,3306,3389" -protocol ALL -delay 100 -verbose
 
   .LINK
 
