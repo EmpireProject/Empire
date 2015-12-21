@@ -13,8 +13,8 @@ class Module:
             'Author': ['@ukstufus'],
 
             # more verbose multi-line description of the module
-            'Description': ('This module will generate traffic on a provided range'
-                            'description line 2'),
+            'Description': ('This module will generate traffic on a provided range of ports '
+                            'and supports both TCP and UDP. Useful to identify direct egress channels.'),
 
             # True if the module needs to run in the background
             'Background' : False,
@@ -34,8 +34,7 @@ class Module:
 
             # list of any references/other comments
             'Comments': [
-                'comment',
-                'http://link/'
+                'https://github.com/stufus/egresscheck-framework'
             ]
         }
 
@@ -64,10 +63,10 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   '22-25,53,80,443,445,3306,3389'
             },
-            'verbosity' : {
-                'Description'   :   'Verbosity of the script. 0 = quiet, 1 = status',
-                'Required'      :   True,
-                'Value'         :   '0'
+            'verbose' : {
+                'Description'   :   'Verbosity of the script. Set to \'true\' to enable verbosity',
+                'Required'      :   False,
+                'Value'         :   '',
             },
             'delay' : {
                 'Description'   :   'Delay, in milliseconds, between ports being tested',

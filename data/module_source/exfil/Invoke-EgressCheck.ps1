@@ -47,11 +47,12 @@ function Invoke-EgressCheck {
   The verbosity of the console output.
   If this is unset, there is no intentional verbosity.
   If this is set, it will output:
-    't' - Sending a TCP packet
-    'u' - Sending a UDP packet
-    'W' - Waiting (i.e. sleep/delay)
+    't/port' - Sending a TCP packet
+    'u/port' - Sending a UDP packet
+    'W/tcp' - Waiting (i.e. sleep/delay) after a TCP connection was attempted
+    'W/udp' - Waiting (i.e. sleep/delay) after a UDP connection was attempted
   Example: -verbose
-  Default: Not set
+  Default: Not verbose
 
   .PARAMETER delay
 
@@ -61,7 +62,7 @@ function Invoke-EgressCheck {
   Default: 100
 
   .EXAMPLE
-  Invoke-EgressCheck -ip 1.2.3.4 -portrange "22-25,53,80,443,445,3306,3389" -protocol ALL -delay 100 -verbose
+  Invoke-EgressCheck -ip 1.2.3.4 -portrange "22-25,53,80,443,445,3306,3389" -protocol ALL -delay 100 -verbosity
 
   .LINK
 
@@ -72,17 +73,25 @@ function Invoke-EgressCheck {
   [CmdletBinding()]
   param([string] $ip, [string] $portrange = "22-25,53,80,443,445,3306,3389", [string] $protocol = "TCP", [int] $delay=100)
 
+    if ($ip -NotMatch '^([0-9]{1,3}\.){3}[0-9]{1,3}$') {
+        Write-Error "IP not specified"
+        return
+    }
+
     $pr_split = $portrange -split ','
-    $verbosity = 0
-    if $verbose { $verbosity = 1 }
     foreach ($p in $pr_split) {
         if ($p -match '^[0-9]+-[0-9]+$') {
             $prange = $p -split '-'
-            for ($c = [convert]::ToInt32($prange[0]);$c -le [convert]::ToInt32($prange[1]);$c++) {
-                egress -ip $ip -port $c -verbosity $verbosity -delay $delay -protocol $protocol
+            $s = [convert]::ToInt32($prange[0])
+            $e = [convert]::ToInt32($prange[1])
+            Write-Verbose "Now generating traffic on ports $s - $e"
+            for ($c = $s;$c -le $e;$c++) {
+                egress -ip $ip -port $c -delay $delay -protocol $protocol
             }
         } elseif ($p -match '^[0-9]+$') {
-            egress -ip $ip -port $c -verbosity $verbosity -delay $delay -protocol $protocol
+            $c = [convert]::ToInt32($p)
+            Write-Verbose "Now generating traffic on port $c"
+            egress -ip $ip -port $c -delay $delay -protocol $protocol
         } else {
             Write-Error "Bad port range"
             return
@@ -94,21 +103,21 @@ function Invoke-EgressCheck {
 
 function egress {
     [CmdletBinding()]
-    param([string]$ip, [int]$port, [int]$verbosity, [int]$delay, [string]$protocol) 
+    param([string]$ip, [int]$port, [int]$delay, [string]$protocol) 
 
     if ($protocol -eq "TCP" -Or $protocol -eq "ALL") {
-	    generate_tcp -ip $ip -port $port -verbosity $verbosity
+	    generate_tcp -ip $ip -port $port
         if ($delay -gt 0) {
             Start-Sleep -m ($delay)
-            if ($verbosity -gt 0) { Write-Verbose -NoNewLine "W" }
+            Write-Verbose "W/tcp"
         }
      }
 
     if ($protocol -eq "UDP" -Or $protocol -eq "ALL") {
-	    generate_udp -ip $ip -port $port -verbosity $verbosity
+	    generate_udp -ip $ip -port $port
         if ($delay -gt 0) {
             Start-Sleep -m ($delay)
-            if ($verbosity -gt 0) { Write-Verbose -NoNewLine "W" }
+            Write-Verbose "W/tcp"
         }
     }
 
@@ -117,13 +126,13 @@ function egress {
 # Send the TCP packet
 function generate_tcp {
     [CmdletBinding()]
-    param([string]$ip, [int]$port, [int]$verbosity)
+    param([string]$ip, [int]$port)
 
 	try {
 		$t = New-Object System.Net.Sockets.TCPClient
 		$t.BeginConnect($ip, $port, $null, $null) | Out-Null
         $t.Close()
-        if ($verbosity -gt 0) { Write-Verbose -NoNewLine "t" }
+        Write-Verbose "t/$port"
 	}
 	catch { }
 }
@@ -131,14 +140,14 @@ function generate_tcp {
 # Send the UDP packet
 function generate_udp {
     [CmdletBinding()]
-    param([string]$ip, [int]$port,[int]$verbosity)
+    param([string]$ip, [int]$port)
 
     $d = [system.Text.Encoding]::UTF8.GetBytes(".")
 	try {
 		$t = New-Object System.Net.Sockets.UDPClient
         $t.Send($d, $d.Length, $ip, $port) | Out-Null
         $t.Close()
-        if ($verbosity -gt 0) { Write-Verbose -NoNewLine "u" }
+        Write-Verbose "u/$port"
 	}
 	catch { }
 }
