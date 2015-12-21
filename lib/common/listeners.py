@@ -440,8 +440,8 @@ class Listeners:
             port = listener[3]
             certPath = listener[4]
             stagingKey = listener[5]
-            listenerType = listener[-2]
-            redirectTarget = listener[-1]
+            listenerType = listener[11]
+            redirectTarget = listener[12]
             hop = False
 
             # if we have a pivot listener

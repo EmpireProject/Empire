@@ -50,12 +50,12 @@ class Module:
             },
             'UserName' : {
                 'Description'   :   '[domain\]username to use to execute command.',
-                'Required'      :   True,
+                'Required'      :   False,
                 'Value'         :   ''
             },
             'Password' : {
                 'Description'   :   'Password to use to execute command.',
-                'Required'      :   True,
+                'Required'      :   False,
                 'Value'         :   ''
             },
             'UserAgent' : {
@@ -128,8 +128,9 @@ class Module:
                 script += " -ComputerName @("+computerNames+")"
                 script += " -ScriptBlock {" + launcher + "}"
 
-                # add in the user credentials
-                script = "$PSPassword = \""+password+"\" | ConvertTo-SecureString -asPlainText -Force;$Credential = New-Object System.Management.Automation.PSCredential(\""+userName+"\",$PSPassword);" + script + " -Credential $Credential"
+                if self.options["UserName"]['Value'] != "" and self.options["Password"]['Value'] != "":
+                    # add in the user credentials
+                    script = "$PSPassword = \""+password+"\" | ConvertTo-SecureString -asPlainText -Force;$Credential = New-Object System.Management.Automation.PSCredential(\""+userName+"\",$PSPassword);" + script + " -Credential $Credential"
 
                 script += ";'Invoke-PSRemoting executed on " +computerNames +"'"
             
