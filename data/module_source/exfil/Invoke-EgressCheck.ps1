@@ -1,6 +1,6 @@
 <#
 
-This module aims to offer the ability to generate 
+This module aims to offer the ability to generate arbitrary traffic on the ports specified, using the protocol specified.
 Author: Stuart Morgan (@ukstufus)
 Web: https://github.com/stufus
 
