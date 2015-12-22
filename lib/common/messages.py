@@ -113,6 +113,7 @@ def display_options(options, color=True):
         else:
             print "\t%s\t%s" % ('{0: <16}'.format(key), wrap_string(options[key]))
 
+
 def agent_print (agents):
     """
     Take an agent dictionary and display everything nicely.
@@ -131,13 +132,13 @@ def agent_print (agents):
 
     print ""
 
+
 def display_agents(agents):
 
     if len(agents)>0:
         agent_print(agents)
     else:
         print helpers.color("[!] No agents currently registered ")
-
 
 
 def display_staleagents(agents):
@@ -149,14 +150,6 @@ def display_staleagents(agents):
         agent_print(agents)
     else:
         print helpers.color("[!] No stale agents currently registered ")
-
-
-
-
-
-
-
-
 
 
 def display_agent(agent):
@@ -382,13 +375,16 @@ def display_module(moduleName, module):
 
     # print out any options, if present
     if module.options:
+
+        # get the size for the first column
+        maxNameLen = len(max(module.options.keys(), key=len))
+
         print "\nOptions:\n"
-        print "  Name             Required    Value                     Description"
-        print "  ----             --------    -------                   -----------"
+        print "  %sRequired    Value                     Description" %('{:<{}s}'.format("Name", maxNameLen+1))
+        print "  %s--------    -------                   -----------" %('{:<{}s}'.format("----", maxNameLen+1))
 
         for option,values in module.options.iteritems():
-            # print "  %s%s%s%s" % ('{0: <17}'.format(option), '{0: <12}'.format(("True" if values['Required'] else "False")), '{0: <25}'.format(values['Value']), wrap_string(values['Description'], indent=56))
-            print "  %s%s%s" % ('{0: <17}'.format(str(option)), '{0: <12}'.format(("True" if values['Required'] else "False")), wrap_columns(str(values['Value']), str(values['Description'])))
+            print "  %s%s%s" % ('{:<{}s}'.format(str(option), maxNameLen+1), '{0: <12}'.format(("True" if values['Required'] else "False")), wrap_columns(str(values['Value']), str(values['Description']), indent=(31 + (maxNameLen-16))))
 
     print ""
     
