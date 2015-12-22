@@ -9001,6 +9001,16 @@ function Invoke-FindManagedSecurityGroups {
         License: BSD 3-Clause
 #>
 
+# $Computer = [ADSI](([ADSISearcher]"(&(objectClass=group)(managedBy=*))"))
+# $Computer.PsBase
+# PS Z:\Empire\data\module_source\situational_awareness\network> $Computer = [ADSI](([ADSISearcher]"(&(objectClass=group)(managedBy=*))").FindOne().Path)
+# PS Z:\Empire\data\module_source\situational_awareness\network> $Computer.PsBase.Properties.nTSecurityDescriptor
+System.__ComObject
+PS Z:\Empire\data\module_source\situational_awareness\network> $Computer = [ADSI](([ADSISearcher]"(&(objectClass=group)(
+managedBy=*))").FindOne().Path)
+PS Z:\Empire\data\module_source\situational_awareness\network> $ntsd = $Computer.PsBase.Properties.nTSecurityDescriptor
+PS Z:\Empire\data\module_source\situational_awareness\network>
+PS Z:\Empire\data\module_source\situational_awareness\network> $ntsd
 }
 
 
