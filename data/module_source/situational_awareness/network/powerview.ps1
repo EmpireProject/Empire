@@ -9012,6 +9012,21 @@ PS Z:\Empire\data\module_source\situational_awareness\network> $ntsd = $Computer
 PS Z:\Empire\data\module_source\situational_awareness\network>
 PS Z:\Empire\data\module_source\situational_awareness\network> $ntsd
 }
+PS Z:\Empire\data\module_source\situational_awareness\network> $gs.ObjectSecurity.getaccessrules($True,$true,[system.sec
+urity.principal.securityidentifier]) | where {($_.identityreference -eq $cn) -and ($_.objecttype -eq "bf9679c0-0de6-11d0
+-a285-00aa003049e2") -and ($_.accesscontroltype -eq "allow") -and ($_.activedirectoryrights -eq "writeproperty")}
+
+
+ActiveDirectoryRights : WriteProperty
+InheritanceType       : None
+ObjectType            : bf9679c0-0de6-11d0-a285-00aa003049e2
+InheritedObjectType   : 00000000-0000-0000-0000-000000000000
+ObjectFlags           : ObjectAceTypePresent
+AccessControlType     : Allow
+IdentityReference     : S-1-5-21-3412564525-2340160142-3008032522-1127
+IsInherited           : False
+InheritanceFlags      : None
+PropagationFlags      : None
 
 
 function Invoke-ShareFinder {
