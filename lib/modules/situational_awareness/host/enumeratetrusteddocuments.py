@@ -15,7 +15,7 @@ class Module:
             # more verbose multi-line description of the module
             'Description': ('This module will enumerate the appropriate registry '
                             'keys to determine what, if any, trusted documents '
-                            'exist on the host.  It will also identify trusted document locations.'
+                            'exist on the host.  It will also enumerate trusted locations.'
                             ),
 
             # True if the module needs to run in the background
