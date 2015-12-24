@@ -35,8 +35,8 @@ class Module:
 
             # list of any references/other comments
             'Comments': [
-                'comment',
-                'http://link/'
+                'Original .ps1 file',
+                'https://github.com/jamcut/one-offs/blob/master/Enumerate-TrustedDocuments.ps1'
             ]
         }
 
