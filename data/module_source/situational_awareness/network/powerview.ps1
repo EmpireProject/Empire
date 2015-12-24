@@ -11214,6 +11214,17 @@ function Invoke-FindManagedSecurityGroups {
 
         Store a list of all security groups with managers in group-managers.csv
 
+    .DESCRIPTION
+
+        Authority to manipulate the group membership of AD security groups and distribution groups 
+        can be delegated to non-administrators by setting the 'managedBy' attribute. This is typically
+        used to delegate management authority to distribution groups, but Windows supports security groups
+        being managed in the same way.
+
+        This function searches for AD groups which have a group manager set, and determines whether that
+        user can manipulate group membership. This could be a useful method of horizontal privilege
+        escalation, especially if the manager can manipulate the membership of a privileged group.
+
     .LINK
 
         https://github.com/PowerShellEmpire/Empire/pull/119
