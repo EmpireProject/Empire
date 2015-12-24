@@ -25,7 +25,7 @@ This script is useful for identifying which documents have been trusted by the u
 When uploaded to the original locations (thus overwriting the original document) the modified macro will continue to execute without prompting the user.
 
 .LINK
-Link to GitHub stuff
+https://github.com/jamcut/one-offs/blob/master/Enumerate-TrustedDocuments.ps1
 
 #>
     $BASE_EXCEL_REG_LOCATIONS = "HKCU:\Software\Microsoft\Office\11.0\Excel\Security", "HKCU:\Software\Microsoft\Office\12.0\Excel\Security", "HKCU:\Software\Microsoft\Office\14.0\Excel\Security", "HKCU:\Software\Microsoft\Office\15.0\Excel\Security" 
