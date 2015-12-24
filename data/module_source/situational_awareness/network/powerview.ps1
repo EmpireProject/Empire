@@ -11201,23 +11201,23 @@ function Invoke-FindManagedSecurityGroups {
 <#
     .SYNOPSIS
 
-        This function retrieves all security groups in the domain and identifies ones that 
+        This function retrieves all security groups in the domain and identifies ones that
         have a manager set. It also determines whether the manager has the ability to add
         or remove members from the group.
 
         Author: Stuart Morgan (@ukstufus) <stuart.morgan@mwrinfosecurity.com>
         License: BSD 3-Clause
-                
+
     .EXAMPLE
 
         PS C:\> Invoke-FindManagedSecurityGroups | Export-PowerViewCSV -NoTypeInformation group-managers.csv
-        
+
         Store a list of all security groups with managers in group-managers.csv
 
 #>
 
-    # Go through the list of groups on the domain and identify those who have a manager
-    Get-NetGroup -FullData -Filter '(&(managedBy=*)(groupType:1.2.840.113556.1.4.803:=2147483648))' | Select-Object -Unique distinguishedName,managedBy,cn | Foreach-Object { 
+    # Go through the list of security groups on the domain and identify those who have a manager
+    Get-NetGroup -FullData -Filter '(&(managedBy=*)(groupType:1.2.840.113556.1.4.803:=2147483648))' | Select-Object -Unique distinguishedName,managedBy,cn | Foreach-Object {
 
         # Retrieve the object that the managedBy DN refers to
         $group_manager = Get-ADObject -ADSPath $_.managedBy | Select-Object cn,distinguishedname,name,samaccounttype,samaccountname
@@ -11227,9 +11227,9 @@ function Invoke-FindManagedSecurityGroups {
             'GroupCN' = $_.cn
             'GroupDN' = $_.distinguishedname
             'ManagerCN' = $group_manager.cn
-            'ManagerDN' = $group_manager.distinguishedName        
-            'ManagerSAN' = $group_manager.samaccountname   
-            'ManagerType' = ''  
+            'ManagerDN' = $group_manager.distinguishedName
+            'ManagerSAN' = $group_manager.samaccountname
+            'ManagerType' = ''
             'CanManagerWrite' = $FALSE
         }
 
@@ -11239,19 +11239,19 @@ function Invoke-FindManagedSecurityGroups {
         } elseif ($group_manager.samaccounttype -eq 0x30000000) {
             $results_object.ManagerType = 'User'
         }
-          
+
         # Find the ACLs that relate to the ability to write to the group
-        $xacl = Get-ObjectAcl -ADSPath $_.distinguishedname -Rights WriteMembers 
-          
-        # Double-check that the manager   
+        $xacl = Get-ObjectAcl -ADSPath $_.distinguishedname -Rights WriteMembers
+
+        # Double-check that the manager
         if ($xacl.ObjectType -eq 'bf9679c0-0de6-11d0-a285-00aa003049e2' -and $xacl.AccessControlType -eq 'Allow' -and $xacl.IdentityReference.Value.Contains($group_manager.cn)) {
             $results_object.CanManagerWrite = $TRUE
         }
-            
+
         $results_object
-    
+
     }
-    
+
 }
 
 
