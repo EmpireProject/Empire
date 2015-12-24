@@ -8991,44 +8991,6 @@ function Invoke-EventHunter {
     }
 }
 
-function Invoke-FindManagedSecurityGroups {
-<#
-    .SYNOPSIS
-
-        This function uses ADSI to search for security groups with a manager set.
-
-        Author: Stuart Morgan <stuart.morgan@mwrinfosecurity.com>
-        License: BSD 3-Clause
-#>
-
-# $Computer = [ADSI](([ADSISearcher]"(&(objectClass=group)(managedBy=*))"))
-# $Computer.PsBase
-# PS Z:\Empire\data\module_source\situational_awareness\network> $Computer = [ADSI](([ADSISearcher]"(&(objectClass=group)(managedBy=*))").FindOne().Path)
-# PS Z:\Empire\data\module_source\situational_awareness\network> $Computer.PsBase.Properties.nTSecurityDescriptor
-System.__ComObject
-PS Z:\Empire\data\module_source\situational_awareness\network> $Computer = [ADSI](([ADSISearcher]"(&(objectClass=group)(
-managedBy=*))").FindOne().Path)
-PS Z:\Empire\data\module_source\situational_awareness\network> $ntsd = $Computer.PsBase.Properties.nTSecurityDescriptor
-PS Z:\Empire\data\module_source\situational_awareness\network>
-PS Z:\Empire\data\module_source\situational_awareness\network> $ntsd
-}
-PS Z:\Empire\data\module_source\situational_awareness\network> $gs.ObjectSecurity.getaccessrules($True,$true,[system.sec
-urity.principal.securityidentifier]) | where {($_.identityreference -eq $cn) -and ($_.objecttype -eq "bf9679c0-0de6-11d0
--a285-00aa003049e2") -and ($_.accesscontroltype -eq "allow") -and ($_.activedirectoryrights -eq "writeproperty")}
-
-
-ActiveDirectoryRights : WriteProperty
-InheritanceType       : None
-ObjectType            : bf9679c0-0de6-11d0-a285-00aa003049e2
-InheritedObjectType   : 00000000-0000-0000-0000-000000000000
-ObjectFlags           : ObjectAceTypePresent
-AccessControlType     : Allow
-IdentityReference     : S-1-5-21-3412564525-2340160142-3008032522-1127
-IsInherited           : False
-InheritanceFlags      : None
-PropagationFlags      : None
-
-
 function Invoke-ShareFinder {
 <#
     .SYNOPSIS
@@ -11234,6 +11196,65 @@ function Invoke-MapDomainTrust {
         }
     }
 }
+
+function Invoke-FindManagedSecurityGroups {
+<#
+    .SYNOPSIS
+
+        This function retrieves all security groups in the domain and identifies ones that 
+        have a manager set. It also determines whether the manager has the ability to add
+        or remove members from the group.
+
+        Author: Stuart Morgan (@ukstufus) <stuart.morgan@mwrinfosecurity.com>
+        License: BSD 3-Clause
+                
+    .EXAMPLE
+
+        PS C:\> Invoke-FindManagedSecurityGroups | Export-PowerViewCSV -NoTypeInformation group-managers.csv
+        
+        Store a list of all security groups with managers in group-managers.csv
+
+#>
+
+    # Go through the list of groups on the domain and identify those who have a manager
+    Get-NetGroup -FullData -Filter '(&(managedBy=*)(groupType:1.2.840.113556.1.4.803:=2147483648))' | Select-Object -Unique distinguishedName,managedBy,cn | Foreach-Object { 
+
+        # Retrieve the object that the managedBy DN refers to
+        $group_manager = Get-ADObject -ADSPath $_.managedBy | Select-Object cn,distinguishedname,name,samaccounttype,samaccountname
+
+        # Create a results object to store our findings
+        $results_object = New-Object -TypeName PSObject -Property @{
+            'GroupCN' = $_.cn
+            'GroupDN' = $_.distinguishedname
+            'ManagerCN' = $group_manager.cn
+            'ManagerDN' = $group_manager.distinguishedName        
+            'ManagerSAN' = $group_manager.samaccountname   
+            'ManagerType' = ''  
+            'CanManagerWrite' = $FALSE
+        }
+
+        # Determine whether the manager is a user or a group
+        if ($group_manager.samaccounttype -eq 0x10000000) {
+            $results_object.ManagerType = 'Group'
+        } elseif ($group_manager.samaccounttype -eq 0x30000000) {
+            $results_object.ManagerType = 'User'
+        }
+          
+        # Find the ACLs that relate to the ability to write to the group
+        $xacl = Get-ObjectAcl -ADSPath $_.distinguishedname -Rights WriteMembers 
+          
+        # Double-check that the manager   
+        if ($xacl.ObjectType -eq 'bf9679c0-0de6-11d0-a285-00aa003049e2' -and $xacl.AccessControlType -eq 'Allow' -and $xacl.IdentityReference.Value.Contains($group_manager.cn)) {
+            $results_object.CanManagerWrite = $TRUE
+        }
+            
+        $results_object
+    
+    }
+    
+}
+
+
 
 
 ########################################################
