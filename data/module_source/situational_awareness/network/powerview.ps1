@@ -11242,9 +11242,10 @@ function Invoke-FindManagedSecurityGroups {
 
         # Find the ACLs that relate to the ability to write to the group
         $xacl = Get-ObjectAcl -ADSPath $_.distinguishedname -Rights WriteMembers
+        $xacl
 
         # Double-check that the manager
-        if ($xacl.ObjectType -eq 'bf9679c0-0de6-11d0-a285-00aa003049e2' -and $xacl.AccessControlType -eq 'Allow' -and $xacl.IdentityReference.Value.Contains($group_manager.cn)) {
+        if ($xacl.ObjectType -eq 'bf9679c0-0de6-11d0-a285-00aa003049e2' -and $xacl.AccessControlType -eq 'Allow' -and $xacl.IdentityReference.Value.Contains($group_manager.samaccountname)) {
             $results_object.CanManagerWrite = $TRUE
         }
 
