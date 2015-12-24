@@ -11214,6 +11214,10 @@ function Invoke-FindManagedSecurityGroups {
 
         Store a list of all security groups with managers in group-managers.csv
 
+    .LINK
+
+        https://github.com/PowerShellEmpire/Empire/pull/119
+
 #>
 
     # Go through the list of security groups on the domain and identify those who have a manager
