@@ -56,18 +56,6 @@ class Module:
         #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
 
-        # # During instantiation, any settable option parameters
-        # #   are passed as an object set to the module and the
-        # #   options dictionary is automatically set. This is mostly
-        # #   in case options are passed on the command line
-        # if params:
-        #     for param in params:
-        #         # parameter format is [Name, Value]
-        #         option, value = param
-        #         if option in self.options:
-        #             self.options[option]['Value'] = value
-
-
     def generate(self):
         
         # the PowerShell script itself, with the command to invoke
