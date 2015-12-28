@@ -11197,7 +11197,7 @@ function Invoke-MapDomainTrust {
     }
 }
 
-function Invoke-FindManagedSecurityGroups {
+function Find-ManagedSecurityGroups {
 <#
     .SYNOPSIS
 
@@ -11210,7 +11210,7 @@ function Invoke-FindManagedSecurityGroups {
 
     .EXAMPLE
 
-        PS C:\> Invoke-FindManagedSecurityGroups | Export-PowerViewCSV -NoTypeInformation group-managers.csv
+        PS C:\> Find-ManagedSecurityGroups | Export-PowerViewCSV -NoTypeInformation group-managers.csv
 
         Store a list of all security groups with managers in group-managers.csv
 
