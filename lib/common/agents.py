@@ -123,14 +123,14 @@ class Agents:
         if len(parts) == 2:
             requestUris = parts[0]
             userAgent = parts[1]
-        elif len(parts) == 3:
+        elif len(parts) > 2:
             requestUris = parts[0]
             userAgent = parts[1]
-            additionalHeaders = parts[2]
+            additionalHeaders = "|".join(parts[2:])
 
         cur.execute("INSERT INTO agents (name,session_id,delay,jitter,external_ip,session_key,checkin_time,lastseen_time,uris,user_agent,headers,kill_date,working_hours,lost_limit) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (sessionID,sessionID,delay,jitter,externalIP,sessionKey,checkinTime,lastSeenTime,requestUris,userAgent,additionalHeaders,killDate,workingHours,lostLimit))
         cur.close()
-
+        
         # initialize the tasking/result buffers along with the client session key
         sessionKey = self.get_agent_session_key(sessionID)
         self.agents[sessionID] = [sessionKey, [],[],[], requestUris, ""]
