@@ -9,7 +9,7 @@ menu loops.
 """
 
 # make version for Empire
-VERSION = "1.3.9"
+VERSION = "1.3.10"
 
 
 from pydispatch import dispatcher
@@ -475,18 +475,24 @@ class MainMenu(cmd.Cmd):
         else:
             if parts[0].lower() == "ip_whitelist":
                 if parts[1] != "" and os.path.exists(parts[1]):
-                    f = open(parts[1], 'r')
-                    ipData = f.read()
-                    f.close()
-                    self.agents.ipWhiteList = helpers.generate_ip_list(ipData)
+                    try:
+                        f = open(parts[1], 'r')
+                        ipData = f.read()
+                        f.close()
+                        self.agents.ipWhiteList = helpers.generate_ip_list(ipData)
+                    except:
+                        print helpers.color("[!] Error opening ip file %s" %(parts[1]))
                 else:
                     self.agents.ipWhiteList = helpers.generate_ip_list(",".join(parts[1:]))
             elif parts[0].lower() == "ip_blacklist":
                 if parts[1] != "" and os.path.exists(parts[1]):
-                    f = open(parts[1], 'r')
-                    ipData = f.read()
-                    f.close()
-                    self.agents.ipBlackList = helpers.generate_ip_list(ipData)
+                    try:
+                        f = open(parts[1], 'r')
+                        ipData = f.read()
+                        f.close()
+                        self.agents.ipBlackList = helpers.generate_ip_list(ipData)
+                    except:
+                        print helpers.color("[!] Error opening ip file %s" %(parts[1]))
                 else:
                     self.agents.ipBlackList = helpers.generate_ip_list(",".join(parts[1:]))
             else:
@@ -1614,6 +1620,7 @@ class AgentMenu(cmd.Cmd):
                 # strip out profile comments and blank lines
                 profile = [l for l in profile if (not l.startswith("#") and l.strip() != "")]
                 profile = profile[0]
+
             if not profile.strip().startswith("\"/"):
                 print helpers.color("[!] Task URIs in profiles must start with / and be enclosed in quotes!")
             else:
@@ -1998,7 +2005,22 @@ class ListenerMenu(cmd.Cmd):
         "Set a listener option."
         parts = line.split(" ")
         if len(parts) > 1:
-            self.mainMenu.listeners.set_listener_option(parts[0], " ".join(parts[1:]))
+
+            if parts[0].lower() == "defaultprofile" and os.path.exists(parts[1]):
+                try:
+                    f = open(parts[1], 'r')
+                    profileDataRaw = f.readlines()
+                    
+                    profileData = [l for l in profileDataRaw if (not l.startswith("#") and l.strip() != "")]
+                    profileData = profileData[0].strip("\"")
+
+                    f.close()
+                    self.mainMenu.listeners.set_listener_option(parts[0], profileData)
+
+                except:
+                    print helpers.color("[!] Error opening profile file %s" %(parts[1]))
+            else:
+                self.mainMenu.listeners.set_listener_option(parts[0], " ".join(parts[1:]))
         else:
             print helpers.color("[!] Please enter a value to set for the option")
 
@@ -2142,6 +2164,9 @@ class ListenerMenu(cmd.Cmd):
             return [s[offs:] for s in listenerTypes if s.startswith(mline)]
 
         elif line.split(" ")[1].lower() == "certpath":
+            return helpers.complete_path(text,line,arg=True)
+        
+        elif line.split(" ")[1].lower() == "defaultprofile":
             return helpers.complete_path(text,line,arg=True)
 
         mline = line.partition(' ')[2]
