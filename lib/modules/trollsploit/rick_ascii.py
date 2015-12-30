@@ -5,11 +5,11 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Spawn',
+            'Name': 'Invoke-RickASCII',
 
             'Author': ['@lee_holmes', '@harmj0y'],
 
-            'Description': ("Spawns a a new powershell.exe process that runs Lee Holmes' ASCI Rick Roll."),
+            'Description': ("Spawns a a new powershell.exe process that runs Lee Holmes' ASCII Rick Roll."),
 
             'Background' : False,
 
