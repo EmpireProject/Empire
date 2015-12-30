@@ -1,8 +1,31 @@
+============
+12/29/2015 - RELEASE 1.4
+============
+-Encompasses all changes since 1.3.1 tagged release
+
+12/29/2015
+----------
+-Added situational_awareness/network/powerview/find_managed_security_groups to integrate @stufus' new code
+-Fixed various issues with agent profile handling
+-'DefaultProfile' option in listener menu is now tab-completable and can take a path to a profile.txt
+
+12/28/2015
+----------
+-Merge of @stufus' Find-ManagedSecurityGroups code into PowerView.ps1 base
+
+12/26/2015
+----------
+-Merge of @jamcut's situational_awareness/host/findtrusteddocuments module
+
 12/22/2015
 ----------
 -Sync of Kevin Robertson's lateral_movement/inveigh_relay module
--Sync stufus' exfiltration/egresscheck module
+-Sync @stufus' exfiltration/egresscheck module
 -Added module menu dynamic sizing for prettified output
+
+12/20/2015
+----------
+-hop.php redirector fix
 
 12/16/2015
 ----------
@@ -16,11 +39,11 @@
 -Added situational_awareness/network/powerview/get_cached_rdpconnection
 -Added situational_awareness/network/powerview/set_ad_object
 -Added management/downgrade_account
+-Merge of @mubix's setup automation
 
 12/9/2015
 ---------
--Added credentials/mimikatz/cache
-
+-Added credentials/mimikatz/cache and credentials/mimikatz/sam
 
 11/30/2015
 ----------
@@ -75,14 +98,13 @@
 ---------
 -Fixed small bug in TASK_CMD_WAIT response parsing
 
-10/30/2015
-----------
--Version 1.3.1
+============
+10/30/2015 - RELEASE 1.3.1
+============
 -Updated reflectivepick dlls to fix bug in injection and dll payload injection
 
-
 ============
-8/20/2015 - RELEASE 1.3
+10/29/2015 - RELEASE 1.3
 ============
 -Encompasses all changes since 1.2 tagged release
 
