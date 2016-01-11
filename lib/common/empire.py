@@ -945,6 +945,7 @@ class AgentsMenu(cmd.Cmd):
 
         elif parts[0].lower() == "all":
             hours = parts[1]
+            hours = hours.replace("," , "-")
 
             agents = self.mainMenu.agents.get_agents()
 
@@ -962,6 +963,7 @@ class AgentsMenu(cmd.Cmd):
             sessionID = self.mainMenu.agents.get_agent_id(parts[0])
 
             hours = parts[1]
+            hours = hours.replace("," , "-")
 
             if sessionID and len(sessionID) != 0:
                 #update this agent's field in the database
@@ -1460,6 +1462,7 @@ class AgentMenu(cmd.Cmd):
             self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to get working hours")
 
         else:
+            hours = hours.replace("," , "-")
             # update this agent's information in the database
             self.mainMenu.agents.set_agent_field("working_hours", hours, self.sessionID)
 
