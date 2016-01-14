@@ -152,6 +152,7 @@ class MainMenu(cmd.Cmd):
         try:
             # set the database connectiont to autocommit w/ isolation level
             self.conn = sqlite3.connect('./data/empire.db', check_same_thread=False)
+            self.conn.text_factory = str
             self.conn.isolation_level = None
             return self.conn
 
