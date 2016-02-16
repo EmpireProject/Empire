@@ -351,13 +351,7 @@ class MainMenu(cmd.Cmd):
 
     def do_searchmodule(self, line):
         "Search Empire module names/descriptions."
-
-        searchTerm = line.strip()
-
-        if searchTerm.strip() == "":
-            print helpers.color("[!] Please enter a search term.")
-        else:
-            self.modules.search_modules(searchTerm)
+        self.modules.search_modules(line.strip())
 
 
     def do_creds(self, line):
