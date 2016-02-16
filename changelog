@@ -1,3 +1,17 @@
+1/15/2016
+---------
+-start of command line option integration, use './empire -h' to see options
+-bug fixes
+-'searchmodule' with no arguments now lists all modules
+
+1/14/2016
+---------
+-Fix for some UTF-8 encoding issues
+
+1/10/2016
+----------
+-Corrected several bugs in how the workingHours window is handled in the agent
+
 ============
 12/29/2015 - RELEASE 1.4
 ============
