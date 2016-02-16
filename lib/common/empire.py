@@ -125,21 +125,21 @@ class MainMenu(cmd.Cmd):
         Handle any passed arguments.
         """
         
-        if self.args.listeners or self.args.stager:
+        if self.args.listener or self.args.stager:
             # if we're displaying listeners/stagers or generating a stager
-            if self.args.listeners:
-                if self.args.listeners == 'list':
+            if self.args.listener:
+                if self.args.listener == 'list':
                     activeListeners = self.listeners.get_listeners()
                     messages.display_listeners(activeListeners)
                 else:
                     activeListeners = self.listeners.get_listeners()
-                    targetListener = [l for l in activeListeners if self.args.listeners in l[1]]
+                    targetListener = [l for l in activeListeners if self.args.listener in l[1]]
 
                     if targetListener:
                         targetListener = targetListener[0]
                         messages.display_listener_database(targetListener)
                     else:
-                        print helpers.color("\n[!] No active listeners with name '%s'\n" %(self.args.listeners))
+                        print helpers.color("\n[!] No active listeners with name '%s'\n" %(self.args.listener))
 
             else:
                 if self.args.stager == 'list':

@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
     parser.add_argument('-s', '--stager', nargs='?', const="list", help='Specify a stager to generate. Lists all stagers if none is specified.')
     parser.add_argument('-o', '--stager-options', nargs='*', help="Supply options to set for a stager in OPTION=VALUE format. Lists options if nothing is specified.")
-    parser.add_argument('-l', '--listeners', nargs='?', const="list", help='Display listener options. Displays all listeners if nothing is specified.')
+    parser.add_argument('-l', '--listener', nargs='?', const="list", help='Display listener options. Displays all listeners if nothing is specified.')
 
     args = parser.parse_args()
 
