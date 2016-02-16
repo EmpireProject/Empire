@@ -46,8 +46,6 @@ class MainMenu(cmd.Cmd):
         # globalOptions[optionName] = (value, required, description) 
         self.globalOptions = {}
 
-        self.args = args
-        
         # empty database object
         self.conn = self.database_connect()
 
@@ -114,8 +112,74 @@ class MainMenu(cmd.Cmd):
         # Main, Agents, or Listeners
         self.menu_state = "Main"
 
-        # start everything up
+        # parse/handle any passed command line arguments
+        self.args = args
+        self.handle_args()
+
+        # start everything up normally
         self.startup()
+
+
+    def handle_args(self):
+        """
+        Handle any passed arguments.
+        """
+        
+        if self.args.listeners or self.args.stager:
+            # if we're displaying listeners/stagers or generating a stager
+            if self.args.listeners:
+                if self.args.listeners == 'list':
+                    activeListeners = self.listeners.get_listeners()
+                    messages.display_listeners(activeListeners)
+                else:
+                    activeListeners = self.listeners.get_listeners()
+                    targetListener = [l for l in activeListeners if self.args.listeners in l[1]]
+
+                    if targetListener:
+                        targetListener = targetListener[0]
+                        messages.display_listener_database(targetListener)
+                    else:
+                        print helpers.color("\n[!] No active listeners with name '%s'\n" %(self.args.listeners))
+
+            else:
+                if self.args.stager == 'list':
+                    print "\nStagers:\n"
+                    print "  Name             Description"
+                    print "  ----             -----------"
+                    for stagerName,stager in self.stagers.stagers.iteritems():
+                        print "  %s%s" % ('{0: <17}'.format(stagerName), stager.info['Description'])
+                    print "\n"
+                else:
+                    stagerName = self.args.stager
+                    try:
+                        targetStager = self.stagers.stagers[stagerName]
+                        menu = StagerMenu(self, stagerName)
+
+                        if self.args.stager_options:
+                            for option in self.args.stager_options:
+                                if '=' not in option:
+                                    print helpers.color("\n[!] Invalid option: '%s'" %(option))
+                                    print helpers.color("[!] Please use Option=Value format\n")
+                                    if self.conn: self.conn.close()
+                                    sys.exit()
+
+                                # split the passed stager options by = and set the appropriate option
+                                optionName, optionValue = option.split('=')
+                                menu.do_set("%s %s" %(optionName, optionValue))
+
+                            # generate the stager
+                            menu.do_generate('')
+
+                        else:
+                            messages.display_stager(stagerName, targetStager)
+
+                    except Exception as e:
+                        print e
+                        print helpers.color("\n[!] No current stager with name '%s'\n" %(stagerName))
+
+            # shutdown the database connection object
+            if self.conn: self.conn.close()
+            sys.exit()
 
 
     def startup(self):
