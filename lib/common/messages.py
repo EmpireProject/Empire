@@ -24,7 +24,7 @@ def title(version):
     """
     os.system('clear')
     print "===================================================================================="
-    print " Empire: PowerShell post-exploitation agent | [Version]: " + version
+    print " Empire: PowerShell post-exploitation agent | [Version]: %s" % (version)
     print '===================================================================================='
     print ' [Web]: https://www.PowerShellEmpire.com/ | [Twitter]: @harmj0y, @sixdub, @enigma0x3'
     print '===================================================================================='

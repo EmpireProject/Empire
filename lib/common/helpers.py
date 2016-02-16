@@ -576,13 +576,13 @@ def color(string, color=None):
         return '\x1b[%sm%s\x1b[0m' % (';'.join(attr), string)
 
     else:
-        if string.startswith("[!]"):
+        if string.strip().startswith("[!]"):
             attr.append('31')
             return '\x1b[%sm%s\x1b[0m' % (';'.join(attr), string)
-        elif string.startswith("[+]"):
+        elif string.strip().startswith("[+]"):
             attr.append('32')
             return '\x1b[%sm%s\x1b[0m' % (';'.join(attr), string)
-        elif string.startswith("[*]"):
+        elif string.strip().startswith("[*]"):
             attr.append('34')
             return '\x1b[%sm%s\x1b[0m' % (';'.join(attr), string)
         else:
