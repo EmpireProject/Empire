@@ -13,7 +13,7 @@ from lib.common import messages
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--debug', action='store_true', help='Debug mode for output.')
+    parser.add_argument('--debug', nargs='?', const='1', help='Debug level for output (default of 1).')
 
     parser.add_argument('-s', '--stager', nargs='?', const="list", help='Specify a stager to generate. Lists all stagers if none is specified.')
     parser.add_argument('-o', '--stager-options', nargs='*', help="Supply options to set for a stager in OPTION=VALUE format. Lists options if nothing is specified.")
@@ -23,7 +23,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.version:
-    	print empire.VERSION
+        print empire.VERSION
     else:
-	    main = empire.MainMenu(args=args)
-	    main.cmdloop()
+        main = empire.MainMenu(args=args)
+        main.cmdloop()

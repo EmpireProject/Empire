@@ -317,11 +317,16 @@ class MainMenu(cmd.Cmd):
             EmpireServer    -   the Empire HTTP server
         """
         
-        # if --debug is passed, log out all dispatcher signals
+        # if --debug X is passed, log out all dispatcher signals
         if self.args.debug:
+
             f = open("empire.debug", 'a')
             f.write(helpers.get_datetime() + " " + sender + " : " + signal + "\n")
             f.close()
+
+            if self.args.debug == '2':
+                # if --debug 2, also print the output to the screen
+                print " " + sender + " : " + signal
 
         # display specific signals from the agents.
         if sender == "Agents":
