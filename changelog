@@ -1,3 +1,7 @@
+1/17/2016
+---------
+- '--debug 2' now displays debug information to the console as well as the empire.debug file
+
 1/15/2016
 ---------
 -start of command line option integration, use './empire -h' to see options
