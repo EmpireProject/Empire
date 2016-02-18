@@ -95,7 +95,7 @@ class Modules:
         print ""
 
         for moduleName,module in self.modules.iteritems():
-            if searchTerm.lower() in moduleName.lower() or searchTerm.lower() in module.info['Description'].lower():
+            if searchTerm.lower() == '' or searchTerm.lower() in moduleName.lower() or searchTerm.lower() in module.info['Description'].lower():
                 messages.display_module_search(moduleName, module)
 
             # for comment in module.info['Comments']:

@@ -7,15 +7,23 @@ from lib.common import empire
 from lib.common import listeners
 from lib.common import http
 from lib.common import packets
+from lib.common import messages
 
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--debug', action='store_true', help='Debug mode for output.')
-    parser.add_argument('-debug', action='store_true', help='Debug mode for output.')
-    args = parser.parse_args()
-    
-    main = empire.MainMenu(args=args)
-    main.cmdloop()
+    parser.add_argument('--debug', nargs='?', const='1', help='Debug level for output (default of 1).')
 
+    parser.add_argument('-s', '--stager', nargs='?', const="list", help='Specify a stager to generate. Lists all stagers if none is specified.')
+    parser.add_argument('-o', '--stager-options', nargs='*', help="Supply options to set for a stager in OPTION=VALUE format. Lists options if nothing is specified.")
+    parser.add_argument('-l', '--listener', nargs='?', const="list", help='Display listener options. Displays all listeners if nothing is specified.')
+    parser.add_argument('-v', '--version', action='store_true', help='Display current Empire version.')
+
+    args = parser.parse_args()
+
+    if args.version:
+        print empire.VERSION
+    else:
+        main = empire.MainMenu(args=args)
+        main.cmdloop()

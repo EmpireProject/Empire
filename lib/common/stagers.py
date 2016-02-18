@@ -395,7 +395,6 @@ class Stagers:
                 # patch the dll with the new PowerShell code
                 searchString = (("Invoke-Replace").encode("UTF-16"))[2:]
                 index = dllRaw.find(searchString)
-                print "index:",index
                 dllPatched = dllRaw[:index]+replacementCode+dllRaw[(index+len(replacementCode)):]
 
                 return dllPatched

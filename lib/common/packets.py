@@ -103,8 +103,7 @@ def build_task_packet(taskName, data):
     counter = struct.pack('=L', get_counter())
     length = struct.pack('=L',len(data))
 
-    # data.encode('ascii',errors='ignore')
-    return taskID + counter + length + data.encode('ascii',errors='ignore')
+    return taskID + counter + length + data.decode('utf-8').encode('utf-8',errors='ignore')
    
 
 def parse_result_packet(packet, offset=0):

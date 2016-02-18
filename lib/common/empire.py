@@ -9,7 +9,7 @@ menu loops.
 """
 
 # make version for Empire
-VERSION = "1.4.0"
+VERSION = "1.4.1"
 
 
 from pydispatch import dispatcher
@@ -46,8 +46,6 @@ class MainMenu(cmd.Cmd):
         # globalOptions[optionName] = (value, required, description) 
         self.globalOptions = {}
 
-        self.args = args
-        
         # empty database object
         self.conn = self.database_connect()
 
@@ -114,8 +112,74 @@ class MainMenu(cmd.Cmd):
         # Main, Agents, or Listeners
         self.menu_state = "Main"
 
-        # start everything up
+        # parse/handle any passed command line arguments
+        self.args = args
+        self.handle_args()
+
+        # start everything up normally
         self.startup()
+
+
+    def handle_args(self):
+        """
+        Handle any passed arguments.
+        """
+        
+        if self.args.listener or self.args.stager:
+            # if we're displaying listeners/stagers or generating a stager
+            if self.args.listener:
+                if self.args.listener == 'list':
+                    activeListeners = self.listeners.get_listeners()
+                    messages.display_listeners(activeListeners)
+                else:
+                    activeListeners = self.listeners.get_listeners()
+                    targetListener = [l for l in activeListeners if self.args.listener in l[1]]
+
+                    if targetListener:
+                        targetListener = targetListener[0]
+                        messages.display_listener_database(targetListener)
+                    else:
+                        print helpers.color("\n[!] No active listeners with name '%s'\n" %(self.args.listener))
+
+            else:
+                if self.args.stager == 'list':
+                    print "\nStagers:\n"
+                    print "  Name             Description"
+                    print "  ----             -----------"
+                    for stagerName,stager in self.stagers.stagers.iteritems():
+                        print "  %s%s" % ('{0: <17}'.format(stagerName), stager.info['Description'])
+                    print "\n"
+                else:
+                    stagerName = self.args.stager
+                    try:
+                        targetStager = self.stagers.stagers[stagerName]
+                        menu = StagerMenu(self, stagerName)
+
+                        if self.args.stager_options:
+                            for option in self.args.stager_options:
+                                if '=' not in option:
+                                    print helpers.color("\n[!] Invalid option: '%s'" %(option))
+                                    print helpers.color("[!] Please use Option=Value format\n")
+                                    if self.conn: self.conn.close()
+                                    sys.exit()
+
+                                # split the passed stager options by = and set the appropriate option
+                                optionName, optionValue = option.split('=')
+                                menu.do_set("%s %s" %(optionName, optionValue))
+
+                            # generate the stager
+                            menu.do_generate('')
+
+                        else:
+                            messages.display_stager(stagerName, targetStager)
+
+                    except Exception as e:
+                        print e
+                        print helpers.color("\n[!] No current stager with name '%s'\n" %(stagerName))
+
+            # shutdown the database connection object
+            if self.conn: self.conn.close()
+            sys.exit()
 
 
     def startup(self):
@@ -152,6 +216,7 @@ class MainMenu(cmd.Cmd):
         try:
             # set the database connectiont to autocommit w/ isolation level
             self.conn = sqlite3.connect('./data/empire.db', check_same_thread=False)
+            self.conn.text_factory = str
             self.conn.isolation_level = None
             return self.conn
 
@@ -252,11 +317,16 @@ class MainMenu(cmd.Cmd):
             EmpireServer    -   the Empire HTTP server
         """
         
-        # if --debug is passed, log out all dispatcher signals
+        # if --debug X is passed, log out all dispatcher signals
         if self.args.debug:
+
             f = open("empire.debug", 'a')
             f.write(helpers.get_datetime() + " " + sender + " : " + signal + "\n")
             f.close()
+
+            if self.args.debug == '2':
+                # if --debug 2, also print the output to the screen
+                print " " + sender + " : " + signal
 
         # display specific signals from the agents.
         if sender == "Agents":
@@ -350,13 +420,7 @@ class MainMenu(cmd.Cmd):
 
     def do_searchmodule(self, line):
         "Search Empire module names/descriptions."
-
-        searchTerm = line.strip()
-
-        if searchTerm.strip() == "":
-            print helpers.color("[!] Please enter a search term.")
-        else:
-            self.modules.search_modules(searchTerm)
+        self.modules.search_modules(line.strip())
 
 
     def do_creds(self, line):
@@ -945,6 +1009,7 @@ class AgentsMenu(cmd.Cmd):
 
         elif parts[0].lower() == "all":
             hours = parts[1]
+            hours = hours.replace("," , "-")
 
             agents = self.mainMenu.agents.get_agents()
 
@@ -962,6 +1027,7 @@ class AgentsMenu(cmd.Cmd):
             sessionID = self.mainMenu.agents.get_agent_id(parts[0])
 
             hours = parts[1]
+            hours = hours.replace("," , "-")
 
             if sessionID and len(sessionID) != 0:
                 #update this agent's field in the database
@@ -1460,6 +1526,7 @@ class AgentMenu(cmd.Cmd):
             self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to get working hours")
 
         else:
+            hours = hours.replace("," , "-")
             # update this agent's information in the database
             self.mainMenu.agents.set_agent_field("working_hours", hours, self.sessionID)
 

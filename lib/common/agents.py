@@ -1339,7 +1339,8 @@ class Agents:
                     parts = data.split("|")
 
                     if len(parts) < 10:
-                        dispatcher.send("[!] Agent "+str(sessionID)+" posted invalid sysinfo checkin format", sender="Agents")
+                        dispatcher.send("[!] Agent %s posted invalid sysinfo checkin format: %s" %(sessionID, data), sender="Agents")
+
                         # remove the agent from the cache/database
                         self.remove_agent(sessionID)
                         return (404, "")

@@ -991,17 +991,35 @@ function Invoke-Empire {
 
         if($Servers[$ServerIndex].StartsWith("http")){
 
-            # if there are working hours set, make sure we're operating within them
-            #   format is "8:00,17:00"
-            if ($script:WorkingHours){
-                $start = Get-Date ($script:WorkingHours.split(",")[0])
-                $end = Get-Date ($script:WorkingHours.split(",")[1])
+            # if there are working hours set, make sure we're operating within the given time span
+            #   format is "8:00-17:00"
+            if ($script:WorkingHours -match '^[0-9]{1,2}:[0-5][0-9]-[0-9]{1,2}:[0-5][0-9]$'){
+                
+                $current = Get-Date
+                $start = Get-Date ($script:WorkingHours.split("-")[0])
+                $end = Get-Date ($script:WorkingHours.split("-")[1])
 
-                $startCheck = (Get-Date) -ge (Get-Date $start)
-                $endCheck = (Get-Date) -le (Get-Date $end)
-                if( (-not $startCheck) -and (-not $endCheck)){
+                # correct for hours that span overnight
+                if (($end-$start).hours -lt 0) {
+                    $start = $start.AddDays(-1)
+                }
+
+                # if the current time is past the start time
+                $startCheck = $current -ge $start
+
+                # if the current time is less than the end time
+                $endCheck = $current -le $end
+
+                # if the current time falls outside the window
+                if ((-not $startCheck) -or (-not $endCheck)) {
+
                     # sleep until the operational window starts again
-                    $sleepSeconds = ($end - (Get-Date)).TotalSeconds
+                    $sleepSeconds = ($start - $current).TotalSeconds
+
+                    if($sleepSeconds -lt 0) {
+                        # correct for hours that span overnight
+                        $sleepSeconds = ($start.addDays(1) - $current).TotalSeconds
+                    }
                     Start-Sleep -s $sleepSeconds
                 }
             }
