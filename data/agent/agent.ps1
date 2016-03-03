@@ -733,7 +733,6 @@ function Invoke-Empire {
                     Encode-Packet -type 40 -data "[*] File download of $path completed"
                 }
                 catch {
-                    write-host "Error: $_"
                     Encode-Packet -type 0 -data "file does not exist or cannot be accessed"
                 }
             }
