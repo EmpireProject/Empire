@@ -1345,6 +1345,8 @@ class Agents:
                         self.remove_agent(sessionID)
                         return (404, "")
 
+                    dispatcher.send("[!] Agent %s posted valid sysinfo checkin format: %s" %(sessionID, data), sender="Agents")
+
                     listener = parts[0].encode('ascii','ignore')
                     domainname = parts[1].encode('ascii','ignore')
                     username = parts[2].encode('ascii','ignore')
