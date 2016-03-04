@@ -426,7 +426,7 @@ class Listeners:
 
     def get_stager_config(self, listenerID):
         """
-        Returns the (host, pivotServer, hop) information for this listener.
+        Returns the (server, stagingKey, pivotServer, hop, defaultDelay) information for this listener.
 
         Used in stagers.py to generate the various stagers.
         """
@@ -440,6 +440,7 @@ class Listeners:
             port = listener[3]
             certPath = listener[4]
             stagingKey = listener[5]
+            defaultDelay = listener[6]
             listenerType = listener[11]
             redirectTarget = listener[12]
             hop = False
@@ -464,7 +465,7 @@ class Listeners:
             elif listenerType == "hop":
                 hop = True
 
-            return (host, stagingKey, pivotServer, hop)
+            return (host, stagingKey, pivotServer, hop, defaultDelay)
 
         else:
             print helpers.color("[!] Error in listeners.get_stager_config(): no listener information returned")
