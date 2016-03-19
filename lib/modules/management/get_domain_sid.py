@@ -5,11 +5,11 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Get-NetUser',
+            'Name': 'Get-DomainSID',
 
             'Author': ['@harmj0y'],
 
-            'Description': ('Query information for a given user or users in the specified domain. Part of PowerView.'),
+            'Description': ('Returns the SID for the current of specified domain.'),
 
             'Background' : True,
 
@@ -21,9 +21,7 @@ class Module:
             
             'MinPSVersion' : '2',
             
-            'Comments': [
-                'https://github.com/PowerShellEmpire/PowerTools/tree/master/PowerView'
-            ]
+            'Comments': [ ]
         }
 
         # any options needed by the module, settable during runtime
@@ -35,38 +33,8 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'UserName' : {
-                'Description'   :   'Username filter string, wildcards accepted.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
             'Domain' : {
-                'Description'   :   'The domain to use for the query, defaults to the current domain.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'DomainController' : {
-                'Description'   :   'Domain controller to reflect LDAP queries through.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'ADSpath' : {
-                'Description'   :   'The LDAP source to search through, e.g. "LDAP://OU=secret,DC=testlab,DC=local"',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'Filter' : {
-                'Description'   :   'A customized ldap filter string to use, e.g. "(description=*admin*)"',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'SPN' : {
-                'Description'   :   'Switch. Only return user objects with non-null service principal names.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'AllowDelegation' : {
-                'Description'   :   "Switch. Return user accounts that are not marked as 'sensitive and not allowed for delegation'.",
+                'Description'   :   'Domain to resolve SID for, defaults to the current domain.',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -75,7 +43,7 @@ class Module:
         # save off a copy of the mainMenu object to access external functionality
         #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
-
+        
         for param in params:
             # parameter format is [Name, Value]
             option, value = param
@@ -84,7 +52,7 @@ class Module:
 
 
     def generate(self):
-        
+
         moduleName = self.info["Name"]
         
         # read in the common powerview.ps1 module source code
@@ -114,5 +82,5 @@ class Module:
                         script += " -" + str(option) + " " + str(values['Value']) 
 
         script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
-        
+
         return script

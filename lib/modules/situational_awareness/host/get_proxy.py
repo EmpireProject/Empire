@@ -5,11 +5,11 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Get-NetUser',
+            'Name': 'Get-Proxy',
 
             'Author': ['@harmj0y'],
 
-            'Description': ('Query information for a given user or users in the specified domain. Part of PowerView.'),
+            'Description': ("Enumerates the proxy server and WPAD conents for the current user. Part of PowerView."),
 
             'Background' : True,
 
@@ -35,38 +35,8 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'UserName' : {
-                'Description'   :   'Username filter string, wildcards accepted.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'Domain' : {
-                'Description'   :   'The domain to use for the query, defaults to the current domain.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'DomainController' : {
-                'Description'   :   'Domain controller to reflect LDAP queries through.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'ADSpath' : {
-                'Description'   :   'The LDAP source to search through, e.g. "LDAP://OU=secret,DC=testlab,DC=local"',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'Filter' : {
-                'Description'   :   'A customized ldap filter string to use, e.g. "(description=*admin*)"',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'SPN' : {
-                'Description'   :   'Switch. Only return user objects with non-null service principal names.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'AllowDelegation' : {
-                'Description'   :   "Switch. Return user accounts that are not marked as 'sensitive and not allowed for delegation'.",
+            'ComputerName' : {
+                'Description'   :   'The computername to enumerate proxy settings on.',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -114,5 +84,5 @@ class Module:
                         script += " -" + str(option) + " " + str(values['Value']) 
 
         script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
-        
+
         return script

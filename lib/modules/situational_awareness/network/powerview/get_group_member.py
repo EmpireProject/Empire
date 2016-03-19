@@ -38,7 +38,7 @@ class Module:
             'GroupName' : {
                 'Description'   :   'The group name to query for users.',
                 'Required'      :   True,
-                'Value'         :   ''
+                'Value'         :   '"Domain Admins"'
             },
             'SID' : {
                 'Description'   :   'The Group SID to query for users.',
@@ -67,6 +67,11 @@ class Module:
             },
             'Recurse' : {
                 'Description'   :   'Switch. If the group member is a group, recursively try to query its members as well.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'UseMatchingRule' : {
+                'Description'   :   'Switch. Use LDAP_MATCHING_RULE_IN_CHAIN in the LDAP search query when -Recurse is specified.',
                 'Required'      :   False,
                 'Value'         :   ''
             }

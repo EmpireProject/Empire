@@ -9,7 +9,7 @@ class Module:
 
             'Author': ['@harmj0y'],
 
-            'Description': ('Execute the NetWkstaUserEnum Win32API call to query a given host for actively logged on users.'),
+            'Description': ('Execute the NetWkstaUserEnum Win32API call to query a given host for actively logged on users. Part of PowerView.'),
 
             'Background' : True,
 

@@ -5,11 +5,11 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Get-NetUser',
+            'Name': 'Get-DomainPolicy',
 
             'Author': ['@harmj0y'],
 
-            'Description': ('Query information for a given user or users in the specified domain. Part of PowerView.'),
+            'Description': ('Returns the default domain or DC policy for a given domain or domain controller. Part of PowerView.'),
 
             'Background' : True,
 
@@ -35,13 +35,13 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'UserName' : {
-                'Description'   :   'Username filter string, wildcards accepted.',
-                'Required'      :   False,
-                'Value'         :   ''
+            'Source' : {
+                'Description'   :   'Extract Domain or DC (domain controller) policies.',
+                'Required'      :   True,
+                'Value'         :   'Domain'
             },
             'Domain' : {
-                'Description'   :   'The domain to use for the query, defaults to the current domain.',
+                'Description'   :   'The domain to query for default policies, defaults to the current domain.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -50,23 +50,13 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'ADSpath' : {
-                'Description'   :   'The LDAP source to search through, e.g. "LDAP://OU=secret,DC=testlab,DC=local"',
+            'ResolveSids' : {
+                'Description'   :   'Switch. Resolve Sids from a DC policy to object names.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'Filter' : {
-                'Description'   :   'A customized ldap filter string to use, e.g. "(description=*admin*)"',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'SPN' : {
-                'Description'   :   'Switch. Only return user objects with non-null service principal names.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'AllowDelegation' : {
-                'Description'   :   "Switch. Return user accounts that are not marked as 'sensitive and not allowed for delegation'.",
+            'FullData' : {
+                'Description'   :   'Switch. Return full subnet objects instead of just object names (the default).',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -113,6 +103,6 @@ class Module:
                     else:
                         script += " -" + str(option) + " " + str(values['Value']) 
 
-        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
-        
+        script += ' | fl | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+
         return script

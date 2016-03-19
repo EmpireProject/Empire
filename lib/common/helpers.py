@@ -224,7 +224,7 @@ def get_dependent_functions(code, functionNames):
         if re.search("[^A-Za-z']+"+functionName+"[^A-Za-z']+", code, re.IGNORECASE):
             dependentFunctions.add(functionName)
 
-    if re.search("\$Netapi32|\$Advapi32|\$Kernel32\$Wtsapi32", code, re.IGNORECASE):
+    if re.search("\$Netapi32|\$Advapi32|\$Kernel32|\$Wtsapi32", code, re.IGNORECASE):
         dependentFunctions |= set(["New-InMemoryModule", "func", "Add-Win32Type", "psenum", "struct"])
 
     return dependentFunctions
@@ -287,7 +287,8 @@ def generate_dynamic_powershell_script(script, functionName):
 
     # build a mapping of functionNames -> stripped function code
     functions = {}
-    pattern = re.compile(r'\nfunction.*?{.*?\n}\n', re.DOTALL)
+    # pattern = re.compile(r'\nfunction.*?{.*?\n}\n', re.DOTALL)
+    pattern = re.compile(r'\n(?:function|filter).*?{.*?\n}\n', re.DOTALL)
 
     for match in pattern.findall(script):
         name = match[:40].split()[1]
