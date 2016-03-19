@@ -269,11 +269,11 @@ def find_all_dependent_functions(functions, functionsToProcess, resultFunctions=
     return resultFunctions
 
 
-def generate_dynamic_powershell_script(script, functionName):
+def generate_dynamic_powershell_script(script, functionNames):
     """
-    Takes a PowerShell script and a function name, generates a dictionary
-    of "[functionName] -> functionCode", and recurisvely maps all 
-    dependent functions for the specified function name.
+    Takes a PowerShell script and a function name (or array of function names,
+    generates a dictionary of "[functionNames] -> functionCode", and recursively 
+    maps all dependent functions for the specified function name.
 
     A script is returned with only the code necessary for the given
     functionName, stripped of comments and whitespace.
@@ -284,6 +284,9 @@ def generate_dynamic_powershell_script(script, functionName):
 
     newScript = ""
     psreflect_functions = ["New-InMemoryModule", "func", "Add-Win32Type", "psenum", "struct"]
+
+    if type(functionNames) is not list:
+        functionNames = [functionNames]
 
     # build a mapping of functionNames -> stripped function code
     functions = {}
@@ -296,7 +299,11 @@ def generate_dynamic_powershell_script(script, functionName):
 
     # recursively enumerate all possible function dependencies and
     #   start building the new result script
-    functionDependencies = find_all_dependent_functions(functions, functionName, [])
+    functionDependencies = []
+
+    for functionName in functionNames:        
+        functionDependencies += find_all_dependent_functions(functions, functionName, [])
+        functionDependencies = unique(functionDependencies)
 
     for functionDependency in functionDependencies:
         try:

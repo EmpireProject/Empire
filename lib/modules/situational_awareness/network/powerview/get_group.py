@@ -54,7 +54,7 @@ class Module:
                 'Description'   :   'Switch. Return groups with adminCount=1 (i.e. privileged groups).',
                 'Required'      :   False,
                 'Value'         :   ''
-            },   
+            },
             'Filter' : {
                 'Description'   :   'A customized ldap filter string to use, e.g. "(description=*admin*)"',
                 'Required'      :   False,
