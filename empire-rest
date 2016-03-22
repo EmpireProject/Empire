@@ -46,11 +46,14 @@ def execute_db_query(conn, query, args=None):
     return results    
 
 
-##################################
+####################################################################
 #
-# The RESTful API.
+# The Empire RESTful API.
+# 
+# Adapted from http://blog.miguelgrinberg.com/post/designing-a-restful-api-with-python-and-flask
+#   example code at https://gist.github.com/miguelgrinberg/5614326
 #
-##################################
+####################################################################
 
 def start_restful_api(port=1337):
     '''
@@ -81,9 +84,13 @@ def start_restful_api(port=1337):
     GET     http://localhost:1337/empire/api/reporting/type/Y   return all logged events of type Y (checkin, task, result, rename)
     GET     http://localhost:1337/empire/api/reporting/msg/Z    return all logged events matching message Z, wildcards accepted
     '''
-    from flask import Flask, request, jsonify, make_response
+    from flask import Flask, request, jsonify, make_response, abort
 
     app = Flask(__name__)
+
+    # instantiate an Empire instance in case we need to interact with stagers or listeners
+    args = Namespace(debug=None, listener=None, stager=None, stager_options=None, version=False)
+    main = empire.MainMenu(args=args, restAPI=True)
 
     conn = database_connect()
 
@@ -114,8 +121,6 @@ def start_restful_api(port=1337):
 
     @app.route('/empire/api/stagers', methods=['GET'])
     def get_stagers():
-        args = Namespace(debug=None, listener=None, stager=None, stager_options=None, version=False)
-        main = empire.MainMenu(args=args, restAPI=True)
 
         stagerInfo = {}
         for stagerName,stager in main.stagers.stagers.iteritems():
@@ -128,8 +133,6 @@ def start_restful_api(port=1337):
 
     @app.route('/empire/api/stagers/<string:stager_name>', methods=['GET'])
     def get_stagers_name(stager_name):
-        args = Namespace(debug=None, listener=None, stager=None, stager_options=None, version=False)
-        main = empire.MainMenu(args=args, restAPI=True)
 
         stagerInfo = {}
         for stagerName,stager in main.stagers.stagers.iteritems():
@@ -141,10 +144,47 @@ def start_restful_api(port=1337):
         return jsonify({'stagers': stagerInfo})
 
 
+    @app.route('/empire/api/stagers', methods=['POST'])
+    def generate_stager():
+
+        if not request.json or not 'StagerName' in request.json or not 'Listener' in request.json:
+            abort(400)
+        
+        stagerName = request.json['StagerName']
+        listener = request.json['Listener']
+
+        if stagerName not in main.stagers.stagers:
+            return jsonify({'error': 'StagerName invalid'})
+
+        if not main.listeners.is_listener_valid(listener):
+            return jsonify({'error': 'invalid listener ID or name'})
+
+        stager = main.stagers.stagers[stagerName]
+        
+        # self.stager.options[option]['Value']
+
+        # set all passed options
+        for option,values in request.json.iteritems():
+            if option != 'StagerName':
+                if(option not in stager.options):
+                    return jsonify({'error': 'Invalid option %s, check capitalization.' %(option)})
+                stager.options[option]['Value'] = values
+
+        # validate stager options
+        for option,values in stager.options.iteritems():
+            if values['Required'] and ((not values['Value']) or (values['Value'] == '')):
+                return jsonify({'error': 'required stager options missing'})
+
+        # self.mainMenu.stagers.stagers[stagerName]
+        # print request.json['listener']
+        stagerOut = stager.options
+        stagerOut['Output'] = stager.generate()
+
+        return jsonify({stagerName: stagerOut})
+
+
     @app.route('/empire/api/modules', methods=['GET'])
     def get_modules():
-        args = Namespace(debug=None, listener=None, stager=None, stager_options=None, version=False)
-        main = empire.MainMenu(args=args, restAPI=True)
 
         moduleInfo = {}
         for moduleName,module in main.modules.modules.iteritems():
@@ -166,6 +206,15 @@ def start_restful_api(port=1337):
             activeListeners[name] = {'ID':ID, 'name':name, 'host':host, 'port':port, 'cert_path':cert_path, 'staging_key':staging_key, 'default_delay':default_delay, 'default_jitter':default_jitter, 'default_profile':default_profile, 'kill_date':kill_date, 'working_hours':working_hours, 'listener_type':listener_type, 'redirect_target':redirect_target, 'default_lost_limit':default_lost_limit}
 
         return jsonify({'listeners' : activeListeners})
+
+
+    # @app.route('/empire/api/listeners', methods=['POST'])
+    # def creat_listener():
+
+    #     if not request.json:
+    #         abort(400)
+
+    #     print request.json['title']
 
 
     @app.route('/empire/api/listeners/id/<int:listener_id>', methods=['GET'])

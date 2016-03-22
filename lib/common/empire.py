@@ -2647,7 +2647,7 @@ class StagerMenu(cmd.Cmd):
 
         listenerName = self.stager.options['Listener']['Value']
 
-        if not self.mainMenu.listeners.is_listener_valid(listenerName):
+        if not main.listeners.is_listener_valid(listenerName):
             print helpers.color("[!] Invalid listener ID or name.")
             return False
 
