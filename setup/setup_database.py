@@ -139,7 +139,9 @@ c.execute('''CREATE TABLE "agents" (
     "kill_date" text,
     "working_hours" text,
     "ps_version" text,
-    "lost_limit" integer
+    "lost_limit" integer,
+    "taskings" text,
+    "results" text
     )''')
 
 c.execute('''CREATE TABLE "listeners" (

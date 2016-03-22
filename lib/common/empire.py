@@ -9,7 +9,7 @@ menu loops.
 """
 
 # make version for Empire
-VERSION = "1.4.4"
+VERSION = "1.4.6"
 
 
 from pydispatch import dispatcher
@@ -39,7 +39,7 @@ class NavListeners(Exception): pass
 
 class MainMenu(cmd.Cmd):
 
-    def __init__(self, args=None):
+    def __init__(self, args=None, restAPI=False):
 
         cmd.Cmd.__init__(self)
         
@@ -49,42 +49,8 @@ class MainMenu(cmd.Cmd):
         # empty database object
         self.conn = self.database_connect()
 
-        # grab the universal install path
-        # TODO: combine these into one query
-        cur = self.conn.cursor()
-        cur.execute("SELECT install_path FROM config")
-        self.installPath = cur.fetchone()[0]
-        cur.close()
-
-        # pull out the stage0 uri
-        cur = self.conn.cursor()
-        cur.execute("SELECT stage0_uri FROM config")
-        self.stage0 = cur.fetchone()[0]
-        cur.close()
-
-        # pull out the stage1 uri
-        cur = self.conn.cursor()
-        cur.execute("SELECT stage1_uri FROM config")
-        self.stage1 = cur.fetchone()[0]
-        cur.close()
-
-        # pull out the stage2 uri
-        cur = self.conn.cursor()
-        cur.execute("SELECT stage2_uri FROM config")
-        self.stage2 = cur.fetchone()[0]
-        cur.close()
-        
-        # pull out the IP whitelist and create it, if applicable
-        cur = self.conn.cursor()
-        cur.execute("SELECT ip_whitelist FROM config")
-        self.ipWhiteList = helpers.generate_ip_list(cur.fetchone()[0])
-        cur.close()
-
-        # pull out the IP blacklist and create it, if applicable
-        cur = self.conn.cursor()
-        cur.execute("SELECT ip_blacklist FROM config")
-        self.ipBlackList = helpers.generate_ip_list(cur.fetchone()[0])
-        cur.close()
+        # pull out some common configuration information
+        (self.installPath, self.stage0, self.stage1, self.stage2, self.ipWhiteList, self.ipBlackList) = helpers.get_config('install_path,stage0_uri,stage1_uri,stage2_uri,ip_whitelist,ip_blacklist')
 
         # instantiate the agents, listeners, and stagers objects
         self.agents = agents.Agents(self, args=args)
@@ -94,7 +60,6 @@ class MainMenu(cmd.Cmd):
         self.credentials = credentials.Credentials(self, args=args)
 
         # make sure all the references are passed after instantiation
-        # TODO: replace these with self?
         self.agents.listeners = self.listeners
         self.agents.modules = self.modules
         self.agents.stagers = self.stagers
@@ -116,8 +81,9 @@ class MainMenu(cmd.Cmd):
         self.args = args
         self.handle_args()
 
-        # start everything up normally
-        self.startup()
+        # start everything up normally if the RESTful API isn't being launched
+        if not restAPI:
+            self.startup()
 
 
     def handle_args(self):
@@ -748,7 +714,7 @@ class AgentsMenu(cmd.Cmd):
     #     traceback.print_stack()
     
     # print a nicely formatted help menu
-    # stolen/adapted from recon-ng
+    #   stolen/adapted from recon-ng
     def print_topics(self, header, cmds, cmdlen, maxcol):
         if cmds:
             self.stdout.write("%s\n"%str(header))

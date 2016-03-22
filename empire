@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import sqlite3, argparse
+import sqlite3, argparse, time, sys, os, subprocess, logging
 
 # Empire imports
 from lib.common import empire
@@ -19,6 +19,7 @@ if __name__ == '__main__':
     parser.add_argument('-o', '--stager-options', nargs='*', help="Supply options to set for a stager in OPTION=VALUE format. Lists options if nothing is specified.")
     parser.add_argument('-l', '--listener', nargs='?', const="list", help='Display listener options. Displays all listeners if nothing is specified.')
     parser.add_argument('-v', '--version', action='store_true', help='Display current Empire version.')
+    parser.add_argument('--headless', action='store_true', help='Run Empire and the RESTful API headless without the usual interface.')
 
     args = parser.parse_args()
 
@@ -26,4 +27,25 @@ if __name__ == '__main__':
         print empire.VERSION
     else:
         main = empire.MainMenu(args=args)
-        main.cmdloop()
+        if args.headless:
+            # start the ./empire-rest API handler
+            p = subprocess.Popen(["./empire-rest", "--suppress"])
+
+            # suppress all stdout and don't initiate the main cmdloop
+            oldStdout = sys.stdout
+            sys.stdout = open(os.devnull, 'w')
+            try:
+                time.sleep(100)
+            except KeyboardInterrupt as e:
+                # shutdown the controller on ^C
+                main.shutdown()
+
+                # repair stdout
+                sys.stdout.close()
+                sys.stdout = oldStdout
+
+                # shut down ./empire-rest
+                restAPI.terminate()
+                time.sleep(5000)
+        else:
+            main.cmdloop()
