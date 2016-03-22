@@ -1,7 +1,9 @@
 #!/usr/bin/python
 
-import sqlite3, argparse, sys, argparse, logging, json
+import sqlite3, argparse, sys, argparse, logging, json, string, os, re
 from time import localtime, strftime
+from OpenSSL import SSL
+from Crypto.Random import random
 
 # Empire imports
 from lib.common import empire
@@ -16,6 +18,7 @@ from lib.common import empire
 class Namespace:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
+
 
 def get_datetime():
     """
@@ -57,6 +60,20 @@ def execute_db_query(conn, query, args=None):
     results = cur.fetchall()
     cur.close()
     return results    
+
+
+def refresh_api_token(conn):
+    """
+    Generates a randomized RESTful API token and updates the value
+    in the config stored in the backend database.
+    """
+
+    # generate a randomized API token
+    apiToken = ''.join(random.choice(string.ascii_lowercase + string.digits) for x in range(40))
+
+    execute_db_query(conn, "UPDATE config SET api_token=?", [apiToken])
+
+    return apiToken
 
 
 ####################################################################
@@ -110,6 +127,23 @@ def start_restful_api(port=1337):
 
     conn = database_connect()
 
+    # refresh the token for the RESTful API
+    apiToken = refresh_api_token(conn)
+    print " * RESTful API token: %s" %(apiToken)
+
+    tokenAllowed = re.compile("^[0-9a-z]{40}")
+
+
+    # validate API token before every request
+    @app.before_request
+    def check_token():
+        token = request.args.get('token')
+        if (not token) or (not tokenAllowed.match(token)):
+            return make_response('', 403)
+        if token != apiToken:
+            return make_response('', 403)
+
+
     @app.errorhandler(Exception)
     def exception_handler(error):
         return repr(error)
@@ -135,8 +169,8 @@ def start_restful_api(port=1337):
         """
         configRaw = execute_db_query(conn, 'SELECT * FROM config')
 
-        [staging_key, stage0_uri, stage1_uri, stage2_uri, default_delay, default_jitter, default_profile, default_cert_path, default_port, install_path, server_version, ip_whitelist, ip_blacklist, default_lost_limit, autorun_command, autorun_data] = configRaw[0]
-        config = {"version":empire.VERSION, "staging_key":staging_key, "stage0_uri":stage0_uri, "stage1_uri":stage1_uri, "stage2_uri":stage2_uri, "default_delay":default_delay, "default_jitter":default_jitter, "default_profile":default_profile, "default_cert_path":default_cert_path, "default_port":default_port, "install_path":install_path, "server_version":server_version, "ip_whitelist":ip_whitelist, "ip_blacklist":ip_blacklist, "default_lost_limit":default_lost_limit, "autorun_command":autorun_command, "autorun_data":autorun_data}
+        [staging_key, stage0_uri, stage1_uri, stage2_uri, default_delay, default_jitter, default_profile, default_cert_path, default_port, install_path, server_version, ip_whitelist, ip_blacklist, default_lost_limit, autorun_command, autorun_data, api_token] = configRaw[0]
+        config = {"version":empire.VERSION, "staging_key":staging_key, "stage0_uri":stage0_uri, "stage1_uri":stage1_uri, "stage2_uri":stage2_uri, "default_delay":default_delay, "default_jitter":default_jitter, "default_profile":default_profile, "default_cert_path":default_cert_path, "default_port":default_port, "install_path":install_path, "server_version":server_version, "ip_whitelist":ip_whitelist, "ip_blacklist":ip_blacklist, "default_lost_limit":default_lost_limit, "autorun_command":autorun_command, "autorun_data":autorun_data, "api_token":api_token}
         return jsonify({'config': config})
 
 
@@ -474,7 +508,15 @@ def start_restful_api(port=1337):
 
         return jsonify({'reporting' : reportingEvents})
 
-    app.run(host='127.0.0.1', port=port)
+    if not os.path.exists('./data/empire.pem'):
+        print "[!] Error: cannot find certificate ./data/empire.pem"
+        sys.exit()
+
+    # wrap the Flask connection in SSL and start it
+    context = ('./data/empire.pem', './data/empire.pem')
+    app.run(host='0.0.0.0', port=port, ssl_context=context, threaded=True)
+
+    if conn: conn.close()
 
 
 if __name__ == '__main__':
@@ -487,8 +529,9 @@ if __name__ == '__main__':
         # suppress the normal Flask output
         log = logging.getLogger('werkzeug')
         log.setLevel(logging.ERROR)   
-    else:
-        print "\n * Starting Empire RESTful API"
 
-    start_restful_api()
+    port = 1337
+    print "\n * Starting Empire RESTful API on port: %s" %(port)
+
+    start_restful_api(port=1337)
     sys.exit()

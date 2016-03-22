@@ -7,18 +7,9 @@ randomized stagers.
 
 """
 
+import re, string, commands, base64, binascii, sys, os, socket, sqlite3, iptools
 from time import localtime, strftime
 from Crypto.Random import random
-import re
-import string
-import commands
-import base64
-import binascii
-import sys
-import os
-import socket
-import sqlite3
-import iptools
 
 
 ###############################################################
@@ -501,7 +492,7 @@ def get_config(fields):
     conn.isolation_level = None
 
     cur = conn.cursor()
-    cur.execute("SELECT "+fields+" FROM config")
+    cur.execute("SELECT %s FROM config" %(fields))
     results = cur.fetchone()
     cur.close()
     conn.close()
