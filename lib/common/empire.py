@@ -373,6 +373,7 @@ class MainMenu(cmd.Cmd):
         except Exception as e:
             raise e
 
+
     def do_usemodule(self, line):
         "Use an Empire module."
         if line not in self.modules.modules:
@@ -383,6 +384,7 @@ class MainMenu(cmd.Cmd):
                 l.cmdloop()
             except Exception as e:
                 raise e
+
 
     def do_searchmodule(self, line):
         "Search Empire module names/descriptions."
@@ -729,8 +731,13 @@ class AgentsMenu(cmd.Cmd):
 
 
     def do_back(self, line):
-        "Return back a menu."
-        return True
+        "Go back to the main menu."
+        raise NavMain()
+
+
+    def do_listeners(self, line):
+        "Jump to the listeners menu."
+        raise NavListeners()
 
 
     def do_main(self, line):
@@ -762,8 +769,6 @@ class AgentsMenu(cmd.Cmd):
         # name sure we get an old name and new name for the agent
         if len(parts) == 2:
             # replace the old name with the new name
-            oldname =  parts[0]
-            newname = parts[1]
             self.mainMenu.agents.rename_agent(parts[0], parts[1])
         else:
             print helpers.color("[!] Please enter an agent name and new name")
@@ -1073,11 +1078,6 @@ class AgentsMenu(cmd.Cmd):
                 print helpers.color("[!] Invalid agent name")
 
 
-    def do_listeners(self, line):
-        "Jump to the listeners menu."
-        raise NavListeners()
-
-
     def do_usestager(self, line):
         "Use an Empire stager."
 
@@ -1300,9 +1300,9 @@ class AgentMenu(cmd.Cmd):
         return True
 
 
-    def do_main(self, line):
-        "Go back to the main menu."
-        raise NavMain()
+    def do_agents(self, line):
+        "Jump to the Agents menu."
+        raise NavAgents()
 
 
     def do_listeners(self, line):
@@ -1310,9 +1310,9 @@ class AgentMenu(cmd.Cmd):
         raise NavListeners()
 
 
-    def do_agents(self, line):
-        "Jump to the Agents menu."
-        raise NavAgents()
+    def do_main(self, line):
+        "Go back to the main menu."
+        raise NavMain()
 
 
     def do_help(self, *args):
@@ -2007,11 +2007,6 @@ class ListenerMenu(cmd.Cmd):
     def emptyline(self): pass
 
 
-    def do_exit(self, line):
-        "Exit Empire."
-        raise KeyboardInterrupt
-
-
     def do_list(self, line):
         "List all active listeners (or agents)."
 
@@ -2024,13 +2019,23 @@ class ListenerMenu(cmd.Cmd):
 
 
     def do_back(self, line):
-        "Go back a menu."
-        return True
+        "Go back to the main menu."
+        raise NavMain()
+
+
+    def do_agents(self, line):
+        "Jump to the Agents menu."
+        raise NavAgents()
 
 
     def do_main(self, line):
         "Go back to the main menu."
         raise NavMain()
+
+
+    def do_exit(self, line):
+        "Exit Empire."
+        raise KeyboardInterrupt
 
 
     def do_set(self, line):
@@ -2121,11 +2126,6 @@ class ListenerMenu(cmd.Cmd):
     def do_run(self, line):
         "Execute a listener with the currently specified options."
         self.do_execute(line)
-
-
-    def do_agents(self, line):
-        "Jump to the Agents menu."
-        raise NavAgents()
 
 
     def do_usestager(self, line):
@@ -2335,6 +2335,11 @@ class ModuleMenu(cmd.Cmd):
             self.stdout.write("\n")
 
 
+    def do_back(self, line):
+        "Go back a menu."
+        return True
+
+
     def do_agents(self, line):
         "Jump to the Agents menu."
         raise NavAgents()
@@ -2345,14 +2350,14 @@ class ModuleMenu(cmd.Cmd):
         raise NavListeners()
 
 
+    def do_main(self, line):
+        "Go back to the main menu."
+        raise NavMain()
+
+
     def do_exit(self, line):
         "Exit Empire."
         raise KeyboardInterrupt
-
-
-    def do_main(self, line):
-        "Return to the main menu."
-        return True
 
 
     def do_list(self, line):
@@ -2385,16 +2390,6 @@ class ModuleMenu(cmd.Cmd):
     def do_options(self, line):
         "Display module options."
         messages.display_module(self.moduleName, self.module)
-
-
-    def do_back(self, line):
-        "Return to the main menu."
-        return True
-
-
-    def do_main(self, line):
-        "Go back to the main menu."
-        raise NavMain()
 
 
     def do_set(self, line):
@@ -2668,14 +2663,29 @@ class StagerMenu(cmd.Cmd):
             self.stdout.write("\n")
 
 
-    def do_exit(self, line):
-        "Exit Empire."
-        raise KeyboardInterrupt
+    def do_back(self, line):
+        "Go back a menu."
+        return True
+
+
+    def do_agents(self, line):
+        "Jump to the Agents menu."
+        raise NavAgents()
+
+
+    def do_listeners(self, line):
+        "Jump to the listeners menu."
+        raise NavListeners()
 
 
     def do_main(self, line):
-        "Return to the main menu."
-        return True
+        "Go back to the main menu."
+        raise NavMain()
+
+
+    def do_exit(self, line):
+        "Exit Empire."
+        raise KeyboardInterrupt
 
 
     def do_list(self, line):
@@ -2697,16 +2707,6 @@ class StagerMenu(cmd.Cmd):
     def do_options(self, line):
         "Display stager options."
         messages.display_stager(self.stagerName, self.stager)
-
-
-    def do_back(self, line):
-        "Return to the main menu."
-        return True
-
-
-    def do_main(self, line):
-        "Go back to the main menu."
-        raise NavMain()
 
 
     def do_set(self, line):
@@ -2791,7 +2791,6 @@ class StagerMenu(cmd.Cmd):
 
     def do_execute(self, line):
         "Generate/execute the given Empire stager."
-
         self.do_generate(line)
 
 
@@ -2827,13 +2826,3 @@ class StagerMenu(cmd.Cmd):
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
         return [s[offs:] for s in options if s.startswith(mline)]
-
-
-    def do_agents(self, line):
-        "Jump to the Agents menu."
-        raise NavAgents()
-
-
-    def do_listeners(self, line):
-        "Jump to the listeners menu."
-        raise NavListeners()
