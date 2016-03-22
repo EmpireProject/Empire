@@ -29,7 +29,7 @@ if __name__ == '__main__':
         main = empire.MainMenu(args=args)
         if args.headless:
             # start the ./empire-rest API handler
-            p = subprocess.Popen(["./empire-rest", "--suppress"])
+            restAPI = subprocess.Popen(["./empire-rest", "--suppress"])
 
             # suppress all stdout and don't initiate the main cmdloop
             oldStdout = sys.stdout
@@ -46,6 +46,5 @@ if __name__ == '__main__':
 
                 # shut down ./empire-rest
                 restAPI.terminate()
-                time.sleep(5000)
         else:
             main.cmdloop()
