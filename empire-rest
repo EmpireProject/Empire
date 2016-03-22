@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
-import sqlite3, argparse, sys, argparse, logging, json, string, os, re
+import sqlite3, argparse, sys, argparse, logging, json, string, os, re, time
+from flask import Flask, request, jsonify, make_response, abort
 from time import localtime, strftime
 from OpenSSL import SSL
 from Crypto.Random import random
@@ -34,6 +35,10 @@ def get_datetime():
 ##################################
 
 def database_connect():
+    """
+    Connect with the backend ./empire.db sqlite database and return the
+    connection object.
+    """
     try:
         # set the database connectiont to autocommit w/ isolation level
         conn = sqlite3.connect('./data/empire.db', check_same_thread=False)
@@ -105,7 +110,7 @@ def start_restful_api(port=1337):
     GET     http://localhost:1337/empire/api/listeners/Y        return the listener with id Y
     GET     http://localhost:1337/empire/api/listeners/options  return all listener options
     POST    http://localhost:1337/empire/api/listeners          starts a new listener with the specified options
-    POST    http://localhost:1337/empire/api/listeners/kill     kills the listener specified by options
+    DELETE  http://localhost:1337/empire/api/listeners/Y        kills listener Y
 
     GET     http://localhost:1337/empire/api/agents             return all current agents
     GET     http://localhost:1337/empire/api/agents/Y           return the agent with name Y
@@ -117,7 +122,6 @@ def start_restful_api(port=1337):
     GET     http://localhost:1337/empire/api/reporting/type/Y   return all logged events of type Y (checkin, task, result, rename)
     GET     http://localhost:1337/empire/api/reporting/msg/Z    return all logged events matching message Z, wildcards accepted
     '''
-    from flask import Flask, request, jsonify, make_response, abort
 
     app = Flask(__name__)
 
@@ -290,6 +294,29 @@ def start_restful_api(port=1337):
         return jsonify({'listeners' : activeListeners})
 
 
+    @app.route('/empire/api/listeners/<string:listener_name>', methods=['DELETE'])
+    def kill_listener(listener_name):
+        """
+        Kills the listener specified by listener_name.
+        """
+
+        if listener_name.lower() == "all":
+            activeListenersRaw = execute_db_query(conn, 'SELECT * FROM listeners')
+            for activeListener in activeListenersRaw:
+                [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit] = activeListener
+                main.listeners.shutdown_listener(name)
+                main.listeners.delete_listener(name)
+
+            return jsonify({'result': True})
+        else:
+            if listener_name != "" and main.listeners.is_listener_valid(listener_name):
+                main.listeners.shutdown_listener(listener_name)
+                main.listeners.delete_listener(listener_name)
+                return jsonify({'result': True})
+            else:
+                return jsonify({'error': 'invalid listener name: %s' %(listener_name)})
+
+
     @app.route('/empire/api/listeners/options', methods=['GET'])
     def get_listener_options():
         """
@@ -315,26 +342,7 @@ def start_restful_api(port=1337):
             return jsonify({'error': 'Error validating listener options'})
 
         main.listeners.add_listener_from_config()
-        return jsonify({'ListenerOptions' : main.listeners.options})
-
-
-    @app.route('/empire/api/listeners/kill', methods=['POST'])
-    def kill_listener():
-        """
-        Kills a listener with options supplied in the POST.
-        """
-        
-        listenerName = request.json['Name']
-
-        if listenerName.lower() == "all":
-            main.listeners.killall()
-        else:
-            if listenerName != "" and main.listeners.is_listener_valid(listenerName):
-                main.listeners.shutdown_listener(listenerName)
-                main.listeners.delete_listener(listenerName)
-                return jsonify({'success': 'listener %s killed' %(listenerName)})
-            else:
-                return jsonify({'error': 'invalid listener name: %s' %(listenerName)})
+        return jsonify({'result': True})
 
 
     @app.route('/empire/api/agents', methods=['GET'])
@@ -399,11 +407,15 @@ def start_restful_api(port=1337):
         """
 
         if 'Task' in request.json.keys():
+
+            if agent_name.lower() == "all":
+                agent_name = '%'
+
             taskName = request.json['Task']['TaskName']
             task = request.json['Task']['Task']
 
             # get existing agent taskings
-            agentTasks = execute_db_query(conn, 'SELECT taskings FROM agents WHERE name=? OR session_id=?', [agent_name, agent_name])[0]
+            agentTasks = execute_db_query(conn, 'SELECT taskings FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])[0]
 
             if(agentTasks and agentTasks[0]):
                 agentTasks = json.loads(agentTasks[0])
@@ -422,20 +434,70 @@ def start_restful_api(port=1337):
 
             if agent_name.lower() == "all":
                 agent_name = '%'
-            execute_db_query(conn, "UPDATE agents SET taskings=? WHERE name=? OR session_id=?", ['',agent_name])
+
+            execute_db_query(conn, "UPDATE agents SET taskings=? WHERE name like ? OR session_id like ?", ['', agent_name, agent_name])
 
             return jsonify({'AgentName':agent_name, 'TaskType':'Clear', 'TaskName':'', 'Task':''})
 
 
-        elif 'Sleep' in request.json.keys():
-            pass
-
-
         elif 'Rename' in request.json.keys():
-            pass
+            oldName = request.json['Rename']['OldName']
+            newName = request.json['Rename']['NewName']
 
+            try:
+                main.agents.rename_agent(oldName, newName)
+                return jsonify({'result': True})
+            except:
+                return jsonify({'error': 'error in renaming %s to %s' %(oldName, newName)})
+            
 
         return jsonify({'error':'error in tasking agent %s' % (agent_name)})
+
+
+    @app.route('/empire/api/agents/<string:agent_name>', methods=['DELETE'])
+    def remove_agent(agent_name):
+        """
+        Removes an agent from the controller specified by agent_name.
+        WARNING: doesn't kill the agent first! Ensure the agent is dead.
+        """
+        if agent_name.lower() == "all":
+            agent_name = '%'
+
+        agentsRaw = execute_db_query(conn, 'SELECT * FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+        removedAgents = {}
+
+        for agent in agentsRaw:
+            [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit, taskings, results] = agent
+            execute_db_query(conn, "DELETE FROM agents WHERE session_id LIKE ?", [sessionID])
+
+            removedAgents[name] = {"ID":ID, "sessionID":sessionID, "listener":listener, "name":name, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "uris":uris, "old_uris":old_uris, "user_agent":user_agent, "headers":headers, "functions":functions, "kill_date":kill_date, "working_hours":working_hours, "ps_version":ps_version, "lost_limit":lost_limit, "taskings":taskings, "results":results}
+
+        return jsonify({'RemovedAgents': removedAgents})
+
+
+    @app.route('/empire/api/agents/stale', methods=['DELETE'])
+    def remove_stale_agent():
+        """
+        Removes stale agents from the controller.
+        WARNING: doesn't kill the agent first! Ensure the agent is dead.
+        """
+        agentsRaw = execute_db_query(conn, 'SELECT * FROM agents')
+        removedAgents = {}
+        
+        for agent in agentsRaw:
+            [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit, taskings, results] = agent
+
+            intervalMax = (delay + delay * jitter)+30
+
+            # get the agent last check in time
+            agentTime = time.mktime(time.strptime(lastseen_time, "%Y-%m-%d %H:%M:%S"))
+
+            if agentTime < time.mktime(time.localtime()) - intervalMax:
+                execute_db_query(conn, "DELETE FROM agents WHERE session_id LIKE ?", [sessionID])
+
+                removedAgents[name] = {"ID":ID, "sessionID":sessionID, "listener":listener, "name":name, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "uris":uris, "old_uris":old_uris, "user_agent":user_agent, "headers":headers, "functions":functions, "kill_date":kill_date, "working_hours":working_hours, "ps_version":ps_version, "lost_limit":lost_limit, "taskings":taskings, "results":results}
+
+        return jsonify({'RemovedAgents': removedAgents})
 
 
     @app.route('/empire/api/reporting', methods=['GET'])
