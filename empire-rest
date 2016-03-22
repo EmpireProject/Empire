@@ -1,0 +1,313 @@
+#!/usr/bin/python
+
+import sqlite3, argparse, sys, argparse, logging
+
+# Empire imports
+from lib.common import empire
+
+
+class Namespace:
+    def __init__(self, **kwargs):
+        self.__dict__.update(kwargs)
+
+
+##################################
+#
+# Database interaction methods.
+#
+##################################
+
+def database_connect():
+    try:
+        # set the database connectiont to autocommit w/ isolation level
+        conn = sqlite3.connect('./data/empire.db', check_same_thread=False)
+        conn.text_factory = str
+        conn.isolation_level = None
+        return conn
+
+    except Exception as e:
+        print helpers.color("[!] Could not connect to database")
+        print helpers.color("[!] Please run database_setup.py")
+        sys.exit()
+
+
+def execute_db_query(conn, query, args=None):
+    """
+    Execute the supplied query on the provided db conn object
+    with optional args for a paramaterized query.
+    """
+    cur = conn.cursor()
+    if(args):
+        cur.execute(query, args)
+    else:
+        cur.execute(query)
+    results = cur.fetchall()
+    cur.close()
+    return results    
+
+
+##################################
+#
+# The RESTful API.
+#
+##################################
+
+def start_restful_api(port=1337):
+    '''
+    The Empire RESTful API:
+
+    Verb    URI                                                 Action
+    ----    ---                                                 ------
+    GET     http://localhost:1337/empire/api/version            return the current Empire version
+    
+    GET     http://localhost:1337/empire/api/config             return the current default config
+
+    GET     http://localhost:1337/empire/api/stagers            return all current stagers
+    GET     http://localhost:1337/empire/api/stagers/X          return the stager with name X
+    POST    http://localhost:1337/empire/api/stagers            generate a stager given supplied options (need to implement)
+
+    GET     http://localhost:1337/empire/api/modules            return all current modules
+
+    GET     http://localhost:1337/empire/api/listeners          return all current listeners
+    GET     http://localhost:1337/empire/api/listeners/id/X     return the listener with id X
+    GET     http://localhost:1337/empire/api/listeners/name/Y   return the listener with id Y
+
+    GET     http://localhost:1337/empire/api/agents             return all current agents
+    GET     http://localhost:1337/empire/api/agents/id/X        return the agent with id X
+    GET     http://localhost:1337/empire/api/agents/name/Y      return the agent with name Y
+
+    GET     http://localhost:1337/empire/api/reporting          return all logged events
+    GET     http://localhost:1337/empire/api/reporting/agent/X  return all logged events for the given agent name X
+    GET     http://localhost:1337/empire/api/reporting/type/Y   return all logged events of type Y (checkin, task, result, rename)
+    GET     http://localhost:1337/empire/api/reporting/msg/Z    return all logged events matching message Z, wildcards accepted
+    '''
+    from flask import Flask, request, jsonify, make_response
+
+    app = Flask(__name__)
+
+    conn = database_connect()
+
+    @app.errorhandler(Exception)
+    def exception_handler(error):
+        return repr(error)
+
+
+    @app.errorhandler(404)
+    def not_found(error):
+        return make_response(jsonify( { 'error': 'Not found' } ), 404)
+
+
+    @app.route('/empire/api/version', methods=['GET'])
+    def get_version():
+        return jsonify({'version': empire.VERSION})
+
+
+    @app.route('/empire/api/config', methods=['GET'])
+    def get_config():
+
+        configRaw = execute_db_query(conn, 'SELECT * FROM config')
+
+        [staging_key, stage0_uri, stage1_uri, stage2_uri, default_delay, default_jitter, default_profile, default_cert_path, default_port, install_path, server_version, ip_whitelist, ip_blacklist, default_lost_limit, autorun_command, autorun_data] = configRaw[0]
+        config = {"version":empire.VERSION, "staging_key":staging_key, "stage0_uri":stage0_uri, "stage1_uri":stage1_uri, "stage2_uri":stage2_uri, "default_delay":default_delay, "default_jitter":default_jitter, "default_profile":default_profile, "default_cert_path":default_cert_path, "default_port":default_port, "install_path":install_path, "server_version":server_version, "ip_whitelist":ip_whitelist, "ip_blacklist":ip_blacklist, "default_lost_limit":default_lost_limit, "autorun_command":autorun_command, "autorun_data":autorun_data}
+        return jsonify({'config': config})
+
+
+    @app.route('/empire/api/stagers', methods=['GET'])
+    def get_stagers():
+        args = Namespace(debug=None, listener=None, stager=None, stager_options=None, version=False)
+        main = empire.MainMenu(args=args, restAPI=True)
+
+        stagerInfo = {}
+        for stagerName,stager in main.stagers.stagers.iteritems():
+            info = stager.info
+            info['options'] = stager.options
+            stagerInfo[stagerName] = info
+
+        return jsonify({'stagers': stagerInfo})
+
+
+    @app.route('/empire/api/stagers/<string:stager_name>', methods=['GET'])
+    def get_stagers_name(stager_name):
+        args = Namespace(debug=None, listener=None, stager=None, stager_options=None, version=False)
+        main = empire.MainMenu(args=args, restAPI=True)
+
+        stagerInfo = {}
+        for stagerName,stager in main.stagers.stagers.iteritems():
+            if(stagerName == stager_name):
+                info = stager.info
+                info['options'] = stager.options
+                stagerInfo[stagerName] = info
+
+        return jsonify({'stagers': stagerInfo})
+
+
+    @app.route('/empire/api/modules', methods=['GET'])
+    def get_modules():
+        args = Namespace(debug=None, listener=None, stager=None, stager_options=None, version=False)
+        main = empire.MainMenu(args=args, restAPI=True)
+
+        moduleInfo = {}
+        for moduleName,module in main.modules.modules.iteritems():
+            info = module.info
+            info['options'] = module.options
+            moduleInfo[moduleName] = info
+
+        return jsonify({'modules': moduleInfo})
+
+
+    @app.route('/empire/api/listeners', methods=['GET'])
+    def get_listeners():
+
+        activeListenersRaw = execute_db_query(conn, 'SELECT * FROM listeners')
+        activeListeners = {}
+
+        for activeListener in activeListenersRaw:
+            [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit] = activeListener
+            activeListeners[name] = {'ID':ID, 'name':name, 'host':host, 'port':port, 'cert_path':cert_path, 'staging_key':staging_key, 'default_delay':default_delay, 'default_jitter':default_jitter, 'default_profile':default_profile, 'kill_date':kill_date, 'working_hours':working_hours, 'listener_type':listener_type, 'redirect_target':redirect_target, 'default_lost_limit':default_lost_limit}
+
+        return jsonify({'listeners' : activeListeners})
+
+
+    @app.route('/empire/api/listeners/id/<int:listener_id>', methods=['GET'])
+    def get_listener_id(listener_id):
+
+        activeListenersRaw = execute_db_query(conn, 'SELECT * FROM listeners')
+        activeListeners = {}
+
+        for activeListener in activeListenersRaw:
+            [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit] = activeListener
+            if ID == listener_id:
+                activeListeners[name] = {'ID':ID, 'name':name, 'host':host, 'port':port, 'cert_path':cert_path, 'staging_key':staging_key, 'default_delay':default_delay, 'default_jitter':default_jitter, 'default_profile':default_profile, 'kill_date':kill_date, 'working_hours':working_hours, 'listener_type':listener_type, 'redirect_target':redirect_target, 'default_lost_limit':default_lost_limit}
+
+        return jsonify({'listeners' : activeListeners})
+
+
+    @app.route('/empire/api/listeners/name/<string:listener_name>', methods=['GET'])
+    def get_listener_name(listener_name):
+
+        activeListenersRaw = execute_db_query(conn, 'SELECT * FROM listeners')
+        activeListeners = {}
+
+        for activeListener in activeListenersRaw:
+            [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit] = activeListener
+            if name == listener_name:
+                activeListeners[name] = {'ID':ID, 'name':name, 'host':host, 'port':port, 'cert_path':cert_path, 'staging_key':staging_key, 'default_delay':default_delay, 'default_jitter':default_jitter, 'default_profile':default_profile, 'kill_date':kill_date, 'working_hours':working_hours, 'listener_type':listener_type, 'redirect_target':redirect_target, 'default_lost_limit':default_lost_limit}
+
+        return jsonify({'listeners' : activeListeners})
+
+
+    @app.route('/empire/api/agents', methods=['GET'])
+    def get_agents():
+
+        activeAgentsRaw = execute_db_query(conn, 'SELECT * FROM agents')
+        activeAgents = {}
+        
+        for activeAgent in activeAgentsRaw:
+            [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit, taskings, results] = activeAgent
+            activeAgents[name] = {"ID":ID, "sessionID":sessionID, "listener":listener, "name":name, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "uris":uris, "old_uris":old_uris, "user_agent":user_agent, "headers":headers, "functions":functions, "kill_date":kill_date, "working_hours":working_hours, "ps_version":ps_version, "lost_limit":lost_limit, "taskings":taskings, "results":results}
+
+        return jsonify({'agents' : activeAgents})
+
+
+    @app.route('/empire/api/agents/id/<int:agent_id>', methods=['GET'])
+    def get_agents_id(agent_id):
+
+        activeAgentsRaw = execute_db_query(conn, 'SELECT * FROM agents WHERE id=?', [agent_id])
+        activeAgents = {}
+        
+        for activeAgent in activeAgentsRaw:
+            [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit, taskings, results] = activeAgent
+            activeAgents[name] = {"ID":ID, "sessionID":sessionID, "listener":listener, "name":name, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "uris":uris, "old_uris":old_uris, "user_agent":user_agent, "headers":headers, "functions":functions, "kill_date":kill_date, "working_hours":working_hours, "ps_version":ps_version, "lost_limit":lost_limit, "taskings":taskings, "results":results}
+
+        return jsonify({'agents' : activeAgents})
+
+
+    @app.route('/empire/api/agents/name/<string:agent_name>', methods=['GET'])
+    def get_agents_name(agent_name):
+
+        activeAgentsRaw = execute_db_query(conn, 'SELECT * FROM agents WHERE name=? OR session_id=?', [agent_name, agent_name])
+        activeAgents = {}
+        
+        for activeAgent in activeAgentsRaw:
+            [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit, taskings, results] = activeAgent
+            activeAgents[name] = {"ID":ID, "sessionID":sessionID, "listener":listener, "name":name, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "uris":uris, "old_uris":old_uris, "user_agent":user_agent, "headers":headers, "functions":functions, "kill_date":kill_date, "working_hours":working_hours, "ps_version":ps_version, "lost_limit":lost_limit, "taskings":taskings, "results":results}
+
+        return jsonify({'agents' : activeAgents})
+
+
+    @app.route('/empire/api/reporting', methods=['GET'])
+    def get_reporting():
+
+        reportingRaw = execute_db_query(conn, 'SELECT * FROM reporting')
+        reportingEvents = {}
+        
+        for reportingEvent in reportingRaw:
+            [ID, name, eventType, message, timestamp] = reportingEvent
+            reportingEvents[ID] = {"ID":ID, "name":name, "event_type":eventType, "message":message, "timestamp":timestamp}
+
+        return jsonify({'reporting' : reportingEvents})
+
+
+    @app.route('/empire/api/reporting/agent/<string:reporting_agent>', methods=['GET'])
+    def get_reporting_agent(reporting_agent):
+
+        # first resolve the supplied name to a sessionID
+        results = execute_db_query(conn, 'SELECT session_id FROM agents WHERE name=?', [reporting_agent])
+        if(results):
+            sessionID = results[0][0]
+        else:
+            return jsonify({'reporting' : ''})
+
+        reportingRaw = execute_db_query(conn, 'SELECT * FROM reporting WHERE name=?', [sessionID])
+        reportingEvents = {}
+        
+        for reportingEvent in reportingRaw:
+            [ID, name, eventType, message, timestamp] = reportingEvent
+            reportingEvents[ID] = {"ID":ID, "name":name, "event_type":eventType, "message":message, "timestamp":timestamp}
+
+        return jsonify({'reporting' : reportingEvents})
+
+
+    @app.route('/empire/api/reporting/type/<string:event_type>', methods=['GET'])
+    def get_reporting_type(event_type):
+
+        reportingRaw = execute_db_query(conn, 'SELECT * FROM reporting WHERE event_type=?', [event_type])
+        reportingEvents = {}
+        
+        for reportingEvent in reportingRaw:
+            [ID, name, eventType, message, timestamp] = reportingEvent
+            reportingEvents[ID] = {"ID":ID, "name":name, "event_type":eventType, "message":message, "timestamp":timestamp}
+
+        return jsonify({'reporting' : reportingEvents})
+
+
+    @app.route('/empire/api/reporting/msg/<string:msg>', methods=['GET'])
+    def get_reporting_msg(msg):
+
+        reportingRaw = execute_db_query(conn, "SELECT * FROM reporting WHERE message like ?", ['%'+msg+'%'])
+        reportingEvents = {}
+        
+        for reportingEvent in reportingRaw:
+            [ID, name, eventType, message, timestamp] = reportingEvent
+            reportingEvents[ID] = {"ID":ID, "name":name, "event_type":eventType, "message":message, "timestamp":timestamp}
+
+        return jsonify({'reporting' : reportingEvents})
+
+    app.run(host='127.0.0.1', port=port)
+
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--suppress', action='store_true', help='Suppress all output.')
+    args = parser.parse_args()
+
+    if args.suppress:
+        # suppress the normal Flask output
+        log = logging.getLogger('werkzeug')
+        log.setLevel(logging.ERROR)   
+    else:
+        print "\n * Starting Empire RESTful API"
+
+    start_restful_api()
+    sys.exit()
