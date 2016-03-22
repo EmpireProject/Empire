@@ -7,18 +7,9 @@ randomized stagers.
 
 """
 
+import re, string, commands, base64, binascii, sys, os, socket, sqlite3, iptools
 from time import localtime, strftime
 from Crypto.Random import random
-import re
-import string
-import commands
-import base64
-import binascii
-import sys
-import os
-import socket
-import sqlite3
-import iptools
 
 
 ###############################################################
@@ -501,7 +492,7 @@ def get_config(fields):
     conn.isolation_level = None
 
     cur = conn.cursor()
-    cur.execute("SELECT "+fields+" FROM config")
+    cur.execute("SELECT %s FROM config" %(fields))
     results = cur.fetchone()
     cur.close()
     conn.close()
@@ -620,14 +611,6 @@ def uniquify_tuples(tuples):
     # cred format- (credType, domain, username, password, hostname, sid)
     seen = set()
     return [item for item in tuples if "%s%s%s%s"%(item[0],item[1],item[2],item[3]) not in seen and not seen.add("%s%s%s%s"%(item[0],item[1],item[2],item[3]))]
-
-
-def urldecode(url):
-    """
-    URL decode a string.
-    """
-    rex=re.compile('%([0-9a-hA-H][0-9a-hA-H])',re.M)
-    return rex.sub(htc,url)
 
 
 def decode_base64(data):
