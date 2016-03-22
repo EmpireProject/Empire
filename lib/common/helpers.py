@@ -613,14 +613,6 @@ def uniquify_tuples(tuples):
     return [item for item in tuples if "%s%s%s%s"%(item[0],item[1],item[2],item[3]) not in seen and not seen.add("%s%s%s%s"%(item[0],item[1],item[2],item[3]))]
 
 
-def urldecode(url):
-    """
-    URL decode a string.
-    """
-    rex=re.compile('%([0-9a-hA-H][0-9a-hA-H])',re.M)
-    return rex.sub(htc,url)
-
-
 def decode_base64(data):
     """
     Try to decode a base64 string.

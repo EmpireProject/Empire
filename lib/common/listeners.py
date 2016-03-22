@@ -411,7 +411,7 @@ class Listeners:
 
         if(listenerId):
             cur = self.conn.cursor()
-            cur.execute('SELECT host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit FROM listeners WHERE id=? or name=? limit 1', [listenerID, listenerID])
+            cur.execute('SELECT host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit FROM listeners WHERE id=? or name=? limit 1', [listenerId, listenerId])
             stagingInformation = cur.fetchone()
             cur.close()
 

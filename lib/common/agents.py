@@ -380,7 +380,7 @@ class Agents:
 
         if ps_version and ps_version != None:
             if type(ps_version) is str:
-                return sessionKey
+                return ps_version
             else:
                 return ps_version[0]
 
