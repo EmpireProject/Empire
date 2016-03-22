@@ -1504,7 +1504,6 @@ class AgentMenu(cmd.Cmd):
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
 
 
-
     def do_shell(self, line):
         "Task an agent to use a shell command."
         

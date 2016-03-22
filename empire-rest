@@ -1,14 +1,27 @@
 #!/usr/bin/python
 
-import sqlite3, argparse, sys, argparse, logging
+import sqlite3, argparse, sys, argparse, logging, json
+from time import localtime, strftime
 
 # Empire imports
 from lib.common import empire
 
 
+##################################
+#
+# Helpers.
+#
+##################################
+
 class Namespace:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
+
+def get_datetime():
+    """
+    Return the current date/time
+    """
+    return strftime("%Y-%m-%d %H:%M:%S", localtime())
 
 
 ##################################
@@ -79,6 +92,8 @@ def start_restful_api(port=1337):
 
     GET     http://localhost:1337/empire/api/agents             return all current agents
     GET     http://localhost:1337/empire/api/agents/Y           return the agent with name Y
+    GET     http://localhost:1337/empire/api/agents/Y/results   return tasking results for the agent with name Y
+    POST    http://localhost:1337/empire/api/agents/Y           modify or task agent with Y
 
     GET     http://localhost:1337/empire/api/reporting          return all logged events
     GET     http://localhost:1337/empire/api/reporting/agent/X  return all logged events for the given agent name X
@@ -117,8 +132,6 @@ def start_restful_api(port=1337):
     def get_config():
         """
         Returns JSON of the current Empire config.
-
-        TODO: describe returned JSON format
         """
         configRaw = execute_db_query(conn, 'SELECT * FROM config')
 
@@ -131,8 +144,6 @@ def start_restful_api(port=1337):
     def get_stagers():
         """
         Returns JSON describing all stagers.
-
-        TODO: describe returned JSON format
         """
         stagerInfo = {}
         for stagerName,stager in main.stagers.stagers.iteritems():
@@ -147,8 +158,6 @@ def start_restful_api(port=1337):
     def get_stagers_name(stager_name):
         """
         Returns JSON describing the specified stager_name passed.
-
-        TODO: describe returned JSON format
         """
         stagerInfo = {}
         for stagerName,stager in main.stagers.stagers.iteritems():
@@ -169,8 +178,6 @@ def start_restful_api(port=1337):
         Required JSON args:
             StagerName      -   the stager name to generate
             Listener        -   the Listener name to use for the stager
-
-        TODO: describe returned JSON format
         """
         if not request.json or not 'StagerName' in request.json or not 'Listener' in request.json:
             abort(400)
@@ -208,8 +215,6 @@ def start_restful_api(port=1337):
     def get_modules():
         """
         Returns JSON describing all currently loaded modules.
-
-        TODO: describe returned JSON format
         """
         moduleInfo = {}
         for moduleName,module in main.modules.modules.iteritems():
@@ -224,8 +229,6 @@ def start_restful_api(port=1337):
     def get_listeners():
         """
         Returns JSON describing all currently registered listeners.
-
-        TODO: describe returned JSON format
         """
         activeListenersRaw = execute_db_query(conn, 'SELECT * FROM listeners')
         activeListeners = {}
@@ -241,8 +244,6 @@ def start_restful_api(port=1337):
     def get_listener_name(listener_name):
         """
         Returns JSON describing the listener specified by listener_name.
-
-        TODO: describe returned JSON format
         """
         activeListenersRaw = execute_db_query(conn, 'SELECT * FROM listeners')
         activeListeners = {}
@@ -259,8 +260,6 @@ def start_restful_api(port=1337):
     def get_listener_options():
         """
         Returns JSON describing the current listener options.
-
-        TODO: describe returned JSON format
         """
         return jsonify({'ListenerOptions' : main.listeners.options})
 
@@ -269,8 +268,6 @@ def start_restful_api(port=1337):
     def start_listener():
         """
         Starts a listener with options supplied in the POST.
-
-        TODO: describe returned JSON format
         """
 
         # set all passed options
@@ -291,8 +288,6 @@ def start_restful_api(port=1337):
     def kill_listener():
         """
         Kills a listener with options supplied in the POST.
-
-        TODO: describe returned JSON format
         """
         
         listenerName = request.json['Name']
@@ -312,8 +307,6 @@ def start_restful_api(port=1337):
     def get_agents():
         """
         Returns JSON describing all currently registered agents.
-
-        TODO: describe returned JSON format
         """
         activeAgentsRaw = execute_db_query(conn, 'SELECT * FROM agents')
         activeAgents = {}
@@ -329,8 +322,6 @@ def start_restful_api(port=1337):
     def get_agents_name(agent_name):
         """
         Returns JSON describing the agent specified by agent_name.
-
-        TODO: describe returned JSON format
         """
         activeAgentsRaw = execute_db_query(conn, 'SELECT * FROM agents WHERE name=? OR session_id=?', [agent_name, agent_name])
         activeAgents = {}
@@ -342,22 +333,81 @@ def start_restful_api(port=1337):
         return jsonify({'agents' : activeAgents})
 
 
-    @app.route('/empire/api/agents/<string:agent_name>', methods=['POST'])
-    def task_agent(agent_name):
+    @app.route('/empire/api/agents/<string:agent_name>/results', methods=['GET'])
+    def get_agent_results(agent_name):
         """
-        Tasks an agent with name agent_name.
+        Returns JSON describing the agent's results and removes the result field
+        from the backend database.
+        """
 
-        TODO: describe returned JSON format
+        agentResults = execute_db_query(conn, 'SELECT results FROM agents WHERE name=? OR session_id=?', [agent_name, agent_name])[0]
+
+        if agentResults and agentResults[0] and agentResults[0] != '':
+            out = json.loads(agentResults[0])
+            if(out):
+                agentResults = "\n".join(out)
+            else:
+                agentResults = ''
+        else:
+            agentResults = ''
+
+        execute_db_query(conn, 'UPDATE agents SET results=? WHERE name=? OR session_id=?', ['', agent_name, agent_name])
+
+        return jsonify({agent_name : {'Results': agentResults}})
+
+
+    # TODO: add get /name/results to get/clear results from DB
+    @app.route('/empire/api/agents/<string:agent_name>', methods=['POST'])
+    def modify_agent(agent_name):
         """
-        pass
+        Modifies an agent with name agent_name.
+        Used for tasking, clearing tasking, setting sleep, renaming, and killing.
+        """
+
+        if 'Task' in request.json.keys():
+            taskName = request.json['Task']['TaskName']
+            task = request.json['Task']['Task']
+
+            # get existing agent taskings
+            agentTasks = execute_db_query(conn, 'SELECT taskings FROM agents WHERE name=? OR session_id=?', [agent_name, agent_name])[0]
+
+            if(agentTasks and agentTasks[0]):
+                agentTasks = json.loads(agentTasks[0])
+            else:
+                agentTasks = []
+
+            # append our new json-ified task and update the backend
+            agentTasks.append([taskName, task])
+            execute_db_query(conn, "UPDATE agents SET taskings=? WHERE name=? OR session_id=?", [json.dumps(agentTasks), agent_name, agent_name])
+
+            execute_db_query(conn, "INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agent_name,"task",taskName + " - " + task[0:50], get_datetime()))
+            return jsonify({'AgentName':agent_name, 'TaskType':'Task', 'TaskName':taskName, 'Task':task})
+
+
+        elif 'Clear' in request.json.keys():
+
+            if agent_name.lower() == "all":
+                agent_name = '%'
+            execute_db_query(conn, "UPDATE agents SET taskings=? WHERE name=? OR session_id=?", ['',agent_name])
+
+            return jsonify({'AgentName':agent_name, 'TaskType':'Clear', 'TaskName':'', 'Task':''})
+
+
+        elif 'Sleep' in request.json.keys():
+            pass
+
+
+        elif 'Rename' in request.json.keys():
+            pass
+
+
+        return jsonify({'error':'error in tasking agent %s' % (agent_name)})
 
 
     @app.route('/empire/api/reporting', methods=['GET'])
     def get_reporting():
         """
         Returns JSON describing the reporting events from the backend database.
-
-        TODO: describe returned JSON format
         """
         reportingRaw = execute_db_query(conn, 'SELECT * FROM reporting')
         reportingEvents = {}
@@ -374,8 +424,6 @@ def start_restful_api(port=1337):
         """
         Returns JSON describing the reporting events from the backend database for
         the agent specified by reporting_agent.
-
-        TODO: describe returned JSON format
         """
 
         # first resolve the supplied name to a sessionID
@@ -400,8 +448,6 @@ def start_restful_api(port=1337):
         """
         Returns JSON describing the reporting events from the backend database for
         the event type specified by event_type.
-
-        TODO: describe returned JSON format
         """
         reportingRaw = execute_db_query(conn, 'SELECT * FROM reporting WHERE event_type=?', [event_type])
         reportingEvents = {}
@@ -418,8 +464,6 @@ def start_restful_api(port=1337):
         """
         Returns JSON describing the reporting events from the backend database for
         the any messages with *msg* specified by msg.
-
-        TODO: describe returned JSON format
         """
         reportingRaw = execute_db_query(conn, "SELECT * FROM reporting WHERE message like ?", ['%'+msg+'%'])
         reportingEvents = {}

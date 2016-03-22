@@ -86,7 +86,7 @@ class Agents:
 
         # remove the agent from the database
         cur = self.conn.cursor()
-        cur.execute("DELETE FROM agents WHERE session_id like ?", [sessionID])
+        cur.execute("DELETE FROM agents WHERE session_id LIKE ?", [sessionID])
         cur.close()
 
 
@@ -575,7 +575,7 @@ class Agents:
             cur = self.conn.cursor()
 
             # get existing agent results
-            cur.execute("SELECT results FROM agents WHERE session_id like ?", [sessionID])
+            cur.execute("SELECT results FROM agents WHERE session_id LIKE ?", [sessionID])
             agentResults = cur.fetchone()
 
             if(agentResults and agentResults[0]):
@@ -776,7 +776,7 @@ class Agents:
 
                 dispatcher.send("[*] Tasked " + str(sessionID) + " to run " + str(taskName), sender="Agents")
 
-                # get existing agent results
+                # get existing agent taskings
                 cur = self.conn.cursor()
                 cur.execute("SELECT taskings FROM agents WHERE session_id=?", [sessionID])
                 agentTasks = cur.fetchone()
@@ -845,7 +845,7 @@ class Agents:
             sessionID = '%'
 
         cur = self.conn.cursor()
-        cur.execute("UPDATE agents SET taskings=? WHERE session_id like ?", ['', sessionID])
+        cur.execute("UPDATE agents SET taskings=? WHERE session_id LIKE ?", ['', sessionID])
         cur.close()
 
 
