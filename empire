@@ -104,6 +104,7 @@ def get_permanent_token(conn):
 #    DELETE  http://localhost:1337/empire/api/listeners/Y        kills listener Y
 #
 #    GET     http://localhost:1337/empire/api/agents             return all current agents
+#    GET     http://localhost:1337/empire/api/agents/stale       return all stale agents
 #    GET     http://localhost:1337/empire/api/agents/Y           return the agent with name Y
 #    GET     http://localhost:1337/empire/api/agents/Y/results   return tasking results for the agent with name Y
 #    POST    http://localhost:1337/empire/api/agents/Y           modify or task agent with Y
@@ -404,6 +405,30 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             activeAgents[name] = {"ID":ID, "sessionID":sessionID, "listener":listener, "name":name, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "uris":uris, "old_uris":old_uris, "user_agent":user_agent, "headers":headers, "functions":functions, "kill_date":kill_date, "working_hours":working_hours, "ps_version":ps_version, "lost_limit":lost_limit, "taskings":taskings, "results":results}
 
         return jsonify({'agents' : activeAgents})
+
+
+    @app.route('/empire/api/agents/stale', methods=['GET'])
+    def get_agents_stale():
+        """
+        Returns JSON describing all stale agents.
+        """
+
+        agentsRaw = execute_db_query(conn, 'SELECT * FROM agents')
+        staleAgents = {}
+        
+        for agent in agentsRaw:
+            [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit, taskings, results] = agent
+
+            intervalMax = (delay + delay * jitter)+30
+
+            # get the agent last check in time
+            agentTime = time.mktime(time.strptime(lastseen_time, "%Y-%m-%d %H:%M:%S"))
+
+            if agentTime < time.mktime(time.localtime()) - intervalMax:
+
+                staleAgents[name] = {"ID":ID, "sessionID":sessionID, "listener":listener, "name":name, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "uris":uris, "old_uris":old_uris, "user_agent":user_agent, "headers":headers, "functions":functions, "kill_date":kill_date, "working_hours":working_hours, "ps_version":ps_version, "lost_limit":lost_limit, "taskings":taskings, "results":results}
+
+        return jsonify({'agents' : staleAgents})
 
 
     @app.route('/empire/api/agents/<string:agent_name>', methods=['GET'])
