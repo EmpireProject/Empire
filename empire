@@ -369,7 +369,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         Returns JSON describing the current listener options.
         """
-        return jsonify({'ListenerOptions' : main.listeners.options})
+        return jsonify({'listeneroptions' : main.listeners.options})
 
 
     @app.route('/empire/api/listeners', methods=['POST'])
@@ -453,20 +453,33 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         from the backend database.
         """
 
-        agentResults = execute_db_query(conn, 'SELECT results FROM agents WHERE name=? OR session_id=?', [agent_name, agent_name])[0]
+        agentTaskResults = {}
 
-        if agentResults and agentResults[0] and agentResults[0] != '':
-            out = json.loads(agentResults[0])
-            if(out):
-                agentResults = "\n".join(out)
+        if agent_name.lower() == "all":
+            # enumerate all target agent sessionIDs
+            agentNameIDs = execute_db_query(conn, "SELECT name,session_id FROM agents WHERE name like '%' OR session_id like '%'")
+        else:
+            agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+
+        for agentNameID in agentNameIDs:
+            (agentName, agentsSessionID) = agentNameID
+
+            agentResults = execute_db_query(conn, 'SELECT results FROM agents WHERE session_id=?', [agentsSessionID])[0]
+
+            if agentResults and agentResults[0] and agentResults[0] != '':
+                out = json.loads(agentResults[0])
+                if(out):
+                    agentResults = "\n".join(out)
+                else:
+                    agentResults = ''
             else:
                 agentResults = ''
-        else:
-            agentResults = ''
 
-        execute_db_query(conn, 'UPDATE agents SET results=? WHERE name=? OR session_id=?', ['', agent_name, agent_name])
+            execute_db_query(conn, 'UPDATE agents SET results=? WHERE session_id=?', ['', agentsSessionID])
 
-        return jsonify({agent_name : {'Results': agentResults}})
+            agentTaskResults[agentName] = agentResults
+
+        return jsonify({'results': agentTaskResults})
 
 
     # TODO: add get /name/results to get/clear results from DB
@@ -477,53 +490,69 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         Used for tasking, clearing tasking, setting sleep, renaming, and killing.
         """
 
-        if 'Task' in request.json.keys():
+        agentTaskResults = {}
 
-            if agent_name.lower() == "all":
-                agent_name = '%'
+        if 'task' in request.json.keys() or 'clear' in request.json.keys():
 
-            taskName = request.json['Task']['TaskName']
-            task = request.json['Task']['Task']
-
-            # get existing agent taskings
-            agentTasks = execute_db_query(conn, 'SELECT taskings FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])[0]
-
-            if(agentTasks and agentTasks[0]):
-                agentTasks = json.loads(agentTasks[0])
+            if 'clear' in request.json.keys():
+                taskName = ''
+                taskdata = ''
+                taskType = 'clear'
             else:
-                agentTasks = []
-
-            # append our new json-ified task and update the backend
-            agentTasks.append([taskName, task])
-            execute_db_query(conn, "UPDATE agents SET taskings=? WHERE name=? OR session_id=?", [json.dumps(agentTasks), agent_name, agent_name])
-
-            timeStamp = strftime("%Y-%m-%d %H:%M:%S", localtime())
-            execute_db_query(conn, "INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agent_name,"task",taskName + " - " + task[0:50], timeStamp ))
-            return jsonify({'AgentName':agent_name, 'TaskType':'Task', 'TaskName':taskName, 'Task':task})
-
-
-        elif 'Clear' in request.json.keys():
+                taskName = request.json['task']['taskname']
+                if 'taskdata' in request.json['task']:
+                    taskdata = request.json['task']['taskdata']
+                else:
+                    taskdata = ''
+                taskType = 'task'
 
             if agent_name.lower() == "all":
-                agent_name = '%'
+                # enumerate all target agent sessionIDs
+                agentNameIDs = execute_db_query(conn, "SELECT name,session_id FROM agents WHERE name like '%' OR session_id like '%'")
+            else:
+                agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
 
-            execute_db_query(conn, "UPDATE agents SET taskings=? WHERE name like ? OR session_id like ?", ['', agent_name, agent_name])
+            for agentNameID in agentNameIDs:
+                (agentName, agentsSessionID) = agentNameID
 
-            return jsonify({'AgentName':agent_name, 'TaskType':'Clear', 'TaskName':'', 'Task':''})
+                if 'clear' in request.json.keys():
+                    execute_db_query(conn, "UPDATE agents SET taskings=? WHERE session_id=?", ['', agentsSessionID])
+                else:
+                    # get existing agent taskings for each agent
+                    agentTasks = execute_db_query(conn, 'SELECT taskings FROM agents WHERE session_id like ?', [agentsSessionID])[0]
+                    if(agentTasks and agentTasks[0]):
+                        agentTasks = json.loads(agentTasks[0])
+                    else:
+                        agentTasks = []
+
+                    # append our new json-ified task and update the backend
+                    agentTasks.append([taskName, taskdata])
+
+                    execute_db_query(conn, "UPDATE agents SET taskings=? WHERE session_id=?", [json.dumps(agentTasks), agentsSessionID])
+
+                timeStamp = strftime("%Y-%m-%d %H:%M:%S", localtime())
+                execute_db_query(conn, "INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agentName,"task",taskName + " - " + taskdata[0:50], timeStamp ))
+
+                agentTaskResults[agentName] = {'tasktype':taskType, 'taskname':taskName, 'taskdata':taskdata}
 
 
-        elif 'Rename' in request.json.keys():
-            oldName = request.json['Rename']['OldName']
-            newName = request.json['Rename']['NewName']
+        elif 'rename' in request.json.keys():
+
+            newName = request.json['rename']['newname']
 
             try:
-                main.agents.rename_agent(oldName, newName)
-                return jsonify({'success': True})
-            except:
-                return jsonify({'error': 'error in renaming %s to %s' %(oldName, newName)})
-            
+                result = main.agents.rename_agent(agent_name, newName)
 
-        return jsonify({'error':'error in tasking agent %s' % (agent_name)})
+                if not result:
+                    return jsonify({'error': 'error in renaming %s to %s, newname may have already been used' %(agent_name, newName)})
+
+                agentTaskResults[agent_name] = {'tasktype':'rename', 'taskname':'', 'task':newName}
+
+            except:
+                return jsonify({'error': 'error in renaming %s to %s' %(agent_name, newName)})
+
+        
+        return jsonify({'taskings':agentTaskResults})
 
 
     @app.route('/empire/api/agents/<string:agent_name>', methods=['DELETE'])
@@ -544,7 +573,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
             removedAgents[name] = {"ID":ID, "sessionID":sessionID, "listener":listener, "name":name, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "uris":uris, "old_uris":old_uris, "user_agent":user_agent, "headers":headers, "functions":functions, "kill_date":kill_date, "working_hours":working_hours, "ps_version":ps_version, "lost_limit":lost_limit, "taskings":taskings, "results":results}
 
-        return jsonify({'RemovedAgents': removedAgents})
+        return jsonify({'removedagents': removedAgents})
 
 
     @app.route('/empire/api/agents/stale', methods=['DELETE'])
@@ -569,7 +598,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
                 removedAgents[name] = {"ID":ID, "sessionID":sessionID, "listener":listener, "name":name, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "uris":uris, "old_uris":old_uris, "user_agent":user_agent, "headers":headers, "functions":functions, "kill_date":kill_date, "working_hours":working_hours, "ps_version":ps_version, "lost_limit":lost_limit, "taskings":taskings, "results":results}
 
-        return jsonify({'RemovedAgents': removedAgents})
+        return jsonify({'removedagents': removedAgents})
 
 
     @app.route('/empire/api/reporting', methods=['GET'])
@@ -697,7 +726,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             sys.stdout.close()
             sys.stdout = oldStdout
 
-        print "\n[*]Shutting down Empire RESTful API"
+        print "\n * Shutting down Empire RESTful API"
 
         func = request.environ.get('werkzeug.server.shutdown')
         if func is not None:
@@ -706,7 +735,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         if conn: conn.close()
         
         if startEmpire:
-            print "Shutting down the Empire instance"
+            print " * Shutting down the Empire instance"
             main.shutdown()
 
 
