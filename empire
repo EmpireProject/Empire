@@ -354,12 +354,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
                 main.listeners.shutdown_listener(name)
                 main.listeners.delete_listener(name)
 
-            return jsonify({'result': True})
+            return jsonify({'success': True})
         else:
             if listener_name != "" and main.listeners.is_listener_valid(listener_name):
                 main.listeners.shutdown_listener(listener_name)
                 main.listeners.delete_listener(listener_name)
-                return jsonify({'result': True})
+                return jsonify({'success': True})
             else:
                 return jsonify({'error': 'invalid listener name: %s' %(listener_name)})
 
@@ -389,7 +389,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             return jsonify({'error': 'Error validating listener options'})
 
         main.listeners.add_listener_from_config()
-        return jsonify({'result': True})
+        return jsonify({'success': True})
 
 
     @app.route('/empire/api/agents', methods=['GET'])
@@ -518,7 +518,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
             try:
                 main.agents.rename_agent(oldName, newName)
-                return jsonify({'result': True})
+                return jsonify({'success': True})
             except:
                 return jsonify({'error': 'error in renaming %s to %s' %(oldName, newName)})
             
@@ -649,7 +649,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         Signal a shutdown for the Flask server and any Empire server.
         """
         shutdown_server()
-        return jsonify({'result': True})
+        return jsonify({'success': True})
 
 
     @app.route('/empire/api/admin/login', methods=['POST'])
