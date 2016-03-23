@@ -87,38 +87,38 @@ def get_permanent_token(conn):
 #
 #    Verb    URI                                                 Action
 #    ----    ---                                                 ------
-#    GET     http://localhost:1337/empire/api/version            return the current Empire version
+#    GET     http://localhost:1337/api/version            return the current Empire version
 #    
-#    GET     http://localhost:1337/empire/api/config             return the current default config
+#    GET     http://localhost:1337/api/config             return the current default config
 #
-#    GET     http://localhost:1337/empire/api/stagers            return all current stagers
-#    GET     http://localhost:1337/empire/api/stagers/X          return the stager with name X
-#    POST    http://localhost:1337/empire/api/stagers            generate a stager given supplied options (need to implement)
+#    GET     http://localhost:1337/api/stagers            return all current stagers
+#    GET     http://localhost:1337/api/stagers/X          return the stager with name X
+#    POST    http://localhost:1337/api/stagers            generate a stager given supplied options (need to implement)
 #
-#    GET     http://localhost:1337/empire/api/modules            return all current modules
+#    GET     http://localhost:1337/api/modules            return all current modules
 #
-#    GET     http://localhost:1337/empire/api/listeners          return all current listeners
-#    GET     http://localhost:1337/empire/api/listeners/Y        return the listener with id Y
-#    GET     http://localhost:1337/empire/api/listeners/options  return all listener options
-#    POST    http://localhost:1337/empire/api/listeners          starts a new listener with the specified options
-#    DELETE  http://localhost:1337/empire/api/listeners/Y        kills listener Y
+#    GET     http://localhost:1337/api/listeners          return all current listeners
+#    GET     http://localhost:1337/api/listeners/Y        return the listener with id Y
+#    GET     http://localhost:1337/api/listeners/options  return all listener options
+#    POST    http://localhost:1337/api/listeners          starts a new listener with the specified options
+#    DELETE  http://localhost:1337/api/listeners/Y        kills listener Y
 #
-#    GET     http://localhost:1337/empire/api/agents             return all current agents
-#    GET     http://localhost:1337/empire/api/agents/stale       return all stale agents
-#    GET     http://localhost:1337/empire/api/agents/Y           return the agent with name Y
-#    GET     http://localhost:1337/empire/api/agents/Y/results   return tasking results for the agent with name Y
-#    POST    http://localhost:1337/empire/api/agents/Y           modify or task agent with Y
-#    DELETE  http://localhost:1337/empire/api/agents/Y           removes agent Y from the database
-#    DELETE  http://localhost:1337/empire/api/agents/stale       removes stale agents from the database
+#    GET     http://localhost:1337/api/agents             return all current agents
+#    GET     http://localhost:1337/api/agents/stale       return all stale agents
+#    GET     http://localhost:1337/api/agents/Y           return the agent with name Y
+#    GET     http://localhost:1337/api/agents/Y/results   return tasking results for the agent with name Y
+#    POST    http://localhost:1337/api/agents/Y           modify or task agent with Y
+#    DELETE  http://localhost:1337/api/agents/Y           removes agent Y from the database
+#    DELETE  http://localhost:1337/api/agents/stale       removes stale agents from the database
 #
-#    GET     http://localhost:1337/empire/api/reporting          return all logged events
-#    GET     http://localhost:1337/empire/api/reporting/agent/X  return all logged events for the given agent name X
-#    GET     http://localhost:1337/empire/api/reporting/type/Y   return all logged events of type Y (checkin, task, result, rename)
-#    GET     http://localhost:1337/empire/api/reporting/msg/Z    return all logged events matching message Z, wildcards accepted
+#    GET     http://localhost:1337/api/reporting          return all logged events
+#    GET     http://localhost:1337/api/reporting/agent/X  return all logged events for the given agent name X
+#    GET     http://localhost:1337/api/reporting/type/Y   return all logged events of type Y (checkin, task, result, rename)
+#    GET     http://localhost:1337/api/reporting/msg/Z    return all logged events matching message Z, wildcards accepted
 #
-#    GET     http://localhost:1337/empire/api/admin/shutdown     shutdown the RESTful API
-#    GET     http://localhost:1337/empire/api/admin/login        retrieve the API token given the correct username and password
-#    GET     http://localhost:1337/empire/api/admin/permanenttoken retrieve the permanent API token, generating/storing one if it doesn't already exist
+#    GET     http://localhost:1337/api/admin/shutdown     shutdown the RESTful API
+#    GET     http://localhost:1337/api/admin/login        retrieve the API token given the correct username and password
+#    GET     http://localhost:1337/api/admin/permanenttoken retrieve the permanent API token, generating/storing one if it doesn't already exist
 #    
 ####################################################################
 
@@ -187,7 +187,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
     # validate API token before every request except for the login URI
     @app.before_request
     def check_token():
-        if request.path != '/empire/api/admin/login':
+        if request.path != '/api/admin/login':
             token = request.args.get('token')
             if (not token) or (not tokenAllowed.match(token)):
                 return make_response('', 403)
@@ -205,7 +205,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return make_response(jsonify( { 'error': 'Not found' } ), 404)
 
 
-    @app.route('/empire/api/version', methods=['GET'])
+    @app.route('/api/version', methods=['GET'])
     def get_version():
         """
         Returns the current Empire version.
@@ -213,7 +213,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'version': empire.VERSION})
 
 
-    @app.route('/empire/api/config', methods=['GET'])
+    @app.route('/api/config', methods=['GET'])
     def get_config():
         """
         Returns JSON of the current Empire config.
@@ -225,7 +225,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'config': config})
 
 
-    @app.route('/empire/api/stagers', methods=['GET'])
+    @app.route('/api/stagers', methods=['GET'])
     def get_stagers():
         """
         Returns JSON describing all stagers.
@@ -239,7 +239,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'stagers': stagerInfo})
 
 
-    @app.route('/empire/api/stagers/<string:stager_name>', methods=['GET'])
+    @app.route('/api/stagers/<string:stager_name>', methods=['GET'])
     def get_stagers_name(stager_name):
         """
         Returns JSON describing the specified stager_name passed.
@@ -254,7 +254,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'stagers': stagerInfo})
 
 
-    @app.route('/empire/api/stagers', methods=['POST'])
+    @app.route('/api/stagers', methods=['POST'])
     def generate_stager():
         """
         Generates a stager with the supplied config and returns JSON information
@@ -296,7 +296,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({stagerName: stagerOut})
 
 
-    @app.route('/empire/api/modules', methods=['GET'])
+    @app.route('/api/modules', methods=['GET'])
     def get_modules():
         """
         Returns JSON describing all currently loaded modules.
@@ -310,7 +310,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'modules': moduleInfo})
 
 
-    @app.route('/empire/api/listeners', methods=['GET'])
+    @app.route('/api/listeners', methods=['GET'])
     def get_listeners():
         """
         Returns JSON describing all currently registered listeners.
@@ -325,7 +325,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'listeners' : activeListeners})
 
 
-    @app.route('/empire/api/listeners/<string:listener_name>', methods=['GET'])
+    @app.route('/api/listeners/<string:listener_name>', methods=['GET'])
     def get_listener_name(listener_name):
         """
         Returns JSON describing the listener specified by listener_name.
@@ -341,7 +341,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'listeners' : activeListeners})
 
 
-    @app.route('/empire/api/listeners/<string:listener_name>', methods=['DELETE'])
+    @app.route('/api/listeners/<string:listener_name>', methods=['DELETE'])
     def kill_listener(listener_name):
         """
         Kills the listener specified by listener_name.
@@ -364,7 +364,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
                 return jsonify({'error': 'invalid listener name: %s' %(listener_name)})
 
 
-    @app.route('/empire/api/listeners/options', methods=['GET'])
+    @app.route('/api/listeners/options', methods=['GET'])
     def get_listener_options():
         """
         Returns JSON describing the current listener options.
@@ -372,7 +372,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'listeneroptions' : main.listeners.options})
 
 
-    @app.route('/empire/api/listeners', methods=['POST'])
+    @app.route('/api/listeners', methods=['POST'])
     def start_listener():
         """
         Starts a listener with options supplied in the POST.
@@ -392,7 +392,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'success': True})
 
 
-    @app.route('/empire/api/agents', methods=['GET'])
+    @app.route('/api/agents', methods=['GET'])
     def get_agents():
         """
         Returns JSON describing all currently registered agents.
@@ -407,7 +407,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'agents' : activeAgents})
 
 
-    @app.route('/empire/api/agents/stale', methods=['GET'])
+    @app.route('/api/agents/stale', methods=['GET'])
     def get_agents_stale():
         """
         Returns JSON describing all stale agents.
@@ -431,7 +431,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'agents' : staleAgents})
 
 
-    @app.route('/empire/api/agents/<string:agent_name>', methods=['GET'])
+    @app.route('/api/agents/<string:agent_name>', methods=['GET'])
     def get_agents_name(agent_name):
         """
         Returns JSON describing the agent specified by agent_name.
@@ -446,7 +446,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'agents' : activeAgents})
 
 
-    @app.route('/empire/api/agents/<string:agent_name>/results', methods=['GET'])
+    @app.route('/api/agents/<string:agent_name>/results', methods=['GET'])
     def get_agent_results(agent_name):
         """
         Returns JSON describing the agent's results and removes the result field
@@ -483,7 +483,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
 
     # TODO: add get /name/results to get/clear results from DB
-    @app.route('/empire/api/agents/<string:agent_name>', methods=['POST'])
+    @app.route('/api/agents/<string:agent_name>', methods=['POST'])
     def modify_agent(agent_name):
         """
         Modifies an agent with name agent_name.
@@ -555,7 +555,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'taskings':agentTaskResults})
 
 
-    @app.route('/empire/api/agents/<string:agent_name>', methods=['DELETE'])
+    @app.route('/api/agents/<string:agent_name>', methods=['DELETE'])
     def remove_agent(agent_name):
         """
         Removes an agent from the controller specified by agent_name.
@@ -576,7 +576,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'removedagents': removedAgents})
 
 
-    @app.route('/empire/api/agents/stale', methods=['DELETE'])
+    @app.route('/api/agents/stale', methods=['DELETE'])
     def remove_stale_agent():
         """
         Removes stale agents from the controller.
@@ -601,7 +601,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'removedagents': removedAgents})
 
 
-    @app.route('/empire/api/reporting', methods=['GET'])
+    @app.route('/api/reporting', methods=['GET'])
     def get_reporting():
         """
         Returns JSON describing the reporting events from the backend database.
@@ -616,7 +616,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'reporting' : reportingEvents})
 
 
-    @app.route('/empire/api/reporting/agent/<string:reporting_agent>', methods=['GET'])
+    @app.route('/api/reporting/agent/<string:reporting_agent>', methods=['GET'])
     def get_reporting_agent(reporting_agent):
         """
         Returns JSON describing the reporting events from the backend database for
@@ -640,7 +640,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'reporting' : reportingEvents})
 
 
-    @app.route('/empire/api/reporting/type/<string:event_type>', methods=['GET'])
+    @app.route('/api/reporting/type/<string:event_type>', methods=['GET'])
     def get_reporting_type(event_type):
         """
         Returns JSON describing the reporting events from the backend database for
@@ -656,7 +656,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'reporting' : reportingEvents})
 
 
-    @app.route('/empire/api/reporting/msg/<string:msg>', methods=['GET'])
+    @app.route('/api/reporting/msg/<string:msg>', methods=['GET'])
     def get_reporting_msg(msg):
         """
         Returns JSON describing the reporting events from the backend database for
@@ -672,7 +672,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'reporting' : reportingEvents})
 
 
-    @app.route('/empire/api/admin/shutdown', methods=['GET', 'POST', 'PUT'])
+    @app.route('/api/admin/shutdown', methods=['GET', 'POST', 'PUT'])
     def shutdown_server():
         """
         Signal a shutdown for the Flask server and any Empire server.
@@ -681,7 +681,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'success': True})
 
 
-    @app.route('/empire/api/admin/login', methods=['POST'])
+    @app.route('/api/admin/login', methods=['POST'])
     def server_login():
         """
         Takes a supplied username and password and returns the current API token
@@ -703,7 +703,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             return make_response('', 401)
 
 
-    @app.route('/empire/api/admin/permanenttoken', methods=['GET'])
+    @app.route('/api/admin/permanenttoken', methods=['GET'])
     def get_server_perm_token():
         """
         Returns the 'permanent' API token for the server.

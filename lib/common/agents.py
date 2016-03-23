@@ -660,6 +660,10 @@ class Agents:
         Update the agent's last seen timestamp.
         """
 
+        if not newname.isalnum():
+            print helpers.color("[!] Only alphanumeric characters allowed for names.")
+            return False
+
         # rename the logging/downloads folder
         oldPath = self.installPath + "/downloads/"+str(oldname)+"/"
         newPath = self.installPath + "/downloads/"+str(newname)+"/"
