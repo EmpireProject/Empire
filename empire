@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import sqlite3, argparse, sys, argparse, logging, json, string, os, re, time, signal
+import sqlite3, argparse, sys, argparse, logging, json, string, os, re, time, signal, copy
 from flask import Flask, request, jsonify, make_response, abort
 from time import localtime, strftime
 from OpenSSL import SSL
@@ -8,6 +8,7 @@ from Crypto.Random import random
 
 # Empire imports
 from lib.common import empire
+from lib.common import helpers
 
 
 #####################################################
@@ -277,7 +278,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             return jsonify({'error': 'invalid listener ID or name'})
 
         stager = main.stagers.stagers[stagerName]
-        
+
         # set all passed options
         for option,values in request.json.iteritems():
             if option != 'StagerName':
@@ -290,7 +291,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             if values['Required'] and ((not values['Value']) or (values['Value'] == '')):
                 return jsonify({'error': 'required stager options missing'})
 
-        stagerOut = stager.options
+        stagerOut = copy.deepcopy(stager.options)
         stagerOut['Output'] = stager.generate()
 
         return jsonify({stagerName: stagerOut})
@@ -308,6 +309,133 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             moduleInfo[moduleName] = info
 
         return jsonify({'modules': moduleInfo})
+
+
+    @app.route('/api/modules/<path:module_name>', methods=['GET'])
+    def get_module_name(module_name):
+        """
+        Returns JSON describing the specified currently module.
+        """
+
+        if module_name not in main.modules.modules:
+            return jsonify({'error': 'invalid module name'})
+
+        moduleInfo = main.modules.modules[module_name].info
+        moduleInfo['options'] = main.modules.modules[module_name].options
+
+        return jsonify({module_name:moduleInfo})
+
+
+    @app.route('/api/modules/<path:module_name>', methods=['POST'])
+    def execute_module(module_name):
+        """
+        Executes a given module name with the specified parameters.
+        """
+
+        # ensure the 'Agent' argument is set
+        if not request.json or not 'Agent' in request.json:
+            abort(400)
+        
+        if module_name not in main.modules.modules:
+            return jsonify({'error': 'invalid module name'})
+
+        module = main.modules.modules[module_name]
+
+        # set all passed module options
+        for key,value in request.json.iteritems():
+            if key not in module.options:
+                return jsonify({'error': 'invalid module option'})
+
+            module.options[key]['Value'] = value
+
+        # validate module options
+        sessionID = module.options['Agent']['Value']
+
+        for option,values in module.options.iteritems():
+            if values['Required'] and ((not values['Value']) or (values['Value'] == '')):
+                return jsonify({'error': 'required module option missing'})
+
+        try:
+            if not main.agents.is_agent_present(sessionID):
+                return jsonify({'error': 'invalid agent name'})
+
+            # if we're running this module for all agents, skip this validation
+            if sessionID.lower() != "all" and sessionID.lower() != "autorun": 
+                modulePSVersion = int(module.info['MinPSVersion'])
+                agentPSVersion = int(main.agents.get_ps_version(sessionID))
+                # check if the agent/module PowerShell versions are compatible
+                if modulePSVersion > agentPSVersion:
+                    return jsonify({'error': "module requires PS version "+str(modulePSVersion)+" but agent running PS version "+str(agentPSVersion)})
+
+        except Exception as e:
+            return jsonify({'error': 'exception: %s' %(e)})
+
+        # check if the module needs admin privs
+        if module.info['NeedsAdmin']:
+            # if we're running this module for all agents, skip this validation
+            if sessionID.lower() != "all" and sessionID.lower() != "autorun":
+                if not main.agents.is_agent_elevated(sessionID):
+                    return jsonify({'error': 'module needs to run in an elevated context'})
+
+
+        # actually execute the module
+        moduleData = module.generate()
+
+        if not moduleData or moduleData == "":
+            return jsonify({'error': 'module produced an empty script'})
+
+        try:
+            moduleData.decode('ascii')
+        except UnicodeDecodeError:
+            return jsonify({'error': 'module source contains non-ascii characters'})
+
+        moduleData = helpers.strip_powershell_comments(moduleData)
+        taskCommand = ""
+
+        # build the appropriate task command and module data blob
+        if str(module.info['Background']).lower() == "true":
+            # if this module should be run in the background
+            extention = module.info['OutputExtension']
+            if extention and extention != "":
+                # if this module needs to save its file output to the server
+                #   format- [15 chars of prefix][5 chars extension][data]
+                saveFilePrefix = moduleName.split("/")[-1]
+                moduleData = saveFilePrefix.rjust(15) + extention.rjust(5) + moduleData
+                taskCommand = "TASK_CMD_JOB_SAVE"
+            else:
+                taskCommand = "TASK_CMD_JOB"
+
+        else:
+            # if this module is run in the foreground
+            extention = module.info['OutputExtension']
+            if module.info['OutputExtension'] and module.info['OutputExtension'] != "":
+                # if this module needs to save its file output to the server
+                #   format- [15 chars of prefix][5 chars extension][data]
+                saveFilePrefix = moduleName.split("/")[-1][:15]
+                moduleData = saveFilePrefix.rjust(15) + extention.rjust(5) + moduleData
+                taskCommand = "TASK_CMD_WAIT_SAVE"
+            else:
+                taskCommand = "TASK_CMD_WAIT"
+
+        if sessionID.lower() == "all":
+
+            for agent in main.agents.get_agents():
+                sessionID = agent[1]
+                main.agents.add_agent_task(sessionID, taskCommand, moduleData)
+                msg = "tasked agent %s to run module %s" %(sessionID, module_name)
+                main.agents.save_agent_log(sessionID, msg)
+
+            msg = "tasked all agents to run module %s" %(module_name)
+            return jsonify({'success': True, 'msg':msg})
+
+        else:
+            # set the agent's tasking in the cache
+            main.agents.add_agent_task(sessionID, taskCommand, moduleData)
+
+            # update the agent log
+            msg = "tasked agent %s to run module %s" %(sessionID, module_name)
+            main.agents.save_agent_log(sessionID, msg)
+            return jsonify({'success': True, 'msg':msg})
 
 
     @app.route('/api/listeners', methods=['GET'])
@@ -388,8 +516,8 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         if not valid:
             return jsonify({'error': 'Error validating listener options'})
 
-        main.listeners.add_listener_from_config()
-        return jsonify({'success': True})
+        success = main.listeners.add_listener_from_config()
+        return jsonify({'success': success})
 
 
     @app.route('/api/agents', methods=['GET'])
@@ -511,6 +639,9 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
                 agentNameIDs = execute_db_query(conn, "SELECT name,session_id FROM agents WHERE name like '%' OR session_id like '%'")
             else:
                 agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+
+            if not agentNameIDs or len(agentNameIDs) == 0:
+                return jsonify({'error': 'invalid agent name'})
 
             for agentNameID in agentNameIDs:
                 (agentName, agentsSessionID) = agentNameID
@@ -765,22 +896,26 @@ if __name__ == '__main__':
     parser.add_argument('-l', '--listener', nargs='?', const="list", help='Display listener options. Displays all listeners if nothing is specified.')
     parser.add_argument('-v', '--version', action='store_true', help='Display current Empire version.')
     parser.add_argument('--rest', action='store_true', help='Run the Empire RESTful API.')
+    parser.add_argument('--restport', nargs='?', help='Port to run the Empire RESTful API on.')
     parser.add_argument('--headless', action='store_true', help='Run Empire and the RESTful API headless without the usual interface.')
     parser.add_argument('--username', nargs='?', help='Start the RESTful API with the specified username instead of pulling from empire.db')
     parser.add_argument('--password', nargs='?', help='Start the RESTful API with the specified password instead of pulling from empire.db')
 
     args = parser.parse_args()
 
+    if not args.restport:
+        args.restport = '1337'
+
     if args.version:
         print empire.VERSION
 
     elif args.rest:
         # start just the RESTful API
-        start_restful_api(startEmpire=False, suppress=False, username=args.username, password=args.password, port=1337)
+        start_restful_api(startEmpire=False, suppress=False, username=args.username, password=args.password, port=args.restport)
 
     elif args.headless:
         # start an Empire instance and RESTful API and suppress output
-        start_restful_api(startEmpire=True, suppress=True, username=args.username, password=args.password, port=1337)
+        start_restful_api(startEmpire=True, suppress=True, username=args.username, password=args.password, port=args.restport)
 
     else:
         # normal execution

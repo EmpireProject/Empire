@@ -255,6 +255,10 @@ class MainMenu(cmd.Cmd):
             except NavListeners as e:
                 self.menu_state = "Listeners"
 
+            except Exception as e:
+                print helpers.color("[!] Exception: %s" %(e))
+                time.sleep(5)
+
 
     # print a nicely formatted help menu
     # stolen/adapted from recon-ng
@@ -2295,7 +2299,6 @@ class ModuleMenu(cmd.Cmd):
                     print helpers.color("[!] Error: module requires PS version "+str(modulePSVersion)+" but agent running PS version "+str(agentPSVersion))
                     return False
         except Exception as e:
-            print "exception: ",e
             print helpers.color("[!] Invalid module or agent PS version!")
             return False
 

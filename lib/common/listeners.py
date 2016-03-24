@@ -179,6 +179,7 @@ class Listeners:
                 self.options['Host']['Value'] = value
                 if self.options['CertPath']['Value'] == "":
                     print helpers.color("[!] Error: Please specify a SSL cert path first")
+                    return False
                 else:
                     parts = value.split(":")
                     # check if we have a port to extract
@@ -188,7 +189,7 @@ class Listeners:
                         self.options['Port']['Value'] = parts[0]
                     else:
                         self.options['Port']['Value'] = "443"
-                pass
+
             elif value.startswith("http"):
                 self.options['Host']['Value'] = value
                 parts = value.split(":")
@@ -238,6 +239,7 @@ class Listeners:
         else:
             print helpers.color("[!] Error: invalid option name")
             return False
+
 
     def get_listener_options(self):
         """
@@ -559,6 +561,7 @@ class Listeners:
                 cur.close()
 
                 self.listeners[result[0]] = None
+                return True
 
             else:
                 # start up the server object
@@ -580,11 +583,19 @@ class Listeners:
                         cur.close()
 
                         # store off this server in the "[id] : server" object array
-                        # only if the server starts up correctly
+                        #   only if the server starts up correctly
                         self.listeners[result[0]] = server
+                        return True
+                    else:
+                        return False
+
+                else:
+                    print helpers.color("[!] Error starting listener on port %s" %(port))
+                    return False
 
         else:
             print helpers.color("[!] Required listener option missing.")
+            return False
 
 
     def add_pivot_listener(self, listenerName, sessionID, listenPort):
