@@ -279,7 +279,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         listener = request.json['Listener']
 
         if stagerName not in main.stagers.stagers:
-            return jsonify({'error': 'StagerName invalid'})
+            return make_response(jsonify( {'error': 'stager name %s not found' %(stagerName) } ), 404)
 
         if not main.listeners.is_listener_valid(listener):
             return jsonify({'error': 'invalid listener ID or name'})
@@ -325,7 +325,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
 
         if module_name not in main.modules.modules:
-            return jsonify({'error': 'invalid module name'})
+            return make_response(jsonify( {'error': 'module name %s not found' %(module_name) } ), 404)
 
         moduleInfo = main.modules.modules[module_name].info
         moduleInfo['options'] = main.modules.modules[module_name].options
@@ -344,7 +344,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             abort(400)
         
         if module_name not in main.modules.modules:
-            return jsonify({'error': 'invalid module name'})
+            return make_response(jsonify( {'error': 'module name %s not found' %(module_name) } ), 404)
 
         module = main.modules.modules[module_name]
 
@@ -496,7 +496,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
                 main.listeners.delete_listener(listener_name)
                 return jsonify({'success': True})
             else:
-                return jsonify({'error': 'invalid listener name: %s' %(listener_name)})
+                return make_response(jsonify( {'error': 'listener name %s not found' %(listener_name) } ), 404)
 
 
     @app.route('/api/listeners/options', methods=['GET'])
@@ -517,11 +517,11 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         for option,values in request.json.iteritems():
             returnVal = main.listeners.set_listener_option(option, values)
             if not returnVal:
-                return jsonify({'error': 'Error setting listener value %s with option %s' %(option, values)})
+                return jsonify({'error': 'error setting listener value %s with option %s' %(option, values)})
 
         valid = main.listeners.validate_listener_options()
         if not valid:
-            return jsonify({'error': 'Error validating listener options'})
+            return jsonify({'error': 'error validating listener options'})
 
         success = main.listeners.add_listener_from_config()
         return jsonify({'success': success})
@@ -648,7 +648,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
                 agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
 
             if not agentNameIDs or len(agentNameIDs) == 0:
-                return jsonify({'error': 'invalid agent name'})
+                return make_response(jsonify( {'error': 'agent name %s not found' %(agent_name) } ), 404)
 
             for agentNameID in agentNameIDs:
                 (agentName, agentsSessionID) = agentNameID
