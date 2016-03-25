@@ -162,7 +162,7 @@ def powershell_launcher(raw):
     # encode the data into a form usable by -enc
     encCMD = enc_powershell(raw)
 
-    return "powershell.exe -NoP -NonI -W Hidden -Enc " + encCMD
+    return "powershell.exe -NoP -sta -NonI -W Hidden -Enc " + encCMD
 
 
 def parse_powershell_script(data):
