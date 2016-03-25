@@ -228,8 +228,8 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         configRaw = execute_db_query(conn, 'SELECT * FROM config')
 
-        [staging_key, stage0_uri, stage1_uri, stage2_uri, default_delay, default_jitter, default_profile, default_cert_path, default_port, install_path, server_version, ip_whitelist, ip_blacklist, default_lost_limit, autorun_command, autorun_data, current_api_token, permanent_api_token] = configRaw[0]
-        config = {"version":empire.VERSION, "staging_key":staging_key, "stage0_uri":stage0_uri, "stage1_uri":stage1_uri, "stage2_uri":stage2_uri, "default_delay":default_delay, "default_jitter":default_jitter, "default_profile":default_profile, "default_cert_path":default_cert_path, "default_port":default_port, "install_path":install_path, "server_version":server_version, "ip_whitelist":ip_whitelist, "ip_blacklist":ip_blacklist, "default_lost_limit":default_lost_limit, "autorun_command":autorun_command, "autorun_data":autorun_data, "current_api_token":current_api_token, "permanent_api_token":permanent_api_token}
+        [staging_key, stage0_uri, stage1_uri, stage2_uri, default_delay, default_jitter, default_profile, default_cert_path, default_port, install_path, server_version, ip_whitelist, ip_blacklist, default_lost_limit, autorun_command, autorun_data, api_username, api_password, current_api_token, permanent_api_token] = configRaw[0]
+        config = [{"version":empire.VERSION, "staging_key":staging_key, "stage0_uri":stage0_uri, "stage1_uri":stage1_uri, "stage2_uri":stage2_uri, "default_delay":default_delay, "default_jitter":default_jitter, "default_profile":default_profile, "default_cert_path":default_cert_path, "default_port":default_port, "install_path":install_path, "server_version":server_version, "ip_whitelist":ip_whitelist, "ip_blacklist":ip_blacklist, "default_lost_limit":default_lost_limit, "autorun_command":autorun_command, "autorun_data":autorun_data, "api_username":api_username, "api_password":api_password, "current_api_token":current_api_token, "permanent_api_token":permanent_api_token}]
         return jsonify({'config': config})
 
 
@@ -634,7 +634,6 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'results': agentTaskResults})
 
 
-    # TODO: add get /name/results to get/clear results from DB
     @app.route('/api/agents/<string:agent_name>', methods=['POST'])
     def modify_agent(agent_name):
         """
@@ -766,7 +765,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         
         for reportingEvent in reportingRaw:
             [ID, name, eventType, message, timestamp] = reportingEvent
-            reportingEvents.append({"ID":ID, "name":name, "event_type":eventType, "message":message, "timestamp":timestamp})
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":eventType, "message":message, "timestamp":timestamp})
 
         return jsonify({'reporting' : reportingEvents})
 
@@ -790,7 +789,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         
         for reportingEvent in reportingRaw:
             [ID, name, eventType, message, timestamp] = reportingEvent
-            reportingEvents.append({"ID":ID, "name":name, "event_type":eventType, "message":message, "timestamp":timestamp})
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":eventType, "message":message, "timestamp":timestamp})
 
         return jsonify({'reporting' : reportingEvents})
 
@@ -806,7 +805,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         
         for reportingEvent in reportingRaw:
             [ID, name, eventType, message, timestamp] = reportingEvent
-            reportingEvents.append({"ID":ID, "name":name, "event_type":eventType, "message":message, "timestamp":timestamp})
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":eventType, "message":message, "timestamp":timestamp})
 
         return jsonify({'reporting' : reportingEvents})
 
@@ -822,7 +821,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         
         for reportingEvent in reportingRaw:
             [ID, name, eventType, message, timestamp] = reportingEvent
-            reportingEvents.append({"ID":ID, "name":name, "event_type":eventType, "message":message, "timestamp":timestamp})
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":eventType, "message":message, "timestamp":timestamp})
 
         return jsonify({'reporting' : reportingEvents})
 
