@@ -32,7 +32,7 @@ class Stager:
             },
             'OutFile' : {
                 'Description'   :   'File to output HTA to, otherwise displayed on the screen.',
-                'Required'      :   True,
+                'Required'      :   False,
                 'Value'         :   ''
             },
             'Base64' : {

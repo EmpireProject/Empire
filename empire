@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import sqlite3, argparse, sys, argparse, logging, json, string, os, re, time, signal, copy
+import sqlite3, argparse, sys, argparse, logging, json, string, os, re, time, signal, copy, base64
 from flask import Flask, request, jsonify, make_response, abort
 from time import localtime, strftime
 from OpenSSL import SSL
@@ -241,7 +241,6 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
         stagers = []
         for stagerName,stager in main.stagers.stagers.iteritems():
-            # print stager.info
             info =  copy.deepcopy(stager.info)
             info['options'] = stager.options
             info['Name'] = stagerName
@@ -307,7 +306,13 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
                 return jsonify({'error': 'required stager options missing'})
 
         stagerOut = copy.deepcopy(stager.options)
-        stagerOut['Output'] = stager.generate()
+
+        if ('OutFile' in stagerOut) and (stagerOut['OutFile']['Value'] != ''):
+            # if the output was intended for a file, return the base64 encoded text
+            stagerOut['Output'] = base64.b64encode(stager.generate())
+        else:
+            # otherwise return the text of the stager generation
+            stagerOut['Output'] = stager.generate()
 
         return jsonify({stagerName: stagerOut})
 
