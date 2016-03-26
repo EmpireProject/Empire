@@ -88,43 +88,47 @@ def get_permanent_token(conn):
 # Adapted from http://blog.miguelgrinberg.com/post/designing-a-restful-api-with-python-and-flask
 #   example code at https://gist.github.com/miguelgrinberg/5614326
 #
-#    Verb    URI                                                 Action
-#    ----    ---                                                 ------
-#    GET     http://localhost:1337/api/version            return the current Empire version
+#    Verb     URI                                            Action
+#    ----     ---                                            ------
+#    GET      http://localhost:1337/api/version              return the current Empire version
 #    
-#    GET     http://localhost:1337/api/config             return the current default config
+#    GET      http://localhost:1337/api/config               return the current default config
 #
-#    GET     http://localhost:1337/api/stagers            return all current stagers
-#    GET     http://localhost:1337/api/stagers/X          return the stager with name X
-#    POST    http://localhost:1337/api/stagers            generate a stager given supplied options (need to implement)
+#    GET      http://localhost:1337/api/stagers              return all current stagers
+#    GET      http://localhost:1337/api/stagers/X            return the stager with name X
+#    POST     http://localhost:1337/api/stagers              generate a stager given supplied options (need to implement)
 #
-#    GET     http://localhost:1337/api/modules            return all current modules
-#    GET     http://localhost:1337/api/modules/<name>     return the module with the specified name
-#    POST    http://localhost:1337/api/modules/<name>     execute the given module with the specified options
+#    GET      http://localhost:1337/api/modules              return all current modules
+#    GET      http://localhost:1337/api/modules/<name>       return the module with the specified name
+#    POST     http://localhost:1337/api/modules/<name>       execute the given module with the specified options
 #
-#    GET     http://localhost:1337/api/listeners          return all current listeners
-#    GET     http://localhost:1337/api/listeners/Y        return the listener with id Y
-#    GET     http://localhost:1337/api/listeners/options  return all listener options
-#    POST    http://localhost:1337/api/listeners          starts a new listener with the specified options
-#    DELETE  http://localhost:1337/api/listeners/Y        kills listener Y
+#    GET      http://localhost:1337/api/listeners            return all current listeners
+#    GET      http://localhost:1337/api/listeners/Y          return the listener with id Y
+#    GET      http://localhost:1337/api/listeners/options    return all listener options
+#    POST     http://localhost:1337/api/listeners            starts a new listener with the specified options
+#    DELETE   http://localhost:1337/api/listeners/Y          kills listener Y
 #
-#    GET     http://localhost:1337/api/agents             return all current agents
-#    GET     http://localhost:1337/api/agents/stale       return all stale agents
-#    GET     http://localhost:1337/api/agents/Y           return the agent with name Y
-#    GET     http://localhost:1337/api/agents/Y/results   return tasking results for the agent with name Y
-#    POST    http://localhost:1337/api/agents/Y           modify or task agent with Y
-#    DELETE  http://localhost:1337/api/agents/Y           removes agent Y from the database
-#    DELETE  http://localhost:1337/api/agents/stale       removes stale agents from the database
+#    GET      http://localhost:1337/api/agents               return all current agents
+#    GET      http://localhost:1337/api/agents/stale         return all stale agents
+#    DELETE   http://localhost:1337/api/agents/stale         removes stale agents from the database
+#    DELETE   http://localhost:1337/api/agents/Y             removes agent Y from the database
+#    GET      http://localhost:1337/api/agents/Y             return the agent with name Y
+#    GET      http://localhost:1337/api/agents/Y/results     return tasking results for the agent with name Y
+#    DELETE   http://localhost:1337/api/agents/Y/results     deletes the result buffer for agent Y
+#    POST     http://localhost:1337/api/agents/Y/shell       task agent Y to execute a shell command
+#    POST     http://localhost:1337/api/agents/Y/rename      rename agent Y
+#    GET/POST http://localhost:1337/api/agents/Y/clear       clears the result buffer for agent Y
+#    GET/POST http://localhost:1337/api/agents/Y/kill        kill agent Y
 #
-#    GET     http://localhost:1337/api/reporting          return all logged events
-#    GET     http://localhost:1337/api/reporting/agent/X  return all logged events for the given agent name X
-#    GET     http://localhost:1337/api/reporting/type/Y   return all logged events of type Y (checkin, task, result, rename)
-#    GET     http://localhost:1337/api/reporting/msg/Z    return all logged events matching message Z, wildcards accepted
+#    GET      http://localhost:1337/api/reporting            return all logged events
+#    GET      http://localhost:1337/api/reporting/agent/X    return all logged events for the given agent name X
+#    GET      http://localhost:1337/api/reporting/type/Y     return all logged events of type Y (checkin, task, result, rename)
+#    GET      http://localhost:1337/api/reporting/msg/Z      return all logged events matching message Z, wildcards accepted
 #
-#    GET     http://localhost:1337/api/admin/login        retrieve the API token given the correct username and password
-#    GET     http://localhost:1337/api/admin/permanenttoken retrieve the permanent API token, generating/storing one if it doesn't already exist
-#    GET     http://localhost:1337/api/admin/shutdown     shutdown the RESTful API
-#    GET     http://localhost:1337/api/admin/restart      restart the RESTful API
+#    GET      http://localhost:1337/api/admin/login          retrieve the API token given the correct username and password
+#    GET      http://localhost:1337/api/admin/permanenttoken retrieve the permanent API token, generating/storing one if it doesn't already exist
+#    GET      http://localhost:1337/api/admin/shutdown       shutdown the RESTful API
+#    GET      http://localhost:1337/api/admin/restart        restart the RESTful API
 #    
 ####################################################################
 
@@ -588,6 +592,53 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'agents' : staleAgents})
 
 
+    @app.route('/api/agents/stale', methods=['DELETE'])
+    def remove_stale_agent():
+        """
+        Removes stale agents from the controller.
+
+        WARNING: doesn't kill the agent first! Ensure the agent is dead.
+        """
+        agentsRaw = execute_db_query(conn, 'SELECT * FROM agents')
+        
+        for agent in agentsRaw:
+            [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit, taskings, results] = agent
+
+            intervalMax = (delay + delay * jitter)+30
+
+            # get the agent last check in time
+            agentTime = time.mktime(time.strptime(lastseen_time, "%Y-%m-%d %H:%M:%S"))
+
+            if agentTime < time.mktime(time.localtime()) - intervalMax:
+                execute_db_query(conn, "DELETE FROM agents WHERE session_id LIKE ?", [sessionID])
+
+        return jsonify({'success': True})
+
+
+    @app.route('/api/agents/<string:agent_name>', methods=['DELETE'])
+    def remove_agent(agent_name):
+        """
+        Removes an agent from the controller specified by agent_name.
+        
+        WARNING: doesn't kill the agent first! Ensure the agent is dead.
+        """
+        if agent_name.lower() == "all":
+            # enumerate all target agent sessionIDs
+            agentNameIDs = execute_db_query(conn, "SELECT name,session_id FROM agents WHERE name like '%' OR session_id like '%'")
+        else:
+            agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+
+        if not agentNameIDs or len(agentNameIDs) == 0:
+            return make_response(jsonify( {'error': 'agent name %s not found' %(agent_name) } ), 404)
+
+        for agentNameID in agentNameIDs:
+            (agentName, agentSessionID) = agentNameID
+
+            execute_db_query(conn, "DELETE FROM agents WHERE session_id LIKE ?", [agentSessionID])
+
+        return jsonify({'success': True})
+
+
     @app.route('/api/agents/<string:agent_name>', methods=['GET'])
     def get_agents_name(agent_name):
         """
@@ -619,9 +670,9 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
 
         for agentNameID in agentNameIDs:
-            (agentName, agentsSessionID) = agentNameID
+            (agentName, agentSessionID) = agentNameID
 
-            agentResults = execute_db_query(conn, 'SELECT results FROM agents WHERE session_id=?', [agentsSessionID])[0]
+            agentResults = execute_db_query(conn, 'SELECT results FROM agents WHERE session_id=?', [agentSessionID])[0]
 
             if agentResults and agentResults[0] and agentResults[0] != '':
                 out = json.loads(agentResults[0])
@@ -632,132 +683,150 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             else:
                 agentResults = ''
 
-            execute_db_query(conn, 'UPDATE agents SET results=? WHERE session_id=?', ['', agentsSessionID])
-
             agentTaskResults.append({"agentname":agentName, "results":agentResults})
 
         return jsonify({'results': agentTaskResults})
 
 
-    @app.route('/api/agents/<string:agent_name>', methods=['POST'])
-    def modify_agent(agent_name):
+    @app.route('/api/agents/<string:agent_name>/results', methods=['DELETE'])
+    def delete_agent_results(agent_name):
         """
-        Modifies an agent with name agent_name.
-        Used for tasking, clearing tasking, setting sleep, renaming, and killing.
-        """
-
-        agentTaskResults = []
-
-        if 'task' in request.json.keys() or 'clear' in request.json.keys():
-
-            if 'clear' in request.json.keys():
-                taskName = ''
-                taskdata = ''
-                taskType = 'clear'
-            else:
-                taskName = request.json['task']['taskname']
-                if 'taskdata' in request.json['task']:
-                    taskdata = request.json['task']['taskdata']
-                else:
-                    taskdata = ''
-                taskType = 'task'
-
-            if agent_name.lower() == "all":
-                # enumerate all target agent sessionIDs
-                agentNameIDs = execute_db_query(conn, "SELECT name,session_id FROM agents WHERE name like '%' OR session_id like '%'")
-            else:
-                agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
-
-            if not agentNameIDs or len(agentNameIDs) == 0:
-                return make_response(jsonify( {'error': 'agent name %s not found' %(agent_name) } ), 404)
-
-            for agentNameID in agentNameIDs:
-                (agentName, agentsSessionID) = agentNameID
-
-                if 'clear' in request.json.keys():
-                    execute_db_query(conn, "UPDATE agents SET taskings=? WHERE session_id=?", ['', agentsSessionID])
-                else:
-                    # get existing agent taskings for each agent
-                    agentTasks = execute_db_query(conn, 'SELECT taskings FROM agents WHERE session_id like ?', [agentsSessionID])[0]
-                    if(agentTasks and agentTasks[0]):
-                        agentTasks = json.loads(agentTasks[0])
-                    else:
-                        agentTasks = []
-
-                    # append our new json-ified task and update the backend
-                    agentTasks.append([taskName, taskdata])
-
-                    execute_db_query(conn, "UPDATE agents SET taskings=? WHERE session_id=?", [json.dumps(agentTasks), agentsSessionID])
-
-                timeStamp = strftime("%Y-%m-%d %H:%M:%S", localtime())
-                execute_db_query(conn, "INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agentName,"task",taskName + " - " + taskdata[0:50], timeStamp ))
-
-                agentTaskResults.append({'agentname':agentName, 'tasktype':taskType, 'taskname':taskName, 'taskdata':taskdata})
-
-
-        elif 'rename' in request.json.keys():
-
-            newName = request.json['rename']['newname']
-
-            try:
-                result = main.agents.rename_agent(agent_name, newName)
-
-                if not result:
-                    return jsonify({'error': 'error in renaming %s to %s, newname may have already been used' %(agent_name, newName)})
-
-                agentTaskResults.append({'agentname':agent_name, 'tasktype':'rename', 'taskname':'', 'task':newName})
-
-            except:
-                return jsonify({'error': 'error in renaming %s to %s' %(agent_name, newName)})
-
-        
-        return jsonify({'taskings':agentTaskResults})
-
-
-    @app.route('/api/agents/<string:agent_name>', methods=['DELETE'])
-    def remove_agent(agent_name):
-        """
-        Removes an agent from the controller specified by agent_name.
-        WARNING: doesn't kill the agent first! Ensure the agent is dead.
+        Removes the specified agent results field from the backend database.
         """
         if agent_name.lower() == "all":
-            agent_name = '%'
+            # enumerate all target agent sessionIDs
+            execute_db_query(conn, "UPDATE agents SET results='' WHERE name like '%' OR session_id like '%'")
+        else:
+            execute_db_query(conn, "UPDATE agents SET results='' WHERE name like ? OR session_id like ?", [agent_name, agent_name])
 
-        agentsRaw = execute_db_query(conn, 'SELECT * FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
-        removedAgents = []
-
-        for agent in agentsRaw:
-            [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit, taskings, results] = agent
-            execute_db_query(conn, "DELETE FROM agents WHERE session_id LIKE ?", [sessionID])
-
-            removedAgents.append({"ID":ID, "sessionID":sessionID, "listener":listener, "name":name, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "uris":uris, "old_uris":old_uris, "user_agent":user_agent, "headers":headers, "functions":functions, "kill_date":kill_date, "working_hours":working_hours, "ps_version":ps_version, "lost_limit":lost_limit, "taskings":taskings, "results":results})
-
-        return jsonify({'removedagents': removedAgents})
+        return jsonify({'success': True})
 
 
-    @app.route('/api/agents/stale', methods=['DELETE'])
-    def remove_stale_agent():
+    @app.route('/api/agents/<string:agent_name>/shell', methods=['POST'])
+    def task_agent_shell(agent_name):
         """
-        Removes stale agents from the controller.
-        WARNING: doesn't kill the agent first! Ensure the agent is dead.
+        Tasks an the specified agent_name to execute a shell command.
+
+        Takes {'command':'shell_command'}
         """
-        agentsRaw = execute_db_query(conn, 'SELECT * FROM agents')
-        removedAgents = []
+        if agent_name.lower() == "all":
+            # enumerate all target agent sessionIDs
+            agentNameIDs = execute_db_query(conn, "SELECT name,session_id FROM agents WHERE name like '%' OR session_id like '%'")
+        else:
+            agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+
+        if not agentNameIDs or len(agentNameIDs) == 0:
+            return make_response(jsonify( {'error': 'agent name %s not found' %(agent_name) } ), 404)
+
+        command = request.json['command']
+
+        for agentNameID in agentNameIDs:
+            (agentName, agentSessionID) = agentNameID
+
+            # get existing agent taskings for each agent
+            agentTasks = execute_db_query(conn, 'SELECT taskings FROM agents WHERE session_id like ?', [agentSessionID])[0]
+            if(agentTasks and agentTasks[0]):
+                agentTasks = json.loads(agentTasks[0])
+            else:
+                agentTasks = []
+
+            # append our new json-ified task and update the backend
+            agentTasks.append(['TASK_SHELL', command])
+
+            execute_db_query(conn, "UPDATE agents SET taskings=? WHERE session_id=?", [json.dumps(agentTasks), agentSessionID])
+
+            timeStamp = strftime("%Y-%m-%d %H:%M:%S", localtime())
+            execute_db_query(conn, "INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agentName,"task","TASK_SHELL - " + command[0:50], timeStamp ))
+
+        return jsonify({'success': True})
+
+
+    @app.route('/api/agents/<string:agent_name>/rename', methods=['POST'])
+    def task_agent_rename(agent_name):
+        """
+        Renames the specified agent.
+
+        Takes {'newname':'NAME'}
+        """
+
+        agentNameID = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+
+        if not agentNameID or len(agentNameID) == 0:
+            return make_response(jsonify( {'error': 'agent name %s not found' %(agent_name) } ), 404)
+
+        (agentName, agentSessionID) = agentNameID[0]
+        newName = request.json['newname']
         
-        for agent in agentsRaw:
-            [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit, taskings, results] = agent
+        try:
+            result = main.agents.rename_agent(agentName, newName)
 
-            intervalMax = (delay + delay * jitter)+30
+            if not result:
+                return jsonify({'error': 'error in renaming %s to %s, new name may have already been used' %(agentName, newName)})
 
-            # get the agent last check in time
-            agentTime = time.mktime(time.strptime(lastseen_time, "%Y-%m-%d %H:%M:%S"))
+            return jsonify({'success': True})
 
-            if agentTime < time.mktime(time.localtime()) - intervalMax:
-                execute_db_query(conn, "DELETE FROM agents WHERE session_id LIKE ?", [sessionID])
+        except:
+            return jsonify({'error': 'error in renaming %s to %s' %(agentName, newName)})
 
-                removedAgents.append({"ID":ID, "sessionID":sessionID, "listener":listener, "name":name, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "uris":uris, "old_uris":old_uris, "user_agent":user_agent, "headers":headers, "functions":functions, "kill_date":kill_date, "working_hours":working_hours, "ps_version":ps_version, "lost_limit":lost_limit, "taskings":taskings, "results":results})
 
-        return jsonify({'removedagents': removedAgents})
+    @app.route('/api/agents/<string:agent_name>/clear', methods=['POST', 'GET'])
+    def task_agent_clear(agent_name):
+        """
+        Clears the tasking buffer for the specified agent.
+        """
+        if agent_name.lower() == "all":
+            # enumerate all target agent sessionIDs
+            agentNameIDs = execute_db_query(conn, "SELECT name,session_id FROM agents WHERE name like '%' OR session_id like '%'")
+        else:
+            agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+
+        if not agentNameIDs or len(agentNameIDs) == 0:
+            return make_response(jsonify( {'error': 'agent name %s not found' %(agent_name) } ), 404)
+
+        for agentNameID in agentNameIDs:
+            (agentName, agentSessionID) = agentNameID
+
+            execute_db_query(conn, "UPDATE agents SET taskings=? WHERE session_id=?", ['', agentSessionID])
+
+            timeStamp = strftime("%Y-%m-%d %H:%M:%S", localtime())
+            execute_db_query(conn, "INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agentName, "clear", '', timeStamp ))
+
+        return jsonify({'success': True})
+
+
+    @app.route('/api/agents/<string:agent_name>/kill', methods=['POST', 'GET'])
+    def task_agent_kill(agent_name):
+        """
+        Tasks the specified agent to exit.
+        """
+        if agent_name.lower() == "all":
+            # enumerate all target agent sessionIDs
+            agentNameIDs = execute_db_query(conn, "SELECT name,session_id FROM agents WHERE name like '%' OR session_id like '%'")
+        else:
+            agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+
+        if not agentNameIDs or len(agentNameIDs) == 0:
+            return make_response(jsonify( {'error': 'agent name %s not found' %(agent_name) } ), 404)
+
+        for agentNameID in agentNameIDs:
+            (agentName, agentSessionID) = agentNameID
+
+            # get existing agent taskings for each agent
+            agentTasks = execute_db_query(conn, 'SELECT taskings FROM agents WHERE session_id like ?', [agentSessionID])[0]
+            if(agentTasks and agentTasks[0]):
+                agentTasks = json.loads(agentTasks[0])
+            else:
+                agentTasks = []
+
+            # append our new json-ified task and update the backend
+            agentTasks.append(['TASK_EXIT', ''])
+
+            execute_db_query(conn, "UPDATE agents SET taskings=? WHERE session_id=?", [json.dumps(agentTasks), agentSessionID])
+
+            timeStamp = strftime("%Y-%m-%d %H:%M:%S", localtime())
+            execute_db_query(conn, "INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agentName,"task","TASK_EXIT", timeStamp ))
+
+        return jsonify({'success': True})
 
 
     @app.route('/api/reporting', methods=['GET'])
