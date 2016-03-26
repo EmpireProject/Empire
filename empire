@@ -125,6 +125,8 @@ def get_permanent_token(conn):
 #    GET      http://localhost:1337/api/reporting/type/Y     return all logged events of type Y (checkin, task, result, rename)
 #    GET      http://localhost:1337/api/reporting/msg/Z      return all logged events matching message Z, wildcards accepted
 #
+#    GET      http://localhost:1337/api/creds                return stored credentials
+#
 #    GET      http://localhost:1337/api/admin/login          retrieve the API token given the correct username and password
 #    GET      http://localhost:1337/api/admin/permanenttoken retrieve the permanent API token, generating/storing one if it doesn't already exist
 #    GET      http://localhost:1337/api/admin/shutdown       shutdown the RESTful API

