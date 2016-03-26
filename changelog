@@ -1,6 +1,42 @@
-1/17/2016
+3/25/2016
+---------
+-RESTful API modifications
+-expanded agent/server epoch check to +/- 12 hours
+-stagers now run -sta
+
+3/24/2016
+---------
+-RESTful API modifications
+
+3/22/2016
+---------
+-added auth to RESTful API, additional API fixes
+
+3/21/2016
+---------
+-start of RESTful API implementation
+
+3/19/2016
+---------
+-PowerView.ps1 update and multiple related module additions
+-added github issue templates
+-added situational_awareness/network/powerview/get_gpo_computer
+
+3/11/2016
+---------
+-added privesc/getsystem
+-bug fix for Invoke-PsExec and some x64 pointers
+
+3/3/2016
+---------
+-first pass at stager retry interval
+-download chunking modified
+
+
+2/17/2016
 ---------
 - '--debug 2' now displays debug information to the console as well as the empire.debug file
+-added privesc/mcafee_sitelist
 
 1/15/2016
 ---------
