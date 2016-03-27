@@ -387,11 +387,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
                 return jsonify({'error': 'required module option missing'})
 
         try:
-            if not main.agents.is_agent_present(sessionID):
-                return jsonify({'error': 'invalid agent name'})
-
             # if we're running this module for all agents, skip this validation
-            if sessionID.lower() != "all" and sessionID.lower() != "autorun": 
+            if sessionID.lower() != "all" and sessionID.lower() != "autorun":
+                
+                if not main.agents.is_agent_present(sessionID):
+                    return jsonify({'error': 'invalid agent name'})
+
                 modulePSVersion = int(module.info['MinPSVersion'])
                 agentPSVersion = int(main.agents.get_ps_version(sessionID))
                 # check if the agent/module PowerShell versions are compatible
