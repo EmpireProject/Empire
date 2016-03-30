@@ -39,7 +39,7 @@ Default = NTLM: (Anonymous,NTLM) Specify the HTTP/HTTPS server authentication ty
 IP address of system to target for SMB relay.
 
 .PARAMETER SMBRelayCommand
-Command to execute on SMB relay target.
+Command to execute on SMB relay target. Use PowerShell character escapes where necessary.
 
 .PARAMETER SMBRelayUsernames
 Default = All Usernames: Comma separated list of usernames to use for relay attacks. Accepts both username and domain\username format. 

@@ -10,7 +10,7 @@ class Module:
             'Author': ['Kevin Robertson'],
 
             'Description': ('Tater is a PowerShell implementation of the Hot Potato '
-			    'Windows Privilege Escalation exploit from @breenmachine and @foxglovesec.'),
+							'Windows Privilege Escalation exploit from @breenmachine and @foxglovesec.'),
 
             'Background' : True,
 
@@ -37,17 +37,17 @@ class Module:
                 'Value'           :   ''
             },
             'IP'      		  : {
-                'Description'     :   'Local IP address.',
+                'Description'     :   'Specific local IP address for NBNS spoofer.',
                 'Required'        :   False,
                 'Value'           :   ''
             },
 			'SpooferIP'       	  : {
-                'Description'     :   'IP address included in NBNS response.',
+                'Description'     :   'IP address included in NBNS response. This is needed when using two hosts to get around an in-use port 80 on the privesc target.',
                 'Required'        :   False,
                 'Value'           :   ''
             },
 			'Command'     	  : {
-                'Description'     :   'Command to execute during privilege escalation. Do not wrap command in quotes.',
+                'Description'     :   'Command to execute during privilege escalation. Do not wrap in quotes and use PowerShell character escapes where necessary.',
                 'Required'        :   True,
                 'Value'           :   ''
             },
@@ -89,7 +89,7 @@ class Module:
 			'WPADPort' 	  	  : {
                 'Description'     :   'Proxy server port to be included in the wpad.dat file.',
                 'Required'        :   False,
-                'Value'           :   ''
+                'Value'           :   '80'
             },
 			'TaskDelete' 	  	  : {
                 'Description'     :   'Enable/Disable scheduled task deletion for trigger 2. If enabled, a random string will be added to the taskname to avoid failures after multiple trigger 2 runs.',
@@ -135,8 +135,8 @@ class Module:
 
         script = moduleCode
 
-        # disable file output
-        script += "\n" + 'Invoke-Tater -ConsoleOutput "Y" -Tool "2" '
+        # set defaults for Empire
+        script += "\n" + 'Invoke-Tater -Tool "2" '
 
 	for option,values in self.options.iteritems():
             if option.lower() != "agent":

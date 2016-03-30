@@ -9,11 +9,12 @@ class Module:
 
             'Author': ['Kevin Robertson'],
 
-            'Description': ('Relays incoming HTTP NTLMv2 authentication requests to an SMB target. '
-			    'If the authentication is successfully relayed and the account is '
-			    'a local administrator, a specified command will be executed on the '
-			    'target PSExec style. This module works best while also running '
- 			    'collection/inveigh with HTTP disabled.'),
+            'Description': ('Inveigh\'s SMB relay function. This module can be used to relay '
+							'incoming HTTP NTLMv2 authentication requests to an SMB target. '
+							'If the authentication is successfully relayed and the account is '
+							'a local administrator, a specified command will be executed on the '
+							'target PSExec style. This module works best while also running '
+							'collection/inveigh with HTTP disabled.'),
 
             'Background' : True,
 
@@ -45,7 +46,7 @@ class Module:
                 'Value'           :   ''
             },
             'SMBRelayCommand'     : {
-                'Description'     :   'Command to execute on SMB relay target. Do not wrap command in quotes.',
+                'Description'     :   'Command to execute on SMB relay target. Do not wrap in quotes and use PowerShell character escapes where necessary.',
                 'Required'        :   True,
                 'Value'           :   ''
             },
@@ -93,8 +94,8 @@ class Module:
 
         script = moduleCode
 
-        # disable file output
-        script += "\n" + 'Invoke-InveighRelay -ConsoleOutput "Y" -Tool "2" '
+        # set defaults for Empire
+        script += "\n" + 'Invoke-InveighRelay -Tool "2" '
 
 	for option,values in self.options.iteritems():
             if option.lower() != "agent":

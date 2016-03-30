@@ -48,7 +48,7 @@ Default = NTLM: (Anonymous,Basic,NTLM) Specify the HTTP/HTTPS server authenticat
 Specify a realm name for Basic authentication. This parameter applies to both HTTPAuth and WPADAuth.
 
 .PARAMETER HTTPResponse
-Specify a string or HTML to serve as the default HTTP/HTTPS response. This response will not be used for wpad.dat requests.
+Specify a string or HTML to serve as the default HTTP/HTTPS response. This response will not be used for wpad.dat requests. Use PowerShell character escapes where necessary.
 
 .PARAMETER WPADAuth
 Default = NTLM: (Anonymous,Basic,NTLM) Specify the HTTP/HTTPS server authentication type for wpad.dat requests. Setting to Anonymous can prevent browser login prompts.
@@ -60,7 +60,7 @@ Specify a proxy server IP to be included in a basic wpad.dat response for WPAD e
 Specify a proxy server port to be included in a basic wpad.dat response for WPAD enabled browsers. This parameter must be used with WPADIP.
 
 .PARAMETER WPADDirectHosts
-Comma separated list of hosts to list as direct in the wpad.dat file. Listed hosts will not be routed through the defined proxy.
+Comma separated list of hosts to list as direct in the wpad.dat file. Listed hosts will not be routed through the defined proxy. Use PowerShell character escapes where necessary.
 
 .PARAMETER WPADResponse
 Specify wpad.dat file contents to serve as the wpad.dat response. This parameter will not be used if WPADIP and WPADPort are set.

@@ -16,7 +16,7 @@ Invoke-Inveigh is a Windows PowerShell LLMNR/NBNS spoofer with the following fea
     Run time control
 
 .PARAMETER IP
-Specify a specific local IP address for listening. This IP address will also be used for LLMNR/NBNS spoofing if the 'SpooferIP' parameter is not set.
+Specify a specific local IP address for listening. This IP address will also be used for LLMNR/NBNS spoofing if the SpooferIP parameter is not set.
 
 .PARAMETER SpooferIP
 Specify an IP address for LLMNR/NBNS spoofing. This parameter is only necessary when redirecting victims to a system other than the Inveigh host. 
@@ -74,7 +74,7 @@ Specify a filename within the HTTPDir to serve as the default HTTP/HTTPS respons
 Specify an EXE filename within the HTTPDir to serve as the default HTTP/HTTPS response for EXE requests. 
 
 .PARAMETER HTTPResponse
-Specify a string or HTML to serve as the default HTTP/HTTPS response. This response will not be used for wpad.dat requests.
+Specify a string or HTML to serve as the default HTTP/HTTPS response. This response will not be used for wpad.dat requests. Use PowerShell character escapes where necessary.
 
 .PARAMETER HTTPSCertAppID
 Specify a valid application GUID for use with the ceriticate.
@@ -95,7 +95,7 @@ Specify a proxy server port to be included in a basic wpad.dat response for WPAD
 Comma separated list of hosts to list as direct in the wpad.dat file. Listed hosts will not be routed through the defined proxy.
 
 .PARAMETER WPADResponse
-Specify wpad.dat file contents to serve as the wpad.dat response. This parameter will not be used if WPADIP and WPADPort are set.
+Specify wpad.dat file contents to serve as the wpad.dat response. This parameter will not be used if WPADIP and WPADPort are set. Use PowerShell character escapes where necessary.
 
 .PARAMETER SMB
 Default = Enabled: (Y/N) Enable/Disable SMB challenge/response capture. Warning, LLMNR/NBNS spoofing can still direct targets to the host system's SMB server.
@@ -169,6 +169,7 @@ Execute specifying a specific local listening/spoofing IP and disabling HTTP cha
 Invoke-Inveigh -SpooferRepeat N -WPADAuth Anonymous -SpooferHostsReply host1,host2 -SpooferIPsReply 192.168.2.75,192.168.2.76
 Execute with the stealthiest options.
 
+.EXAMPLE
 Invoke-Inveigh -Inspect
 Execute with LLMNR, NBNS, SMB, HTTP, and HTTPS disabled in order to only inpect LLMNR/NBNS traffic.
 

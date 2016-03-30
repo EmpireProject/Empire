@@ -9,9 +9,7 @@ class Module:
 
             'Author': ['Kevin Robertson'],
 
-            'Description': ('Inveigh is a Windows PowerShell LLMNR/NBNS spoofer/man-in-the-middle '
-                            'tool designed to assist penetration testers that find themselves '
-                            'limited to a Windows system.'),
+            'Description': ('Inveigh is a Windows PowerShell LLMNR/NBNS spoofer/man-in-the-middle tool.'),
 
             'Background' : True,
 
@@ -70,7 +68,7 @@ class Module:
 			'SpooferRepeat' : {
                 'Description'   :   'Enable/Disable repeated LLMNR/NBNS spoofs to a victim system after one user challenge/response has been captured (Y/N).',
                 'Required'      :   False,
-                'Value'         :   ''
+                'Value'         :   'Y'
             },
             'LLMNR' : {
                 'Description'   :   'Enable/Disable LLMNR spoofing (Y/N).',
@@ -113,7 +111,7 @@ class Module:
                 'Value'         :   'IIS'
             },
 			'HTTPResponse' : {
-                'Description'   :   'String or HTML to serve as the default HTTP response. This response will not be used for wpad.dat requests.',
+                'Description'   :   'String or HTML to serve as the default HTTP response. This response will not be used for wpad.dat requests. Do not wrap in quotes and use PowerShell character escapes where necessary.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -134,11 +132,6 @@ class Module:
             },
 			'WPADDirectHosts' : {
                 'Description'   :   'Comma separated list of hosts to list as direct in the wpad.dat file. Listed hosts will not be routed through the defined proxy. Add the Empire host to avoid catching Empire HTTP traffic.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-			'WPADResponse' : {
-                'Description'   :   'Wpad.dat file contents to serve as the wpad.dat response. This parameter will not be used if WPADIP and WPADPort are set.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -191,8 +184,8 @@ class Module:
 
         script = moduleCode
 
-        # disable file output
-        script += "\n" + 'Invoke-Inveigh -ConsoleOutput "Y" -Tool "2" '
+        # set defaults for Empire
+        script += "\n" + 'Invoke-Inveigh -Tool "2" '
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":

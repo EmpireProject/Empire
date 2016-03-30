@@ -10,7 +10,7 @@ class Module:
             'Author': ['Kevin Robertson'],
 
             'Description': ('Inveigh\'s remote (Hot Potato method)/unprivileged NBNS brute force spoofer function. '
-                            'This function can be used to perform NBNS spoofing across subnets and/or perform NBNS '
+                            'This module can be used to perform NBNS spoofing across subnets and/or perform NBNS '
                             'spoofing without an elevated administrator or SYSTEM shell.'),
 
             'Background' : True,
@@ -24,7 +24,7 @@ class Module:
             'MinPSVersion' : '2',
             
             'Comments': [
-                'https://github.com/Kevin-Robertson/Inveigh'
+                'https://github.com/Kevin-Robertson/Inveigh' 
             ]
         }
 
@@ -38,7 +38,7 @@ class Module:
                 'Value'         :   ''
             },
             'SpooferIP' : {
-                'Description'   :   'Specific IP address for NBNS spoofing. This parameter is only necessary when redirecting victims to a system other than the Inveigh host.',
+                'Description'   :   'Specific IP address for NBNS spoofing. This parameter is only necessary when redirecting victims to a system other than the Inveigh Brute Force host.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -83,7 +83,7 @@ class Module:
                 'Value'         :   'IIS'
             },
 			'HTTPResponse' : {
-                'Description'   :   'String or HTML to serve as the default HTTP response. This response will not be used for wpad.dat requests.',
+                'Description'   :   'String or HTML to serve as the default HTTP response. This response will not be used for wpad.dat requests. Do not wrap in quotes and use PowerShell character escapes where necessary.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -104,11 +104,6 @@ class Module:
             },
 			'WPADDirectHosts' : {
                 'Description'   :   'Comma separated list of hosts to list as direct in the wpad.dat file. Listed hosts will not be routed through the defined proxy. Add the Empire host to avoid catching Empire HTTP traffic.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-			'WPADResponse' : {
-                'Description'   :   'Wpad.dat file contents to serve as the wpad.dat response. This parameter will not be used if WPADIP and WPADPort are set.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -161,8 +156,8 @@ class Module:
 
         script = moduleCode
 
-        # disable file output
-        script += "\n" + 'Invoke-InveighBruteForce -ConsoleOutput "Y" -Tool "2" '
+        # set defaults for Empire
+        script += "\n" + 'Invoke-InveighBruteForce -Tool "2" '
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":

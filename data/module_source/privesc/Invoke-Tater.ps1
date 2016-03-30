@@ -14,7 +14,7 @@ Specify a specific local IP address. An IP address will be selected automaticall
 Specify an IP address for NBNS spoofing. This is needed when using two hosts to get around an in-use port 80 on the privesc target. 
 
 .PARAMETER Command
-Command to execute as SYSTEM on the localhost.
+Command to execute as SYSTEM on the localhost. Use PowerShell character escapes where necessary.
 
 .PARAMETER NBNS
 Default = Enabled: (Y/N) Enable/Disable NBNS bruteforce spoofing. 
