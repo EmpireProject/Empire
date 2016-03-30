@@ -98,9 +98,14 @@ def get_permanent_token(conn):
 #    GET      http://localhost:1337/api/stagers/X            return the stager with name X
 #    POST     http://localhost:1337/api/stagers              generate a stager given supplied options (need to implement)
 #
-#    GET      http://localhost:1337/api/modules              return all current modules
-#    GET      http://localhost:1337/api/modules/<name>       return the module with the specified name
-#    POST     http://localhost:1337/api/modules/<name>       execute the given module with the specified options
+#    GET      http://localhost:1337/api/modules                     return all current modules
+#    GET      http://localhost:1337/api/modules/<name>              return the module with the specified name
+#    POST     http://localhost:1337/api/modules/<name>              execute the given module with the specified options
+#    POST     http://localhost:1337/api/modules/search              searches modulesfor a passed term
+#    POST     http://localhost:1337/api/modules/search/modulename   searches module names for a specific term
+#    POST     http://localhost:1337/api/modules/search/description  searches module descriptions for a specific term
+#    POST     http://localhost:1337/api/modules/search/description  searches module comments for a specific term
+#    POST     http://localhost:1337/api/modules/search/author       searches module authors for a specific term
 #
 #    GET      http://localhost:1337/api/listeners            return all current listeners
 #    GET      http://localhost:1337/api/listeners/Y          return the listener with id Y
@@ -389,7 +394,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         try:
             # if we're running this module for all agents, skip this validation
             if sessionID.lower() != "all" and sessionID.lower() != "autorun":
-                
+
                 if not main.agents.is_agent_present(sessionID):
                     return jsonify({'error': 'invalid agent name'})
 
@@ -468,6 +473,132 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             msg = "tasked agent %s to run module %s" %(sessionID, module_name)
             main.agents.save_agent_log(sessionID, msg)
             return jsonify({'success': True, 'msg':msg})
+
+
+    @app.route('/api/modules/search', methods=['POST'])
+    def search_modules():
+        """
+        Returns JSON describing the the modules matching the passed
+        'term' search parameter. Module name, description, comments,
+        and author fields are searched.
+        """
+
+        if not request.json or not 'term':
+            abort(400)
+        
+        searchTerm = request.json['term']
+
+        modules = []
+
+        for moduleName,module in main.modules.modules.iteritems():
+            if (searchTerm.lower() == '') or (searchTerm.lower() in moduleName.lower()) or (searchTerm.lower() in ("".join(module.info['Description'])).lower()) or (searchTerm.lower() in ("".join(module.info['Comments'])).lower()) or (searchTerm.lower() in ("".join(module.info['Author'])).lower()):
+
+                moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
+                moduleInfo['options'] = main.modules.modules[moduleName].options
+                moduleInfo['Name'] = moduleName
+                modules.append(moduleInfo)
+
+        return jsonify({'modules': modules})
+
+
+    @app.route('/api/modules/search/modulename', methods=['POST'])
+    def search_modules_name():
+        """
+        Returns JSON describing the the modules matching the passed
+        'term' search parameter for the modfule name.
+        """
+
+        if not request.json or not 'term':
+            abort(400)
+        
+        searchTerm = request.json['term']
+
+        modules = []
+
+        for moduleName,module in main.modules.modules.iteritems():
+            if (searchTerm.lower() == '') or (searchTerm.lower() in moduleName.lower()):
+
+                moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
+                moduleInfo['options'] = main.modules.modules[moduleName].options
+                moduleInfo['Name'] = moduleName
+                modules.append(moduleInfo)
+
+        return jsonify({'modules': modules})
+
+
+    @app.route('/api/modules/search/description', methods=['POST'])
+    def search_modules_description():
+        """
+        Returns JSON describing the the modules matching the passed
+        'term' search parameter for the 'Description' field.
+        """
+
+        if not request.json or not 'term':
+            abort(400)
+        
+        searchTerm = request.json['term']
+
+        modules = []
+
+        for moduleName,module in main.modules.modules.iteritems():
+            if (searchTerm.lower() == '') or (searchTerm.lower() in ("".join(module.info['Description'])).lower()):
+
+                moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
+                moduleInfo['options'] = main.modules.modules[moduleName].options
+                moduleInfo['Name'] = moduleName
+                modules.append(moduleInfo)
+
+        return jsonify({'modules': modules})
+
+
+    @app.route('/api/modules/search/comments', methods=['POST'])
+    def search_modules_comments():
+        """
+        Returns JSON describing the the modules matching the passed
+        'term' search parameter for the 'Comments' field.
+        """
+
+        if not request.json or not 'term':
+            abort(400)
+        
+        searchTerm = request.json['term']
+
+        modules = []
+
+        for moduleName,module in main.modules.modules.iteritems():
+            if (searchTerm.lower() == '') or (searchTerm.lower() in ("".join(module.info['Comments'])).lower()):
+
+                moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
+                moduleInfo['options'] = main.modules.modules[moduleName].options
+                moduleInfo['Name'] = moduleName
+                modules.append(moduleInfo)
+
+        return jsonify({'modules': modules})
+
+
+    @app.route('/api/modules/search/author', methods=['POST'])
+    def search_modules_author():
+        """
+        Returns JSON describing the the modules matching the passed
+        'term' search parameter for the 'Author' field.
+        """
+
+        if not request.json or not 'term':
+            abort(400)
+        
+        searchTerm = request.json['term']
+
+        modules = []
+
+        for moduleName,module in main.modules.modules.iteritems():
+            if (searchTerm.lower() == '') or (searchTerm.lower() in ("".join(module.info['Author'])).lower()):
+
+                moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
+                moduleInfo['options'] = main.modules.modules[moduleName].options
+                moduleInfo['Name'] = moduleName
+                modules.append(moduleInfo)
+
+        return jsonify({'modules': modules})
 
 
     @app.route('/api/listeners', methods=['GET'])
