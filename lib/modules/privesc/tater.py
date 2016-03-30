@@ -10,8 +10,7 @@ class Module:
             'Author': ['Kevin Robertson'],
 
             'Description': ('Tater is a PowerShell implementation of the Hot Potato '
-			    'Windows Privilege Escalation exploit from @breenmachine and @foxglovesec '
-			    '@foxglovesec.'),
+			    'Windows Privilege Escalation exploit from @breenmachine and @foxglovesec.'),
 
             'Background' : True,
 
@@ -42,62 +41,67 @@ class Module:
                 'Required'        :   False,
                 'Value'           :   ''
             },
-	    'SpooferIP'       	  : {
+			'SpooferIP'       	  : {
                 'Description'     :   'IP address included in NBNS response.',
                 'Required'        :   False,
                 'Value'           :   ''
             },
-            'Command'     	  : {
+			'Command'     	  : {
                 'Description'     :   'Command to execute during privilege escalation. Do not wrap command in quotes.',
                 'Required'        :   True,
                 'Value'           :   ''
             },
-	    'NBNS'            	  : {
+			'NBNS'            	  : {
                 'Description'     :   'Enable/Disable NBNS bruteforce spoofing (Y/N).',
                 'Required'        :   False,
                 'Value'           :   'Y'
             },
-	    'NBNSLimit'                : {
+			'NBNSLimit'                : {
                 'Description'     :   'Enable/Disable NBNS bruteforce spoofer limiting to stop NBNS spoofing while hostname is resolving correctly (Y/N).',
                 'Required'        :   False,
                 'Value'           :   'Y'
             },
-            'Trigger' 		  : {
+			'Trigger' 		  : {
                 'Description'     :   'Trigger type to use in order to trigger HTTP to SMB relay. 0 = None, 1 = Windows Defender Signature Update, 2 = Windows 10 Webclient/Scheduled Task',
                 'Required'        :   False,
                 'Value'           :   '1'
             },
-	    'ExhaustUDP' 	  : {
+			'ExhaustUDP' 	  : {
                 'Description'     :   'Enable/Disable UDP port exhaustion to force all DNS lookups to fail in order to fallback to NBNS resolution (Y/N).',
                 'Required'        :   False,
                 'Value'           :   'N'
             },
-	    'HTTPPort'            : {
+			'HTTPPort'            : {
                 'Description'     :   'TCP port for the HTTP listener.',
                 'Required'        :   False,
                 'Value'           :   '80'
             },
-	    'Hostname'            : {
-                'Description'     :   'Hostname to spoof. "WPAD.DOMAIN.TLD" is required by Windows Server 2008.',
+			'Hostname'            : {
+                'Description'     :   'Hostname to spoof. WPAD.DOMAIN.TLD may be required by Windows Server 2008.',
                 'Required'        :   False,
                 'Value'           :   'WPAD'
             },
-	    'WPADDirectHosts'     : {
-                'Description'     :   'Comma separated list of hosts to include as direct in the wpad.dat file. Note that localhost is always listed as direct. Add the Empire host to avoid Tater catching Empire HTTP traffic.',
+			'WPADDirectHosts'     : {
+                'Description'     :   'Comma separated list of hosts to include as direct in the wpad.dat file. Note that localhost is always listed as direct. Add the Empire host to avoid catching Empire HTTP traffic.',
                 'Required'        :   False,
                 'Value'           :   ''
             },
-	    'WPADPort' 	  	  : {
+			'WPADPort' 	  	  : {
                 'Description'     :   'Proxy server port to be included in the wpad.dat file.',
                 'Required'        :   False,
                 'Value'           :   ''
             },
-	    'Taskname' 	  	  : {
-                'Description'     :   'Scheduled task name to use with trigger 2',
+			'TaskDelete' 	  	  : {
+                'Description'     :   'Enable/Disable scheduled task deletion for trigger 2. If enabled, a random string will be added to the taskname to avoid failures after multiple trigger 2 runs.',
+                'Required'        :   False,
+                'Value'           :   'Y'
+            },
+			'Taskname' 	  	  : {
+                'Description'     :   'Scheduled task name to use with trigger 2. If you observe that Tater does not work after multiple trigger 2 runs, try changing the taskname.',
                 'Required'        :   False,
                 'Value'           :   'Empire'
             },
-	    'RunTime' 	  	  : {
+			'RunTime' 	  	  : {
                 'Description'     :   'Run time duration in minutes.',
                 'Required'        :   False,
                 'Value'           :   ''

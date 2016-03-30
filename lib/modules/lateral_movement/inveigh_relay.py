@@ -13,7 +13,7 @@ class Module:
 			    'If the authentication is successfully relayed and the account is '
 			    'a local administrator, a specified command will be executed on the '
 			    'target PSExec style. This module works best while also running '
- 			    'collection/inveigh with HTTP disabled in collection/inveigh.'),
+ 			    'collection/inveigh with HTTP disabled.'),
 
             'Background' : True,
 
@@ -45,11 +45,11 @@ class Module:
                 'Value'           :   ''
             },
             'SMBRelayCommand'     : {
-                'Description'     :   'Command to execute on SMB relay target.',
+                'Description'     :   'Command to execute on SMB relay target. Do not wrap command in quotes.',
                 'Required'        :   True,
                 'Value'           :   ''
             },
-	    'SMBRelayUsernames'   : {
+			'SMBRelayUsernames'   : {
                 'Description'     :   'Comma separated list of usernames to use for relay attacks. Accepts both username and domain\username format.',
                 'Required'        :   False,
                 'Value'           :   ''
@@ -58,6 +58,11 @@ class Module:
                 'Description'     :   'Automaticaly disable SMB relay after a successful command execution on target (Y/N).',
                 'Required'        :   False,
                 'Value'           :   'Y'
+            },
+			'RunTime' : {
+                'Description'   :   'Run time duration in minutes.',
+                'Required'      :   False,
+                'Value'         :   ''
             }
         }
 

