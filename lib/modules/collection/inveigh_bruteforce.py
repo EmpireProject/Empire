@@ -11,7 +11,7 @@ class Module:
 
             'Description': ('Inveigh\'s remote (Hot Potato method)/unprivileged NBNS brute force spoofer function. '
                             'This function can be used to perform NBNS spoofing across subnets and/or perform NBNS '
-                            'spoofing without an elevated administrator or SYSTEM shell.),
+                            'spoofing without an elevated administrator or SYSTEM shell.'),
 
             'Background' : True,
 
