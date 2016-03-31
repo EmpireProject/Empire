@@ -83,10 +83,10 @@ def get_counter():
 def validate_counter(counter):
     """
     Validates a counter ensuring it's in a sliding window.
-    Window is +/- 10 minutes (600 seconds).
+    Window is +/- 12 hours (43200 seconds)
     """
     currentTime = int(time.time())
-    return (currentTime-600) <= counter <= (currentTime+600)
+    return (currentTime-43200) <= counter <= (currentTime+43200)
 
 
 def build_task_packet(taskName, data):

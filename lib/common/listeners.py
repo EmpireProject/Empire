@@ -179,6 +179,7 @@ class Listeners:
                 self.options['Host']['Value'] = value
                 if self.options['CertPath']['Value'] == "":
                     print helpers.color("[!] Error: Please specify a SSL cert path first")
+                    return False
                 else:
                     parts = value.split(":")
                     # check if we have a port to extract
@@ -188,7 +189,7 @@ class Listeners:
                         self.options['Port']['Value'] = parts[0]
                     else:
                         self.options['Port']['Value'] = "443"
-                pass
+
             elif value.startswith("http"):
                 self.options['Host']['Value'] = value
                 parts = value.split(":")
@@ -200,12 +201,15 @@ class Listeners:
                 else:
                     self.options['Port']['Value'] = "80"
 
+            return True
+
         elif option == "CertPath":
             self.options[option]['Value'] = value
             host = self.options["Host"]['Value']
             # if we're setting a SSL cert path, but the host is specific at http
             if host.startswith("http:"):
                 self.options["Host"]['Value'] = self.options["Host"]['Value'].replace("http:", "https:")
+            return True
 
         elif option == "Port":
             self.options[option]['Value'] = value
@@ -214,11 +218,13 @@ class Listeners:
             parts = host.split(":")
             if len(parts) == 2 or len(parts) == 3:
                 self.options["Host"]['Value'] = parts[0] + ":" + parts[1] + ":" + str(value)
+            return True
 
         elif option == "StagingKey":
             # if the staging key isn't 32 characters, assume we're md5 hashing it
             if len(value) != 32:
                 self.options[option]['Value'] = hashlib.md5(value).hexdigest()
+            return True
 
         elif option in self.options:
 
@@ -228,8 +234,11 @@ class Listeners:
                     # set the profile for hop.php for hop
                     parts = self.options['DefaultProfile']['Value'].split("|")
                     self.options['DefaultProfile']['Value'] = "/hop.php|" + "|".join(parts[1:])
+            return True
+
         else:
             print helpers.color("[!] Error: invalid option name")
+            return False
 
 
     def get_listener_options(self):
@@ -404,7 +413,7 @@ class Listeners:
 
         if(listenerId):
             cur = self.conn.cursor()
-            cur.execute('SELECT host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit FROM listeners WHERE id=? or name=? limit 1', [listenerID, listenerID])
+            cur.execute('SELECT host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit FROM listeners WHERE id=? or name=? limit 1', [listenerId, listenerId])
             stagingInformation = cur.fetchone()
             cur.close()
 
@@ -426,7 +435,7 @@ class Listeners:
 
     def get_stager_config(self, listenerID):
         """
-        Returns the (host, pivotServer, hop) information for this listener.
+        Returns the (server, stagingKey, pivotServer, hop, defaultDelay) information for this listener.
 
         Used in stagers.py to generate the various stagers.
         """
@@ -440,6 +449,7 @@ class Listeners:
             port = listener[3]
             certPath = listener[4]
             stagingKey = listener[5]
+            defaultDelay = listener[6]
             listenerType = listener[11]
             redirectTarget = listener[12]
             hop = False
@@ -464,7 +474,7 @@ class Listeners:
             elif listenerType == "hop":
                 hop = True
 
-            return (host, stagingKey, pivotServer, hop)
+            return (host, stagingKey, pivotServer, hop, defaultDelay)
 
         else:
             print helpers.color("[!] Error in listeners.get_stager_config(): no listener information returned")
@@ -551,6 +561,7 @@ class Listeners:
                 cur.close()
 
                 self.listeners[result[0]] = None
+                return True
 
             else:
                 # start up the server object
@@ -572,11 +583,19 @@ class Listeners:
                         cur.close()
 
                         # store off this server in the "[id] : server" object array
-                        # only if the server starts up correctly
+                        #   only if the server starts up correctly
                         self.listeners[result[0]] = server
+                        return True
+                    else:
+                        return False
+
+                else:
+                    print helpers.color("[!] Error starting listener on port %s" %(port))
+                    return False
 
         else:
             print helpers.color("[!] Required listener option missing.")
+            return False
 
 
     def add_pivot_listener(self, listenerName, sessionID, listenPort):

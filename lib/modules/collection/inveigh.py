@@ -9,9 +9,7 @@ class Module:
 
             'Author': ['Kevin Robertson'],
 
-            'Description': ('Inveigh is a Windows PowerShell LLMNR/NBNS spoofer designed to '
-                            'assist penetration testers that find themselves limited to a '
-                            'Windows system. '),
+            'Description': ('Inveigh is a Windows PowerShell LLMNR/NBNS spoofer/man-in-the-middle tool.'),
 
             'Background' : True,
 
@@ -38,44 +36,104 @@ class Module:
                 'Value'         :   ''
             },
             'IP' : {
-                'Description'   :   'Specific local IP address for listening.',
+                'Description'   :   'Specific local IP address for listening. This IP address will also be used for LLMNR/NBNS spoofing if the SpooferIP parameter is not set.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
             'SpooferIP' : {
-                'Description'   :   'Specific IP address for LLMNR/NBNS spoofing.',
+                'Description'   :   'Specific IP address for LLMNR/NBNS spoofing. This parameter is only necessary when redirecting victims to a system other than the Inveigh host.',
                 'Required'      :   False,
                 'Value'         :   ''
+            },
+			'SpooferHostsReply' : {
+                'Description'   :   'Comma separated list of requested hostnames to respond to when spoofing with LLMNR and NBNS.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+			'SpooferHostsIgnore' : {
+                'Description'   :   'Comma separated list of requested hostnames to ignore when spoofing with LLMNR and NBNS.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+			'SpooferIPsReply' : {
+                'Description'   :   'Comma separated list of source IP addresses to respond to when spoofing with LLMNR and NBNS.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+			'SpooferIPsIgnore' : {
+                'Description'   :   'Comma separated list of source IP addresses to ignore when spoofing with LLMNR and NBNS.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+			'SpooferRepeat' : {
+                'Description'   :   'Enable/Disable repeated LLMNR/NBNS spoofs to a victim system after one user challenge/response has been captured (Y/N).',
+                'Required'      :   False,
+                'Value'         :   'Y'
             },
             'LLMNR' : {
                 'Description'   :   'Enable/Disable LLMNR spoofing (Y/N).',
                 'Required'      :   False,
                 'Value'         :   'Y'
             },
+			'LLMNRTTL' : {
+                'Description'   :   'Custom LLMNR TTL in seconds for the response packet.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
             'NBNS' : {
                 'Description'   :   'Enable/Disable NBNS spoofing (Y/N).',
                 'Required'      :   False,
                 'Value'         :   'Y'
+            },
+			'NBNSTTL' : {
+                'Description'   :   'Custom NBNS TTL in seconds for the response packet.',
+                'Required'      :   False,
+                'Value'         :   ''
             },
             'NBNSTypes' : {
                 'Description'   :   'Comma separated list of NBNS types to spoof.',
                 'Required'      :   False,
                 'Value'         :   '00,20'
             },
-            'Repeat' : {
-                'Description'   :   'Enable/Disable repeated LLMNR/NBNS spoofs to a victim system after one user challenge/response has been captured (Y/N).',
-                'Required'      :   False,
-                'Value'         :   'Y'
-            },
-            'SpoofList' : {
-                'Description'   :   'Comma separated list of hostnames to spoof with LLMNR and NBNS.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
             'HTTP' : {
                 'Description'   :   'Enable/Disable HTTP challenge/response capture (Y/N).',
                 'Required'      :   False,
                 'Value'         :   'Y'
+            },
+			'HTTPAuth' : {
+                'Description'   :   'HTTP server authentication type. This setting does not apply to wpad.dat requests (Anonymous,Basic,NTLM).',
+                'Required'      :   False,
+                'Value'         :   'NTLM'
+            },
+			'HTTPBasicRealm' : {
+                'Description'   :   'Realm name for Basic authentication. This parameter applies to both HTTPAuth and WPADAuth.',
+                'Required'      :   False,
+                'Value'         :   'IIS'
+            },
+			'HTTPResponse' : {
+                'Description'   :   'String or HTML to serve as the default HTTP response. This response will not be used for wpad.dat requests. Do not wrap in quotes and use PowerShell character escapes where necessary.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+			'WPADAuth' : {
+                'Description'   :   'HTTP server authentication type for wpad.dat requests. Setting to Anonymous can prevent browser login prompts (Anonymous,Basic,NTLM).',
+                'Required'      :   False,
+                'Value'         :   'NTLM'
+            },
+			'WPADIP' : {
+                'Description'   :   'Proxy server IP to be included in a basic wpad.dat response for WPAD enabled browsers. This parameter must be used with WPADPort.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+			'WPADPort' : {
+                'Description'   :   'Proxy server port to be included in a basic wpad.dat response for WPAD enabled browsers. This parameter must be used with WPADIP.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+			'WPADDirectHosts' : {
+                'Description'   :   'Comma separated list of hosts to list as direct in the wpad.dat file. Listed hosts will not be routed through the defined proxy. Add the Empire host to avoid catching Empire HTTP traffic.',
+                'Required'      :   False,
+                'Value'         :   ''
             },
             'SMB' : {
                 'Description'   :   'Enable/Disable SMB challenge/response capture (Y/N).',
@@ -91,11 +149,6 @@ class Module:
                 'Description'   :   'Enable/Disable showing NTLM challenge/response captures from machine accounts (Y/N).',
                 'Required'      :   False,
                 'Value'         :   'N'
-            },
-            'ForceWPADAuth' : {
-                'Description'   :   'Enable/Disable LLMNR spoofing (Y/N).',
-                'Required'      :   False,
-                'Value'         :   'Y'
             },
             'RunTime' : {
                 'Description'   :   'Run time duration in minutes.',
@@ -131,8 +184,8 @@ class Module:
 
         script = moduleCode
 
-        # disable file output
-        script += "\n" + 'Invoke-Inveigh -ConsoleOutput "Y" -Tool "2" '
+        # set defaults for Empire
+        script += "\n" + 'Invoke-Inveigh -Tool "2" '
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
