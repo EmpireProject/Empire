@@ -8,6 +8,8 @@
 ---------
 -Merge of Inveigh 1.1 update and privesc/tater
 -Updated of Invoke-Mimikatz.ps1 source
+-Updated mimikatz dlls to version 2.1 alpha
+-Included modification to suppress cmd.exe when spawned via PTH.
 
 3/30/2016
 ---------
