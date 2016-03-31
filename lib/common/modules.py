@@ -39,13 +39,17 @@ class Modules:
         self.load_modules()
 
 
-    def load_modules(self):
+    def load_modules(self, rootPath=''):
         """
-        Load modules from the install + "/lib/modules/*" path
+        Load Empire modules from a specified path, default to
+        installPath + "/lib/modules/*"
         """
         
-        rootPath = self.installPath + 'lib/modules/'
+        if rootPath == '':
+            rootPath = self.installPath + 'lib/modules/'
+
         pattern = '*.py'
+        print helpers.color("[*] Loading modules from: %s" %(rootPath))
          
         for root, dirs, files in os.walk(rootPath):
             for filename in fnmatch.filter(files, pattern):
@@ -53,11 +57,12 @@ class Modules:
 
                 # don't load up the template
                 if filename == "template.py": continue
-                
-                # extract just the module name from the full path
-                moduleName = filePath.split("/lib/modules/")[-1][0:-3]
 
-                # TODO: extract and CLI arguments and pass onto the modules
+                # extract just the module name from the full path
+                moduleName = filePath.split(rootPath)[-1][0:-3]
+
+                if rootPath != self.installPath + 'lib/modules/':
+                    moduleName = "external/%s" %(moduleName)
 
                 # instantiate the module and save it to the internal cache
                 self.modules[moduleName] = imp.load_source(moduleName, filePath).Module(self.mainMenu, [])
