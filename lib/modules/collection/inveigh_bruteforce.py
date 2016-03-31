@@ -5,24 +5,26 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-Inveigh',
+            'Name': 'Invoke-InveighBruteForce',
 
             'Author': ['Kevin Robertson'],
 
-            'Description': ('Inveigh is a Windows PowerShell LLMNR/NBNS spoofer/man-in-the-middle tool.'),
+            'Description': ('Inveigh\'s remote (Hot Potato method)/unprivileged NBNS brute force spoofer function. '
+                            'This module can be used to perform NBNS spoofing across subnets and/or perform NBNS '
+                            'spoofing without an elevated administrator or SYSTEM shell.'),
 
             'Background' : True,
 
             'OutputExtension' : None,
             
-            'NeedsAdmin' : True,
+            'NeedsAdmin' : False,
 
             'OpsecSafe' : True,
 
             'MinPSVersion' : '2',
             
             'Comments': [
-                'https://github.com/Kevin-Robertson/Inveigh'
+                'https://github.com/Kevin-Robertson/Inveigh' 
             ]
         }
 
@@ -35,65 +37,35 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'IP' : {
-                'Description'   :   'Specific local IP address for listening. This IP address will also be used for LLMNR/NBNS spoofing if the SpooferIP parameter is not set.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
             'SpooferIP' : {
-                'Description'   :   'Specific IP address for LLMNR/NBNS spoofing. This parameter is only necessary when redirecting victims to a system other than the Inveigh host.',
+                'Description'   :   'Specific IP address for NBNS spoofing. This parameter is only necessary when redirecting victims to a system other than the Inveigh Brute Force host.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-			'SpooferHostsReply' : {
-                'Description'   :   'Comma separated list of requested hostnames to respond to when spoofing with LLMNR and NBNS.',
-                'Required'      :   False,
+			'SpooferTarget' : {
+                'Description'   :   'IP address to target for brute force NBNS spoofing.',
+                'Required'      :   True,
                 'Value'         :   ''
             },
-			'SpooferHostsIgnore' : {
-                'Description'   :   'Comma separated list of requested hostnames to ignore when spoofing with LLMNR and NBNS.',
+			'Hostname' : {
+                'Description'   :   'Hostname to spoof with NBNS spoofing.',
                 'Required'      :   False,
-                'Value'         :   ''
-            },
-			'SpooferIPsReply' : {
-                'Description'   :   'Comma separated list of source IP addresses to respond to when spoofing with LLMNR and NBNS.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-			'SpooferIPsIgnore' : {
-                'Description'   :   'Comma separated list of source IP addresses to ignore when spoofing with LLMNR and NBNS.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-			'SpooferRepeat' : {
-                'Description'   :   'Enable/Disable repeated LLMNR/NBNS spoofs to a victim system after one user challenge/response has been captured (Y/N).',
-                'Required'      :   False,
-                'Value'         :   'Y'
-            },
-            'LLMNR' : {
-                'Description'   :   'Enable/Disable LLMNR spoofing (Y/N).',
-                'Required'      :   False,
-                'Value'         :   'Y'
-            },
-			'LLMNRTTL' : {
-                'Description'   :   'Custom LLMNR TTL in seconds for the response packet.',
-                'Required'      :   False,
-                'Value'         :   ''
+                'Value'         :   'WPAD'
             },
             'NBNS' : {
                 'Description'   :   'Enable/Disable NBNS spoofing (Y/N).',
                 'Required'      :   False,
                 'Value'         :   'Y'
             },
+			'NBNSPause' : {
+                'Description'   :   'Number of seconds the NBNS brute force spoofer will stop spoofing after an incoming HTTP request is received.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
 			'NBNSTTL' : {
                 'Description'   :   'Custom NBNS TTL in seconds for the response packet.',
                 'Required'      :   False,
                 'Value'         :   ''
-            },
-            'NBNSTypes' : {
-                'Description'   :   'Comma separated list of NBNS types to spoof.',
-                'Required'      :   False,
-                'Value'         :   '00,20'
             },
             'HTTP' : {
                 'Description'   :   'Enable/Disable HTTP challenge/response capture (Y/N).',
@@ -135,11 +107,6 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'SMB' : {
-                'Description'   :   'Enable/Disable SMB challenge/response capture (Y/N).',
-                'Required'      :   False,
-                'Value'         :   'Y'
-            },
             'Challenge' : {
                 'Description'   :   'Specific 16 character hex NTLM challenge for use with the HTTP listener. If left blank, a random challenge will be generated for each request.',
                 'Required'      :   False,
@@ -149,6 +116,11 @@ class Module:
                 'Description'   :   'Enable/Disable showing NTLM challenge/response captures from machine accounts (Y/N).',
                 'Required'      :   False,
                 'Value'         :   'N'
+            },
+			'RunCount' : {
+                'Description'   :   'Number of captures to perform before auto-exiting.',
+                'Required'      :   False,
+                'Value'         :   ''
             },
             'RunTime' : {
                 'Description'   :   'Run time duration in minutes.',
@@ -171,7 +143,7 @@ class Module:
     def generate(self):
         
         # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/collection/Invoke-Inveigh.ps1"
+        moduleSource = self.mainMenu.installPath + "/data/module_source/collection/Invoke-InveighBruteForce.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -185,7 +157,7 @@ class Module:
         script = moduleCode
 
         # set defaults for Empire
-        script += "\n" + 'Invoke-Inveigh -Tool "2" '
+        script += "\n" + 'Invoke-InveighBruteForce -Tool "2" '
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
