@@ -17,7 +17,7 @@ Required Dependencies: Mimikatz (included)
 Optional Dependencies: None
 Version: 1.5
 ReflectivePEInjection version: 1.1
-Mimikatz version: 2.0 alpha (2/16/2015)
+Mimikatz version: 2.1.0 alpha (3/31/2016)
 
 .DESCRIPTION
 
