@@ -683,8 +683,11 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         if not valid:
             return make_response(jsonify({'error': 'error validating listener options'}), 400)
 
-        success = main.listeners.add_listener_from_config()
-        return jsonify({'success': success})
+        (success, message) = main.listeners.add_listener_from_config()
+        if success:
+            return jsonify({'success': success, 'msg' : "listener '%s' successfully started." %(message)})
+        else:
+            return jsonify({'success': success, 'msg' : message})
 
 
     @app.route('/api/agents', methods=['GET'])

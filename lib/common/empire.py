@@ -2167,7 +2167,11 @@ class ListenerMenu(cmd.Cmd):
 
     def do_execute(self, line):
         "Execute a listener with the currently specified options."
-        self.mainMenu.listeners.add_listener_from_config()
+        (success, message) = self.mainMenu.listeners.add_listener_from_config()
+        if success:
+            print helpers.color("[*] Listener '%s' successfully started." %(message))
+        else:
+            print helpers.color("[!] %s" %(message))
 
 
     def do_run(self, line):
