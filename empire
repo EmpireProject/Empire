@@ -209,9 +209,9 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         if request.path != '/api/admin/login':
             token = request.args.get('token')
             if (not token) or (not tokenAllowed.match(token)):
-                return make_response('', 403)
+                return make_response('', 401)
             if (token != apiToken) and (token != permanentApiToken):
-                return make_response('', 403)
+                return make_response('', 401)
 
 
     @app.errorhandler(Exception)
