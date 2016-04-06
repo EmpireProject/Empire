@@ -135,13 +135,14 @@ class Listeners:
                 self.listeners[result[0]] = None
 
             else:
-                port = result[3]
-
+                lhost = http.host2lhost(result[2])
+		port = result[3]
+		
                 # if cert_path is empty, no ssl is used
                 cert_path = result[4]
 
                 # build the handler server and kick if off
-                server = http.EmpireServer(self.agents, port=port, cert=cert_path)
+                server = http.EmpireServer(self.agents, lhost=lhost, port=port, cert=cert_path)
 
                 # check if the listener started correctly
                 if server.success:
@@ -564,8 +565,9 @@ class Listeners:
                 return True
 
             else:
+		lhost = http.host2lhost(host)
                 # start up the server object
-                server = http.EmpireServer(self.agents, port=port, cert=certPath)
+                server = http.EmpireServer(self.agents, lhost=lhost, port=port, cert=certPath)
 
                 # check if the listener started correctly
                 if server.success:
