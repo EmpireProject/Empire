@@ -1,3 +1,7 @@
+4/21/2016
+---------
+-Merged @Subtee's regsvc32 (sct) stager
+
 4/1/2016
 ---------
 -listener starting now returns more verbose errors on failure in console and API
