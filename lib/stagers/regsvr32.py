@@ -30,6 +30,11 @@ class Stager:
                 'Required':   False,
                 'Value':   '0'
             },
+            'Base64' : {
+                'Description'   :   'Switch. Base64 encode the output.',
+                'Required'      :   True,
+                'Value'         :   'True'
+            },        
             'OutFile': {
                 'Description':   'File to output SCT to, otherwise displayed on the screen.',
                 'Required':   False,
