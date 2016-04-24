@@ -1,3 +1,8 @@
+4/24/2016
+---------
+-Added credentials/get_spn_tickets to request SPN tickets.
+-Added credentials/mimikatz/extract_tickets
+
 4/21/2016
 ---------
 -Merged @Subtee's regsvc32 (sct) stager
