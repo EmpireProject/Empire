@@ -27,7 +27,7 @@ class Module:
                 'Value'         :   ''
             },
             'URL' : {
-                'Description'   :   'URL from the Metasploit web_delievery module',
+                'Description'   :   'URL from the Metasploit web_delivery module',
                 'Required'      :   True,
                 'Value'         :   ''
             }
