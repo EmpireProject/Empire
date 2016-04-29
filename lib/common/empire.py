@@ -9,7 +9,7 @@ menu loops.
 """
 
 # make version for Empire
-VERSION = "1.4.6"
+VERSION = "1.5.0"
 
 
 from pydispatch import dispatcher
@@ -553,6 +553,15 @@ class MainMenu(cmd.Cmd):
             print self.agents.ipBlackList
 
 
+    def do_load(self, line):
+        "Loads Empire modules from a non-standard folder."
+        
+        if line.strip() == '' or not os.path.isdir(line.strip()):
+            print "\n" + helpers.color("[!] Please specify a valid folder to load modules from.") + "\n"
+        else:
+            self.modules.load_modules(rootPath=line.strip())
+
+
     def do_reload(self, line):
         "Reload one (or all) Empire modules."
         
@@ -560,6 +569,9 @@ class MainMenu(cmd.Cmd):
             # reload all modules
             print "\n" + helpers.color("[*] Reloading all modules.") + "\n"
             self.modules.load_modules()
+        elif os.path.isdir(line.strip()):
+            # if we're loading an external directory
+            self.modules.load_modules(rootPath=line.strip())
         else:
             if line.strip() not in self.modules.modules:
                 print helpers.color("[!] Error: invalid module")
@@ -676,6 +688,11 @@ class MainMenu(cmd.Cmd):
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
         return [s[offs:] for s in options if s.startswith(mline)]
+
+
+    def complete_load(self, text, line, begidx, endidx):
+        "Tab-complete a module load path."
+        return helpers.complete_path(text,line)
 
 
     def complete_reset(self, text, line, begidx, endidx):

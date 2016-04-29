@@ -98,9 +98,14 @@ def get_permanent_token(conn):
 #    GET      http://localhost:1337/api/stagers/X            return the stager with name X
 #    POST     http://localhost:1337/api/stagers              generate a stager given supplied options (need to implement)
 #
-#    GET      http://localhost:1337/api/modules              return all current modules
-#    GET      http://localhost:1337/api/modules/<name>       return the module with the specified name
-#    POST     http://localhost:1337/api/modules/<name>       execute the given module with the specified options
+#    GET      http://localhost:1337/api/modules                     return all current modules
+#    GET      http://localhost:1337/api/modules/<name>              return the module with the specified name
+#    POST     http://localhost:1337/api/modules/<name>              execute the given module with the specified options
+#    POST     http://localhost:1337/api/modules/search              searches modulesfor a passed term
+#    POST     http://localhost:1337/api/modules/search/modulename   searches module names for a specific term
+#    POST     http://localhost:1337/api/modules/search/description  searches module descriptions for a specific term
+#    POST     http://localhost:1337/api/modules/search/description  searches module comments for a specific term
+#    POST     http://localhost:1337/api/modules/search/author       searches module authors for a specific term
 #
 #    GET      http://localhost:1337/api/listeners            return all current listeners
 #    GET      http://localhost:1337/api/listeners/Y          return the listener with id Y
@@ -295,7 +300,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             return make_response(jsonify( {'error': 'stager name %s not found' %(stagerName) } ), 404)
 
         if not main.listeners.is_listener_valid(listener):
-            return jsonify({'error': 'invalid listener ID or name'})
+            return make_response(jsonify({'error': 'invalid listener ID or name'}), 400)
 
         stager = main.stagers.stagers[stagerName]
 
@@ -303,13 +308,13 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         for option,values in request.json.iteritems():
             if option != 'StagerName':
                 if(option not in stager.options):
-                    return jsonify({'error': 'Invalid option %s, check capitalization.' %(option)})
+                    return make_response(jsonify({'error': 'Invalid option %s, check capitalization.' %(option)}), 400)
                 stager.options[option]['Value'] = values
 
         # validate stager options
         for option,values in stager.options.iteritems():
             if values['Required'] and ((not values['Value']) or (values['Value'] == '')):
-                return jsonify({'error': 'required stager options missing'})
+                return make_response(jsonify({'error': 'required stager options missing'}), 400)
 
         stagerOut = copy.deepcopy(stager.options)
 
@@ -375,7 +380,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         # set all passed module options
         for key,value in request.json.iteritems():
             if key not in module.options:
-                return jsonify({'error': 'invalid module option'})
+                return make_response(jsonify({'error': 'invalid module option'}), 400)
 
             module.options[key]['Value'] = value
 
@@ -384,42 +389,42 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
         for option,values in module.options.iteritems():
             if values['Required'] and ((not values['Value']) or (values['Value'] == '')):
-                return jsonify({'error': 'required module option missing'})
+                return make_response(jsonify({'error': 'required module option missing'}), 400)
 
         try:
             # if we're running this module for all agents, skip this validation
             if sessionID.lower() != "all" and sessionID.lower() != "autorun":
-                
+
                 if not main.agents.is_agent_present(sessionID):
-                    return jsonify({'error': 'invalid agent name'})
+                    return make_response(jsonify({'error': 'invalid agent name'}), 400)
 
                 modulePSVersion = int(module.info['MinPSVersion'])
                 agentPSVersion = int(main.agents.get_ps_version(sessionID))
                 # check if the agent/module PowerShell versions are compatible
                 if modulePSVersion > agentPSVersion:
-                    return jsonify({'error': "module requires PS version "+str(modulePSVersion)+" but agent running PS version "+str(agentPSVersion)})
+                    return make_response(jsonify({'error': "module requires PS version "+str(modulePSVersion)+" but agent running PS version "+str(agentPSVersion)}), 400)
 
         except Exception as e:
-            return jsonify({'error': 'exception: %s' %(e)})
+            return make_response(jsonify({'error': 'exception: %s' %(e)}), 400)
 
         # check if the module needs admin privs
         if module.info['NeedsAdmin']:
             # if we're running this module for all agents, skip this validation
             if sessionID.lower() != "all" and sessionID.lower() != "autorun":
                 if not main.agents.is_agent_elevated(sessionID):
-                    return jsonify({'error': 'module needs to run in an elevated context'})
+                    return make_response(jsonify({'error': 'module needs to run in an elevated context'}), 400)
 
 
         # actually execute the module
         moduleData = module.generate()
 
         if not moduleData or moduleData == "":
-            return jsonify({'error': 'module produced an empty script'})
+            return make_response(jsonify({'error': 'module produced an empty script'}), 400)
 
         try:
             moduleData.decode('ascii')
         except UnicodeDecodeError:
-            return jsonify({'error': 'module source contains non-ascii characters'})
+            return make_response(jsonify({'error': 'module source contains non-ascii characters'}), 400)
 
         moduleData = helpers.strip_powershell_comments(moduleData)
         taskCommand = ""
@@ -468,6 +473,132 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             msg = "tasked agent %s to run module %s" %(sessionID, module_name)
             main.agents.save_agent_log(sessionID, msg)
             return jsonify({'success': True, 'msg':msg})
+
+
+    @app.route('/api/modules/search', methods=['POST'])
+    def search_modules():
+        """
+        Returns JSON describing the the modules matching the passed
+        'term' search parameter. Module name, description, comments,
+        and author fields are searched.
+        """
+
+        if not request.json or not 'term':
+            abort(400)
+        
+        searchTerm = request.json['term']
+
+        modules = []
+
+        for moduleName,module in main.modules.modules.iteritems():
+            if (searchTerm.lower() == '') or (searchTerm.lower() in moduleName.lower()) or (searchTerm.lower() in ("".join(module.info['Description'])).lower()) or (searchTerm.lower() in ("".join(module.info['Comments'])).lower()) or (searchTerm.lower() in ("".join(module.info['Author'])).lower()):
+
+                moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
+                moduleInfo['options'] = main.modules.modules[moduleName].options
+                moduleInfo['Name'] = moduleName
+                modules.append(moduleInfo)
+
+        return jsonify({'modules': modules})
+
+
+    @app.route('/api/modules/search/modulename', methods=['POST'])
+    def search_modules_name():
+        """
+        Returns JSON describing the the modules matching the passed
+        'term' search parameter for the modfule name.
+        """
+
+        if not request.json or not 'term':
+            abort(400)
+        
+        searchTerm = request.json['term']
+
+        modules = []
+
+        for moduleName,module in main.modules.modules.iteritems():
+            if (searchTerm.lower() == '') or (searchTerm.lower() in moduleName.lower()):
+
+                moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
+                moduleInfo['options'] = main.modules.modules[moduleName].options
+                moduleInfo['Name'] = moduleName
+                modules.append(moduleInfo)
+
+        return jsonify({'modules': modules})
+
+
+    @app.route('/api/modules/search/description', methods=['POST'])
+    def search_modules_description():
+        """
+        Returns JSON describing the the modules matching the passed
+        'term' search parameter for the 'Description' field.
+        """
+
+        if not request.json or not 'term':
+            abort(400)
+        
+        searchTerm = request.json['term']
+
+        modules = []
+
+        for moduleName,module in main.modules.modules.iteritems():
+            if (searchTerm.lower() == '') or (searchTerm.lower() in ("".join(module.info['Description'])).lower()):
+
+                moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
+                moduleInfo['options'] = main.modules.modules[moduleName].options
+                moduleInfo['Name'] = moduleName
+                modules.append(moduleInfo)
+
+        return jsonify({'modules': modules})
+
+
+    @app.route('/api/modules/search/comments', methods=['POST'])
+    def search_modules_comments():
+        """
+        Returns JSON describing the the modules matching the passed
+        'term' search parameter for the 'Comments' field.
+        """
+
+        if not request.json or not 'term':
+            abort(400)
+        
+        searchTerm = request.json['term']
+
+        modules = []
+
+        for moduleName,module in main.modules.modules.iteritems():
+            if (searchTerm.lower() == '') or (searchTerm.lower() in ("".join(module.info['Comments'])).lower()):
+
+                moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
+                moduleInfo['options'] = main.modules.modules[moduleName].options
+                moduleInfo['Name'] = moduleName
+                modules.append(moduleInfo)
+
+        return jsonify({'modules': modules})
+
+
+    @app.route('/api/modules/search/author', methods=['POST'])
+    def search_modules_author():
+        """
+        Returns JSON describing the the modules matching the passed
+        'term' search parameter for the 'Author' field.
+        """
+
+        if not request.json or not 'term':
+            abort(400)
+        
+        searchTerm = request.json['term']
+
+        modules = []
+
+        for moduleName,module in main.modules.modules.iteritems():
+            if (searchTerm.lower() == '') or (searchTerm.lower() in ("".join(module.info['Author'])).lower()):
+
+                moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
+                moduleInfo['options'] = main.modules.modules[moduleName].options
+                moduleInfo['Name'] = moduleName
+                modules.append(moduleInfo)
+
+        return jsonify({'modules': modules})
 
 
     @app.route('/api/listeners', methods=['GET'])
@@ -546,11 +677,11 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         for option,values in request.json.iteritems():
             returnVal = main.listeners.set_listener_option(option, values)
             if not returnVal:
-                return jsonify({'error': 'error setting listener value %s with option %s' %(option, values)})
+                return make_response(jsonify({'error': 'error setting listener value %s with option %s' %(option, values)}), 400)
 
         valid = main.listeners.validate_listener_options()
         if not valid:
-            return jsonify({'error': 'error validating listener options'})
+            return make_response(jsonify({'error': 'error validating listener options'}), 400)
 
         success = main.listeners.add_listener_from_config()
         return jsonify({'success': success})
@@ -764,12 +895,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             result = main.agents.rename_agent(agentName, newName)
 
             if not result:
-                return jsonify({'error': 'error in renaming %s to %s, new name may have already been used' %(agentName, newName)})
+                return make_response(jsonify({'error': 'error in renaming %s to %s, new name may have already been used' %(agentName, newName)}), 400)
 
             return jsonify({'success': True})
 
         except:
-            return jsonify({'error': 'error in renaming %s to %s' %(agentName, newName)})
+            return make_response(jsonify({'error': 'error in renaming %s to %s' %(agentName, newName)}), 400)
 
 
     @app.route('/api/agents/<string:agent_name>/clear', methods=['POST', 'GET'])
