@@ -1,3 +1,7 @@
+5/2/2016
+---------
+-tightened up argparse validation
+
 4/24/2016
 ---------
 -Added credentials/get_spn_tickets to request SPN tickets.
