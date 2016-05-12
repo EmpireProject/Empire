@@ -11,7 +11,7 @@ class Module:
 
             'Description': ('Spawns a new Listener as SYSTEM by'
                             ' leveraging the MS16-032 local exploit.'
-                            ' useNote: ~1/6 times the exploit won\'t work, may need to retry.'),
+                            ' Note: ~1/6 times the exploit won\'t work, may need to retry.'),
             'Background' : True,
 
             'OutputExtension' : None,
