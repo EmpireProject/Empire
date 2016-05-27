@@ -1119,7 +1119,6 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         shutdown_server()
         return jsonify({'success': True})
 
-    print app.route('/api/admin/shutdown')
 
     if not os.path.exists('./data/empire.pem'):
         print "[!] Error: cannot find certificate ./data/empire.pem"
