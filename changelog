@@ -1,6 +1,7 @@
 6/24/2016
 ---------
 -Updated Invoke-Mimikatz to include a fix for multi-cpu boxes/processor detection
+-Merged @n0clues pull request to change paths from %TEMP% to %PUBLIC% for spawnas module
 
 6/9/2016
 ---------
