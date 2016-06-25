@@ -1,3 +1,21 @@
+6/9/2016
+---------
+-Updated SQLite dll for Get-ChromeDump.ps1
+
+5/27/2016
+---------
+-Fixed format issues with Get-ComputerDetails.ps1
+-More verbose output added to PowerUp's Invoke-ServiceCMD 
+-Made Get-SPN PowerShell 2.0 compatible 
+-Updated RunAs to include an argument parameter
+-Merged @tristandostaler's /api/map feature to the Rest API
+-Merged in @andrew-morris's installer update to include -Y switch for apt-get commands
+-Merged in MS16-032 local privesc from @leoloobeek
+
+5/4/2016
+---------
+-Merged @jaredhaight's Invoke-MetasploitModule module
+
 5/2/2016
 ---------
 -tightened up argparse validation
