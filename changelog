@@ -1,3 +1,7 @@
+6/24/2016
+---------
+-Updated Invoke-Mimikatz to include a fix for multi-cpu boxes/processor detection
+
 6/9/2016
 ---------
 -Updated SQLite dll for Get-ChromeDump.ps1
