@@ -6,7 +6,7 @@
 -Merged in Inveigh 1.1.1 and current Tater build thanks to @Kevin-Robertson
 -Fixed a bug in the REST API due to the port being a string and not an int
 -Added 417 Expectation failed error bug fix for older proxies (Squid) thanks to @i223t
-i223t
+
 6/9/2016
 ---------
 -Updated SQLite dll for Get-ChromeDump.ps1
