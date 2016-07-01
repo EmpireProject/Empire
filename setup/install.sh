@@ -17,29 +17,21 @@ if lsb_release -d | grep -q "Fedora"; then
 	pip install flask
 elif lsb_release -d | grep -q "Kali"; then
 	Release=Kali
-	apt-get install -y python-dev
-	apt-get install -y python-m2crypto
-	apt-get install -y swig
-	apt-get install -y python-pip
+	apt-get install -y python-dev python-m2crypto swig python-pip
 	pip install pycrypto
 	pip install iptools
 	pip install pydispatcher
 	pip install flask
 elif lsb_release -d | grep -q "Ubuntu"; then
 	Release=Ubuntu
-	apt-get install -y python-dev
-	apt-get install -y python-m2crypto
-	apt-get install -y swig
-	apt-get install -y python-pip
+	apt-get install -y python-dev python-m2crypto swig python-pip
 	pip install pycrypto
 	pip install iptools
 	pip install pydispatcher
 	pip install flask
 else
 	echo "Unknown distro - Debian/Ubuntu Fallback"
-	 apt-get install -y python-dev
-	 apt-get install -y python-m2crypto
-	 apt-get install -y swig
+	 apt-get install -y python-dev python-m2crypto swig python-pip
 	 pip install pycrypto
 	 pip install iptools
 	 pip install pydispatcher
