@@ -35,6 +35,7 @@ elif lsb_release -d | grep -q "Ubuntu"; then
 	pip install iptools
 	pip install pydispatcher
 	pip install flask
+	pip install pyOpenSSL
 else
 	echo "Unknown distro - Debian/Ubuntu Fallback"
 	 apt-get install -y python-dev
