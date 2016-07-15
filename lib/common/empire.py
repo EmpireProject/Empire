@@ -637,6 +637,21 @@ class MainMenu(cmd.Cmd):
             messages.display_listeners(self.listeners.get_listeners())
 
 
+    def do_interact(self, line):
+        "Interact with a particular agent."
+        
+        name = line.strip()
+
+        if name != "" and self.agents.is_agent_present(name):
+            # resolve the passed name to a sessionID
+            sessionID = self.agents.get_agent_id(name)
+
+            a = AgentMenu(self, sessionID)
+            a.cmdloop()
+        else:
+            print helpers.color("[!] Please enter a valid agent name")
+
+
     def complete_usemodule(self, text, line, begidx, endidx):
         "Tab-complete an Empire PowerShell module path."
 
@@ -716,6 +731,14 @@ class MainMenu(cmd.Cmd):
         offs = len(mline) - len(text)
         return [s[offs:] for s in commands if s.startswith(mline)]
 
+    def complete_interact(self, text, line, begidx, endidx):
+        "Tab-complete an interact command"
+
+        names = self.agents.get_agent_names()
+
+        mline = line.partition(' ')[2]
+        offs = len(mline) - len(text)
+        return [s[offs:] for s in names if s.startswith(mline)]
 
 
 class AgentsMenu(cmd.Cmd):
@@ -2231,6 +2254,21 @@ class ListenerMenu(cmd.Cmd):
             print helpers.color("[!] Please enter a valid listenerID")
 
 
+    def do_interact(self, line):
+        "Interact with a particular agent."
+        
+        name = line.strip()
+
+        if name != "" and self.mainMenu.agents.is_agent_present(name):
+            # resolve the passed name to a sessionID
+            sessionID = self.mainMenu.agents.get_agent_id(name)
+
+            a = AgentMenu(self.mainMenu, sessionID)
+            a.cmdloop()
+        else:
+            print helpers.color("[!] Please enter a valid agent name")
+
+
     def complete_set(self, text, line, begidx, endidx):
         "Tab-complete listener option values."
 
@@ -2308,6 +2346,16 @@ class ListenerMenu(cmd.Cmd):
     def complete_options(self, text, line, begidx, endidx):
         "Tab-complete listener names/IDs"
         return self.complete_launcher(text, line, begidx, endidx)
+
+
+    def complete_interact(self, text, line, begidx, endidx):
+        "Tab-complete an interact command"
+
+        names = self.mainMenu.agents.get_agent_names()
+
+        mline = line.partition(' ')[2]
+        offs = len(mline) - len(text)
+        return [s[offs:] for s in names if s.startswith(mline)]
 
 
 class ModuleMenu(cmd.Cmd):
@@ -2608,6 +2656,21 @@ class ModuleMenu(cmd.Cmd):
         self.do_execute(line)
 
 
+    def do_interact(self, line):
+        "Interact with a particular agent."
+        
+        name = line.strip()
+
+        if name != "" and self.mainMenu.agents.is_agent_present(name):
+            # resolve the passed name to a sessionID
+            sessionID = self.mainMenu.agents.get_agent_id(name)
+
+            a = AgentMenu(self.mainMenu, sessionID)
+            a.cmdloop()
+        else:
+            print helpers.color("[!] Please enter a valid agent name")
+
+
     def complete_set(self, text, line, begidx, endidx):
         "Tab-complete a module option to set."
 
@@ -2665,6 +2728,15 @@ class ModuleMenu(cmd.Cmd):
         "Tab-complete 'creds' commands."
         return self.mainMenu.complete_creds(text, line, begidx, endidx)
 
+
+    def complete_interact(self, text, line, begidx, endidx):
+        "Tab-complete an interact command"
+
+        names = self.mainMenu.agents.get_agent_names()
+
+        mline = line.partition(' ')[2]
+        offs = len(mline) - len(text)
+        return [s[offs:] for s in names if s.startswith(mline)]
 
 
 class StagerMenu(cmd.Cmd):
@@ -2852,6 +2924,21 @@ class StagerMenu(cmd.Cmd):
         self.do_generate(line)
 
 
+    def do_interact(self, line):
+        "Interact with a particular agent."
+        
+        name = line.strip()
+
+        if name != "" and self.mainMenu.agents.is_agent_present(name):
+            # resolve the passed name to a sessionID
+            sessionID = self.mainMenu.agents.get_agent_id(name)
+
+            a = AgentMenu(self.mainMenu, sessionID)
+            a.cmdloop()
+        else:
+            print helpers.color("[!] Please enter a valid agent name")
+
+
     def complete_set(self, text, line, begidx, endidx):
         "Tab-complete a stager option to set."
 
@@ -2884,3 +2971,13 @@ class StagerMenu(cmd.Cmd):
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
         return [s[offs:] for s in options if s.startswith(mline)]
+
+
+    def complete_interact(self, text, line, begidx, endidx):
+        "Tab-complete an interact command"
+
+        names = self.mainMenu.agents.get_agent_names()
+
+        mline = line.partition(' ')[2]
+        offs = len(mline) - len(text)
+        return [s[offs:] for s in names if s.startswith(mline)]
