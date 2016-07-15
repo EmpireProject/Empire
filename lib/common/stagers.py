@@ -124,7 +124,7 @@ class Stagers:
             return randomizedStager
 
 
-    def generate_stager_hop(self, server, key, encrypt=True, encode=True):
+    def generate_stager_hop(self, server, key, encrypt=True, encode=False):
         """
         Generate the PowerShell stager for hop.php redirectors that 
         will perform key negotiation with the server and kick off the agent.
