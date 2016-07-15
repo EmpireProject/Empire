@@ -1,3 +1,30 @@
+6/24/2016
+---------
+-Updated Invoke-Mimikatz to include a fix for multi-cpu boxes/processor detection
+-Merged @n0clues pull request to change paths from %TEMP% to %PUBLIC% for spawnas module to fix a bug when spawning as a different user.
+-Fixed a typo in the dcsync_hashdump that caused it to crash the Empire server
+-Merged in Inveigh 1.1.1 and current Tater build thanks to @Kevin-Robertson
+-Fixed a bug in the REST API due to the port being a string and not an int
+-Added 417 Expectation failed error bug fix for older proxies (Squid) thanks to @i223t
+
+6/9/2016
+---------
+-Updated SQLite dll for Get-ChromeDump.ps1
+
+5/27/2016
+---------
+-Fixed format issues with Get-ComputerDetails.ps1
+-More verbose output added to PowerUp's Invoke-ServiceCMD 
+-Made Get-SPN PowerShell 2.0 compatible 
+-Updated RunAs to include an argument parameter
+-Merged @tristandostaler's /api/map feature to the Rest API
+-Merged in @andrew-morris's installer update to include -Y switch for apt-get commands
+-Merged in MS16-032 local privesc from @leoloobeek
+
+5/4/2016
+---------
+-Merged @jaredhaight's Invoke-MetasploitModule module
+
 5/2/2016
 ---------
 -tightened up argparse validation
