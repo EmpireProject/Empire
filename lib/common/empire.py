@@ -1953,6 +1953,9 @@ class AgentMenu(cmd.Cmd):
             l = ModuleMenu(self.mainMenu, "credentials/tokens")
             l.do_execute("")
 
+            # run a sysinfo to update
+            self.do_sysinfo(line)
+
 
     def do_revtoself(self, line):
         "Uses credentials/tokens to revert token privileges."
@@ -1972,6 +1975,9 @@ class AgentMenu(cmd.Cmd):
             # execute the token module
             l = ModuleMenu(self.mainMenu, "credentials/tokens")
             l.do_execute("")
+
+            # run a sysinfo to update
+            self.do_sysinfo(line)
 
 
     def do_creds(self, line):
