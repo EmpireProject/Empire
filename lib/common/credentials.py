@@ -86,7 +86,14 @@ class Credentials:
         Add a credential with the specified information to the database.
         """
         cur = self.conn.cursor()
-        cur.execute("INSERT INTO credentials (credtype, domain, username, password, host, sid, notes) VALUES (?,?,?,?,?,?,?)", [credtype, domain, username, password, host, sid, notes] )
+
+        cur.execute("SELECT * FROM credentials WHERE LOWER(credtype) LIKE LOWER(?) AND LOWER(domain) LIKE LOWER(?) AND LOWER(username) LIKE LOWER(?) AND password LIKE ?", [credtype, domain, username, password])
+        results = cur.fetchall()
+
+        if results == []:
+            # only add the credential if the (credtype, domain, username, password) tuple doesn't already exist
+            cur.execute("INSERT INTO credentials (credtype, domain, username, password, host, sid, notes) VALUES (?,?,?,?,?,?,?)", [credtype, domain, username, password, host, sid, notes] )
+
         cur.close()
 
 
