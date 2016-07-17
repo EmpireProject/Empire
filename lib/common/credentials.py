@@ -53,8 +53,9 @@ class Credentials:
             cur.execute("SELECT * FROM credentials WHERE id=? limit 1", [filterTerm])
 
         # if we're filtering by host/username
-        elif filterTerm and filterTerm != "":
-            cur.execute("SELECT * FROM credentials WHERE LOWER(host) LIKE LOWER(?) or LOWER(username) like LOWER(?)", [filterTerm, filterTerm])
+        elif filterTerm and filterTerm != '':
+            filterTerm = filterTerm.replace('*', '%')
+            cur.execute("SELECT * FROM credentials WHERE LOWER(domain) LIKE LOWER(?) or LOWER(username) like LOWER(?) or LOWER(host) like LOWER(?) or LOWER(password) like LOWER(?)", [filterTerm, filterTerm, filterTerm, filterTerm])
 
         # if we're filtering by credential type (hash, plaintext, token)
         elif(credtype and credtype != ""):
