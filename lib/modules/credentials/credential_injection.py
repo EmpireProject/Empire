@@ -17,7 +17,7 @@ class Module:
             'Background' : False,
 
             'OutputExtension' : None,
-            
+
             'NeedsAdmin' : True,
 
             'OpsecSafe' : True,
@@ -51,7 +51,7 @@ class Module:
             'CredID' : {
                 'Description'   :   'CredID from the store to use.',
                 'Required'      :   False,
-                'Value'         :   ''                
+                'Value'         :   ''
             },
             'DomainName' : {
                 'Description'   :   'The domain name of the user account.',
@@ -92,7 +92,7 @@ class Module:
 
 
     def generate(self):
-        
+
         # read in the common module source code
         moduleSource = self.mainMenu.installPath + "/data/module_source/credentials/Invoke-CredentialInjection.ps1"
 
@@ -116,7 +116,7 @@ class Module:
         # if a credential ID is specified, try to parse
         credID = self.options["CredID"]['Value']
         if credID != "":
-            
+
             if not self.mainMenu.credentials.is_credential_valid(credID):
                 print helpers.color("[!] CredID is invalid!")
                 return ""
@@ -145,6 +145,6 @@ class Module:
                         # if we're just adding a switch
                         script += " -" + str(option)
                     else:
-                        script += " -" + str(option) + " " + str(values['Value']) 
+                        script += " -" + str(option) + " " + str(values['Value'])
 
         return script
