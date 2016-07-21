@@ -161,7 +161,7 @@ class MainMenu(cmd.Cmd):
                             menu.do_generate('')
 
                         else:
-                            messages.display_stager(stagerName, targetStager)
+                            messages.display_stager(targetStager)
 
                     except Exception as e:
                         print e
@@ -646,7 +646,7 @@ class MainMenu(cmd.Cmd):
                     print helpers.color("[!] Please enter the minute window for agent checkin.")
 
             else:
-                messages.display_agents(agents)
+                messages.display_agents(all_agents)
 
 
         elif parts[0].lower() == "listeners":
@@ -2871,12 +2871,12 @@ class StagerMenu(cmd.Cmd):
 
     def do_info(self, line):
         "Display stager options."
-        messages.display_stager(self.stagerName, self.stager)
+        messages.display_stager(self.stager)
 
 
     def do_options(self, line):
         "Display stager options."
-        messages.display_stager(self.stagerName, self.stager)
+        messages.display_stager(self.stager)
 
 
     def do_set(self, line):
