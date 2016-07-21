@@ -7,13 +7,13 @@ class Module:
         # metadata info about the module, not modified during runtime
         self.info = {
             # name for the module that will appear in module menus
-            'Name': 'Invoke-KeeThief',
+            'Name': 'Get-KeePassconfig',
 
             # list of one or more authors for the module
             'Author': ['@tifkin_', '@harmj0y'],
 
             # more verbose multi-line description of the module
-            'Description': ('This module retrieves database mastey key information for unlocked KeePass database.'),
+            'Description': ('This module extracts out the trigger specifications from a KeePass 2.X configuration XML file.'),
 
             # True if the module needs to run in the background
             'Background' : True,
@@ -69,7 +69,7 @@ class Module:
         moduleName = self.info["Name"]
 
         # read in the common powerview.ps1 module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/collection/vaults/KeeThief.ps1"
+        moduleSource = self.mainMenu.installPath + "/data/module_source/collection/vaults/KeePassConfig.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -83,7 +83,7 @@ class Module:
         # get just the code needed for the specified function
         script = moduleCode
 
-        script += "\nGet-KeePassDatabaseKey "
+        script += "\nFind-KeePassconfig | Get-KeePassConfigTrigger  "
 
         script += ' | Format-List | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
 

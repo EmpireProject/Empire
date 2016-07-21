@@ -8,6 +8,10 @@ menu loops.
 
 """
 
+# make version for Empire
+VERSION = "1.5.3"
+
+
 import sys
 import cmd
 import sqlite3
@@ -29,10 +33,6 @@ import listeners
 import modules
 import stagers
 import credentials
-
-
-# make version for Empire
-VERSION = "1.5.2"
 
 
 # custom exceptions used for nested menu navigation

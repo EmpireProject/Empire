@@ -1,8 +1,14 @@
 7/20/2016
 ---------
+-Version 1.5.3
 -Fix for issue #273 - added hostnames to raw screenshot output file
 -Fix for issue #285 - credential export supporting commas
 -Start of code standardization/pep8 cleanup - mods to agents.py, empire.py, and credentials.py
+-moved collection/keethief to collection/vaults/keethief
+-added collection/vaults/find_keepass_config to enumerate KeePass configs on a system
+-added collection/vaults/add_keepass_config_trigger to add a trigger backdoor to all reachable KeePass instances
+-added collection/vaults/get_keepass_config_trigger to enumerate all triggers for all reachable KeePass instances
+-added collection/vaults/remove_keepass_config_trigger to remove all triggers for all reachable KeePass instances
 -Misc. bug fixes
 
 7/16/2016
