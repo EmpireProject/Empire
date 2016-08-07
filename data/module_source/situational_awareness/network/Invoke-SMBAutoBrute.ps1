@@ -93,7 +93,7 @@ function Invoke-SMBAutoBrute
 
         function Get-PDCe()
         {
-            $context = new-object System.DirectoryServices.ActiveDirectory.DirectoryContext("Domain","lab.com")
+            $context = new-object System.DirectoryServices.ActiveDirectory.DirectoryContext("Domain",$env:UserDNSDomain)
             $domain = [System.DirectoryServices.ActiveDirectory.Domain]::GetDomain($context)
             return $domain.pdcRoleOwner
         }
