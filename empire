@@ -455,7 +455,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             if extention and extention != "":
                 # if this module needs to save its file output to the server
                 #   format- [15 chars of prefix][5 chars extension][data]
-                saveFilePrefix = moduleName.split("/")[-1]
+                saveFilePrefix = module_name.split("/")[-1]
                 moduleData = saveFilePrefix.rjust(15) + extention.rjust(5) + moduleData
                 taskCommand = "TASK_CMD_JOB_SAVE"
             else:
@@ -467,7 +467,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             if module.info['OutputExtension'] and module.info['OutputExtension'] != "":
                 # if this module needs to save its file output to the server
                 #   format- [15 chars of prefix][5 chars extension][data]
-                saveFilePrefix = moduleName.split("/")[-1][:15]
+                saveFilePrefix = module_name.split("/")[-1][:15]
                 moduleData = saveFilePrefix.rjust(15) + extention.rjust(5) + moduleData
                 taskCommand = "TASK_CMD_WAIT_SAVE"
             else:
