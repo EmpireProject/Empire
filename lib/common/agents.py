@@ -199,7 +199,7 @@ class Agents:
         filename = parts[-1]
 
         # fix for 'skywalker' exploit by @zeroSteiner
-        safePath = os.path.abspath("%s/downloads/%s/" % (self.installPath, sessionID))
+        safePath = os.path.abspath("%s/downloads/" % self.installPath)
         if not os.path.abspath(save_path + "/" + filename).startswith(safePath):
             dispatcher.send("[!] WARNING: agent %s attempted skywalker exploit!" % (sessionID), sender="Agents")
             dispatcher.send("[!] attempted overwrite of %s with data %s" % (path, data), sender="Agents")
@@ -240,7 +240,7 @@ class Agents:
         filename = parts[-1]
 
         # fix for 'skywalker' exploit by @zeroSteiner
-        safePath = os.path.abspath("%s/downloads/%s/" % (self.installPath, sessionID))
+        safePath = os.path.abspath("%s/downloads/" % self.installPath)
         if not os.path.abspath(save_path + "/" + filename).startswith(safePath):
             dispatcher.send("[!] WARNING: agent %s attempted skywalker exploit!" % (sessionID), sender="Agents")
             dispatcher.send("[!] attempted overwrite of %s with data %s" % (path, data), sender="Agents")
