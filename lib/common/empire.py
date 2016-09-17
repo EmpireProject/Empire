@@ -9,7 +9,7 @@ menu loops.
 """
 
 # make version for Empire
-VERSION = "1.5.3"
+VERSION = "1.6.0"
 
 
 import sys

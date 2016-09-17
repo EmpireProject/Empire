@@ -1,3 +1,25 @@
+=======================
+9/16/2016 - RELEASE 1.6
+=======================
+-Encompasses all changes since the 1.5 tagged release
+
+
+9/16/2016
+---------
+-Fix for 'skywalker v2' file overwrite exploit on control server (thanks again @zeroSteiner :)
+
+9/10/2016
+---------
+-Fixes for Invoke-WScriptBypassUAC
+
+8/31/2016
+---------
+-Invoke-ARPScan.ps1 now uses reflection
+
+8/15/2016
+---------
+-Added stagers/scrambled_macro
+
 8/15/2016
 ---------
 -Added in "Fileless" UAC bypass using eventvwr.exe
@@ -80,9 +102,9 @@
 -merge of @mynameisiv's .jpg screenshot PR
 -Fix for path errors in some cases for ./setup/setup_database.py
 
-============
-3/31/2015 - RELEASE 1.5
-============
+=======================
+3/31/2016 - RELEASE 1.5
+=======================
 -Encompasses all changes since the 1.4 tagged release
 
 
