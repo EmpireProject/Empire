@@ -119,36 +119,49 @@ https://github.com/darkoperator/Posh-SecMod/blob/master/Discovery/Discovery.psm1
             New-IPv4Range $StartIP $EndIP
         }
 
-#https://blogs.technet.microsoft.com/heyscriptingguy/2013/06/27/use-powershell-to-interact-with-the-windows-api-part-3/
-$DynAssembly = New-Object System.Reflection.AssemblyName('Win32Lib')
-$AssemblyBuilder = [AppDomain]::CurrentDomain.DefineDynamicAssembly($DynAssembly, [Reflection.Emit.AssemblyBuilderAccess]::Run)
-$ModuleBuilder = $AssemblyBuilder.DefineDynamicModule('Win32Lib', $False)
-$TypeBuilder = $ModuleBuilder.DefineType('IPHlp', 'Public, Class')
-
-$PInvokeMethod = $TypeBuilder.DefineMethod(
-    'SendARP',
-    [Reflection.MethodAttributes] 'Public, Static',
-    [int],
-    [Type[]] @( [int], [int], [byte[]], [int].MakeByRefType() )
-)
-$DllImportConstructor = [Runtime.InteropServices.DllImportAttribute].GetConstructor(@([String]))
-$FieldArray = [Reflection.FieldInfo[]] @(
-        [Runtime.InteropServices.DllImportAttribute].GetField('EntryPoint'),
-        [Runtime.InteropServices.DllImportAttribute].GetField('ExactSpelling')
-)
-$FieldValueArray = [Object[]] @(
-        'SendARP',
-        $True
-)
-$SetLastErrorCustomAttribute = New-Object Reflection.Emit.CustomAttributeBuilder(
-    $DllImportConstructor,
-    @('iphlpapi.dll'),
-    $FieldArray,
-    $FieldValueArray
-)
-$PInvokeMethod.SetCustomAttribute($SetLastErrorCustomAttribute)
-$IPHlp = $TypeBuilder.CreateType()
-
+$sign = @"
+using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Runtime.InteropServices;
+public static class NetUtils
+{
+    [System.Runtime.InteropServices.DllImport("iphlpapi.dll", ExactSpelling = true)]
+    static extern int SendARP(int DestIP, int SrcIP, byte[] pMacAddr, ref int PhyAddrLen);
+    public static string GetMacAddress(String addr)
+    {
+        try
+                {                   
+                    IPAddress IPaddr = IPAddress.Parse(addr);
+                   
+                    byte[] mac = new byte[6];
+                    
+                    int L = 6;
+                    
+                    SendARP(BitConverter.ToInt32(IPaddr.GetAddressBytes(), 0), 0, mac, ref L);
+                    
+                    String macAddr = BitConverter.ToString(mac, 0, L);
+                    
+                    return (macAddr.Replace('-',':'));
+                }
+                catch (Exception ex)
+                {
+                    return (ex.Message);              
+                }
+    }
+}
+"@
+        try
+        {
+            Write-Verbose "Instanciating NetUtils"
+            $IPHlp = Add-Type -TypeDefinition $sign -Language CSharp -PassThru
+        }
+        catch
+        {
+            Write-Verbose "NetUtils already instanciated"
+        }
 
         # Manage if range is given
         if ($Range)
@@ -169,12 +182,8 @@ $IPHlp = $TypeBuilder.CreateType()
 
         $scancode = {
             param($IPAddress,$IPHlp)
-            $ip = [byte[]]$IPAddress.split('.')
-            $mac = New-Object byte[] 6
-            $lenMac = 6
-            $null = $IPHlp::SendARP( [System.BitConverter]::ToInt32($ip,0), 0, $mac ,[ref] $lenMac)
-            $macStr = [System.BitConverter]::ToString($mac,0,$lenMac).Replace('-',':')
-            if ($macStr) {New-Object psobject -Property @{Address = $IPAddress; MAC = $macStr}}
+            $result = $IPHlp::GetMacAddress($IPAddress)
+            if ($result) {New-Object psobject -Property @{Address = $IPAddress; MAC = $result}}
         } # end ScanCode var
 
         $jobs = @()

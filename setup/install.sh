@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [[ $EUID -ne 0 ]]; then
+   echo " [!]This script must be run as root" 1>&2
+   exit 1
+fi
+
 IFS='/' read -a array <<< pwd
 
 if [[ "$(pwd)" != *setup ]]
@@ -15,6 +20,8 @@ if lsb_release -d | grep -q "Fedora"; then
 	pip install iptools
 	pip install pydispatcher
 	pip install flask
+	pip install macholib
+	pip install dropbox
 elif lsb_release -d | grep -q "Kali"; then
 	Release=Kali
 	apt-get install -y python-dev python-m2crypto swig python-pip
@@ -22,6 +29,8 @@ elif lsb_release -d | grep -q "Kali"; then
 	pip install iptools
 	pip install pydispatcher
 	pip install flask
+	pip install macholib
+	pip install dropbox
 elif lsb_release -d | grep -q "Ubuntu"; then
 	Release=Ubuntu
 	apt-get install -y python-dev python-m2crypto swig python-pip
@@ -30,6 +39,8 @@ elif lsb_release -d | grep -q "Ubuntu"; then
 	pip install pydispatcher
 	pip install flask
 	pip install pyOpenSSL
+	pip install macholib
+	pip install dropbox
 else
 	echo "Unknown distro - Debian/Ubuntu Fallback"
 	 apt-get install -y python-dev python-m2crypto swig python-pip
@@ -37,6 +48,8 @@ else
 	 pip install iptools
 	 pip install pydispatcher
 	 pip install flask
+	 pip install macholib
+	 pip install dropbox
 fi
 
 # set up the database schema

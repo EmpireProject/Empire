@@ -7,7 +7,6 @@ install path in the common config.
 
 """
 
-import sqlite3
 import fnmatch
 import os
 import imp
@@ -23,18 +22,11 @@ class Modules:
 
         # pull the database connection object out of the main menu
         self.conn = self.mainMenu.conn
-
         self.args = args
 
         # module format:
         #     [ ("module/name", instance) ]
         self.modules = {}
-
-        # pull out the code install path from the database config
-        cur = self.conn.cursor()
-        cur.execute("SELECT install_path FROM config")
-        self.installPath = cur.fetchone()[0]
-        cur.close()
 
         self.load_modules()
 
@@ -46,22 +38,23 @@ class Modules:
         """
         
         if rootPath == '':
-            rootPath = self.installPath + 'lib/modules/'
+            rootPath = "%s/lib/modules/" % (self.mainMenu.installPath)
 
         pattern = '*.py'
-        print helpers.color("[*] Loading modules from: %s" %(rootPath))
+        print helpers.color("[*] Loading modules from: %s" % (rootPath))
          
         for root, dirs, files in os.walk(rootPath):
             for filename in fnmatch.filter(files, pattern):
                 filePath = os.path.join(root, filename)
 
-                # don't load up the template
-                if filename == "template.py": continue
+                # don't load up any of the templates
+                if fnmatch.fnmatch(filename, '*template.py'):
+                    continue
 
                 # extract just the module name from the full path
                 moduleName = filePath.split(rootPath)[-1][0:-3]
 
-                if rootPath != self.installPath + 'lib/modules/':
+                if rootPath != "%s/lib/modules/" % (self.mainMenu.installPath):
                     moduleName = "external/%s" %(moduleName)
 
                 # instantiate the module and save it to the internal cache
@@ -73,7 +66,7 @@ class Modules:
         Reload a specific module from the install + "/lib/modules/*" path
         """
 
-        rootPath = self.installPath + 'lib/modules/'
+        rootPath = "%s/lib/modules/" % (self.mainMenu.installPath)
         pattern = '*.py'
          
         for root, dirs, files in os.walk(rootPath):
@@ -81,7 +74,7 @@ class Modules:
                 filePath = os.path.join(root, filename)
 
                 # don't load up the template
-                if filename == "template.py": continue
+                if filename == 'template.py': continue
                 
                 # extract just the module name from the full path
                 moduleName = filePath.split("/lib/modules/")[-1][0:-3]
@@ -97,9 +90,10 @@ class Modules:
         Search currently loaded module names and descriptions.
         """
 
-        print ""
+        print ''
 
-        for moduleName,module in self.modules.iteritems():
+        for moduleName, module in self.modules.iteritems():
+
             if searchTerm.lower() == '' or searchTerm.lower() in moduleName.lower() or searchTerm.lower() in module.info['Description'].lower():
                 messages.display_module_search(moduleName, module)
 

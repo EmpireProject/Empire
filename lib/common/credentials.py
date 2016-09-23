@@ -18,14 +18,11 @@ class Credentials:
         # pull out the controller objects
         self.mainMenu = MainMenu
         self.conn = MainMenu.conn
-        self.agents = MainMenu.agents
-        self.modules = None
-        self.stager = None
         self.installPath = self.mainMenu.installPath
         self.args = args
 
         # credential database schema:
-        #   (ID, credtype, domain, username, password, host, notes, sid)
+        #   (ID, credtype, domain, username, password, host, OS, notes, sid)
         # credtype = hash or plaintext
         # sid is stored for krbtgt
 
@@ -34,6 +31,7 @@ class Credentials:
         """
         Check if this credential ID is valid.
         """
+
         cur = self.conn.cursor()
         cur.execute('SELECT * FROM credentials WHERE id=? limit 1', [credentialID])
         results = cur.fetchall()
@@ -41,7 +39,7 @@ class Credentials:
         return len(results) > 0
 
 
-    def get_credentials(self, filterTerm=None, credtype=None, note=None):
+    def get_credentials(self, filterTerm=None, credtype=None, note=None, os=None):
         """
         Return credentials from the database.
 
@@ -68,6 +66,10 @@ class Credentials:
         elif note and note != "":
             cur.execute("SELECT * FROM credentials WHERE LOWER(note) LIKE LOWER(%?%)", [note])
 
+        # if we're filtering by content in the OS field
+        elif os and os != "":
+            cur.execute("SELECT * FROM credentials WHERE LOWER(os) LIKE LOWER(%?%)", [os])
+
         # otherwise return all credentials
         else:
             cur.execute("SELECT * FROM credentials")
@@ -84,7 +86,7 @@ class Credentials:
         return self.get_credentials(credtype="hash", filterTerm="krbtgt")
 
 
-    def add_credential(self, credtype, domain, username, password, host, sid="", notes=""):
+    def add_credential(self, credtype, domain, username, password, host, os='', sid='', notes=''):
         """
         Add a credential with the specified information to the database.
         """
@@ -95,7 +97,7 @@ class Credentials:
 
         if results == []:
             # only add the credential if the (credtype, domain, username, password) tuple doesn't already exist
-            cur.execute("INSERT INTO credentials (credtype, domain, username, password, host, sid, notes) VALUES (?,?,?,?,?,?,?)", [credtype, domain, username, password, host, sid, notes])
+            cur.execute("INSERT INTO credentials (credtype, domain, username, password, host, os, sid, notes) VALUES (?,?,?,?,?,?,?,?)", [credtype, domain, username, password, host, os, sid, notes])
 
         cur.close()
 
@@ -155,7 +157,7 @@ class Credentials:
             return
 
         output_file = open(export_path, 'w')
-        output_file.write("CredID,CredType,Domain,Username,Password,Host,SID,Notes\n")
+        output_file.write("CredID,CredType,Domain,Username,Password,Host,OS,SID,Notes\n")
         for cred in creds:
             output_file.write("\"%s\"\n" % ('","'.join([str(x) for x in cred])))
 

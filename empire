@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
-import sqlite3, argparse, sys, argparse, logging, json, string, os, re, time, signal, copy, base64
+import sqlite3, argparse, sys, argparse, logging, json, string
+import os, re, time, signal, copy, base64
 from flask import Flask, request, jsonify, make_response, abort, url_for
 from time import localtime, strftime
 from OpenSSL import SSL
@@ -31,7 +32,7 @@ def database_connect():
         conn.isolation_level = None
         return conn
 
-    except Exception as e:
+    except Exception:
         print helpers.color("[!] Could not connect to database")
         print helpers.color("[!] Please run database_setup.py")
         sys.exit()
@@ -43,13 +44,13 @@ def execute_db_query(conn, query, args=None):
     with optional args for a paramaterized query.
     """
     cur = conn.cursor()
-    if(args):
+    if args:
         cur.execute(query, args)
     else:
         cur.execute(query)
     results = cur.fetchall()
     cur.close()
-    return results    
+    return results
 
 
 def refresh_api_token(conn):
@@ -84,14 +85,14 @@ def get_permanent_token(conn):
 ####################################################################
 #
 # The Empire RESTful API.
-# 
+#
 # Adapted from http://blog.miguelgrinberg.com/post/designing-a-restful-api-with-python-and-flask
 #   example code at https://gist.github.com/miguelgrinberg/5614326
 #
 #    Verb     URI                                            Action
 #    ----     ---                                            ------
 #    GET      http://localhost:1337/api/version              return the current Empire version
-#    
+#
 #    GET      http://localhost:1337/api/config               return the current default config
 #
 #    GET      http://localhost:1337/api/stagers              return all current stagers
@@ -136,7 +137,7 @@ def get_permanent_token(conn):
 #    GET      http://localhost:1337/api/admin/permanenttoken retrieve the permanent API token, generating/storing one if it doesn't already exist
 #    GET      http://localhost:1337/api/admin/shutdown       shutdown the RESTful API
 #    GET      http://localhost:1337/api/admin/restart        restart the RESTful API
-#    
+#
 ####################################################################
 
 def start_restful_api(startEmpire=False, suppress=False, username=None, password=None, port=1337):
@@ -167,13 +168,16 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
 
     class Namespace:
+        """
+        Temporary namespace to create the followin base argument object.
+        """
         def __init__(self, **kwargs):
             self.__dict__.update(kwargs)
 
     # instantiate an Empire instance in case we need to interact with stagers or listeners
     args = Namespace(debug=None, listener=None, stager=None, stager_options=None, version=False)
 
-    print ""
+    print ''
 
     if startEmpire:
         # if we want to start a full-running empire instance
@@ -197,7 +201,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
     if suppress:
         # suppress the normal Flask output
         log = logging.getLogger('werkzeug')
-        log.setLevel(logging.ERROR)   
+        log.setLevel(logging.ERROR)
 
         # suppress all stdout and don't initiate the main cmdloop
         sys.stdout = open(os.devnull, 'w')
@@ -206,6 +210,9 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
     # validate API token before every request except for the login URI
     @app.before_request
     def check_token():
+        """
+        Before every request, check if a valid token is passed along with the request.
+        """
         if request.path != '/api/admin/login':
             token = request.args.get('token')
             if (not token) or (not tokenAllowed.match(token)):
@@ -216,12 +223,18 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
     @app.errorhandler(Exception)
     def exception_handler(error):
+        """
+        Generic exception handler.
+        """
         return repr(error)
 
 
     @app.errorhandler(404)
     def not_found(error):
-        return make_response(jsonify( { 'error': 'Not found' } ), 404)
+        """
+        404/not found handler.
+        """
+        return make_response(jsonify({'error': 'Not found'}), 404)
 
 
     @app.route('/api/version', methods=['GET'])
@@ -231,8 +244,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         return jsonify({'version': empire.VERSION})
 
+
     @app.route('/api/map', methods=['GET'])
     def list_routes():
+        """
+        List all of the current registered routes.
+        """
         import urllib
         output = []
         for rule in app.url_map.iter_rules():
@@ -245,11 +262,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             url = url_for(rule.endpoint, **options)
             line = urllib.unquote("[ { '" + rule.endpoint + "': [ { 'methods': '" + methods + "', 'url': '" + url + "' } ] } ]")
             output.append(line)
-    
+
         res = ''
         for line in sorted(output):
             res = res + '\r\n' + line
         return jsonify({'Routes':res})
+
 
     @app.route('/api/config', methods=['GET'])
     def get_config():
@@ -270,8 +288,8 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
 
         stagers = []
-        for stagerName,stager in main.stagers.stagers.iteritems():
-            info =  copy.deepcopy(stager.info)
+        for stagerName, stager in main.stagers.stagers.iteritems():
+            info = copy.deepcopy(stager.info)
             info['options'] = stager.options
             info['Name'] = stagerName
             stagers.append(info)
@@ -286,12 +304,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
 
         if stager_name not in main.stagers.stagers:
-            return make_response(jsonify( {'error': 'stager name %s not found' %(stager_name) } ), 404)
+            return make_response(jsonify({'error': 'stager name %s not found' %(stager_name)}), 404)
 
         stagers = []
-        for stagerName,stager in main.stagers.stagers.iteritems():
-            if(stagerName == stager_name):
-                info =  copy.deepcopy(stager.info)
+        for stagerName, stager in main.stagers.stagers.iteritems():
+            if stagerName == stager_name:
+                info = copy.deepcopy(stager.info)
                 info['options'] = stager.options
                 info['Name'] = stagerName
                 stagers.append(info)
@@ -311,12 +329,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         if not request.json or not 'StagerName' in request.json or not 'Listener' in request.json:
             abort(400)
-        
+
         stagerName = request.json['StagerName']
         listener = request.json['Listener']
 
         if stagerName not in main.stagers.stagers:
-            return make_response(jsonify( {'error': 'stager name %s not found' %(stagerName) } ), 404)
+            return make_response(jsonify({'error': 'stager name %s not found' %(stagerName)}), 404)
 
         if not main.listeners.is_listener_valid(listener):
             return make_response(jsonify({'error': 'invalid listener ID or name'}), 400)
@@ -324,14 +342,14 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         stager = main.stagers.stagers[stagerName]
 
         # set all passed options
-        for option,values in request.json.iteritems():
+        for option, values in request.json.iteritems():
             if option != 'StagerName':
-                if(option not in stager.options):
+                if option not in stager.options:
                     return make_response(jsonify({'error': 'Invalid option %s, check capitalization.' %(option)}), 400)
                 stager.options[option]['Value'] = values
 
         # validate stager options
-        for option,values in stager.options.iteritems():
+        for option, values in stager.options.iteritems():
             if values['Required'] and ((not values['Value']) or (values['Value'] == '')):
                 return make_response(jsonify({'error': 'required stager options missing'}), 400)
 
@@ -354,7 +372,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
 
         modules = []
-        for moduleName,module in main.modules.modules.iteritems():
+        for moduleName, module in main.modules.modules.iteritems():
             moduleInfo = copy.deepcopy(module.info)
             moduleInfo['options'] = module.options
             moduleInfo['Name'] = moduleName
@@ -370,7 +388,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
 
         if module_name not in main.modules.modules:
-            return make_response(jsonify( {'error': 'module name %s not found' %(module_name) } ), 404)
+            return make_response(jsonify({'error': 'module name %s not found' %(module_name)}), 404)
 
         modules = []
         moduleInfo = copy.deepcopy(main.modules.modules[module_name].info)
@@ -390,14 +408,14 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         # ensure the 'Agent' argument is set
         if not request.json or not 'Agent' in request.json:
             abort(400)
-        
+
         if module_name not in main.modules.modules:
-            return make_response(jsonify( {'error': 'module name %s not found' %(module_name) } ), 404)
+            return make_response(jsonify({'error': 'module name %s not found' %(module_name)}), 404)
 
         module = main.modules.modules[module_name]
 
         # set all passed module options
-        for key,value in request.json.iteritems():
+        for key, value in request.json.iteritems():
             if key not in module.options:
                 return make_response(jsonify({'error': 'invalid module option'}), 400)
 
@@ -406,7 +424,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         # validate module options
         sessionID = module.options['Agent']['Value']
 
-        for option,values in module.options.iteritems():
+        for option, values in module.options.iteritems():
             if values['Required'] and ((not values['Value']) or (values['Value'] == '')):
                 return make_response(jsonify({'error': 'required module option missing'}), 400)
 
@@ -418,7 +436,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
                     return make_response(jsonify({'error': 'invalid agent name'}), 400)
 
                 modulePSVersion = int(module.info['MinPSVersion'])
-                agentPSVersion = int(main.agents.get_ps_version(sessionID))
+                agentPSVersion = int(main.agents.get_language_version(sessionID))
                 # check if the agent/module PowerShell versions are compatible
                 if modulePSVersion > agentPSVersion:
                     return make_response(jsonify({'error': "module requires PS version "+str(modulePSVersion)+" but agent running PS version "+str(agentPSVersion)}), 400)
@@ -504,12 +522,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
         if not request.json or not 'term':
             abort(400)
-        
+
         searchTerm = request.json['term']
 
         modules = []
 
-        for moduleName,module in main.modules.modules.iteritems():
+        for moduleName, module in main.modules.modules.iteritems():
             if (searchTerm.lower() == '') or (searchTerm.lower() in moduleName.lower()) or (searchTerm.lower() in ("".join(module.info['Description'])).lower()) or (searchTerm.lower() in ("".join(module.info['Comments'])).lower()) or (searchTerm.lower() in ("".join(module.info['Author'])).lower()):
 
                 moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
@@ -529,12 +547,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
         if not request.json or not 'term':
             abort(400)
-        
+
         searchTerm = request.json['term']
 
         modules = []
 
-        for moduleName,module in main.modules.modules.iteritems():
+        for moduleName, module in main.modules.modules.iteritems():
             if (searchTerm.lower() == '') or (searchTerm.lower() in moduleName.lower()):
 
                 moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
@@ -554,12 +572,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
         if not request.json or not 'term':
             abort(400)
-        
+
         searchTerm = request.json['term']
 
         modules = []
 
-        for moduleName,module in main.modules.modules.iteritems():
+        for moduleName, module in main.modules.modules.iteritems():
             if (searchTerm.lower() == '') or (searchTerm.lower() in ("".join(module.info['Description'])).lower()):
 
                 moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
@@ -579,12 +597,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
         if not request.json or not 'term':
             abort(400)
-        
+
         searchTerm = request.json['term']
 
         modules = []
 
-        for moduleName,module in main.modules.modules.iteritems():
+        for moduleName, module in main.modules.modules.iteritems():
             if (searchTerm.lower() == '') or (searchTerm.lower() in ("".join(module.info['Comments'])).lower()):
 
                 moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
@@ -604,12 +622,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
         if not request.json or not 'term':
             abort(400)
-        
+
         searchTerm = request.json['term']
 
         modules = []
 
-        for moduleName,module in main.modules.modules.iteritems():
+        for moduleName, module in main.modules.modules.iteritems():
             if (searchTerm.lower() == '') or (searchTerm.lower() in ("".join(module.info['Author'])).lower()):
 
                 moduleInfo = copy.deepcopy(main.modules.modules[moduleName].info)
@@ -629,7 +647,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         listeners = []
 
         for activeListener in activeListenersRaw:
-            [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit] = activeListener
+            [ID, name, host, port, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, listener_type, redirect_target, default_lost_limit] = activeListener
             # activeListeners[name] = {'ID':ID, 'name':name, 'host':host, 'port':port, 'cert_path':cert_path, 'staging_key':staging_key, 'default_delay':default_delay, 'default_jitter':default_jitter, 'default_profile':default_profile, 'kill_date':kill_date, 'working_hours':working_hours, 'listener_type':listener_type, 'redirect_target':redirect_target, 'default_lost_limit':default_lost_limit}
             listeners.append({'ID':ID, 'name':name, 'host':host, 'port':port, 'cert_path':cert_path, 'staging_key':staging_key, 'default_delay':default_delay, 'default_jitter':default_jitter, 'default_profile':default_profile, 'kill_date':kill_date, 'working_hours':working_hours, 'listener_type':listener_type, 'redirect_target':redirect_target, 'default_lost_limit':default_lost_limit})
 
@@ -646,13 +664,13 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
         if listener_name != "" and main.listeners.is_listener_valid(listener_name):
             for activeListener in activeListenersRaw:
-                [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit] = activeListener
+                [ID, name, host, port, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, listener_type, redirect_target, default_lost_limit] = activeListener
                 if name == listener_name:
                     listeners.append({'ID':ID, 'name':name, 'host':host, 'port':port, 'cert_path':cert_path, 'staging_key':staging_key, 'default_delay':default_delay, 'default_jitter':default_jitter, 'default_profile':default_profile, 'kill_date':kill_date, 'working_hours':working_hours, 'listener_type':listener_type, 'redirect_target':redirect_target, 'default_lost_limit':default_lost_limit})
 
             return jsonify({'listeners' : listeners})
         else:
-            return make_response(jsonify( {'error': 'listener name %s not found' %(listener_name) } ), 404)
+            return make_response(jsonify({'error': 'listener name %s not found' %(listener_name)}), 404)
 
 
     @app.route('/api/listeners/<string:listener_name>', methods=['DELETE'])
@@ -664,7 +682,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         if listener_name.lower() == "all":
             activeListenersRaw = execute_db_query(conn, 'SELECT * FROM listeners')
             for activeListener in activeListenersRaw:
-                [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit] = activeListener
+                [ID, name, host, port, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, listener_type, redirect_target, default_lost_limit] = activeListener
                 main.listeners.shutdown_listener(name)
                 main.listeners.delete_listener(name)
 
@@ -675,7 +693,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
                 main.listeners.delete_listener(listener_name)
                 return jsonify({'success': True})
             else:
-                return make_response(jsonify( {'error': 'listener name %s not found' %(listener_name) } ), 404)
+                return make_response(jsonify({'error': 'listener name %s not found' %(listener_name)}), 404)
 
 
     @app.route('/api/listeners/options', methods=['GET'])
@@ -693,7 +711,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
 
         # set all passed options
-        for option,values in request.json.iteritems():
+        for option, values in request.json.iteritems():
             returnVal = main.listeners.set_listener_option(option, values)
             if not returnVal:
                 return make_response(jsonify({'error': 'error setting listener value %s with option %s' %(option, values)}), 400)
@@ -716,7 +734,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         activeAgentsRaw = execute_db_query(conn, 'SELECT * FROM agents')
         agents = []
-        
+
         for activeAgent in activeAgentsRaw:
             [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit, taskings, results] = activeAgent
             agents.append({"ID":ID, "sessionID":sessionID, "listener":listener, "name":name, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "uris":uris, "old_uris":old_uris, "user_agent":user_agent, "headers":headers, "functions":functions, "kill_date":kill_date, "working_hours":working_hours, "ps_version":ps_version, "lost_limit":lost_limit, "taskings":taskings, "results":results})
@@ -732,7 +750,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
         agentsRaw = execute_db_query(conn, 'SELECT * FROM agents')
         staleAgents = []
-        
+
         for agent in agentsRaw:
             [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit, taskings, results] = agent
 
@@ -756,7 +774,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         WARNING: doesn't kill the agent first! Ensure the agent is dead.
         """
         agentsRaw = execute_db_query(conn, 'SELECT * FROM agents')
-        
+
         for agent in agentsRaw:
             [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit, taskings, results] = agent
 
@@ -775,7 +793,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
     def remove_agent(agent_name):
         """
         Removes an agent from the controller specified by agent_name.
-        
+
         WARNING: doesn't kill the agent first! Ensure the agent is dead.
         """
         if agent_name.lower() == "all":
@@ -785,7 +803,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
 
         if not agentNameIDs or len(agentNameIDs) == 0:
-            return make_response(jsonify( {'error': 'agent name %s not found' %(agent_name) } ), 404)
+            return make_response(jsonify({'error': 'agent name %s not found' %(agent_name)}), 404)
 
         for agentNameID in agentNameIDs:
             (agentName, agentSessionID) = agentNameID
@@ -802,7 +820,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         activeAgentsRaw = execute_db_query(conn, 'SELECT * FROM agents WHERE name=? OR session_id=?', [agent_name, agent_name])
         activeAgents = []
-        
+
         for activeAgent in activeAgentsRaw:
             [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit, taskings, results] = activeAgent
             activeAgents.append({"ID":ID, "sessionID":sessionID, "listener":listener, "name":name, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "uris":uris, "old_uris":old_uris, "user_agent":user_agent, "headers":headers, "functions":functions, "kill_date":kill_date, "working_hours":working_hours, "ps_version":ps_version, "lost_limit":lost_limit, "taskings":taskings, "results":results})
@@ -832,7 +850,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
             if agentResults and agentResults[0] and agentResults[0] != '':
                 out = json.loads(agentResults[0])
-                if(out):
+                if out:
                     agentResults = "\n".join(out)
                 else:
                     agentResults = ''
@@ -872,7 +890,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
 
         if not agentNameIDs or len(agentNameIDs) == 0:
-            return make_response(jsonify( {'error': 'agent name %s not found' %(agent_name) } ), 404)
+            return make_response(jsonify({'error': 'agent name %s not found' %(agent_name)}), 404)
 
         command = request.json['command']
 
@@ -881,7 +899,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
             # get existing agent taskings for each agent
             agentTasks = execute_db_query(conn, 'SELECT taskings FROM agents WHERE session_id like ?', [agentSessionID])[0]
-            if(agentTasks and agentTasks[0]):
+            if agentTasks and agentTasks[0]:
                 agentTasks = json.loads(agentTasks[0])
             else:
                 agentTasks = []
@@ -892,7 +910,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             execute_db_query(conn, "UPDATE agents SET taskings=? WHERE session_id=?", [json.dumps(agentTasks), agentSessionID])
 
             timeStamp = strftime("%Y-%m-%d %H:%M:%S", localtime())
-            execute_db_query(conn, "INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agentName,"task","TASK_SHELL - " + command[0:50], timeStamp ))
+            execute_db_query(conn, "INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agentName, "task", "TASK_SHELL - " + command[0:50], timeStamp))
 
         return jsonify({'success': True})
 
@@ -908,11 +926,11 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         agentNameID = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
 
         if not agentNameID or len(agentNameID) == 0:
-            return make_response(jsonify( {'error': 'agent name %s not found' %(agent_name) } ), 404)
+            return make_response(jsonify({'error': 'agent name %s not found' %(agent_name)}), 404)
 
         (agentName, agentSessionID) = agentNameID[0]
         newName = request.json['newname']
-        
+
         try:
             result = main.agents.rename_agent(agentName, newName)
 
@@ -921,7 +939,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
             return jsonify({'success': True})
 
-        except:
+        except Exception:
             return make_response(jsonify({'error': 'error in renaming %s to %s' %(agentName, newName)}), 400)
 
 
@@ -937,7 +955,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
 
         if not agentNameIDs or len(agentNameIDs) == 0:
-            return make_response(jsonify( {'error': 'agent name %s not found' %(agent_name) } ), 404)
+            return make_response(jsonify({'error': 'agent name %s not found' %(agent_name)}), 404)
 
         for agentNameID in agentNameIDs:
             (agentName, agentSessionID) = agentNameID
@@ -945,7 +963,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             execute_db_query(conn, "UPDATE agents SET taskings=? WHERE session_id=?", ['', agentSessionID])
 
             timeStamp = strftime("%Y-%m-%d %H:%M:%S", localtime())
-            execute_db_query(conn, "INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agentName, "clear", '', timeStamp ))
+            execute_db_query(conn, "INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agentName, "clear", '', timeStamp))
 
         return jsonify({'success': True})
 
@@ -962,14 +980,14 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
 
         if not agentNameIDs or len(agentNameIDs) == 0:
-            return make_response(jsonify( {'error': 'agent name %s not found' %(agent_name) } ), 404)
+            return make_response(jsonify({'error': 'agent name %s not found' %(agent_name)}), 404)
 
         for agentNameID in agentNameIDs:
             (agentName, agentSessionID) = agentNameID
 
             # get existing agent taskings for each agent
             agentTasks = execute_db_query(conn, 'SELECT taskings FROM agents WHERE session_id like ?', [agentSessionID])[0]
-            if(agentTasks and agentTasks[0]):
+            if agentTasks and agentTasks[0]:
                 agentTasks = json.loads(agentTasks[0])
             else:
                 agentTasks = []
@@ -980,7 +998,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             execute_db_query(conn, "UPDATE agents SET taskings=? WHERE session_id=?", [json.dumps(agentTasks), agentSessionID])
 
             timeStamp = strftime("%Y-%m-%d %H:%M:%S", localtime())
-            execute_db_query(conn, "INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agentName,"task","TASK_EXIT", timeStamp ))
+            execute_db_query(conn, "INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agentName, "task", "TASK_EXIT", timeStamp))
 
         return jsonify({'success': True})
 
@@ -992,7 +1010,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         credsRaw = execute_db_query(conn, 'SELECT * FROM credentials')
         creds = []
-        
+
         for credRaw in credsRaw:
             [ID, credtype, domain, username, password, host, sid, notes] = credRaw
             creds.append({"ID":ID, "credtype":credtype, "domain":domain, "username":username, "password":password, "host":host, "sid":sid, "notes":notes})
@@ -1007,7 +1025,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         reportingRaw = execute_db_query(conn, 'SELECT * FROM reporting')
         reportingEvents = []
-        
+
         for reportingEvent in reportingRaw:
             [ID, name, eventType, message, timestamp] = reportingEvent
             reportingEvents.append({"ID":ID, "agentname":name, "event_type":eventType, "message":message, "timestamp":timestamp})
@@ -1024,14 +1042,14 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
         # first resolve the supplied name to a sessionID
         results = execute_db_query(conn, 'SELECT session_id FROM agents WHERE name=?', [reporting_agent])
-        if(results):
+        if results:
             sessionID = results[0][0]
         else:
             return jsonify({'reporting' : ''})
 
         reportingRaw = execute_db_query(conn, 'SELECT * FROM reporting WHERE name=?', [sessionID])
         reportingEvents = []
-        
+
         for reportingEvent in reportingRaw:
             [ID, name, eventType, message, timestamp] = reportingEvent
             reportingEvents.append({"ID":ID, "agentname":name, "event_type":eventType, "message":message, "timestamp":timestamp})
@@ -1047,7 +1065,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         reportingRaw = execute_db_query(conn, 'SELECT * FROM reporting WHERE event_type=?', [event_type])
         reportingEvents = []
-        
+
         for reportingEvent in reportingRaw:
             [ID, name, eventType, message, timestamp] = reportingEvent
             reportingEvents.append({"ID":ID, "agentname":name, "event_type":eventType, "message":message, "timestamp":timestamp})
@@ -1063,7 +1081,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         reportingRaw = execute_db_query(conn, "SELECT * FROM reporting WHERE message like ?", ['%'+msg+'%'])
         reportingEvents = []
-        
+
         for reportingEvent in reportingRaw:
             [ID, name, eventType, message, timestamp] = reportingEvent
             reportingEvents.append({"ID":ID, "agentname":name, "event_type":eventType, "message":message, "timestamp":timestamp})
@@ -1086,7 +1104,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
         # try to prevent some basic bruting
         time.sleep(2)
-        
+
         if suppliedUsername == username and suppliedPassword == password:
             return jsonify({'token': apiToken})
         else:
@@ -1138,8 +1156,9 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
         print "\n * Shutting down Empire RESTful API"
 
-        if conn: conn.close()
-        
+        if conn:
+            conn.close()
+
         if startEmpire:
             print " * Shutting down the Empire instance"
             main.shutdown()
@@ -1159,12 +1178,14 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
         shutdown_server()
 
-        serverExitCommand = 'restart'  
+        serverExitCommand = 'restart'
 
 
-    # override the keyboardinterrupt signal handler so we can gracefully shut everything down
     def signal_handler(signal, frame):
-        
+        """
+        Overrides the keyboardinterrupt signal handler so we can gracefully shut everything down.
+        """
+
         global serverExitCommand
 
         with app.test_request_context():
@@ -1176,7 +1197,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         import signal
         signal.signal(signal.SIGINT, signal.default_int_handler)
         sys.exit()
-    
+
 
     signal.signal(signal.SIGINT, signal_handler)
 
@@ -1198,7 +1219,7 @@ if __name__ == '__main__':
     cliGroup.add_argument('-l', '--listener', nargs='?', const="list", help='Display listener options. Displays all listeners if nothing is specified.')
     cliGroup.add_argument('-s', '--stager', nargs='?', const="list", help='Specify a stager to generate. Lists all stagers if none is specified.')
     cliGroup.add_argument('-o', '--stager-options', nargs='*', help="Supply options to set for a stager in OPTION=VALUE format. Lists options if nothing is specified.")
-    
+
     restGroup = parser.add_argument_group('RESTful API Options')
     launchGroup = restGroup.add_mutually_exclusive_group()
     launchGroup.add_argument('--rest', action='store_true', help='Run the Empire RESTful API.')

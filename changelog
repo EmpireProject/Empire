@@ -1,32 +1,63 @@
-=======================
-9/16/2016 - RELEASE 1.6
-=======================
--Encompasses all changes since the 1.5 tagged release
-
-
-9/16/2016
+9/23/2016
 ---------
--Fix for 'skywalker v2' file overwrite exploit on control server (thanks again @zeroSteiner :)
+-Version 2.0.0 beta, DerbyCon release
 
-9/10/2016
----------
--Fixes for Invoke-WScriptBypassUAC
+-Listeners abstracted out to modules
+    -Flask used for listener/http instead of base http server
+    -client key negotiation abstracted out and implemented in agents
 
-8/31/2016
----------
--Invoke-ARPScan.ps1 now uses reflection
+-New nested "routing/metadata" packet structure introduced in prep for additional transports
+    -all packetes now wrapped with an HMAC'ed RC4 "routing" packet that uses the staging key
+        -this is so all agents can decrypt 'routing' information for future p2p comms 
+    -increases flexibilty for malleable comms (i.e. sessionid removed from POST requests)
+    -removes the need to keep track of which URIs are used for tasking/post/staging
 
-8/15/2016
----------
--Added stagers/scrambled_macro
+-Agent data handling improved and abstracted away for listener module use
+    -handle_agent_data() handles raw packets, usable by any listener module
+        -handle_agent_staging() handles agent key exchange/staging
+        -handle_agent_request() handles an agent tasking request
+        -handle_agent_response() handles an agent result response
 
-8/15/2016
----------
--Added in "Fileless" UAC bypass using eventvwr.exe
+-EmPyre integration:
+    -Start of integration of EmPyre staging/comms implemented in listeners/http
+    -Agent is language-aware:
+        "interact AGENT" drops you into the language-appropriate agent menu
+        "usemodule [tab]" from an agent only tab-completes language-appropriate modules
+    -stagers were broken out into operating system designations:
+        -stagers.generate_launcher() now accepts a language specification, which wraps
+            the stager generation functionality for listener module
 
-8/13/2016
----------
--Merged in updated Normal.dotm persistence module.
+-PowerShell:
+    -RC4 implemented for first stage obfuscation
+    -staging now uses HMAC and nonces
+    -epoch-syncing removed
+    -core agent cleanup
+
+-Listeners:
+    added http
+    added http_foreign (for 'foreign' Emire listeners)
+    added meterpreter (for meterpreter/cobalt strike, using Invoke-Shellcode)
+    added management/switch_listener module which switches an agent to a new listener module comms
+    redid hop listeners, added listeners/http_hop
+    added listeners/http_com which uses IE com objects for communications
+
+-Tons of bug fixes (and new bug introductions :)
+-Removed lots of code rot
+-Vastly increased debugging output (--debug 2)
+-New 'Language'/'MinLanguageVersion' options added to modules
+-stagers now have a 'language' option, and are folder-separated by operating system
+-added @mattifestation's AMSI bypass into PowerShell stagers 'safe checks'
+-redid PowerShell jobs architecture to use a separate app domain instead of PowerShell jobs
+-Added key reneogitation in case agents are 'orphaned'
+-moved stager.ps1/stager.py to ./agent/stagers/http.ps1 / ./agent/stagers/http.py
+-agent generation now patches in the comms methods into the base agent.ps1 (need to do agent.py)
+-powershell listeners are now properly hot-swappable with management/switch_listener
+-the external/generate_agent module will now generate a staged agent and preregister it (only for PowerShell at this time)
+-PowerView code updated
+-PowerUp code updated
+-new tables -> results and taskings to separate out stuff for the RESTful API 
+-CLI/RESTful API broken, needs testing
+
 
 7/20/2016
 ---------
@@ -102,9 +133,9 @@
 -merge of @mynameisiv's .jpg screenshot PR
 -Fix for path errors in some cases for ./setup/setup_database.py
 
-=======================
-3/31/2016 - RELEASE 1.5
-=======================
+============
+3/31/2015 - RELEASE 1.5
+============
 -Encompasses all changes since the 1.4 tagged release
 
 
