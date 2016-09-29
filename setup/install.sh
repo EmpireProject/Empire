@@ -46,7 +46,7 @@ elif lsb_release -d | grep -q "Ubuntu"; then
 	pip install dropbox
 else
 	echo "Unknown distro - Debian/Ubuntu Fallback"
-	 apt-get install -y python-dev python-m2crypto swig python-pip libxml2-dev default-jdk
+	 apt-get install -y python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libffi-dev
 	 pip install setuptools
 	 pip install pycrypto
 	 pip install iptools
@@ -54,6 +54,8 @@ else
 	 pip install flask
 	 pip install macholib
 	 pip install dropbox
+	 pip install macholib
+	 pip install cryptography
 fi
 tar -xvf ../data/misc/xar-1.5.2.tar.gz
 (cd xar-1.5.2 && ./configure)
