@@ -768,8 +768,12 @@ def send_message(packets=None):
             certPath = listenerOptions['CertPath']['Value']
             host = listenerOptions['Host']['Value']
             if certPath.strip() != '' and host.startswith('https'):
+                # if a certificate is specified create a SSL context
                 certPath = os.path.abspath(certPath)
                 app.run(host=bindIP, port=int(port), threaded=True, ssl_context=(certPath, certPath))
+            elif host.startswith('https'):
+                # signal the server to automatically generate one
+                app.run(host=bindIP, port=int(port), threaded=True, ssl_context='adhoc')
             else:
                 app.run(host=bindIP, port=int(port), threaded=True)
 

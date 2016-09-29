@@ -94,18 +94,15 @@ class Listeners:
 
                     elif value.startswith('https'):
                         listenerObject.options['Host']['Value'] = value
-                        if ('CertPath' in listenerObject.options) and (listenerObject.options['CertPath']['Value'] == ''):
-                            print helpers.color('[!] Error: Please specify a SSL CertPath first')
-                            return False
+
+                        parts = value.split(":")
+                        # check if we have a port to extract
+                        if len(parts) == 3:
+                            # in case there's a resource uri at the end
+                            parts = parts[2].split('/')
+                            listenerObject.options['Port']['Value'] = parts[0]
                         else:
-                            parts = value.split(":")
-                            # check if we have a port to extract
-                            if len(parts) == 3:
-                                # in case there's a resource uri at the end
-                                parts = parts[2].split('/')
-                                listenerObject.options['Port']['Value'] = parts[0]
-                            else:
-                                listenerObject.options['Port']['Value'] = '443'
+                            listenerObject.options['Port']['Value'] = '443'
 
                     elif value.startswith('http'):
                         listenerObject.options['Host']['Value'] = value
