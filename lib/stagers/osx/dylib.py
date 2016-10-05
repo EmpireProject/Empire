@@ -42,7 +42,7 @@ class Stager:
                 'Value'         :   'True'
             },
             'Hijacker' : {
-                'Description'   :   'Generate dylib to be used in a Dylib Hijack. This provides a dylib with ',
+                'Description'   :   'Generate dylib to be used in a Dylib Hijack. This provides a dylib with the LC_REEXPORT_DYLIB load command. The path will serve as a placeholder.',
                 'Required'      :   True,
                 'Value'         :   'False'
             },          
