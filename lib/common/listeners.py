@@ -87,22 +87,17 @@ class Listeners:
                             listenerObject.options['Host']['Value'] = value
                             parts = value.split(":")
                             if len(parts) == 1 or len(parts) == 2:
-                                #listenerObject.options['Port']['Value'] = parts[1]
                                 port = listenerObject.options['Port']['Value']
                                 listenerObject.options['Host']['Value'] = "http://%s:%s" % (value,port)
-
 
                     elif value.startswith('https'):
                         listenerObject.options['Host']['Value'] = value
                         parts = value.split(":")
                         # check if we have a port to extract
                         if len(parts) == 1 or len(parts) == 2:
-                            #listenerObject.options['Port']['Value'] = parts[1]
                             port = listenerObject.options['Port']['Value']
                             listenerObject.options['Host']['Value'] = "%s:%s" % (value,port)
 
-                        #else:
-                            #listenerObject.options['Port']['Value'] = '443'
 
                     elif value.startswith('http'):
                         listenerObject.options['Host']['Value'] = value
@@ -112,8 +107,6 @@ class Listeners:
                                 #listenerObject.options['Port']['Value'] = parts[1]
                             port = listenerObject.options['Port']['Value']
                             listenerObject.options['Host']['Value'] = "http://%s:%s" % (value,port)
-                        #else:
-                            #listenerObject.options['Port']['Value'] = '80'
 
                     return True
 
