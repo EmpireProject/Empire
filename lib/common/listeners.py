@@ -86,21 +86,21 @@ class Listeners:
                         else:
                             listenerObject.options['Host']['Value'] = value
                             parts = value.split(":")
-                            if len(parts) == 2:
-                                listenerObject.options['Port']['Value'] = parts[1]
-                                listenerObject.options['Host']['Value'] = "http://%s" % (value)
-
-                        # if there's a port specified, set that as well
+                            if len(parts) == 1 or len(parts) == 2:
+                                #listenerObject.options['Port']['Value'] = parts[1]
+                                port = listenerObject.options['Port']['Value']
+                                listenerObject.options['Host']['Value'] = "http://%s:%s" % (value,port)
 
 
                     elif value.startswith('https'):
                         listenerObject.options['Host']['Value'] = value
                         parts = value.split(":")
                         # check if we have a port to extract
-                        if len(parts) == 3:
-                            # in case there's a resource uri at the end
-                            parts = parts[2].split('/')
-                            listenerObject.options['Port']['Value'] = parts[0]
+                        if len(parts) == 1 or len(parts) == 2:
+                            #listenerObject.options['Port']['Value'] = parts[1]
+                            port = listenerObject.options['Port']['Value']
+                            listenerObject.options['Host']['Value'] = "%s:%s" % (value,port)
+
                         #else:
                             #listenerObject.options['Port']['Value'] = '443'
 
@@ -108,17 +108,12 @@ class Listeners:
                         listenerObject.options['Host']['Value'] = value
                         parts = value.split(":")
                         # check if we have a port to extract
-                        if len(parts) == 3:
-                            # in case there's a resource uri at the end
-                            parts = parts[2].split("/")
-                            listenerObject.options['Port']['Value'] = parts[0]
+                        if len(parts) == 1 or len(parts) == 2:
+                                #listenerObject.options['Port']['Value'] = parts[1]
+                            port = listenerObject.options['Port']['Value']
+                            listenerObject.options['Host']['Value'] = "http://%s:%s" % (value,port)
                         #else:
                             #listenerObject.options['Port']['Value'] = '80'
-
-                    # if host does not start with http(s), set port as well
-
-               
-
 
                     return True
 
