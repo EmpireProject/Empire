@@ -78,31 +78,31 @@ class Listeners:
                 # parse and auto-set some host parameters
                 if option == 'Host':
 
+                	
                     if not value.startswith('http'):
                         # if there's a current ssl cert path set, assume this is https
                         if ('CertPath' in listenerObject.options) and (listenerObject.options['CertPath']['Value'] != ''):
                             listenerObject.options['Host']['Value'] = "https://%s" % (value)
                         else:
-                            # otherwise assume it's http
-                            listenerObject.options['Host']['Value'] = "http://%s" % (value)
+                            listenerObject.options['Host']['Value'] = value
+                            parts = value.split(":")
+                            if len(parts) == 2:
+                                listenerObject.options['Port']['Value'] = parts[1]
+                                listenerObject.options['Host']['Value'] = "http://%s" % (value)
 
                         # if there's a port specified, set that as well
-                        parts = value.split(':')
-                        if len(parts) > 1:
-                            listenerObject.options['Host']['Value'] = listenerObject.options['Host']['Value'] + ":" + str(parts[1])
-                            listenerObject.options['Port']['Value'] = parts[1]
+
 
                     elif value.startswith('https'):
                         listenerObject.options['Host']['Value'] = value
-
                         parts = value.split(":")
                         # check if we have a port to extract
                         if len(parts) == 3:
                             # in case there's a resource uri at the end
                             parts = parts[2].split('/')
                             listenerObject.options['Port']['Value'] = parts[0]
-                        else:
-                            listenerObject.options['Port']['Value'] = '443'
+                        #else:
+                            #listenerObject.options['Port']['Value'] = '443'
 
                     elif value.startswith('http'):
                         listenerObject.options['Host']['Value'] = value
@@ -112,8 +112,13 @@ class Listeners:
                             # in case there's a resource uri at the end
                             parts = parts[2].split("/")
                             listenerObject.options['Port']['Value'] = parts[0]
-                        else:
-                            listenerObject.options['Port']['Value'] = '80'
+                        #else:
+                            #listenerObject.options['Port']['Value'] = '80'
+
+                    # if host does not start with http(s), set port as well
+
+               
+
 
                     return True
 
@@ -125,7 +130,7 @@ class Listeners:
                         listenerObject.options['Host']['Value'] = listenerObject.options['Host']['Value'].replace('http:', 'https:')
                     return True
 
-                elif option == 'Port':
+                if option == 'Port':
                     listenerObject.options[option]['Value'] = value
                     # set the port in the Host configuration as well
                     host = listenerObject.options['Host']['Value']

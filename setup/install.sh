@@ -54,8 +54,8 @@ else
 	 pip install flask
 	 pip install macholib
 	 pip install dropbox
-	 pip install macholib
 	 pip install cryptography
+	 pip install python-openssl
 fi
 tar -xvf ../data/misc/xar-1.5.2.tar.gz
 (cd xar-1.5.2 && ./configure)
