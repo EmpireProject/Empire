@@ -1300,10 +1300,10 @@ class Agents:
             output += "\n[+] Agent %s now active:\n" % (sessionID)
             self.mainMenu.agents.save_agent_log(sessionID, output)
 
-            # # TODO: if a script autorun is set, set that as the agent's first tasking
-            # autorun = self.get_autoruns()
-            # if autorun and autorun[0] != '' and autorun[1] != '':
-            #     self.add_agent_task_db(sessionID, autorun[0], autorun[1])
+            # if a script autorun is set, set that as the agent's first tasking
+            autorun = self.get_autoruns_db()
+            if autorun and autorun[0] != '' and autorun[1] != '':
+                self.add_agent_task_db(sessionID, autorun[0], autorun[1])
 
             return "STAGE2: %s" % (sessionID)
 
