@@ -78,35 +78,39 @@ class Listeners:
                 # parse and auto-set some host parameters
                 if option == 'Host':
 
-                	
                     if not value.startswith('http'):
+                        parts = value.split(':')
                         # if there's a current ssl cert path set, assume this is https
                         if ('CertPath' in listenerObject.options) and (listenerObject.options['CertPath']['Value'] != ''):
-                            listenerObject.options['Host']['Value'] = "https://%s" % (value)
+                            protocol = 'https'
+                            defaultPort = 443
                         else:
-                            listenerObject.options['Host']['Value'] = value
-                            parts = value.split(":")
-                            if len(parts) == 1 or len(parts) == 2:
-                                port = listenerObject.options['Port']['Value']
-                                listenerObject.options['Host']['Value'] = "http://%s:%s" % (value,port)
+                            protocol = 'http'
+                            defaultPort = 80
 
                     elif value.startswith('https'):
-                        listenerObject.options['Host']['Value'] = value
-                        parts = value.split(":")
-                        # check if we have a port to extract
-                        if len(parts) == 1 or len(parts) == 2:
-                            port = listenerObject.options['Port']['Value']
-                            listenerObject.options['Host']['Value'] = "%s:%s" % (value,port)
-
+                        value = value.split('//')[1]
+                        parts = value.split(':')
+                        protocol = 'https'
+                        defaultPort = 443
 
                     elif value.startswith('http'):
-                        listenerObject.options['Host']['Value'] = value
-                        parts = value.split(":")
-                        # check if we have a port to extract
-                        if len(parts) == 1 or len(parts) == 2:
-                                #listenerObject.options['Port']['Value'] = parts[1]
-                            port = listenerObject.options['Port']['Value']
-                            listenerObject.options['Host']['Value'] = "http://%s:%s" % (value,port)
+                        value = value.split('//')[1]
+                        parts = value.split(':')
+                        protocol = 'http'
+                        defaultPort = 80
+
+                    if len(parts) != 1 and parts[-1].isdigit():
+                        # if a port is specified with http://host:port
+                        listenerObject.options['Host']['Value'] = "%s://%s" % (protocol, value)
+                        listenerObject.options['Port']['Value'] = parts[-1]
+                    elif listenerObject.options['Port']['Value'] != '':
+                        # otherwise, check if the port value was manually set
+                        listenerObject.options['Host']['Value'] = "%s://%s:%s" % (protocol, value, listenerObject.options['Port']['Value'])
+                    else:
+                        # otherwise use default port
+                        listenerObject.options['Host']['Value'] = "%s://%s" % (protocol, value)
+                        listenerObject.options['Port']['Value'] = defaultPort
 
                     return True
 
