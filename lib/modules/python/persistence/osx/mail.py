@@ -27,7 +27,7 @@ class Module:
 
             # True if the method doesn't touch disk/is reasonably opsec safe
             'OpsecSafe' : False,
-
+ 
             # the module language
             'Language': 'python',
 
