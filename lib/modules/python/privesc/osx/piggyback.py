@@ -28,6 +28,12 @@ class Module:
             # True if the method doesn't touch disk/is reasonably opsec safe
             'OpsecSafe' : False,
 
+            # the module language
+            'Language': 'python',
+
+            # the minimum language version needed
+            'MinLanguageVersion': '2.6',
+
             # list of any references/other comments
             'Comments': ['Inspired by OS X Incident Response by Jason Bradley']
         }
@@ -45,11 +51,6 @@ class Module:
                 'Description'   :   'Listener to use.',
                 'Required'      :   True,
                 'Value'         :   ''
-            },
-            'LittleSnitch' : {
-                'Description'   :   'Switch. Check for the LittleSnitch process, exit the staging process if it is running. Defaults to True.',
-                'Required'      :   True,
-                'Value'         :   'True'
             },
             'UserAgent' : {
                 'Description'   :   'User-agent string to use for the staging request (default, none, or other).',
@@ -78,15 +79,13 @@ class Module:
         # extract all of our options
         listenerName = self.options['Listener']['Value']
         userAgent = self.options['UserAgent']['Value']
-        LittleSnitch = self.options['LittleSnitch']['Value']
-
         isEmpire = self.mainMenu.listeners.is_listener_empyre(listenerName)
         if not isEmpire:
             print helpers.color("[!] EmPyre listener required!")
             return ""
 
         # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(listenerName, userAgent=userAgent, littlesnitch=LittleSnitch)
+        launcher = self.mainMenu.stagers.generate_launcher(listenerName, userAgent=userAgent)
 
         if launcher == "":
             print helpers.color("[!] Error in launcher command generation.")
