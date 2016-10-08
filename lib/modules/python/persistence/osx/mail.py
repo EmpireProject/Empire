@@ -27,7 +27,7 @@ class Module:
 
             # True if the method doesn't touch disk/is reasonably opsec safe
             'OpsecSafe' : False,
- 
+
             # the module language
             'Language': 'python',
 
@@ -71,7 +71,7 @@ class Module:
             'Trigger' : {
                 'Description'   :   'The trigger word.',
                 'Required'      :   True,
-                'Value'         :   'Harambe'
+                'Value'         :   ''
             }
         }
 #
