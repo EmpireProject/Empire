@@ -71,7 +71,7 @@ class Module:
             'Trigger' : {
                 'Description'   :   'The trigger word.',
                 'Required'      :   True,
-                'Value'         :   'Harambe'
+                'Value'         :   ''
             }
         }
 #
@@ -218,11 +218,11 @@ with open("/System/Library/CoreServices/SystemVersion.plist", 'r') as a:
             a.close()
 
 if os.path.isfile(home + "/Library/Mobile Documents/com~apple~mail/Data/" + version + "/MailData/ubiquitous_SyncedRules.plist"):
-    print "Trying to write to Mobile"
+    print "Writing to " + home + "/Library/Mobile Documents/com~apple~mail/Data/" + version + "/MailData/ubiquitous_SyncedRules.plist"
     os.system("/usr/libexec/PlistBuddy -c 'Merge " + SyncedRules + "' " + home + "/Library/Mobile\ Documents/com~apple~mail/Data/" + version + "/MailData/ubiquitous_SyncedRules.plist")
 else:
     os.system("/usr/libexec/PlistBuddy -c 'Merge " + SyncedRules + "' " + home + "/Library/Mail/" + version + "/MailData/SyncedRules.plist")
-    print "Writing to main rules"
+    print "Writing to " + home + "/Library/Mail/" + version + "/MailData/SyncedRules.plist"
 
 os.system("/usr/libexec/PlistBuddy -c 'Merge " + RulesActiveState + "' "+ home + "/Library/Mail/" + version + "/MailData/RulesActiveState.plist")
 os.system("rm " + SyncedRules)
