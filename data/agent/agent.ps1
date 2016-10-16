@@ -72,7 +72,7 @@ function Invoke-Empire {
         $WorkingHours,
 
         [String]
-        $Profile = '/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
+        $Profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
 
         [Int32]
         $LostLimit = 60,
