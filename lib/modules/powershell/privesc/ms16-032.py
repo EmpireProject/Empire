@@ -84,7 +84,7 @@ class Module:
         script = moduleCode
 
         # generate the launcher code without base64 encoding
-        l = self.mainMenu.stagers.stagers['launcher']
+        l = self.mainMenu.stagers.stagers['multi/launcher']
         l.options['Listener']['Value'] = self.options['Listener']['Value']
         l.options['UserAgent']['Value'] = self.options['UserAgent']['Value']
         l.options['Proxy']['Value'] = self.options['Proxy']['Value']
