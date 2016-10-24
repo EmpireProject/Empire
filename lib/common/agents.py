@@ -1522,9 +1522,9 @@ class Agents:
                 self.mainMenu.agents.update_agent_sysinfo_db(sessionID, listener=listener, internal_ip=internal_ip, username=username, hostname=hostname, os_details=os_details, high_integrity=high_integrity, process_name=process_name, process_id=process_id, language_version=language_version, language=language)
 
                 sysinfo = '{0: <18}'.format("Listener:") + listener + "\n"
-                sysinfo += '{0: <18}'.format("Internal IP:") + internal_ip + "\n"
+                sysinfo += '{0: <16}'.format("Internal IP:") + internal_ip + "\n"
                 sysinfo += '{0: <18}'.format("Username:") + username + "\n"
-                sysinfo += '{0: <18}'.format("Hostname:") + hostname + "\n"
+                sysinfo += '{0: <16}'.format("Hostname:") + hostname + "\n"
                 sysinfo += '{0: <18}'.format("OS:") + os_details + "\n"
                 sysinfo += '{0: <18}'.format("High Integrity:") + str(high_integrity) + "\n"
                 sysinfo += '{0: <18}'.format("Process Name:") + process_name + "\n"

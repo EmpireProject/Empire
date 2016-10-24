@@ -49,12 +49,12 @@ class Module:
             },
             'Password' : {
                 'Description'   :   'Password to test.',
-                'Required'      :   False,
+                'Required'      :   True,
                 'Value'         :   ''
             },
             'UserName' : {
                 'Description'   :   '[domain\]username to test.',
-                'Required'      :   False,
+                'Required'      :   True,
                 'Value'         :   ''
             },
             'NoPing' : {
