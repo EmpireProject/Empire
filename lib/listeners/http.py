@@ -673,6 +673,7 @@ def send_message(packets=None):
                     # see if we can extract the 'routing packet' from the specified cookie location
                     # NOTE: this can be easily moved to a paramter, another cookie value, etc.
                     if 'session' in cookie:
+                        dispatcher.send("[*] GET cookie value from %s : %s" % (clientIP, cookie), sender='listeners/http')
                         cookieParts = cookie.split(';')
                         for part in cookieParts:
                             if part.startswith('session'):
@@ -731,10 +732,12 @@ def send_message(packets=None):
             stagingKey = listenerOptions['StagingKey']['Value']
             clientIP = request.remote_addr
 
+            requestData = request.get_data()
+            dispatcher.send("[*] POST request data length from %s : %s" % (clientIP, len(requestData)), sender='listeners/http')
+
             # the routing packet should be at the front of the binary request.data
             #   NOTE: this can also go into a cookie/etc.
-
-            dataResults = self.mainMenu.agents.handle_agent_data(stagingKey, request.get_data(), listenerOptions, clientIP)
+            dataResults = self.mainMenu.agents.handle_agent_data(stagingKey, requestData, listenerOptions, clientIP)
             if dataResults and len(dataResults) > 0:
                 for (language, results) in dataResults:
                     if results:
