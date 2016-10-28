@@ -10,7 +10,7 @@ class Module:
             'Name': 'Invoke-ExfilDataToGitHub',
 
             # list of one or more authors for the module
-            'Author': ['Nga Hoang <nga.hoang@nccgroup.trust>'],
+            'Author': ['Nga Hoang'],
 
             # more verbose multi-line description of the module
             'Description': ('Use this module to exfil files and data to GitHub. '
