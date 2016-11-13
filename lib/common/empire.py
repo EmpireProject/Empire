@@ -912,7 +912,7 @@ class AgentsMenu(cmd.Cmd):
         if name.lower() == 'all':
             self.mainMenu.agents.clear_agent_tasks_db('all')
         elif name.lower() == 'autorun':
-            self.mainMenu.agents.clear_autoruns()
+            self.mainMenu.agents.clear_autoruns_db()
         else:
             # extract the sessionID and clear the agent tasking
             sessionID = self.mainMenu.agents.get_agent_id_db(name)
@@ -1709,7 +1709,7 @@ class PowerShellAgentMenu(cmd.Cmd):
             functions = helpers.parse_powershell_script(script_data)
 
             # set this agent's tab-completable functions
-            self.mainMenu.agents.set_agent_functions(self.sessionID, functions)
+            self.mainMenu.agents.set_agent_functions_db(self.sessionID, functions)
 
         else:
             print helpers.color("[!] Please enter a valid script path")
@@ -3223,7 +3223,7 @@ class ModuleMenu(cmd.Cmd):
             # set the script to be the global autorun
             elif agentName.lower() == "autorun":
 
-                self.mainMenu.agents.set_autoruns(taskCommand, moduleData)
+                self.mainMenu.agents.set_autoruns_db(taskCommand, moduleData)
                 dispatcher.send("[*] Set module %s to be global script autorun." % (self.moduleName), sender="Empire")
 
             else:

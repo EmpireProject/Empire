@@ -78,47 +78,39 @@ class Listeners:
                 # parse and auto-set some host parameters
                 if option == 'Host':
 
-                	
                     if not value.startswith('http'):
+                        parts = value.split(':')
                         # if there's a current ssl cert path set, assume this is https
                         if ('CertPath' in listenerObject.options) and (listenerObject.options['CertPath']['Value'] != ''):
-                            listenerObject.options['Host']['Value'] = "https://%s" % (value)
+                            protocol = 'https'
+                            defaultPort = 443
                         else:
-                            listenerObject.options['Host']['Value'] = value
-                            parts = value.split(":")
-                            if len(parts) == 2:
-                                listenerObject.options['Port']['Value'] = parts[1]
-                                listenerObject.options['Host']['Value'] = "http://%s" % (value)
-
-                        # if there's a port specified, set that as well
-
+                            protocol = 'http'
+                            defaultPort = 80
 
                     elif value.startswith('https'):
-                        listenerObject.options['Host']['Value'] = value
-                        parts = value.split(":")
-                        # check if we have a port to extract
-                        if len(parts) == 3:
-                            # in case there's a resource uri at the end
-                            parts = parts[2].split('/')
-                            listenerObject.options['Port']['Value'] = parts[0]
-                        #else:
-                            #listenerObject.options['Port']['Value'] = '443'
+                        value = value.split('//')[1]
+                        parts = value.split(':')
+                        protocol = 'https'
+                        defaultPort = 443
 
                     elif value.startswith('http'):
-                        listenerObject.options['Host']['Value'] = value
-                        parts = value.split(":")
-                        # check if we have a port to extract
-                        if len(parts) == 3:
-                            # in case there's a resource uri at the end
-                            parts = parts[2].split("/")
-                            listenerObject.options['Port']['Value'] = parts[0]
-                        #else:
-                            #listenerObject.options['Port']['Value'] = '80'
+                        value = value.split('//')[1]
+                        parts = value.split(':')
+                        protocol = 'http'
+                        defaultPort = 80
 
-                    # if host does not start with http(s), set port as well
-
-               
-
+                    if len(parts) != 1 and parts[-1].isdigit():
+                        # if a port is specified with http://host:port
+                        listenerObject.options['Host']['Value'] = "%s://%s" % (protocol, value)
+                        listenerObject.options['Port']['Value'] = parts[-1]
+                    elif listenerObject.options['Port']['Value'] != '':
+                        # otherwise, check if the port value was manually set
+                        listenerObject.options['Host']['Value'] = "%s://%s:%s" % (protocol, value, listenerObject.options['Port']['Value'])
+                    else:
+                        # otherwise use default port
+                        listenerObject.options['Host']['Value'] = "%s://%s" % (protocol, value)
+                        listenerObject.options['Port']['Value'] = defaultPort
 
                     return True
 
