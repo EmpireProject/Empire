@@ -19,7 +19,7 @@ class Module:
 
             'OpsecSafe' : True,
 
-            'MinPSVersion' : '2',
+            'MinLanguageVersion' : '2',
             
             'Comments': [
                 'https://github.com/CyberPoint/Ruxcon2016ETW/tree/master/KeyloggerPOC',
