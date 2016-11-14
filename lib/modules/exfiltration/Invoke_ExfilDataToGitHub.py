@@ -29,8 +29,10 @@ class Module:
             # Disabled - this can be a relatively noisy module but sometimes useful
             'OpsecSafe' : True,
             
+	    'Language' : 'powershell',
+
             # The minimum PowerShell version needed for the module to run
-            'MinPSVersion' : '3',
+	    'MinLanguageVersion' : '3',
 
             # list of any references/other comments
             'Comments': [
@@ -44,7 +46,7 @@ class Module:
             #   value_name : {description, required, default_value}
             'Agent' : {
             # The 'Agent' option is the only one that MUST be in a module
-                'Description'   :   'Agent to run module on.',
+                'Description'   :   'Agent to run module on',
                 'Required'      :   True,
                 'Value'         :   ''
             },
@@ -59,7 +61,7 @@ class Module:
                 'Value'         :   ''
             },
             'GHPAT' : {
-                'Description'   :   'GitHub Personal Access Token',
+                'Description'   :   'GitHub Personal Access Token base64 encoded',
                 'Required'      :   True,
                 'Value'         :   ''
             },
@@ -69,7 +71,7 @@ class Module:
                 'Value'         :   ''
             },
             'LocalFilePath' : {
-                'Description'   :   'Local file path of files to upload',
+                'Description'   :   'Local file path of files to upload ',
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -89,9 +91,9 @@ class Module:
                 'Value'         :   ''
             },
             'Recurse' : {
-                'Description'   :   'Recursively get files in subfolders',
+                'Description'   :   'Recursively get files in subfolders eg. set True or leave blank (do not use for Data exfil) ',
                 'Required'      :   False,
-                'Value'         :   "$True"
+                'Value'         :   ''
             }
             
         }
