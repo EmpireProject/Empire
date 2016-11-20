@@ -117,7 +117,7 @@ class Stager:
 				cur.close()
 				
 				import os
-				stagerFFP_Str = os.path.join(installPath_Str, "data/agent/stager.py")
+				stagerFFP_Str = os.path.join(installPath_Str, "data/agent/stagers/http.py")
 				filesToExtractImportsFrom_List.append(stagerFFP_Str)
 				
 				agentFFP_Str = os.path.join(installPath_Str, "data/agent/agent.py")
@@ -135,6 +135,8 @@ class Stager:
 								helpers.color(line)
 								imports_List.append(line)
 
+				imports_List.append('import trace')
+				imports_List.append('import json')
 				imports_List = list(set(imports_List)) # removing duplicate strings
 				imports_Str = "\n".join(imports_List)
 				launcher = imports_Str + "\n" + launcher
