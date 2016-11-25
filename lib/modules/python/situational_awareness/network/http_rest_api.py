@@ -7,19 +7,19 @@ class Module:
         # metadata info about the module, not modified during runtime
         self.info = {
             # name for the module that will appear in module menus
-            'Name': 'Mesos Master API List Slaves',
+            'Name': 'HTTP REST API',
 
             # list of one or more authors for the module
-            'Author': ['@scottjpack', '@TweekFawkes'],
+            'Author': ['@TweekFawkes',"@scottjpack"],
 
             # more verbose multi-line description of the module
-            'Description': ('List Mesos Agents/Slaves using the HTTP API for the Mesos Master service'),
+            'Description': ('Interacts with a HTTP REST API and returns the results back to the screen.'),
 
             # True if the module needs to run in the background
-            'Background' : False,
+            'Background' : True,
 
             # File extension to save the file as
-            'OutputExtension': "json",
+            'OutputExtension': "",
 
             # if the module needs administrative privileges
             'NeedsAdmin' : False,
@@ -34,7 +34,7 @@ class Module:
             'MinLanguageVersion' : '2.6',
 
             # list of any references/other comments
-            'Comments': ["Docs: https://mesosphere.github.io/mesos-dns/docs/http.html", "Source Code: https://github.com/mesosphere/mesos-dns/blob/master/resolver/resolver.go"]
+            'Comments': ["Docs: https://mesos.github.io/chronos/docs/api.html", "urllib2 DELETE method credits to: http://stackoverflow.com/questions/21243834/doing-put-using-python-urllib2"]
         }
 
         # any options needed by the module, settable during runtime
@@ -47,9 +47,15 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'Protocol' : {
+                # The 'Agent' option is the only one that MUST be in a module
+                'Description'   :   'Protocol or Scheme to use.',
+                'Required'      :   True,
+                'Value'         :   'http'
+            },
             'Target' : {
                 # The 'Agent' option is the only one that MUST be in a module
-                'Description'   :   'FQDN, domain name, or hostname to lookup on the remote target.',
+                'Description'   :   'FQDN, domain name, or hostname of the remote target.',
                 'Required'      :   True,
                 'Value'         :   'master.mesos'
             },
@@ -57,7 +63,19 @@ class Module:
                 # The 'Agent' option is the only one that MUST be in a module
                 'Description'   :   'The port to connect to.',
                 'Required'      :   True,
-                'Value'         :   '5050'
+                'Value'         :   '8123'
+            },
+            'Path' : {
+                # The 'Agent' option is the only one that MUST be in a module
+                'Description'   :   'The path.',
+                'Required'      :   True,
+                'Value'         :   '/v1/version'
+            },
+            'RequMethod' : {
+                # The 'Agent' option is the only one that MUST be in a module
+                'Description'   :   'The HTTP request method to use.',
+                'Required'      :   True,
+                'Value'         :   'GET'
             }
         }
 
@@ -71,26 +89,46 @@ class Module:
         #   in case options are passed on the command line
         if params:
             for param in params:
+                # parameter format is [Name, Value]
                 option, value = param
                 if option in self.options:
                     self.options[option]['Value'] = value
 
 
     def generate(self):
+        protocol = self.options['Protocol']['Value']
         target = self.options['Target']['Value']
         port = self.options['Port']['Value']
-        
+        path = self.options['Path']['Value']
+        requmethod = self.options['RequMethod']['Value']
 
         script = """
 import urllib2
 
+protocol = "%s"
 target = "%s"
 port = "%s"
+path = "%s"
+requmethod = "%s"
 
-url = "http://" + target + ":" + port + "/slaves"
+url = protocol + "://" + target + ":" + port + path
+
+class MethodRequest(urllib2.Request):
+    def __init__(self, *args, **kwargs):
+        if 'method' in kwargs:
+            self._method = kwargs['method']
+            del kwargs['method']
+        else:
+            self._method = None
+        return urllib2.Request.__init__(self, *args, **kwargs)
+
+    def get_method(self, *args, **kwargs):
+        if self._method is not None:
+            return self._method
+        return urllib2.Request.get_method(self, *args, **kwargs)
 
 try:
-    request = urllib2.Request(url)
+    request = MethodRequest(url, method=requmethod)
     request.add_header('User-Agent',
                    'Mozilla/6.0 (X11; Linux x86_64; rv:24.0) '
                    'Gecko/20140205     Firefox/27.0 Iceweasel/25.3.0')
@@ -100,6 +138,7 @@ try:
 except Exception as e:
     print "Failure sending payload: " + str(e)
 
-""" %(target, port)
+print "Finished"
+""" %(protocol, target, port, path, requmethod)
 
         return script
