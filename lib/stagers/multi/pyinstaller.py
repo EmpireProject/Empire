@@ -117,8 +117,12 @@ class Stager:
 				cur.close()
 				
 				import os
+<<<<<<< HEAD:lib/stagers/osx/pyinstaller.py
 				stagerFFP_Str = self.mainMenu.installPath + "/data/agent/stagers/http.py"
 				#stagerFFP_Str = os.path.join(installPath_Str, "data/agent/stager.py")
+=======
+				stagerFFP_Str = os.path.join(installPath_Str, "data/agent/stagers/http.py")
+>>>>>>> ec606351797a9f97676a33767f38e341bd1e18bf:lib/stagers/multi/pyinstaller.py
 				filesToExtractImportsFrom_List.append(stagerFFP_Str)
 				
 				agentFFP_Str = self.mainMenu.installPath + "/data/agent/agent.py"
@@ -137,6 +141,8 @@ class Stager:
 								helpers.color(line)
 								imports_List.append(line)
 
+				imports_List.append('import trace')
+				imports_List.append('import json')
 				imports_List = list(set(imports_List)) # removing duplicate strings
 				imports_Str = "\n".join(imports_List)
 				launcher = imports_Str + "\n" + launcher
