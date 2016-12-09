@@ -117,12 +117,12 @@ class Stager:
 				cur.close()
 				
 				import os
-<<<<<<< HEAD:lib/stagers/osx/pyinstaller.py
+#<<<<<<< HEAD:lib/stagers/osx/pyinstaller.py
 				stagerFFP_Str = self.mainMenu.installPath + "/data/agent/stagers/http.py"
 				#stagerFFP_Str = os.path.join(installPath_Str, "data/agent/stager.py")
-=======
+#=======
 				stagerFFP_Str = os.path.join(installPath_Str, "data/agent/stagers/http.py")
->>>>>>> ec606351797a9f97676a33767f38e341bd1e18bf:lib/stagers/multi/pyinstaller.py
+#>>>>>>> ec606351797a9f97676a33767f38e341bd1e18bf:lib/stagers/multi/pyinstaller.py
 				filesToExtractImportsFrom_List.append(stagerFFP_Str)
 				
 				agentFFP_Str = self.mainMenu.installPath + "/data/agent/agent.py"
