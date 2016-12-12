@@ -1624,7 +1624,8 @@ class PowerShellAgentMenu(cmd.Cmd):
 
         if line != "":
             # task the agent with this shell command
-            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", "shell " + str(line))
+            self.mainMenu.agents.add_agent_ta
+            sk_db(self.sessionID, "TASK_SHELL", "shell " + str(line))
             # update the agent log
             msg = "Tasked agent to run shell command " + line
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)

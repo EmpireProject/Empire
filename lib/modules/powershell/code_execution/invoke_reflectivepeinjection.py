@@ -101,6 +101,10 @@ class Module:
 
         script += "\nInvoke-ReflectivePEInjection"
 
+        #check if dllpath or PEUrl is set. Both are required params in their respective parameter sets.
+        if self.options['DllPath']['Value'] == "" or self.options['PEUrl']['Value'] == "":
+            print helpers.color("[!] Please provide a PEUrl or DllPath")
+            return ""
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
                 if option.lower() == "dllpath":
