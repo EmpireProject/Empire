@@ -253,7 +253,6 @@ def process_packet(packetType, data, resultID):
 
     elif packetType == 41:
         # file download
-
         filePath = os.path.abspath(data)
         if not os.path.exists(filePath):
             return build_response_packet(40, "file does not exist or cannot be accessed", resultID)
@@ -288,7 +287,7 @@ def process_packet(packetType, data, resultID):
             sleepTime = random.randint(minSleep, maxSleep)
             time.sleep(sleepTime)
             partIndex += 1
-            offset += 5120000
+            offset += 512000
 
     elif packetType == 42:
         # file upload
