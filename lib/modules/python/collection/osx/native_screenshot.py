@@ -68,7 +68,6 @@ class Module:
 try:
     import Quartz
     import Quartz.CoreGraphics as CG
-    import LaunchServices
     from AppKit import *
     import binascii
 except ImportError:
