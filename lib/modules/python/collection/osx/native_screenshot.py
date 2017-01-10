@@ -66,7 +66,6 @@ class Module:
 
         script = """
 try:
-    import Foundation
     import Quartz
     import Quartz.CoreGraphics as CG
     import LaunchServices
