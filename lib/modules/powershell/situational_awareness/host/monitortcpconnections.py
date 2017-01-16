@@ -7,17 +7,17 @@ class Module:
         # metadata info about the module, not modified during runtime
         self.info = {
             # name for the module that will appear in module menus
-            'Name': 'Invoke-Something',
+            'Name': 'Start-MonitorTCPConnections',
 
             # list of one or more authors for the module
-            'Author': ['@yourname'],
+            'Author': ['@erikbarzdukas'],
 
             # more verbose multi-line description of the module
-            'Description': ('description line 1'
-                            'description line 2'),
+            'Description': ('Monitors hosts for TCP connections to a specified domain name or IPv4 address.'
+                            ' Useful for session hijacking and finding users interacting with sensitive services.'),
 
             # True if the module needs to run in the background
-            'Background' : False,
+            'Background' : True,
 
             # File extension to save the file as
             'OutputExtension' : None,
@@ -36,8 +36,7 @@ class Module:
 
             # list of any references/other comments
             'Comments': [
-                'comment',
-                'http://link/'
+                'Based on code from Tim Ferrell.',
             ]
         }
 
@@ -47,14 +46,19 @@ class Module:
             #   value_name : {description, required, default_value}
             'Agent' : {
                 # The 'Agent' option is the only one that MUST be in a module
-                'Description'   :   'Agent to grab a screenshot from.',
+                'Description'   :   'Agent to monitor from.',
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Command' : {
-                'Description'   :   'Command to execute',
+            'TargetDomain' : {
+                'Description'   :   'Domain name or IPv4 address of target service.',
                 'Required'      :   True,
-                'Value'         :   'test'
+                'Value'         :   ''
+            },
+            'CheckInterval' : {
+                'Description'   :   'Interval in seconds to check for the connection',
+                'Required'      :   True,
+                'Value'         :   '15'
             }
         }
 
@@ -82,17 +86,11 @@ class Module:
         #
         # the script should be stripped of comments, with a link to any
         #   original reference script included in the comments.
-        script = """
-function Invoke-Something {
-    
-}
-Invoke-Something"""
-
 
         # if you're reading in a large, external script that might be updates,
         #   use the pattern below
         # read in the common module source code
-        moduleSource = self.mainMenu.installPath + "/data/module_source/..."
+        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/host/Start-MonitorTCPConnections.ps1"
         try:
             f = open(moduleSource, 'r')
         except:
@@ -103,7 +101,7 @@ Invoke-Something"""
         f.close()
 
         script = moduleCode
-
+        script += "Start-TCPMonitor"
 
         # add any arguments to the end execution of the script
         for option,values in self.options.iteritems():
