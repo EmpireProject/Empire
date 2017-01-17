@@ -61,6 +61,8 @@ import json
 import string
 import threading
 from pydispatch import dispatcher
+from zlib_wrapper import compress
+from zlib_wrapper import decompress
 
 # Empire imports
 import encryption
@@ -224,15 +226,16 @@ class Agents:
 
         sessionID = self.get_agent_name_db(sessionID)
         parts = path.split("\\")
+        parts
 
         # construct the appropriate save path
-        save_path = "%s/downloads/%s/%s" % (self.installPath, sessionID, "/".join(parts[0:-1]))
-        filename = parts[-1]
+        save_path = "%sdownloads/%s%s" % (self.installPath, sessionID, "/".join(parts[0:-1]))
+        filename = os.path.basename(parts[-1])
 
         try:
             self.lock.acquire()
             # fix for 'skywalker' exploit by @zeroSteiner
-            safePath = os.path.abspath("%s/downloads/" % self.installPath)
+            safePath = os.path.abspath("%sdownloads/" % self.installPath)
             if not os.path.abspath(save_path + "/" + filename).startswith(safePath):
                 dispatcher.send("[!] WARNING: agent %s attempted skywalker exploit!" % (sessionID), sender='Agents')
                 dispatcher.send("[!] attempted overwrite of %s with data %s" % (path, data), sender='Agents')
@@ -249,6 +252,16 @@ class Agents:
                 # otherwise append
                 f = open("%s/%s" % (save_path, filename), 'ab')
 
+            print helpers.color("\n[*] Compressed size of %s download: %s" %(filename, helpers.get_file_size(data)), color="green")
+            d = decompress.decompress()
+            dec_data = d.dec_data(data)
+            print helpers.color("[*] Final size of %s wrote: %s" %(filename, helpers.get_file_size(dec_data['data'])), color="green")
+            if not dec_data['crc32_check']:
+                dispatcher.send("[!] WARNING: File agent %s failed crc32 check during decompressing!." %(nameid))
+                print helpers.color("[!] WARNING: File agent %s failed crc32 check during decompressing!." %(nameid))
+                dispatcher.send("[!] HEADER: Start crc32: %s -- Received crc32: %s -- Crc32 pass: %s!." %(dec_data['header_crc32'],dec_data['dec_crc32'],dec_data['crc32_check']))
+                print helpers.color("[!] HEADER: Start crc32: %s -- Received crc32: %s -- Crc32 pass: %s!." %(dec_data['header_crc32'],dec_data['dec_crc32'],dec_data['crc32_check']))
+            data = dec_data['data']
             f.write(data)
             f.close()
         finally:
@@ -270,6 +283,17 @@ class Agents:
         save_path = "%s/downloads/%s/%s" % (self.installPath, sessionID, "/".join(parts[0:-1]))
         filename = parts[-1]
 
+        # decompress data:
+        print helpers.color("\n[*] Compressed size of %s download: %s" %(filename, helpers.get_file_size(data)), color="green")
+        d = decompress.decompress()
+        dec_data = d.dec_data(data)
+        print helpers.color("[*] Final size of %s wrote: %s" %(filename, helpers.get_file_size(dec_data['data'])), color="green")
+        if not dec_data['crc32_check']:
+            dispatcher.send("[!] WARNING: File agent %s failed crc32 check during decompressing!." %(nameid))
+            print helpers.color("[!] WARNING: File agent %s failed crc32 check during decompressing!." %(nameid))
+            dispatcher.send("[!] HEADER: Start crc32: %s -- Received crc32: %s -- Crc32 pass: %s!." %(dec_data['header_crc32'],dec_data['dec_crc32'],dec_data['crc32_check']))
+            print helpers.color("[!] HEADER: Start crc32: %s -- Received crc32: %s -- Crc32 pass: %s!." %(dec_data['header_crc32'],dec_data['dec_crc32'],dec_data['crc32_check']))
+        data = dec_data['data']
         try:
             self.lock.acquire()
             # fix for 'skywalker' exploit by @zeroSteiner
@@ -1522,9 +1546,9 @@ class Agents:
                 self.mainMenu.agents.update_agent_sysinfo_db(sessionID, listener=listener, internal_ip=internal_ip, username=username, hostname=hostname, os_details=os_details, high_integrity=high_integrity, process_name=process_name, process_id=process_id, language_version=language_version, language=language)
 
                 sysinfo = '{0: <18}'.format("Listener:") + listener + "\n"
-                sysinfo += '{0: <18}'.format("Internal IP:") + internal_ip + "\n"
+                sysinfo += '{0: <16}'.format("Internal IP:") + internal_ip + "\n"
                 sysinfo += '{0: <18}'.format("Username:") + username + "\n"
-                sysinfo += '{0: <18}'.format("Hostname:") + hostname + "\n"
+                sysinfo += '{0: <16}'.format("Hostname:") + hostname + "\n"
                 sysinfo += '{0: <18}'.format("OS:") + os_details + "\n"
                 sysinfo += '{0: <18}'.format("High Integrity:") + str(high_integrity) + "\n"
                 sysinfo += '{0: <18}'.format("Process Name:") + process_name + "\n"
@@ -1698,6 +1722,20 @@ class Agents:
             # update the agent log
             self.save_agent_log(sessionID, data)
 
+        elif responseName == "TASK_IMPORT_MODULE":
+            self.update_agent_results_db(sessionID, data)
+            # update the agent log
+            self.save_agent_log(sessionID, data)
+
+        elif responseName == "TASK_VIEW_MODULE":
+            self.update_agent_results_db(sessionID, data)
+            #update the agent log
+            self.save_agent_log(sessionID, data)
+
+        elif responseName == "TASK_REMOVE_MODULE":
+            self.update_agent_results_db(sessionID, data)
+            #update the agent log
+            self.save_agent_log(sessionID, data)
 
         elif responseName == "TASK_SCRIPT_COMMAND":
             self.update_agent_results_db(sessionID, data)

