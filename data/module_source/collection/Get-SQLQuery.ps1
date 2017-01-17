@@ -94,7 +94,7 @@ Function Get-SQLQuery {
         $Instance = $ConnectionString.split(';')[0].split('=')[1]
         if($Query) {
             $Connection.Open()
-            "$Instance : Connection Success.`n"
+            "$Instance : Connection Success."
             $Command = New-Object -TypeName System.Data.SqlClient.SqlCommand -ArgumentList ($Query, $Connection)
             try {
                 $Results = $Command.ExecuteReader()                                             

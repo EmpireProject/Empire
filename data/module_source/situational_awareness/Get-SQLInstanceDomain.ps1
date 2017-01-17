@@ -189,10 +189,10 @@ Function  Get-SQLInstanceDomain {
         $null = $TblSQLServerSpns.Columns.Add('LastLogon')
         $null = $TblSQLServerSpns.Columns.Add('Description')
     } Process {
-        "Grabbing SPNs from the domain for SQL Servers (MSSQL*)...`n"
+        "Grabbing SPNs from the domain for SQL Servers (MSSQL*)..."
         $TblSQLServers = Get-DomainSpn -DomainController $DomainController -Username $Username -Password $Password -ComputerName $ComputerName -DomainAccount $DomainAccount -SpnService 'MSSQL*' -SuppressVerbose | 
         ? -FilterScript { $_.service -like 'MSSQL*' }
-        "Parsing SQL Server instances from SPNs...`n"
+        "Parsing SQL Server instances from SPNs..."
         $TblSQLServers | % -Process {
             $Spn = $_.Spn
             $Instance = $Spn.split('/')[1].split(':')[1]
@@ -215,15 +215,15 @@ Function  Get-SQLInstanceDomain {
                 [string]$_.Description)
         }
         if($CheckMgmt) {
-            "Grabbing SPNs from the domain for Servers managing SQL Server clusters (MSServerClusterMgmtAPI)...`n"
+            "Grabbing SPNs from the domain for Servers managing SQL Server clusters (MSServerClusterMgmtAPI)..."
             $TblMgmtServers = Get-DomainSpn -DomainController $DomainController -Username $Username -Password $Password -ComputerName $ComputerName -DomainAccount $DomainAccount -SpnService 'MSServerClusterMgmtAPI' -SuppressVerbose |
             ? -FilterScript { $_.ComputerName -like '*.*' } | select -Property ComputerName -Unique | sort -Property ComputerName
-            "Performing a UDP scan of management servers to obtain managed SQL Server instances...`n"
+            "Performing a UDP scan of management servers to obtain managed SQL Server instances..."
             $TblMgmtSQLServers = $TblMgmtServers | select -Property ComputerName -Unique | Get-SQLInstanceScanUDP -UDPTimeOut $UDPTimeOut
         }
     } End {
         if($CheckMgmt) {
-            "Parsing SQL Server instances from the UDP scan...`n"
+            "Parsing SQL Server instances from the UDP scan..."
             $Tbl1 = $TblMgmtSQLServers |
             Select-Object -Property ComputerName, Instance |
             Sort-Object -Property ComputerName, Instance
@@ -232,27 +232,27 @@ Function  Get-SQLInstanceDomain {
             Sort-Object -Property ComputerName, Instance
             $Tbl3 = $Tbl1 + $Tbl2
             $InstanceCount = $Tbl3.rows.count
-            "$InstanceCount instances were found.`n`n"
+            "$InstanceCount instances were found."
             ForEach ($Row in $Tbl3){
-                "ComputerName     : " + $Row.ComputerName + "`n"
-                "Instance         : " + $Row.Instance + "`n"
-                "`n"
+                "ComputerName     : " + $Row.ComputerName 
+                "Instance         : " + $Row.Instance 
+                ""
             }
             $Tbl3
         } else {
             $InstanceCount = $TblSQLServerSpns.rows.count
             "$InstanceCount instances were found."
             ForEach ($Row in $TblSQLServerSpns) {
-                "ComputerName     : " + $Row.ComputerName + "`n"
-                "Instance         : " + $Row.Instance + "`n"
-                "DomainAccountSid : " + $Row.DomainAccountSid + "`n"
-                "DomainAccount    : " + $Row.DomainAccount + "`n"
-                "DomainAccountCn  : " + $Row.DomainAccountCn + "`n"
-                "Service          : " + $Row.Service + "`n"
-                "Spn              : " + $Row.Spn + "`n"
-                "LastLogon        : " + $Row.LastLogon + "`n"
-                "Description      : " + $Row.Description + "`n"
-                "`n"
+                "ComputerName     : " + $Row.ComputerName 
+                "Instance         : " + $Row.Instance 
+                "DomainAccountSid : " + $Row.DomainAccountSid 
+                "DomainAccount    : " + $Row.DomainAccount 
+                "DomainAccountCn  : " + $Row.DomainAccountCn 
+                "Service          : " + $Row.Service 
+                "Spn              : " + $Row.Spn 
+                "LastLogon        : " + $Row.LastLogon 
+                "Description      : " + $Row.Description 
+                ""
             }
             $TblSQLServerSpns
         }

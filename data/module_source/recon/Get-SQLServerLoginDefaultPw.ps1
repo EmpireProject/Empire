@@ -549,22 +549,22 @@ Function  Get-SQLServerLoginDefaultPw {
 
         # Bypass ports and default instances
         if (-not $TargetInstance) {
-            "$Instance : No instance match found. `n"
+            "$Instance : No instance match found."
             return
         }
         $TblResultsTemp = $DefaultPasswords | Where-Object { $_.instance -eq "$TargetInstance"}        
 
         if ($TblResultsTemp) {
-            "$Instance : Confirmed instance match. `n"            
+            "$Instance : Confirmed instance match."            
         } else {
-            "$Instance : No instance match found. `n"
+            "$Instance : No instance match found."
             return  
         }
         $CurrentUsername = $TblResultsTemp.username
         $CurrentPassword = $TblResultsTemp.password
         $LoginTest = Get-SQLServerInfo -Instance $instance -Username $CurrentUsername -Password $CurrentPassword -SuppressVerbose
         if ($LoginTest) {
-            "$Instance : Confirmed default credentials - $CurrentUsername/$CurrentPassword `n`n"
+            "$Instance : Confirmed default credentials - $CurrentUsername/$CurrentPassword"
             $SysadminStatus = $LoginTest | select IsSysadmin -ExpandProperty IsSysadmin                   
             $TblResults.Rows.Add(
                 $ComputerName,
@@ -574,16 +574,16 @@ Function  Get-SQLServerLoginDefaultPw {
                 $SysadminStatus
             ) | Out-Null
         } else {
-            "$Instance : No credential matches were found. `n"
+            "$Instance : No credential matches were found."
         }
     } End {
         ForEach ($Result in $TblResults) {
-            "Computer   : " + $Result.Computer + "`n"
-            "Instance   : " + $Result.Instance + "`n"
-            "Username   : " + $Result.Username + "`n"
-            "Password   : " + $Result.Password + "`n"
-            "IsSysAdmin : " + $Result.IsSysAdmin + "`n"
-            "`n"
+            "Computer   : " + $Result.Computer 
+            "Instance   : " + $Result.Instance 
+            "Username   : " + $Result.Username 
+            "Password   : " + $Result.Password 
+            "IsSysAdmin : " + $Result.IsSysAdmin 
+            ""
         }
     }
 }

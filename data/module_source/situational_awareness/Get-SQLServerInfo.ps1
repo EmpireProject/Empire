@@ -400,25 +400,25 @@ Function Get-SQLServerInfo {
         $TblServerInfoTemp = Get-SQLQuery -Instance $Instance -Query $Query -Username $Username -Password $Password
         $TblServerInfo = $TblServerInfo + $TblServerInfoTemp
         ForEach ($Row in $TblServerInfo) {
-            "ComputerName           : " + $Row.ComputerName + "`n"
-            "Instance               : " + $Row.Instance + "`n"
-            "DomainName             : " + $Row.DomainName + "`n"
-            "ServiceName            : " + $Row.ServiceName + "`n"
-            "ServiceAccount         : " + $Row.ServiceAccount + "`n"
-            "AuthenticationMode     : " + $Row.AuthenticationMode + "`n"
-            "Clustered              : " + $Row.Clustered + "`n"
-            "SQLServerVersionNumber : " + $Row.SQLServerVersionNumber + "`n"
-            "SQLServerMajorVersion  : " + $Row.SQLServerMajorVersion + "`n"
-            "SQLServerEdition       : " + $Row.SQLServerEdition + "`n"
-            "SQLServerServicePack   : " + $Row.SQLServerServicePack + "`n"
-            "OSArchitecture         : " + $Row.OSArchitecture + "`n"
-            "OsMachineType          : " + $Row.OsMachineType + "`n"
-            "OSVersionName          : " + $Row.OSVersionName + "`n"
-            "OsVersionNumber        : " + $Row.OsVersionNumber + "`n"
-            "Currentlogin           : " + $Row.Currentlogin + "`n"
-            "IsSysadmin             : " + $IsSysadmin.IsSysadmin + "`n"
-            "ActiveSessions         : " + $Row.ActiveSessions + "`n"
-            "`n"
+            "ComputerName           : " + $Row.ComputerName 
+            "Instance               : " + $Row.Instance 
+            "DomainName             : " + $Row.DomainName 
+            "ServiceName            : " + $Row.ServiceName 
+            "ServiceAccount         : " + $Row.ServiceAccount 
+            "AuthenticationMode     : " + $Row.AuthenticationMode 
+            "Clustered              : " + $Row.Clustered 
+            "SQLServerVersionNumber : " + $Row.SQLServerVersionNumber 
+            "SQLServerMajorVersion  : " + $Row.SQLServerMajorVersion 
+            "SQLServerEdition       : " + $Row.SQLServerEdition 
+            "SQLServerServicePack   : " + $Row.SQLServerServicePack 
+            "OSArchitecture         : " + $Row.OSArchitecture 
+            "OsMachineType          : " + $Row.OsMachineType 
+            "OSVersionName          : " + $Row.OSVersionName 
+            "OsVersionNumber        : " + $Row.OsVersionNumber 
+            "Currentlogin           : " + $Row.Currentlogin 
+            "IsSysadmin             : " + $IsSysadmin.IsSysadmin 
+            "ActiveSessions         : " + $Row.ActiveSessions 
+            ""
         }
 
     } End {
