@@ -225,6 +225,7 @@ class Agents:
         """
 
         sessionID = self.get_agent_name_db(sessionID)
+        lang = self.get_language_db(sessionID)
         parts = path.split("\\")
         parts
 
@@ -251,17 +252,19 @@ class Agents:
             else:
                 # otherwise append
                 f = open("%s/%s" % (save_path, filename), 'ab')
+                
+            if "python" in lang:
+                print helpers.color("\n[*] Compressed size of %s download: %s" %(filename, helpers.get_file_size(data)), color="green")
+                d = decompress.decompress()
+                dec_data = d.dec_data(data)
+                print helpers.color("[*] Final size of %s wrote: %s" %(filename, helpers.get_file_size(dec_data['data'])), color="green")
+                if not dec_data['crc32_check']:
+                    dispatcher.send("[!] WARNING: File agent %s failed crc32 check during decompressing!." %(nameid))
+                    print helpers.color("[!] WARNING: File agent %s failed crc32 check during decompressing!." %(nameid))
+                    dispatcher.send("[!] HEADER: Start crc32: %s -- Received crc32: %s -- Crc32 pass: %s!." %(dec_data['header_crc32'],dec_data['dec_crc32'],dec_data['crc32_check']))
+                    print helpers.color("[!] HEADER: Start crc32: %s -- Received crc32: %s -- Crc32 pass: %s!." %(dec_data['header_crc32'],dec_data['dec_crc32'],dec_data['crc32_check']))
+                data = dec_data['data']
 
-            print helpers.color("\n[*] Compressed size of %s download: %s" %(filename, helpers.get_file_size(data)), color="green")
-            d = decompress.decompress()
-            dec_data = d.dec_data(data)
-            print helpers.color("[*] Final size of %s wrote: %s" %(filename, helpers.get_file_size(dec_data['data'])), color="green")
-            if not dec_data['crc32_check']:
-                dispatcher.send("[!] WARNING: File agent %s failed crc32 check during decompressing!." %(nameid))
-                print helpers.color("[!] WARNING: File agent %s failed crc32 check during decompressing!." %(nameid))
-                dispatcher.send("[!] HEADER: Start crc32: %s -- Received crc32: %s -- Crc32 pass: %s!." %(dec_data['header_crc32'],dec_data['dec_crc32'],dec_data['crc32_check']))
-                print helpers.color("[!] HEADER: Start crc32: %s -- Received crc32: %s -- Crc32 pass: %s!." %(dec_data['header_crc32'],dec_data['dec_crc32'],dec_data['crc32_check']))
-            data = dec_data['data']
             f.write(data)
             f.close()
         finally:
@@ -277,23 +280,26 @@ class Agents:
         """
 
         sessionID = self.get_agent_name_db(sessionID)
+        lang = self.get_language_db(sessionID)
         parts = path.split("/")
 
         # construct the appropriate save path
         save_path = "%s/downloads/%s/%s" % (self.installPath, sessionID, "/".join(parts[0:-1]))
         filename = parts[-1]
 
-        # decompress data:
-        print helpers.color("\n[*] Compressed size of %s download: %s" %(filename, helpers.get_file_size(data)), color="green")
-        d = decompress.decompress()
-        dec_data = d.dec_data(data)
-        print helpers.color("[*] Final size of %s wrote: %s" %(filename, helpers.get_file_size(dec_data['data'])), color="green")
-        if not dec_data['crc32_check']:
-            dispatcher.send("[!] WARNING: File agent %s failed crc32 check during decompressing!." %(nameid))
-            print helpers.color("[!] WARNING: File agent %s failed crc32 check during decompressing!." %(nameid))
-            dispatcher.send("[!] HEADER: Start crc32: %s -- Received crc32: %s -- Crc32 pass: %s!." %(dec_data['header_crc32'],dec_data['dec_crc32'],dec_data['crc32_check']))
-            print helpers.color("[!] HEADER: Start crc32: %s -- Received crc32: %s -- Crc32 pass: %s!." %(dec_data['header_crc32'],dec_data['dec_crc32'],dec_data['crc32_check']))
-        data = dec_data['data']
+        # decompress data if coming from a python agent:
+        if "python" in lang:
+            print helpers.color("\n[*] Compressed size of %s download: %s" %(filename, helpers.get_file_size(data)), color="green")
+            d = decompress.decompress()
+            dec_data = d.dec_data(data)
+            print helpers.color("[*] Final size of %s wrote: %s" %(filename, helpers.get_file_size(dec_data['data'])), color="green")
+            if not dec_data['crc32_check']:
+                dispatcher.send("[!] WARNING: File agent %s failed crc32 check during decompressing!." %(nameid))
+                print helpers.color("[!] WARNING: File agent %s failed crc32 check during decompressing!." %(nameid))
+                dispatcher.send("[!] HEADER: Start crc32: %s -- Received crc32: %s -- Crc32 pass: %s!." %(dec_data['header_crc32'],dec_data['dec_crc32'],dec_data['crc32_check']))
+                print helpers.color("[!] HEADER: Start crc32: %s -- Received crc32: %s -- Crc32 pass: %s!." %(dec_data['header_crc32'],dec_data['dec_crc32'],dec_data['crc32_check']))
+            data = dec_data['data']
+
         try:
             self.lock.acquire()
             # fix for 'skywalker' exploit by @zeroSteiner
