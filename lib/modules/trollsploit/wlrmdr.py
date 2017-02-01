@@ -5,11 +5,11 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-Message',
+            'Name': 'Invoke-WLRMDR',
 
-            'Author': ['@harmj0y'],
+            'Author': ['@benichmt1'],
 
-            'Description': ("Displays a specified message to the user."),
+            'Description': ("Displays a balloon reminder in the taskbar."),
 
             'Background' : True,
 
@@ -22,7 +22,7 @@ class Module:
             'MinPSVersion' : '2',
             
             'Comments': [
-                'http://blog.logrhythm.com/security/do-you-trust-your-computer/'
+                ''
             ]
         }
 
@@ -35,20 +35,20 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'MsgText' : {
+            'Message' : {
                 'Description'   :   'Message text to display.',
                 'Required'      :   True,
-                'Value'         :   'Lost contact with the Domain Controller.'
+                'Value'         :   'You are using a pirated version of Microsoft Windows.'
             },
             'IconType' : {
-                'Description'   :   'Critical, Question, Exclamation, or Information',
+                'Description'   :   'Critical, Exclamation, Information, Key, or None',
                 'Required'      :   True,
-                'Value'         :   'Critical'
+                'Value'         :   'Key'
             },
             'Title' : {
                 'Description'   :   'Title of the message box to display.',
                 'Required'      :   True,
-                'Value'         :   'ERROR - 0xA801B720'
+                'Value'         :   'Windows Explorer'
             }
         }
 
@@ -66,23 +66,38 @@ class Module:
     def generate(self):
         
         script = """
-function Invoke-Message {
+function Invoke-Wlrmdr {
     [CmdletBinding()]
     Param (
         [Parameter(Mandatory = $True, Position = 0)]
-        [String] $MsgText,
+        [String] $Message = "You are using pirated Windows",
         
-        [Parameter(Mandatory = $False, Position = 1)]
-        [String] $IconType = 'Critical',
-
-        [Parameter(Mandatory = $False, Position = 2)]
-        [String] $Title = 'ERROR - 0xA801B720'
+        [Parameter(Mandatory = $True, Position = 1)]
+        [String] $IconType = "Key",
+        [Parameter(Mandatory = $True, Position = 2)]
+        [String] $Title = "Windows Explorer"
     )
 
-    Add-Type -AssemblyName Microsoft.VisualBasic
-    $null = [Microsoft.VisualBasic.Interaction]::MsgBox($MsgText, "OKOnly,MsgBoxSetForeground,SystemModal,$IconType", $Title)
+$command = "wlrmdr.exe -s 60000 -f "
+$Iaintgotnotype = switch ($IconType) 
+    { 
+        "Critical" {6} 
+        "Exclamation" {5} 
+        "Information" {1} 
+        "Key" {4} 
+        "None" {0} 
+        default {0}
+    }
+$command += $Iaintgotnotype
+$command += "-t "
+$command += $Title
+$command += " -m "
+$command += $Message
+$command += " -a 10 -u calc"
+
+iex $command
 }
-Invoke-Message"""
+Invoke-Wlrmdr"""
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent" and option.lower() != "computername":
