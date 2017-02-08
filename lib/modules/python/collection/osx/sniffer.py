@@ -49,6 +49,11 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'CaptureInterface': {
+                'Description'   :   'Set interface name ie. en0 (Auto resolve by default)',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
             'MaxPackets': {
                 'Description'   :   'Set max packets to capture.',
                 'Required'      :   True,
@@ -107,6 +112,10 @@ class Module:
         maxPackets = self.options['MaxPackets']['Value']
         libcPath = self.options['LibcDylib']['Value']
         pcapPath = self.options['PcapDylib']['Value']
+        if self.options['CaptureInterface']['Value']:
+            script += "INTERFACE = '%s' \n" % self.options['CaptureInterface']['Value']
+        else:
+            script += "INTERFACE = ''"
         script += "DEBUG = %s \n" % Debug
         script += "PCAP_FILENAME = '%s' \n" % savePath
         script += "PCAP_CAPTURE_COUNT = %s \n" % maxPackets
@@ -154,15 +163,16 @@ if DEBUG:
     print "* C runtime libary loaded: %s" % OSX_PCAP_DYLIB
     print "* C runtime handle at: %s" % pcap
     print "-------------------------------------------"
-pcap_lookupdev = pcap.pcap_lookupdev
-pcap_lookupdev.restype = ctypes.c_char_p
-dev = pcap.pcap_lookupdev()
+if not INTERFACE:
+    pcap_lookupdev = pcap.pcap_lookupdev
+    pcap_lookupdev.restype = ctypes.c_char_p
+    INTERFACE = pcap.pcap_lookupdev()
 if DEBUG:
-    print "* Device handle at: %s" % dev
+    print "* Device handle at: %s" % INTERFACE
 
 net = ctypes.c_uint()
 mask = ctypes.c_uint()
-pcap.pcap_lookupnet(dev,ctypes.byref(net),ctypes.byref(mask),err_buf)
+pcap.pcap_lookupnet(INTERFACE,ctypes.byref(net),ctypes.byref(mask),err_buf)
 if DEBUG:
     print "* Device IP to bind: %s" % net
     print "* Device net mask: %s" % mask
@@ -172,8 +182,8 @@ pcap_open_live = pcap.pcap_open_live
 pcap_open_live.restype = ctypes.POINTER(ctypes.c_void_p)
 pcap_create = pcap.pcap_create
 pcap_create.restype = ctypes.c_void_p
-#pcap_handle = pcap.pcap_create(dev, err_buf)
-pcap_handle = pcap.pcap_open_live(dev, 1024, packet_count_limit, timeout_limit, err_buf)
+#pcap_handle = pcap.pcap_create(INTERFACE, err_buf)
+pcap_handle = pcap.pcap_open_live(INTERFACE, 1024, packet_count_limit, timeout_limit, err_buf)
 if DEBUG:
     print "* Live capture device handle at: %s" % pcap_handle 
 
