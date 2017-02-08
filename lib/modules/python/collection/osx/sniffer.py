@@ -33,6 +33,9 @@ class Module:
             # the minimum language version needed
             'MinLanguageVersion' : '2.6',
 
+            # the imports required for this module
+            'Imports' : ['ctypes','threading','sys','os','errno','base64'],
+
             # list of any references/other comments
             'Comments': [
                 'Using libpcap.dylib we can perform full pcap on a remote host.'
@@ -80,12 +83,6 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   'False'
             },
-            'Imports' : {
-                # The 'Agent' option is the only one that MUST be in a module
-                'Description'   :   'List of required imports that must work for this module.',
-                'Required'      :   True,
-                'Value'         :   ['ctypes','threading','sys','os','errno','base64']
-            },
         }
         # save off a copy of the mainMenu object to access external functionality
         #   like listeners/agent handlers/etc.
@@ -104,8 +101,7 @@ class Module:
 
     def generate(self):
         script = '\n'
-        imports = self.options['Imports']['Value']
-        for item in imports:
+        for item in self.info['Imports']:
             script += "import %s \n" % item
         savePath = self.options['SavePath']['Value']
         Debug = self.options['Debug']['Value']
@@ -115,7 +111,7 @@ class Module:
         if self.options['CaptureInterface']['Value']:
             script += "INTERFACE = '%s' \n" % self.options['CaptureInterface']['Value']
         else:
-            script += "INTERFACE = ''"
+            script += "INTERFACE = '' \n"
         script += "DEBUG = %s \n" % Debug
         script += "PCAP_FILENAME = '%s' \n" % savePath
         script += "PCAP_CAPTURE_COUNT = %s \n" % maxPackets
