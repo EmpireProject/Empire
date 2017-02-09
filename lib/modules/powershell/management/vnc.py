@@ -75,7 +75,7 @@ class Module:
 
         moduleName = self.info["Name"]
 
-        # read in the common powerup.ps1 module source code
+        # read in th Invoke-Vnc.ps1 module source code
         moduleSource = self.mainMenu.installPath + "/data/module_source/management/Invoke-Vnc.ps1"
 
         try:
