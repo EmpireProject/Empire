@@ -1670,19 +1670,26 @@ class PowerShellAgentMenu(cmd.Cmd):
                 uploadname = parts[1].strip()
 
             if parts[0] != "" and os.path.exists(parts[0]):
+                # Check the file size against the upload limit of 1 mb
+                
                 # read in the file and base64 encode it for transport
                 open_file = open(parts[0], 'r')
                 file_data = open_file.read()
                 open_file.close()
 
-                # update the agent log with the filename and MD5
-                msg = "Tasked agent to upload %s : %s" % (parts[0], hashlib.md5(file_data).hexdigest())
-                self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+                size = os.path.getsize(parts[0])
+                if size > 1048576:
+                    print helpers.color("[!] File size is too large. Upload limit is 1MB.")
+                else:
+                    # update the agent log with the filename and MD5
+                    print helpers.color("[*] Size of %s for upload: %s" %(uploadname, helpers.get_file_size(file_data)), color="green")
+                    msg = "Tasked agent to upload %s : %s" % (parts[0], hashlib.md5(file_data).hexdigest())
+                    self.mainMenu.agents.save_agent_log(self.sessionID, msg)
 
-                # upload packets -> "filename | script data"
-                file_data = helpers.encode_base64(file_data)
-                data = uploadname + "|" + file_data
-                self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_UPLOAD", data)
+                    # upload packets -> "filename | script data"
+                    file_data = helpers.encode_base64(file_data)
+                    data = uploadname + "|" + file_data
+                    self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_UPLOAD", data)
             else:
                 print helpers.color("[!] Please enter a valid file path to upload")
 
@@ -2496,28 +2503,31 @@ class PythonAgentMenu(cmd.Cmd):
 
             if parts[0] != "" and os.path.exists(parts[0]):
                 # TODO: reimplement Python file upload
-                pass
 
                 # # read in the file and base64 encode it for transport
-                # f = open(parts[0], 'r')
-                # fileData = f.read()
-                # f.close()
-                # # Get file size
-                # print helpers.color("[*] Starting size of %s for upload: %s" %(uploadname, helpers.get_file_size(fileData)), color="green")
-                # msg = "Tasked agent to upload " + parts[0] + " : " + hashlib.md5(fileData).hexdigest()
-                # # update the agent log with the filename and MD5
-                # self.mainMenu.agents.save_agent_log(self.sessionID, msg)
-                # # compress data before we base64
-                # c = compress.compress()
-                # start_crc32 = c.crc32_data(fileData)
-                # comp_data = c.comp_data(fileData, 9)
-                # fileData = c.build_header(comp_data, start_crc32)
-                # # get final file size
-                # print helpers.color("[*] Final tasked size of %s for upload: %s" %(uploadname, helpers.get_file_size(fileData)), color="green")
-                # fileData = helpers.encode_base64(fileData)
-                # # upload packets -> "filename | script data"
-                # data = uploadname + "|" + fileData
-                # self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_UPLOAD", data)
+                f = open(parts[0], 'r')
+                fileData = f.read()
+                f.close()
+                # Get file size
+                size = os.path.getsize(parts[0])
+                if size > 1048576:
+                    print helpers.color("[!] File size is too large. Upload limit is 1MB.")
+                else:
+                    print helpers.color("[*] Starting size of %s for upload: %s" %(uploadname, helpers.get_file_size(fileData)), color="green")
+                    msg = "Tasked agent to upload " + parts[0] + " : " + hashlib.md5(fileData).hexdigest()
+                    # update the agent log with the filename and MD5
+                    self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+                    # compress data before we base64
+                    c = compress.compress()
+                    start_crc32 = c.crc32_data(fileData)
+                    comp_data = c.comp_data(fileData, 9)
+                    fileData = c.build_header(comp_data, start_crc32)
+                    # get final file size
+                    print helpers.color("[*] Final tasked size of %s for upload: %s" %(uploadname, helpers.get_file_size(fileData)), color="green")
+                    fileData = helpers.encode_base64(fileData)
+                    # upload packets -> "filename | script data"
+                    data = uploadname + "|" + fileData
+                    self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_UPLOAD", data)
             else:
                 print helpers.color("[!] Please enter a valid file path to upload")
 
