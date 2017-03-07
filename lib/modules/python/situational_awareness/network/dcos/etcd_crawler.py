@@ -7,26 +7,26 @@ class Module:
         # metadata info about the module, not modified during runtime
         self.info = {
             # name for the module that will appear in module menus
-            'Name': 'Chronos API List Jobs',
+            'Name': 'Etcd Crawler',
 
             # list of one or more authors for the module
-            'Author': ['@TweekFawkes'],
+            'Author': ["@scottjpack",'@TweekFawkes'],
 
             # more verbose multi-line description of the module
-            'Description': ('List Chronos jobs using the HTTP API service for the Chronos Framework'),
+            'Description': ('Pull keys and values from an etcd configuration store'),
 
             # True if the module needs to run in the background
-            'Background' : False,
+            'Background' : True,
 
             # File extension to save the file as
-            'OutputExtension': "json",
+            'OutputExtension': "",
 
             # if the module needs administrative privileges
             'NeedsAdmin' : False,
 
             # True if the method doesn't touch disk/is reasonably opsec safe
             'OpsecSafe' : True,
-
+            
             # the module language
             'Language' : 'python',
 
@@ -34,7 +34,7 @@ class Module:
             'MinLanguageVersion' : '2.6',
 
             # list of any references/other comments
-            'Comments': ["Docs: https://mesosphere.github.io/mesos-dns/docs/http.html", "Source Code: https://github.com/mesosphere/mesos-dns/blob/master/resolver/resolver.go"]
+            'Comments': ["Docs: https://coreos.com/etcd/docs/latest/api.html"]
         }
 
         # any options needed by the module, settable during runtime
@@ -51,13 +51,19 @@ class Module:
                 # The 'Agent' option is the only one that MUST be in a module
                 'Description'   :   'FQDN, domain name, or hostname to lookup on the remote target.',
                 'Required'      :   True,
-                'Value'         :   'chronos.mesos'
+                'Value'         :   'etcd.mesos'
             },
             'Port' : {
                 # The 'Agent' option is the only one that MUST be in a module
-                'Description'   :   'The port to connect to.',
+                'Description'   :   'The etcd client communication port, typically 2379 or 1026.',
                 'Required'      :   True,
-                'Value'         :   '8080'
+                'Value'         :   '1026'
+            },
+            'Depth' : {
+                # The 'Agent' option is the only one that MUST be in a module
+                'Description'   :   'How far into the ETCD hierarchy to recurse.  0 for root keys only, "-1" for no limitation',
+                'Required'      :   True,
+                'Value'         :   '-1'
             }
         }
 
@@ -71,6 +77,7 @@ class Module:
         #   in case options are passed on the command line
         if params:
             for param in params:
+                # parameter format is [Name, Value]
                 option, value = param
                 if option in self.options:
                     self.options[option]['Value'] = value
@@ -78,28 +85,51 @@ class Module:
 
     def generate(self):
         target = self.options['Target']['Value']
-        port = self.options['Port']['Value']
-        
+        #port = self.options['Port']['Value']
+	#print str("port: " + port)
+        #depth = self.options['Depth']['Value']
+	#print str("depth: " + port)
+        #if not type(depth) == type(1):
+        #    depth = int(depth)
+        #if not type(port) == type(1):
+        #    port = int(port)
+	port = self.options['Port']['Value']
+	depth = self.options['Depth']['Value']
+	#print str("target: " + target)
+	#print str("port: " + port)
+	#print str("depth: " + depth)
 
         script = """
 import urllib2
+import json
 
 target = "%s"
 port = "%s"
+depth = "%s"
 
-url = "http://" + target + ":" + port + "/scheduler/jobs"
+def get_etcd_keys(target, port, path, depth):
+        keys = {}
+        resp = urllib2.urlopen("http://" + target + ":" + port + "/v2/keys" + path)
+        r = resp.read()
+        r = json.loads(r)
+        for n in r['node']['nodes']:
+                if "dir" in n.keys() and (depth>0):
+                        keys.update(get_etcd_keys(target, port, n['key'], depth-1))
+                elif "dir" in n.keys() and (depth == -1):
+                        keys.update(get_etcd_keys(target, port, n['key'], depth))
+                elif "value" in n.keys():
+                        keys[n['key']] = n['value']
+                else:
+                        keys[n['key']] = "directory"
+        return keys
 
-try:
-    request = urllib2.Request(url)
-    request.add_header('User-Agent',
-                   'Mozilla/6.0 (X11; Linux x86_64; rv:24.0) '
-                   'Gecko/20140205     Firefox/27.0 Iceweasel/25.3.0')
-    opener = urllib2.build_opener(urllib2.HTTPHandler)
-    content = opener.open(request).read()
-    print str(content)
-except Exception as e:
-    print "Failure sending payload: " + str(e)
+def main():
+        k = get_etcd_keys(target, port, "/", depth)
+        print str(k)
 
-""" %(target, port)
+main()
+
+
+""" % (target, port, depth)
 
         return script

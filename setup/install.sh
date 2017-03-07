@@ -15,7 +15,7 @@ fi
 version=$( lsb_release -r | grep -oP "[0-9]+" | head -1 )
 if lsb_release -d | grep -q "Fedora"; then
 	Release=Fedora
-	dnf install -y python-devel m2crypto python-m2ext swig python-iptools python3-iptools libxml2-devel default-jdk openssl-devel
+	dnf install -y make g++ python-devel m2crypto python-m2ext swig python-iptools python3-iptools libxml2-devel default-jdk openssl-devel
 	pip install setuptools
 	pip install pycrypto
 	pip install iptools
@@ -24,9 +24,12 @@ if lsb_release -d | grep -q "Fedora"; then
 	pip install macholib
 	pip install dropbox
 	pip install pyopenssl
+	pip install pyinstaller
+	pip install zlib_wrapper
 elif lsb_release -d | grep -q "Kali"; then
 	Release=Kali
-	apt-get install -y python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libssl-dev
+	apt-get install -y make g++ python-dev python-m2crypto swig  libxml2-dev default-jdk libssl-dev
+	easy_install pip
 	pip install setuptools
 	pip install pycrypto
 	pip install iptools
@@ -35,9 +38,12 @@ elif lsb_release -d | grep -q "Kali"; then
 	pip install macholib
 	pip install dropbox
 	pip install pyopenssl
+	pip install pyinstaller
+	pip install zlib_wrapper
 elif lsb_release -d | grep -q "Ubuntu"; then
 	Release=Ubuntu
-	apt-get install -y python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libssl-dev
+	apt-get install -y make g++ python-dev python-m2crypto swig  libxml2-dev default-jdk libssl-dev
+	easy_install pip
 	pip install setuptools
 	pip install pycrypto
 	pip install iptools
@@ -47,9 +53,12 @@ elif lsb_release -d | grep -q "Ubuntu"; then
 	pip install macholib
 	pip install dropbox
 	pip install pyopenssl
+	pip install pyinstaller
+	pip install zlib_wrapper
 else
 	echo "Unknown distro - Debian/Ubuntu Fallback"
-	 apt-get install -y python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libffi-dev
+	 apt-get install -y make g++ python-dev python-m2crypto swig  libxml2-dev default-jdk libffi-dev libssl-dev
+	 easy_install pip
 	 pip install setuptools
 	 pip install pycrypto
 	 pip install iptools
@@ -59,6 +68,8 @@ else
 	 pip install dropbox
 	 pip install cryptography
 	 pip install python-openssl
+	 pip install pyinstaller
+	 pip install zlib_wrapper
 fi
 tar -xvf ../data/misc/xar-1.5.2.tar.gz
 (cd xar-1.5.2 && ./configure)

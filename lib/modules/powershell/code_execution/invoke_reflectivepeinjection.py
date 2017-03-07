@@ -60,6 +60,11 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   ''
             },
+            'ForceASLR' : {
+                'Description'   :   'Optional, will force the use of ASLR on the PE being loaded even if the PE indicates it doesn\'t support ASLR.',
+                'Required'      :   True,
+                'Value'         :   'False'
+            },
             'ComputerName' : {
                 'Description'   :   'Optional an array of computernames to run the script on.',
                 'Required'      :   False,
@@ -96,6 +101,10 @@ class Module:
 
         script += "\nInvoke-ReflectivePEInjection"
 
+        #check if dllpath or PEUrl is set. Both are required params in their respective parameter sets.
+        if self.options['DllPath']['Value'] == "" and self.options['PEUrl']['Value'] == "":
+            print helpers.color("[!] Please provide a PEUrl or DllPath")
+            return ""
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
                 if option.lower() == "dllpath":
@@ -110,7 +119,8 @@ class Module:
 
                         except:
                             print helpers.color("[!] Error in reading/encoding dll: " + str(values['Value']))
-
+                elif values['Value'].lower() == "true":
+                    script += " -" + str(option)
                 elif values['Value'] and values['Value'] != '':
                     script += " -" + str(option) + " " + str(values['Value'])
 
