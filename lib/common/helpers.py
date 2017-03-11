@@ -51,6 +51,7 @@ import threading
 import pickle
 from time import localtime, strftime
 from Crypto.Random import random
+from subprocess import call
 
 
 ###############################################################
@@ -756,6 +757,52 @@ def dict_factory(cursor, row):
         d[col[0]] = row[idx]
     return d
 
+# Obfuscate powershell scripts 
+def obfuscate(psScript, installPath, obfuscationCommand):
+    # When obfuscating large scripts, command line length is too long. Need to save to temp file
+    toObfuscateFilename = installPath + "data/misc/ToObfuscate.ps1"
+    obfuscatedFilename = installPath + "data/misc/Obfuscated.ps1"
+    toObfuscateFile = open(toObfuscateFilename, 'w')
+    toObfuscateFile.write(psScript)
+    toObfuscateFile.close()
+
+    # Obfuscate tokens
+    call("powershell 'Invoke-Obfuscation -ScriptPath %s -Command \"%s\" -Quiet | Out-File -Encoding ASCII %s'" % (toObfuscateFilename, obfuscationCommand, obfuscatedFilename), shell=True)
+
+    obfuscatedFile = open(obfuscatedFilename , 'r')
+    psScript = obfuscatedFile.read()[0:-1]
+    obfuscatedFile.close()
+    
+    return psScript
+    
+def obfuscate_module(moduleSource, obfuscationCommand="", forceReobfuscation=False):
+    if is_obfuscated(moduleSource) and not forceReobfuscation:
+        return
+
+    try:
+        f = open(moduleSource, 'r')
+    except:
+        print helpers.color("[!] Could not read module source path at: " + str(moduleSource))
+        return ""
+
+    moduleCode = f.read()
+    f.close()
+
+    # obfuscate and write to obfuscated source path
+    obfuscatedSource = moduleSource.replace("module_source", "obfuscated_module_source")
+    try:
+        f = open(obfuscatedSource, 'w')
+    except:
+        print helpers.color("[!] Could not read obfuscated module source path at: " + str(obfuscatedSource))
+        return ""
+    installPath = obfuscatedSource[0:(obfuscatedSource.find("data")-1)]
+    obfuscatedCode = obfuscate(psScript=moduleCode, installPath=installPath, obfuscationCommand=obfuscationCommand)
+    f.write(obfuscatedCode)
+    f.close()
+    
+def is_obfuscated(moduleSource):
+    obfuscatedSource = moduleSource.replace("module_source", "obfuscated_module_source")
+    return os.path.isfile(obfuscatedSource)
 
 class KThread(threading.Thread):
     """

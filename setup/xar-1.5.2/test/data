@@ -1,0 +1,201 @@
+#!/bin/sh
+
+. functions
+
+cleanup() {
+	rm -rf a b h h.xar h.toc
+}
+
+echo "Testing if zero length files have data sections"
+cleanup
+mkdir h 
+touch h/a
+
+cd h
+create_archive ../h.xar .
+cd ..
+${XAR} --dump-toc=h.toc -f h.xar
+if [ $? -ne 0 ]; then
+	echo "Error dumping toc"
+	cleanup
+	exit 1
+fi
+
+offset=`xsltproc data.xsl h.toc | grep -v xml`
+if [ "$offset" != "" ]; then
+	echo "Zero length file has data section"
+	cleanup
+	exit 1
+fi
+
+extract_archive h.xar
+
+cleanup
+
+echo "Testing zero length files with gzip compression"
+cleanup
+mkdir h 
+touch h/a
+
+cd h
+${XAR} --compression=gzip -cf ../h.xar .
+if [ $? -ne 0 ]; then
+	echo "Error creating archive"
+	exit 1
+fi
+cd ..
+${XAR} --dump-toc=h.toc -f h.xar
+if [ $? -ne 0 ]; then
+	echo "Error dumping toc"
+	cleanup
+	exit 1
+fi
+
+offset=`xsltproc data.xsl h.toc | grep -v xml`
+if [ "$offset" != "" ]; then
+	echo "Zero length file has data section"
+	cleanup
+	exit 1
+fi
+
+extract_archive h.xar
+cleanup
+
+echo "Testing zero length files with bzip2 compression"
+cleanup
+mkdir h 
+touch h/a
+
+cd h
+${XAR} --compression=bzip2 -cf ../h.xar .
+if [ $? -ne 0 ]; then
+	echo "Error creating archive"
+	exit 1
+fi
+cd ..
+${XAR} --dump-toc=h.toc -f h.xar
+if [ $? -ne 0 ]; then
+	echo "Error dumping toc"
+	cleanup
+	exit 1
+fi
+
+offset=`xsltproc data.xsl h.toc | grep -v xml`
+if [ "$offset" != "" ]; then
+	echo "Zero length file has data section"
+	cleanup
+	exit 1
+fi
+
+extract_archive h.xar
+cleanup
+
+echo "Testing zero length files with bzip2 compression"
+cleanup
+mkdir h 
+touch h/a
+
+cd h
+${XAR} --compression=none -cf ../h.xar .
+if [ $? -ne 0 ]; then
+	echo "Error creating archive"
+	exit 1
+fi
+cd ..
+${XAR} --dump-toc=h.toc -f h.xar
+if [ $? -ne 0 ]; then
+	echo "Error dumping toc"
+	cleanup
+	exit 1
+fi
+
+offset=`xsltproc data.xsl h.toc | grep -v xml`
+if [ "$offset" != "" ]; then
+	echo "Zero length file has data section"
+	cleanup
+	exit 1
+fi
+
+extract_archive h.xar
+cleanup
+
+echo "Testing mixed zero length/populated files with gzip compression"
+cleanup
+mkdir h 
+touch h/a
+echo "foo" > h/b
+
+cd h
+${XAR} --compression=gzip -cf ../h.xar .
+if [ $? -ne 0 ]; then
+	echo "Error creating archive"
+	exit 1
+fi
+cd ..
+extract_archive h.xar
+contents=`cat a`
+if [ ! -z "$contents" ]; then
+	echo "File isn't zero length after extraction"
+	exit 1
+fi
+contents=`cat b`
+if [ "$contents" != "foo" ]; then
+	echo "Contents of populated file not the same after extraction"
+	exit 1
+fi
+cleanup
+
+echo "Testing mixed zero length/populated files with bzip2 compression"
+cleanup
+mkdir h 
+touch h/a
+echo "foo" > h/b
+
+cd h
+${XAR} --compression=bzip2 -cf ../h.xar .
+if [ $? -ne 0 ]; then
+	echo "Error creating archive"
+	exit 1
+fi
+cd ..
+
+extract_archive h.xar
+contents=`cat a`
+if [ ! -z "$contents" ]; then
+	echo "File isn't zero length after extraction"
+	exit 1
+fi
+contents=`cat b`
+if [ "$contents" != "foo" ]; then
+	echo "Contents of populated file not the same after extraction"
+	exit 1
+fi
+cleanup
+
+echo "Testing mixed zero length/populated files with no compression"
+cleanup
+mkdir h 
+touch h/a
+echo "foo" > h/b
+
+cd h
+${XAR} --compression=none -cf ../h.xar .
+if [ $? -ne 0 ]; then
+	echo "Error creating archive"
+	exit 1
+fi
+cd ..
+
+extract_archive h.xar
+contents=`cat a`
+if [ ! -z "$contents" ]; then
+	echo "File isn't zero length after extraction"
+	exit 1
+fi
+contents=`cat b`
+if [ "$contents" != "foo" ]; then
+	echo "Contents of populated file not the same after extraction"
+	exit 1
+fi
+
+cleanup

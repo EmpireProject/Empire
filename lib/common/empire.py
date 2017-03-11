@@ -19,7 +19,7 @@ import sqlite3
 import os
 import hashlib
 import time
-
+import fnmatch
 
 # Empire imports
 import helpers
@@ -72,7 +72,7 @@ class MainMenu(cmd.Cmd):
         time.sleep(1)
 
         # pull out some common configuration information
-        (self.isroot, self.installPath, self.ipWhiteList, self.ipBlackList) = helpers.get_config('rootuser, install_path,ip_whitelist,ip_blacklist')
+        (self.isroot, self.installPath, self.ipWhiteList, self.ipBlackList, self.obfuscate, self.obfuscateCommand) = helpers.get_config('rootuser, install_path,ip_whitelist,ip_blacklist,obfuscate,obfuscate_command')
 
         # change the default prompt for the user
         self.prompt = '(Empire) > '
@@ -573,8 +573,19 @@ class MainMenu(cmd.Cmd):
                         print helpers.color("[!] Error opening ip file %s" % (parts[1]))
                 else:
                     self.agents.ipBlackList = helpers.generate_ip_list(",".join(parts[1:]))
+            elif parts[0].lower() == "obfuscate":
+                if parts[1].lower() == "true":
+                    self.obfuscate = True
+                    print helpers.color("[*] Obfuscating all future powershell commands run on all agents.")
+                elif parts[1].lower() == "false":
+                    print helpers.color("[*] Future powershell command run on all agent will no longer be obfuscated.")
+                    self.obfuscate = False
+                else:
+                    print helpers.color("[!] Valid options for obfuscate are 'true' or 'false'")
+            elif parts[0].lower() == "obfuscate_command":
+                self.obfuscateCommand = parts[1]
             else:
-                print helpers.color("[!] Please choose 'ip_whitelist' or 'ip_blacklist'")
+                print helpers.color("[!] Please choose 'ip_whitelist', 'ip_blacklist', 'obfuscate', or 'obfuscate_command'")
 
 
     def do_reset(self, line):
@@ -593,6 +604,10 @@ class MainMenu(cmd.Cmd):
             print self.agents.ipWhiteList
         if line.strip().lower() == "ip_blacklist":
             print self.agents.ipBlackList
+        if line.strip().lower() == "obfuscate":
+            print self.obfuscate
+        if line.strip().lower() == "obfuscate_command":
+            print self.obfuscateCommand
 
 
     def do_load(self, line):
@@ -688,6 +703,70 @@ class MainMenu(cmd.Cmd):
         else:
             print helpers.color("[!] Please enter a valid agent name")
 
+    def do_preobfuscate(self, line):
+        "Preobfuscate powershell modules"
+
+        module = line.strip()
+
+        if module == "" or module == "all":
+            choice = raw_input(helpers.color("[>] Preobfuscate all powershell modules using obfuscation command: \"" + self.obfuscateCommand + "\"? This may take a substantial amount of time. [y/N] ", "red"))
+            if choice.lower() != "" and choice.lower()[0] == "y":
+                reobfuscate = False
+                choice = raw_input(helpers.color("[>] Force reobfuscation of previously obfuscated modules? [y/N] ", "red"))
+                if choice.lower() != "" and choice.lower()[0] == "y":
+                    reobfuscate = True
+                originalPath = self.installPath + 'data/module_source'
+                pattern = '*.ps1'
+                for root, dirs, files in os.walk(originalPath):
+                    for filename in fnmatch.filter(files, pattern):
+                        filePath = os.path.join(root, filename)
+                        obfuscatedFilePath = self.installPath + 'data/obfuscated_module_source' + filePath.split(originalPath)[-1]
+                        if not os.path.isfile(obfuscatedFilePath) or reobfuscate:
+                            (head, tail) = os.path.split(obfuscatedFilePath)
+                            if not os.path.exists(head):
+                                os.makedirs(head)
+                            print helpers.color("[*] Obfuscating " + filename + "...")
+                            fr = open(filePath, 'r')
+                            script = fr.read()
+                            fr.close()
+                            fw = open(obfuscatedFilePath, 'w')
+                            fw.write(helpers.obfuscate(script, self.installPath, obfuscationCommand=self.obfuscateCommand))
+                            fw.close()
+                        else:
+                            print helpers.color("[*] " + filename + " already obfuscated.")
+        else:
+            originalPath = self.installPath + 'data/module_source'
+            pattern = '*.ps1'
+            foundChosenModule = False
+            for root, dirs, files in os.walk(originalPath):
+                for filename in fnmatch.filter(files, pattern):
+                    filePath = os.path.join(root, filename)
+                    if filePath.split(originalPath)[-1] == module:
+                        foundChosenModule = True
+                        obfuscatedFilePath = self.installPath + 'data/obfuscated_module_source' + filePath.split(originalPath)[-1]
+                        choice = raw_input(helpers.color("[>] Preobfuscate module? [y/N] ", "red"))
+                        if choice.lower() != "" and choice.lower()[0] == "y":
+                            reobfuscate = False
+                            choice = raw_input(helpers.color("[>] Force reobfuscation if module has been previously obfuscated? [y/N] ", "red"))
+                            if choice.lower() != "" and choice.lower()[0] == "y":
+                                reobfuscate = True
+                            if not os.path.isfile(obfuscatedFilePath) or reobfuscate:
+                                (head, tail) = os.path.split(obfuscatedFilePath)
+                                if not os.path.exists(head):
+                                    os.makedirs(head)
+                                print helpers.color("[*] Obfuscating " + filename + "...")
+                                fr = open(filePath, 'r')
+                                script = fr.read()
+                                fr.close()
+                                fw = open(obfuscatedFilePath, 'w')
+                                fw.write(helpers.obfuscate(script, self.installPath, obfuscationCommand=self.obfuscateCommand))
+                                fw.close()
+                            else:
+                                print helpers.color("[*] " + filename + " already obfuscated.")
+            if foundChosenModule:
+                print helpers.color("[*] Obfuscation complete.")
+            else:
+                print helpers.color("[!] Please enter a valid module path.")
 
     def complete_usemodule(self, text, line, begidx, endidx, language=None):
         "Tab-complete an Empire module path."
@@ -732,7 +811,7 @@ class MainMenu(cmd.Cmd):
     def complete_set(self, text, line, begidx, endidx):
         "Tab-complete a global option."
 
-        options = ["ip_whitelist", "ip_blacklist"]
+        options = ["ip_whitelist", "ip_blacklist", "obfuscate", "obfuscate_command"]
 
         if line.split(' ')[1].lower() in options:
             return helpers.complete_path(text, line, arg=True)
@@ -2809,6 +2888,10 @@ class ListenersMenu(cmd.Cmd):
                 stager.options['Listener']['Value'] = listenerName
                 stager.options['Language']['Value'] = language
                 stager.options['Base64']['Value'] = "True"
+                if self.mainMenu.obfuscate:
+                    stager.options['Obfuscate']['Value'] = "True"
+                else:
+                    stager.options['Obfuscate']['Value'] = "False"
                 print stager.generate()
             except Exception as e:
                 print helpers.color("[!] Error generating launcher: %s" % (e))
@@ -3270,7 +3353,7 @@ class ModuleMenu(cmd.Cmd):
             self.module.execute()
         else:
             agentName = self.module.options['Agent']['Value']
-            moduleData = self.module.generate()
+            moduleData = self.module.generate(self.mainMenu.obfuscate, self.mainMenu.obfuscateCommand)
 
             if not moduleData or moduleData == "":
                 print helpers.color("[!] Error: module produced an empty script")
