@@ -9,5 +9,3 @@ LastTask*
 data/obfuscated_module_source/*.ps1
 data/misc/ToObfuscate.ps1
 data/misc/Obfuscated.ps1
-setup/bomutils*
-setup/xar-1.5.2*
