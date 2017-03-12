@@ -1,114 +1,114 @@
-.("{0}{1}{2}" -f'SET-i','T','eM')  ('VAR'+'ia'+'BlE:K8'+'s'+'i') (  [TYPE]("{1}{0}" -F'PpdOmaIN','A') );$Ujc7T  =  [tYPe]("{3}{4}{2}{0}{1}{6}{5}" -f'ctIOn.emIt.As','SEM','LE','r','ef','Ss','blyBuILdeRACCe');  $oat0D =  [typE]("{2}{0}{1}{3}" -F'GSaT','tRI','fLA','buTE') ;.("{0}{2}{1}" -f 'sE','-iTeM','t') ("varIabLe"+":t47"+"w") ([TypE]("{4}{3}{1}{5}{2}{0}{6}" -f'sI','.eMiT.PA','Ing','TIon','Reflec','Ck','ZE') );&("{0}{1}{2}" -f 'S','ET-Ite','m')  ("va"+"rIABle:bv"+"7t"+"e")  ( [TYPe]("{5}{2}{8}{4}{1}{3}{7}{6}{0}"-f'ONS','On.CallINgc','EFLEC','OnveN','i','r','i','t','t')  );  .("{2}{0}{1}" -f 'iab','LE','set-VAr')  Tbc2  ([Type]("{0}{1}"-F'INt3','2') );  $rv1=  [tYpE]("{5}{9}{2}{8}{7}{3}{6}{4}{1}{0}" -F 'IOn','T','ImE.iNTerOP','lliN','En','Ru','gCOnV','Ca','SeRViCeS.','nT');   $FKa  = [type]("{0}{6}{2}{4}{5}{3}{1}"-f'rUNt','HArSEt','NTe','ES.C','ROP','sErviC','iMe.I') ; $96lwu =  [tyPE]("{2}{0}{1}"-f 'pt','R','INT') ;  $7LO =  [TypE]("{0}{5}{1}{2}{6}{4}{3}"-F 'RuNTim','teR','oPseRv','s.MarsHaL','e','E.iN','IC')  ;function gE`T-SEcUR`I`TYPA`CKageS
+ SeT  8i53f  (  [tYpe]("{0}{1}{2}{3}"-f'Appd','O','mA','In')) ;    sET-itEM  ('VAR'+'Iab'+'Le:4O'+'TI'+'R')  ([tYpE]("{5}{3}{6}{1}{0}{7}{2}{4}"-F'sEmbl','It.as','UildEracC','E','Ess','R','flECTIoN.em','YB'))  ;  SEt-item  VAriabLE:Tn86A  (  [typE]("{0}{1}{3}{2}"-F 'fLA','gs','E','atTRiBUT')  ) ;   Set-itEm  ("vARIABlE:w"+"2"+"i")  (  [tYPe]("{3}{5}{6}{4}{2}{1}{0}" -f'NgsiZe','ki','PAC','reFL','it.','ECT','ioN.eM') )  ;  $TDcp81=  [TyPe]("{8}{4}{6}{1}{0}{7}{2}{3}{5}" -F'aLlI','n.C','nvEn','Ti','i','Ons','O','NgCo','ReFlEct');    SeT-ITeM  vaRiAbLE:xGL  (  [TyPE]("{1}{0}"-f 'nt32','i') ) ;  $liW9 =  [TyPE]("{11}{3}{2}{5}{1}{8}{6}{4}{9}{7}{10}{0}"-F 'IoN','.','Nti','U','l','Me','TeroPseRvICes.Ca','Ng','IN','li','cONvEnT','r');  sv x8o (  [TypE]("{4}{6}{7}{1}{5}{3}{2}{0}" -F 'ArsEt','Inte','.Ch','Es','RUnt','ropsERVIC','im','e.')  ) ;    $UmdQ8=[tYPE]("{1}{0}" -f 'tR','iNtp') ;   $EHv6mU  =[TYPe]("{4}{2}{8}{0}{7}{1}{5}{3}{6}" -F'S','Ces','me.Int','s','ruNTi','.maR','haL','erVi','ErOp')  ;  function Ge`T-s`ecURi`TyPac`KaG`es
 {
 
 
     [CmdletBinding()] Param()
 
     
-    ${D`YN`ASSemBLY} = .("{3}{2}{0}{1}" -f'e','ct','j','New-Ob') ("{2}{4}{3}{1}{0}" -f'yName','mbl','S','.Reflection.Asse','ystem')(("{1}{0}" -f'PI','SS'))
-    ${as`sEMb`lyBuI`LDeR} =  $K8SI::"CurR`E`NTDO`MaiN".("{1}{3}{4}{0}{2}"-f'A','De','ssembly','fineDynami','c').Invoke(${Dyn`ASS`em`BlY},  $uJC7T::"R`un")
-    ${m`Od`u`le`BUIlDER} = ${ASsEMBLyB`u`i`L`DER}.("{6}{0}{3}{5}{4}{1}{2}" -f'e','namicModu','le','f','neDy','i','D').Invoke(("{1}{0}" -f'PI','SS'), ${Fa`l`sE})
+    ${DYn`ASsEmb`ly} = New-Object ("{0}{1}{5}{3}{4}{2}"-f'S','yste','me','mblyN','a','m.Reflection.Asse')('SSPI')
+    ${ASsem`B`Ly`BuilDeR} =   (  GI  VARIable:8i53f)."v`ALUe"::"CURrENt`Do`M`AIn"."dEF`I`Ne`d`Yna`MiC`AsSemBly"(${dy`NaSs`eMBLy},  $4oTir::"r`Un")
+    ${M`OduLebu`IL`D`Er} = ${aSS`EmBlY`BU`iLd`er}."DEf`in`eDyNAMi`CmodU`le"('SSPI', ${fal`SE})
 
-    ${flAGsc`OnStru`C`TOR} =   (  .("{1}{0}"-f'ir','d')  vAriAblE:OAT0D)."v`AlUe".("{3}{0}{1}{2}" -f'tCo','n','structor','Ge').Invoke(@())
-    ${F`L`AG`sCuSt`oMaTtRi`ButE} = &("{1}{0}{2}{3}" -f'j','New-Ob','ec','t') ("{0}{6}{4}{3}{1}{2}{5}{7}"-f 'Refle','stomA','ttributeBu','it.Cu','on.Em','ilde','cti','r')(${FLAg`sC`o`N`StRuCT`OR}, @())
-    ${sTr`UcTATTRiB`ut`Es} = ("{8}{18}{9}{1}{14}{7}{4}{2}{16}{5}{6}{12}{17}{3}{11}{10}{0}{13}{15}"-f'ldI','o','Class, Pub','led, Befor','lass, ','tialLayout',',','C','A','toLay','Fie','e',' Se','n','ut, Ansi','it','lic, Sequen','a','u')
+    ${fl`A`gs`c`oNSTRuCtOR} =   $tN86A."gE`T`ConStR`uC`ToR"(@())
+    ${f`LAG`sC`Us`To`Ma`TTRIBute} = New-Object ("{3}{4}{0}{10}{1}{9}{7}{8}{6}{5}{2}"-f'le','ion.Emi','r','Re','f','Builde','te','.C','ustomAttribu','t','ct')(${f`lA`gS`cO`NsTRU`CtoR}, @())
+    ${STrucT`A`T`Tr`IBuT`es} = 'AutoLayout, AnsiClass, Class, Public, SequentialLayout, Sealed, BeforeFieldInit'
 
-    ${enUM`B`ui`LDER} = ${m`odUlE`BUI`L`dER}.("{0}{2}{1}"-f'Define','um','En').Invoke(("{1}{3}{0}{2}"-f'PK','SSPI','G_FLAG','.SEC'), ("{1}{0}" -f'lic','Pub'), [Int32])
-    ${eN`U`mb`UIldEr}.("{0}{1}{3}{2}" -f'Se','tCusto','Attribute','m').Invoke(${fLAG`ScuStO`M`AttriBU`TE})
-    ${N`ULL} = ${enum`BUI`LDer}.("{2}{0}{3}{1}" -f 'neLiter','l','Defi','a').Invoke(("{2}{1}{0}" -f 'Y','GRIT','INTE'), 1)
-    ${N`ULl} = ${eNu`m`BUi`lDEr}.("{0}{2}{1}" -f'Define','teral','Li').Invoke(("{0}{2}{1}"-f'PR','CY','IVA'), 2)
-    ${nu`LL} = ${eNUMbU`I`l`dEr}.("{1}{0}{3}{2}{4}"-f'ineLit','Def','ra','e','l').Invoke(("{1}{0}{2}"-f 'N','TOKE','_ONLY'), 4)
-    ${N`ull} = ${EN`uM`BUil`dER}.("{0}{1}{2}" -f'Defin','eLiter','al').Invoke(("{1}{0}{2}" -f'ATA','D','GRAM'), 8)
-    ${Nu`ll} = ${eN`UmBU`IldER}.("{3}{2}{4}{0}{1}" -f 'a','l','Li','Define','ter').Invoke(("{2}{1}{0}" -f 'N','NNECTIO','CO'), 0x10)
-    ${nU`ll} = ${enum`B`u`ILDER}.("{0}{2}{1}"-f'Defin','al','eLiter').Invoke(("{4}{2}{0}{1}{3}" -f 'R','EQ','ULTI_','UIRED','M'), 0x20)
-    ${N`UlL} = ${e`NU`MBui`LDEr}.("{3}{2}{0}{1}"-f 'eLiter','al','n','Defi').Invoke(("{0}{1}{2}"-f 'CLIEN','T_O','NLY'), 0x40)
-    ${nU`lL} = ${E`NUMBuilD`eR}.("{0}{1}{2}"-f'De','f','ineLiteral').Invoke(("{1}{3}{0}{2}" -f'DED_ER','EX','ROR','TEN'), 0x80)
-    ${n`Ull} = ${En`Umbu`I`ldeR}.("{2}{1}{0}{3}"-f 'e','fineLit','De','ral').Invoke(("{1}{2}{0}" -f 'ON','IM','PERSONATI'), 0x100)
-    ${N`ulL} = ${ENUm`B`uIlDEr}.("{2}{0}{3}{1}" -f 'fineLi','al','De','ter').Invoke(("{1}{3}{4}{0}{2}" -f'_N','A','AME','CCEPT_WI','N32'), 0x200)
-    ${n`uLl} = ${E`NuMB`UI`LDEr}.("{3}{2}{0}{1}"-f 'eLi','teral','fin','De').Invoke(("{0}{1}" -f 'STREA','M'), 0x400)
-    ${n`ulL} = ${E`NumbUIld`er}.("{1}{2}{3}{0}"-f'teral','D','efi','neLi').Invoke(("{1}{2}{0}"-f'IABLE','N','EGOT'), 0x800)
-    ${nU`ll} = ${E`Nu`mBU`ildEr}.("{0}{1}{2}" -f 'Defin','eLiter','al').Invoke(("{0}{1}{3}{2}" -f'GSS','_COMPAT','BLE','I'), 0x1000)
-    ${nu`ll} = ${EN`UMBuil`d`ER}.("{2}{1}{0}" -f 'eral','Lit','Define').Invoke(("{0}{1}"-f'LO','GON'), 0x2000)
-    ${nu`LL} = ${en`UMBU`IldER}.("{0}{1}{2}"-f 'Defi','neLitera','l').Invoke(("{0}{2}{1}"-f'A','II_BUFFERS','SC'), 0x4000)
-    ${n`uLL} = ${EnU`M`BuILD`ER}.("{2}{0}{1}"-f'itera','l','DefineL').Invoke(("{1}{2}{0}"-f'MENT','F','RAG'), 0x8000)
-    ${N`uLL} = ${EnUM`Bui`L`DER}.("{0}{2}{1}"-f 'Defi','eral','neLit').Invoke(("{0}{1}{2}" -f 'MU','TUAL_','AUTH'), 0x10000)
-    ${NU`ll} = ${eN`umBu`iLd`er}.("{2}{0}{1}" -f 'era','l','DefineLit').Invoke(("{1}{2}{0}" -f'N','DELEG','ATIO'), 0x20000)
-    ${Nu`ll} = ${e`NU`mBuiL`Der}.("{1}{0}{2}"-f 'fine','De','Literal').Invoke(("{4}{2}{3}{1}{0}"-f'KSUM','ITH_CHEC','ONLY_','W','READ'), 0x40000)
-    ${n`ull} = ${e`Num`BUilDer}.("{0}{3}{2}{1}{4}"-f 'D','era','eLit','efin','l').Invoke(("{2}{1}{0}{3}" -f 'T','RICTED_','REST','OKENS'), 0x80000)
-    ${Nu`lL} = ${E`NUM`BUiLd`Er}.("{3}{1}{2}{4}{0}" -f 'eral','f','ineL','De','it').Invoke(("{0}{2}{4}{3}{1}"-f 'N','DER','EG','EXTEN','O_'), 0x100000)
-    ${NU`Ll} = ${enUM`B`uiLd`ER}.("{2}{0}{1}" -f 'L','iteral','Define').Invoke(("{1}{2}{0}" -f 'GOTIABLE2','N','E'), 0x200000)
-    ${n`ULL} = ${E`NUM`BUi`LdEr}.("{0}{2}{1}" -f 'De','ral','fineLite').Invoke(("{4}{0}{2}{1}{3}" -f 'ER','STHRO','_PAS','UGH','APPCONTAIN'), 0x400000)
-    ${n`ull} = ${ENum`BUILD`eR}.("{0}{3}{1}{4}{2}"-f 'De','in','Literal','f','e').Invoke(("{4}{5}{2}{0}{1}{3}" -f'NER_C','HEC','NTAI','KS','AP','PCO'), 0x800000)
-    ${S`eCP`kg_FlAG} = ${E`NU`MB`UILdeR}.("{2}{1}{0}"-f'ype','teT','Crea').Invoke()
+    ${e`NumB`UILDer} = ${MO`duleBU`IL`DER}."D`ef`inE`eNum"('SSPI.SECPKG_FLAG', 'Public', [Int32])
+    ${E`NuMBUi`l`deR}."sETCU`sToM`AtTRibu`TE"(${Fl`AgS`CUStOmat`T`Ri`BUTe})
+    ${n`ULL} = ${enumB`Ui`lD`er}."def`ine`LiTeRaL"('INTEGRITY', 1)
+    ${N`uLL} = ${enUmb`uILD`Er}."D`ef`In`EL`itERal"('PRIVACY', 2)
+    ${N`uLl} = ${enuM`Bu`iL`Der}."dEfIneLITE`R`AL"('TOKEN_ONLY', 4)
+    ${N`uLL} = ${E`NuMbuI`ldER}."DEFiNEL`Iter`AL"('DATAGRAM', 8)
+    ${n`ULL} = ${en`umbUi`l`dER}."def`IN`ElITErAl"('CONNECTION', 0x10)
+    ${nU`lL} = ${EN`umBU`Il`Der}."d`EfinEL`iT`eRAl"('MULTI_REQUIRED', 0x20)
+    ${nU`lL} = ${e`NUMbUiLD`ER}."DeF`IN`eliTeRAL"('CLIENT_ONLY', 0x40)
+    ${NU`ll} = ${e`NUm`BUi`LdeR}."DEfin`el`i`TerAL"('EXTENDED_ERROR', 0x80)
+    ${Nu`ll} = ${EnU`mBUil`D`ER}."dEfi`NELi`TeR`Al"('IMPERSONATION', 0x100)
+    ${nu`ll} = ${e`NumbU`iLd`ER}."DefIN`e`liTERal"('ACCEPT_WIN32_NAME', 0x200)
+    ${N`Ull} = ${ENu`MbUiLD`ER}."DeFINe`LIT`e`RAL"('STREAM', 0x400)
+    ${nU`LL} = ${E`NUmBuil`DER}."d`E`F`InELITERaL"('NEGOTIABLE', 0x800)
+    ${N`ULL} = ${EnUM`Bu`i`ldEr}."dE`FINE`LITeRaL"('GSS_COMPATIBLE', 0x1000)
+    ${nU`Ll} = ${enuMb`uILD`eR}."DefiNElITE`R`Al"('LOGON', 0x2000)
+    ${nU`ll} = ${EnU`Mb`u`ilder}."d`eFiNe`lIt`ErAl"('ASCII_BUFFERS', 0x4000)
+    ${NU`Ll} = ${en`UMBuil`DER}."DE`FinE`Lit`erAl"('FRAGMENT', 0x8000)
+    ${n`ULL} = ${E`NumB`uI`lder}."dEf`inElit`Eral"('MUTUAL_AUTH', 0x10000)
+    ${NU`LL} = ${E`NuMbUIL`D`er}."dEfiNEL`I`TE`RaL"('DELEGATION', 0x20000)
+    ${N`ulL} = ${en`uMbuI`LDER}."DefIn`El`iTeRAl"('READONLY_WITH_CHECKSUM', 0x40000)
+    ${n`ULL} = ${EN`uM`BuIl`DeR}."deFI`NEl`Ite`RaL"('RESTRICTED_TOKENS', 0x80000)
+    ${n`uLL} = ${enU`mbu`ILD`Er}."De`FInel`iteR`AL"('NEGO_EXTENDER', 0x100000)
+    ${Nu`ll} = ${EN`Um`BuILD`Er}."D`eFIN`eL`ITeRAl"('NEGOTIABLE2', 0x200000)
+    ${n`ULL} = ${eN`um`BUILdeR}."D`EfINe`lItERAl"('APPCONTAINER_PASSTHROUGH', 0x400000)
+    ${n`ull} = ${ENuMBU`I`lDeR}."d`EfIn`eLi`Te`RAL"('APPCONTAINER_CHECKS', 0x800000)
+    ${se`C`PKg_`FLag} = ${EnuM`B`UILdEr}."cReATET`y`pE"()
 
-    ${tYP`EBuILD`eR} = ${mOdUl`eB`ui`lDEr}.("{2}{1}{0}" -f'pe','y','DefineT').Invoke(("{2}{1}{3}{4}{0}"-f 'kgInfo','SPI.','S','Se','cP'), ${STrUc`TAT`T`Rib`UTEs}, [Object],  $T47w::"s`iZe8")
-    ${N`ULL} = ${Ty`PEbu`iL`DeR}.("{2}{0}{3}{1}"-f 'i','d','DefineF','el').Invoke(("{1}{2}{0}{3}" -f'iti','fCap','abil','es'), ${Secp`kG_`Fl`AG}, ("{1}{0}"-f'ic','Publ'))
-    ${n`uLL} = ${typ`EBUil`der}.("{0}{3}{1}{2}"-f 'Defi','eF','ield','n').Invoke(("{1}{2}{0}" -f 'ersion','w','V'), [Int16], ("{2}{1}{0}" -f'c','bli','Pu'))
-    ${N`ULL} = ${TYpEbu`I`LdER}.("{2}{0}{1}" -f'Fiel','d','Define').Invoke(("{1}{0}" -f'RPCID','w'), [Int16], ("{0}{2}{1}" -f 'Publ','c','i'))
-    ${n`ull} = ${tyPe`B`uiLd`er}.("{2}{1}{0}" -f'd','fineFiel','De').Invoke(("{2}{0}{1}"-f 'xTo','ken','cbMa'), [Int32], ("{1}{0}" -f 'c','Publi'))
-    ${n`ULl} = ${TyPEbu`ILd`Er}.("{2}{1}{0}" -f 'Field','fine','De').Invoke(("{0}{1}"-f'Na','me'), [IntPtr], ("{0}{1}"-f'Pub','lic'))
-    ${Nu`LL} = ${TYpEBU`i`lDer}.("{0}{1}{3}{2}" -f'DefineFi','e','d','l').Invoke(("{1}{0}{2}"-f 'omm','C','ent'), [IntPtr], ("{0}{1}"-f'P','ublic'))
-    ${s`ecPk`GiN`Fo} = ${TyP`E`B`UILdeR}.("{3}{2}{1}{0}"-f'pe','eTy','reat','C').Invoke()
+    ${tYp`eBuiL`Der} = ${M`o`d`UL`ebUILDEr}."DE`Fi`NETYpe"('SSPI.SecPkgInfo', ${sTRUC`Ta`TTrIBuT`es}, [Object],  (get-VArIAbLE ('W2'+'i') -vAl  )::"siZ`e8")
+    ${N`ulL} = ${ty`Pebui`LDEr}."d`eF`IN`eFIelD"('fCapabilities', ${S`EC`PKg_FL`AG}, 'Public')
+    ${NU`Ll} = ${t`y`peBu`ILder}."De`FiN`e`FieLD"('wVersion', [Int16], 'Public')
+    ${Nu`lL} = ${T`yP`E`BUIldER}."De`FInEFI`Eld"('wRPCID', [Int16], 'Public')
+    ${N`UlL} = ${typE`BuIL`dER}."D`eFI`NEFIElD"('cbMaxToken', [Int32], 'Public')
+    ${n`Ull} = ${T`ypEBu`il`DER}."DE`FiN`EF`iELD"('Name', [IntPtr], 'Public')
+    ${Nu`ll} = ${T`YpE`BUild`ER}."d`e`FInEfieLD"('Comment', [IntPtr], 'Public')
+    ${S`e`CpKG`INFo} = ${tyPebUI`l`d`eR}."c`R`eaTETyPE"()
 
-    ${Ty`PE`BuiLDeR} = ${MoD`uL`Eb`UiLd`er}.("{0}{2}{1}" -f 'D','pe','efineTy').Invoke(("{3}{2}{0}{1}"-f '.','Secur32','SPI','S'), ("{2}{0}{1}"-f 'blic, C','lass','Pu'))
-    ${p`InvOKE`mETh`od} = ${T`yP`EbUilD`Er}.("{0}{4}{2}{1}{3}" -f 'Defi','okeMetho','PInv','d','ne').Invoke(("{1}{3}{4}{2}{0}" -f'ges','EnumerateS','yPacka','ecu','rit'),
-        ("{1}{0}{3}{2}"-f 'e','s','dll','cur32.'),
-        ("{0}{3}{1}{2}"-f 'Public','tat','ic',', S'),
-         ( &("{0}{2}{1}"-f'gET-','IABLE','VAR') ("b"+"V7te") )."Val`UE"::"Sta`NDARD",
+    ${tyPe`BUi`ldeR} = ${m`Odulebui`l`der}."D`efIne`TYPe"('SSPI.Secur32', 'Public, Class')
+    ${piNvo`kE`me`T`hOD} = ${TYpE`B`uildER}."de`F`iNEp`i`NvokeMethod"('EnumerateSecurityPackages',
+        'secur32.dll',
+        'Public, Static',
+         ( geT-iTeM ('vARiaBL'+'E:tD'+'cP8'+'1') )."v`AlUe"::"s`T`Andard",
         [Int32],
-        [Type[]] @(  $TBC2.("{2}{0}{1}" -f 'ByRef','Type','Make').Invoke(),
-             $96LWU.("{3}{1}{2}{4}{0}"-f'pe','eBy','Re','Mak','fTy').Invoke()),
-         (&("{1}{2}{0}" -f 'E','vAriaB','L')  rv1 -vaLu )::"W`INa`Pi",
-          (  &("{1}{0}" -f'bLe','vaRIa')  ('FK'+'A') )."V`Alue"::"A`NSi")
+        [Type[]] @(  ( get-VARiaBlE XgL )."V`AlUE"."maKE`BYrEfT`YPE"(),
+             ( VARiabLE  ("U"+"mDQ8") )."va`LuE"."MAKe`BYR`E`FTypE"()),
+         (Item ('v'+'A'+'RiaBL'+'E:lIW9'))."vAl`UE"::"wI`NAPI",
+          (VaRIaBLE X8o  -VaL  )::"A`NsI")
 
-    ${sec`u`R32} = ${ty`P`EBUi`lDer}.("{0}{2}{1}{3}" -f 'Cr','t','ea','eType').Invoke()
+    ${s`e`CUR32} = ${typ`Ebu`iLdEr}."crEA`T`e`TYpe"()
 
-    ${pAc`ka`g`ecounT} = 0
-    ${pA`ckAgearRAy`P`Tr} =  (  .('LS')  vArIAblE:96lWU  )."Val`UE"::"Ze`RO"
-    ${rE`SUlt} = ${Se`cur`32}::"EnuM`E`R`AtES`eCurIty`packa`g`ES"([Ref] ${P`ACKA`GE`cOUnT}, [Ref] ${pAC`KaG`eA`RraY`PTr})
+    ${PAC`kAGEc`ount} = 0
+    ${PAcK`AgeARraY`P`Tr} =  (  GET-varIablE  ("UMdQ"+"8")  )."v`Alue"::"zE`Ro"
+    ${r`e`sUlT} = ${sEC`uR`32}::"EnU`m`E`RATeS`e`cU`RitY`pACKAGEs"([Ref] ${p`AckagE`couNt}, [Ref] ${p`ACkAGE`AR`RAypTr})
 
-    if (${rE`Su`lT} -ne 0)
+    if (${R`E`Sult} -ne 0)
     {
-        throw "Unable to enumerate seucrity packages. Error (0x$($Result.ToString('X8'))) "
+        throw "Unable to enumerate seucrity packages. Error (0x$($Result.ToString('X8')))"
     }
 
-    if (${P`AC`K`AGEcounT} -eq 0)
+    if (${pA`CkA`ge`cOUnt} -eq 0)
     {
-        .("{2}{0}{3}{4}{1}"-f'it','se','Wr','e-Ver','bo') ("{6}{3}{10}{2}{11}{9}{12}{5}{0}{8}{4}{7}{1}" -f'ed ',' packages.','e are n','h','u','l','T','rity','sec',' i','er','o','nstal')
+        Write-Verbose 'There are no installed security packages.'
         return
     }
 
-    ${S`TRUCTAD`D`RE`SS} = ${PAc`kAgeArr`AY`PtR}
+    ${s`T`RucTaDdRe`SS} = ${paCK`A`GeaRr`AyPtr}
 
-    foreach (${i} in 1..${paCk`Ag`ECOuNt})
+    foreach (${I} in 1..${PaC`kAgec`O`u`Nt})
     {
-        ${sECPAcK`AG`E`StRu`Ct} =  ( .("{2}{0}{1}" -f'iT','EM','get-') VaRIablE:7lo)."V`AlUe"::"PT`RTO`S`TrUCT`Ure"(${St`RUct`AdDr`eSs}, [Type] ${Se`C`P`kgInFO})
-        ${stru`CTa`DDreSs} = [IntPtr] (${sTr`uCTADD`Re`ss}.("{1}{0}"-f'oInt64','T').Invoke() +  (  &("{0}{1}{2}"-f'VA','riA','bLe')  7lO  -va )::"s`iZe`oF"([Type] ${seCPkg`IN`FO}))
+        ${SeCpaC`kagES`T`R`u`Ct} =  ( gi ('VARIa'+'bLe:EhV6'+'M'+'u'))."V`AluE"::"PTrt`osTr`uctu`Re"(${s`TRU`cT`ADd`REsS}, [Type] ${SECP`KG`infO})
+        ${STR`ucT`ADDRE`Ss} = [IntPtr] (${sTRUc`TaddrE`Ss}."TO`INt64"() +  $ehV6Mu::"SiZE`OF"([Type] ${se`C`Pkg`INFo}))
 
-        ${NA`mE} = ${nU`Ll}
+        ${na`ME} = ${NU`LL}
 
-        if (${se`C`paCkA`ges`Tru`cT}."nA`ME" -ne  $96Lwu::"z`eRo")
+        if (${seCP`Ac`KaGeS`TrU`ct}."n`AME" -ne   (dIR  ('varI'+'A'+'ble'+':'+'uMdq8'))."VAl`uE"::"ze`Ro")
         {
-            ${N`Ame} =  (  .("{0}{1}"-f 'IT','eM') ('vARiAB'+'LE:'+'7lO')  )."V`AlUE"::("{0}{1}{4}{2}{3}" -f'P','trT','tringAn','si','oS').Invoke(${s`E`cP`Ac`KAgeSTrUCt}."N`AME")
+            ${n`Ame} =  (geT-cHiLdiTEM ("vaRIabl"+"e:e"+"H"+"V6mu"))."V`AluE"::"p`TRt`ostRiNg`A`NSI"(${s`eCpack`AGeSTR`UCt}."na`Me")
         }
 
-        ${co`MM`ENT} = ${NU`LL}
+        ${C`Omm`eNt} = ${N`UlL}
 
-        if (${SECp`A`CkaGeStr`u`ct}."co`mMEnT" -ne  $96LWu::"Z`ERO")
+        if (${S`Ec`P`ACkA`GeStru`ct}."COmm`ent" -ne   ( gi ("vaRI"+"ab"+"Le"+":UMd"+"Q8")  )."VAL`UE"::"Z`ERO")
         {
-            ${com`me`NT} =  $7LO::("{1}{3}{2}{0}"-f 'Ansi','P','ing','trToStr').Invoke(${sE`CP`Ac`KA`gEsTrUcT}."Co`mmeNt")
+            ${C`oMMeNt} =  (varIAbLE Ehv6mu  )."va`LUE"::"PTR`T`oSTr`InGan`SI"(${SE`C`pacK`AGE`St`RUcT}."cOMmE`NT")
         }
 
-        ${a`TTRIB`ut`eS} = @{
-            ("{0}{1}" -f'Na','me') = ${N`Ame}
-            ("{1}{2}{0}" -f 't','C','ommen') = ${c`oMM`ENT}
-            ("{1}{3}{2}{0}" -f 'es','Capa','liti','bi') = ${sE`CpaCKagEsT`R`UCT}."fc`A`pabILI`TIEs"
-            ("{1}{0}{2}{3}"-f 'xTok','Ma','enS','ize') = ${sEcP`Ack`AgE`S`T`RucT}."cBM`AxTO`KEn"
+        ${AT`TrIbUt`Es} = @{
+            "nA`me" = ${Na`ME}
+            "Co`MmeNT" = ${c`omme`Nt}
+            "Cap`Abil`iTI`es" = ${s`E`CP`AcKAG`ES`TrucT}."FCaP`Ab`Il`IT`iES"
+            "MA`Xto`KenSiZe" = ${seCp`Ac`K`A`GestRUCT}."C`BM`AxToKen"
         }
 
-        ${s`Ecp`ACkaGE} = &("{0}{1}{2}" -f'New-','Obje','ct') ("{0}{1}"-f 'PS','Object') -Property ${A`T`TrIbu`Tes}
-        ${seC`PAcKa`gE}."ps`OB`JECt"."T`yPeNam`Es"[0] = ("{1}{4}{2}{3}{0}"-f 'O','SECUR','CP','KGINF','32.SE')
+        ${SE`cP`AcKA`GE} = New-Object ("{2}{1}{0}"-f 't','c','PSObje') -Property ${A`TT`R`iBUteS}
+        ${sECpacK`A`Ge}."PS`o`Bject"."Typ`e`NamEs"[0] = 'SECUR32.SECPKGINFO'
 
-        ${s`ECP`AC`kAGe}
+        ${Sec`pACka`ge}
     }
 }

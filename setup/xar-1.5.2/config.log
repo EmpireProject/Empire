@@ -699,9 +699,9 @@ configure:4213: $? = 0
 configure:4225: result: yes
 configure:4239: checking for getattrlist
 configure:4296: gcc -o conftest -Wall -g  -D_GNU_SOURCE  conftest.c  >&5
-/tmp/ccwAcOT8.o: In function `main':
+/tmp/ccJsJziN.o: In function `main':
 /opt/ObfuscatedEmpire/setup/xar-1.5.2/conftest.c:66: undefined reference to `getattrlist'
-/tmp/ccwAcOT8.o:(.data.rel+0x0): undefined reference to `getattrlist'
+/tmp/ccJsJziN.o:(.data.rel+0x0): undefined reference to `getattrlist'
 collect2: error: ld returned 1 exit status
 configure:4302: $? = 1
 configure: failed program was:
@@ -777,9 +777,9 @@ configure: failed program was:
 configure:4327: result: no
 configure:4341: checking for setattrlist
 configure:4398: gcc -o conftest -Wall -g  -D_GNU_SOURCE  conftest.c  >&5
-/tmp/ccGmg9ha.o: In function `main':
+/tmp/ccPqcw2U.o: In function `main':
 /opt/ObfuscatedEmpire/setup/xar-1.5.2/conftest.c:66: undefined reference to `setattrlist'
-/tmp/ccGmg9ha.o:(.data.rel+0x0): undefined reference to `setattrlist'
+/tmp/ccPqcw2U.o:(.data.rel+0x0): undefined reference to `setattrlist'
 collect2: error: ld returned 1 exit status
 configure:4404: $? = 1
 configure: failed program was:
@@ -1043,9 +1043,9 @@ configure:4927: $? = 0
 configure:4939: result: yes
 configure:4953: checking for strmode
 configure:5010: gcc -o conftest -Wall -g  -D_GNU_SOURCE  conftest.c  >&5
-/tmp/ccTfm8Vn.o: In function `main':
+/tmp/ccxnLABu.o: In function `main':
 /opt/ObfuscatedEmpire/setup/xar-1.5.2/conftest.c:69: undefined reference to `strmode'
-/tmp/ccTfm8Vn.o:(.data.rel+0x0): undefined reference to `strmode'
+/tmp/ccxnLABu.o:(.data.rel+0x0): undefined reference to `strmode'
 collect2: error: ld returned 1 exit status
 configure:5016: $? = 1
 configure: failed program was:
@@ -1656,7 +1656,7 @@ configure:7716: checking for openssl/evp.h
 configure:7723: result: yes
 configure:7739: checking for OpenSSL_add_all_ciphers in -lcrypto
 configure:7769: gcc -o conftest -Wall -g  -D_GNU_SOURCE -I/usr/include/libxml2  conftest.c -lcrypto   -lxml2 >&5
-/tmp/ccqwbiPI.o: In function `main':
+/tmp/cc3NWGmz.o: In function `main':
 /opt/ObfuscatedEmpire/setup/xar-1.5.2/conftest.c:56: undefined reference to `OpenSSL_add_all_ciphers'
 collect2: error: ld returned 1 exit status
 configure:7775: $? = 1

