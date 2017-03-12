@@ -273,10 +273,10 @@ http://www.danielbohannon.com
         # Randomly decide to overwrite the WindowStyle value with the corresponding integer representation of the predefined parameter value.
         Switch($ArgumentValue.ToLower())
         {
-            'normal'    {If(Get-Random -Input @(0..1)) {$ArgumentValue = 0}}
-            'hidden'    {If(Get-Random -Input @(0..1)) {$ArgumentValue = 1}}
-            'minimized' {If(Get-Random -Input @(0..1)) {$ArgumentValue = 2}}
-            'maximized' {If(Get-Random -Input @(0..1)) {$ArgumentValue = 3}}
+            'normal'    {If(Get-Random -Input @(0..1)) {$ArgumentValue = (Get-Random -Input @('0','n','no','nor','norm','norma'))}}
+            'hidden'    {If(Get-Random -Input @(0..1)) {$ArgumentValue = (Get-Random -Input @('1','h','hi','hid','hidd','hidde'))}}
+            'minimized' {If(Get-Random -Input @(0..1)) {$ArgumentValue = (Get-Random -Input @('2','mi','min','mini','minim','minimi','minimiz','minimize'))}}
+            'maximized' {If(Get-Random -Input @(0..1)) {$ArgumentValue = (Get-Random -Input @('3','ma','max','maxi','maxim','maximi','maximiz','maximize'))}}
             default {Write-Error "An invalid `$ArgumentValue value ($ArgumentValue) was passed to switch block for Out-PowerShellLauncher."; Exit;}
         }
 
