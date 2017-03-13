@@ -54,8 +54,6 @@ class Module:
             }
         }
 
-        }
-
         # save off a copy of the mainMenu object to access external functionality
         #   like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
