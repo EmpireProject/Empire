@@ -728,6 +728,17 @@ class MainMenu(cmd.Cmd):
             offs = len(mline) - len(text)
             return [s[offs:] for s in stagerNames if s.startswith(mline)]
 
+    def complete_setlist(self, text, line, begidx, endidx):
+        "Tab-complete a global list option"
+
+        options = ["listeners", "agents"]
+
+        if line.split(' ')[1].lower() in options:
+            return helpers.complete_path(text, line, arg=True)
+
+        mline = line.partition(' ')[2]
+        offs = len(mline) - len(text)
+        return [s[offs:] for s in options if s.startswith(mline)]
 
     def complete_set(self, text, line, begidx, endidx):
         "Tab-complete a global option."
@@ -776,6 +787,11 @@ class MainMenu(cmd.Cmd):
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
         return [s[offs:] for s in names if s.startswith(mline)]
+
+    def complete_list(self, text, line, begidx, endidx):
+        "Tab-complete list"
+
+        return self.complete_setlist(text, line, begidx, endidx)
 
 
 class AgentsMenu(cmd.Cmd):
