@@ -205,6 +205,16 @@ class Listener:
                             pass
 
                 # TODO: reimplement stager retries?
+                #check if we're using IPv6
+                listenerOptions = copy.deepcopy(listenerOptions)
+                bindIP = listenerOptions['BindIP']['Value']
+                port = listenerOptions['Port']['Value']
+                if ':' in bindIP:
+                    if "http" in host:
+                        if "https" in host:
+                            host = 'https://' + '[' + str(bindIP) + ']' + ":" + str(port)
+                        else:
+                            host = 'http://' + '[' + str(bindIP) + ']' + ":" + str(port) 
 
                 # code to turn the key string into a byte array
                 stager += helpers.randomize_capitalization("$K=[System.Text.Encoding]::ASCII.GetBytes(")
@@ -775,6 +785,8 @@ def send_message(packets=None):
                     if results:
                         if results.startswith('STAGE2'):
                             # TODO: document the exact results structure returned
+                            if ':' in clientIP:
+                                clientIP = '[' + str(clientIP) + ']'
                             sessionID = results.split(' ')[1].strip()
                             sessionKey = self.mainMenu.agents.agents[sessionID]['sessionKey']
                             dispatcher.send("[*] Sending agent (stage 2) to %s at %s" % (sessionID, clientIP), sender='listeners/http')

