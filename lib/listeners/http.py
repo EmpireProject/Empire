@@ -791,8 +791,16 @@ def send_message(packets=None):
                             sessionKey = self.mainMenu.agents.agents[sessionID]['sessionKey']
                             dispatcher.send("[*] Sending agent (stage 2) to %s at %s" % (sessionID, clientIP), sender='listeners/http')
 
+                            hopListenerName = request.headers.get('Hop-Name')
+                            try:
+                                hopListener = helpers.get_listener_options(hopListenerName)
+                                tempListenerOptions = copy.deepcopy(listenerOptions)
+                                tempListenerOptions['Host']['Value'] = hopListener['Host']['Value']
+                            except TypeError:
+                                tempListenerOptions = listenerOptions
+
                             # step 6 of negotiation -> server sends patched agent.ps1/agent.py
-                            agentCode = self.generate_agent(language=language, listenerOptions=listenerOptions)
+                            agentCode = self.generate_agent(language=language, listenerOptions=tempListenerOptions)
                             encryptedAgent = encryption.aes_encrypt_then_hmac(sessionKey, agentCode)
                             # TODO: wrap ^ in a routing packet?
 
