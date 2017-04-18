@@ -200,6 +200,11 @@ class Agents:
 
         # fix for 'skywalker' exploit by @zeroSteiner
         safePath = os.path.abspath("%s/downloads/" % self.installPath)
+        # fix for issue #420 (encoding problem, e.g. GBK) by @jolinxql
+        filename=filename.decode('utf-8')
+        if "//downloads/" in save_path:
+            save_path=save_path.replace("//downloads/","/downloads/")
+
         if not os.path.abspath(save_path + "/" + filename).startswith(safePath):
             dispatcher.send("[!] WARNING: agent %s attempted skywalker exploit!" % (sessionID), sender="Agents")
             dispatcher.send("[!] attempted overwrite of %s with data %s" % (path, data), sender="Agents")

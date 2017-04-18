@@ -101,9 +101,16 @@ def build_task_packet(taskName, data):
     
     taskID = struct.pack('=L', PACKET_NAMES[taskName])
     counter = struct.pack('=L', get_counter())
-    length = struct.pack('=L',len(data))
-
-    return taskID + counter + length + data.decode('utf-8').encode('utf-8',errors='ignore')
+    # fix for issue #420 (encoding problem, e.g. GBK) by @jolinxql
+    temp=data
+    try:
+        temp=temp.decode('utf-8')
+    except:
+        # "chinese".decode().decode() will cause an encode error
+        pass
+    temp=temp.encode('utf-8',errors='ignore')
+    length = struct.pack('=L',len(temp))
+    return taskID + counter + length + temp
    
 
 def parse_result_packet(packet, offset=0):
