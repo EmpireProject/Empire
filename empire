@@ -1,5 +1,4 @@
 #!/usr/bin/python
-#
 
 import sqlite3, argparse, sys, argparse, logging, json, string
 import os, re, time, signal, copy, base64
@@ -644,13 +643,13 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         Returns JSON describing all currently registered listeners.
         """
-        activeListenersRaw = execute_db_query(conn, 'SELECT * FROM listeners')
+        activeListenersRaw = execute_db_query(conn, 'SELECT id, name, module, listener_type, listener_category, options FROM listeners')
         listeners = []
 
         for activeListener in activeListenersRaw:
-            [ID, name, host, port, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, listener_type, redirect_target, default_lost_limit] = activeListener
+            [ID, name, module, listener_type, listener_category, options] = activeListener
             # activeListeners[name] = {'ID':ID, 'name':name, 'host':host, 'port':port, 'cert_path':cert_path, 'staging_key':staging_key, 'default_delay':default_delay, 'default_jitter':default_jitter, 'default_profile':default_profile, 'kill_date':kill_date, 'working_hours':working_hours, 'listener_type':listener_type, 'redirect_target':redirect_target, 'default_lost_limit':default_lost_limit}
-            listeners.append({'ID':ID, 'name':name, 'host':host, 'port':port, 'cert_path':cert_path, 'staging_key':staging_key, 'default_delay':default_delay, 'default_jitter':default_jitter, 'default_profile':default_profile, 'kill_date':kill_date, 'working_hours':working_hours, 'listener_type':listener_type, 'redirect_target':redirect_target, 'default_lost_limit':default_lost_limit})
+            listeners.append({'ID':ID, 'name':name, 'module':module, 'listener_type':listener_type, 'listener_category':listener_category, 'options':options })
 
         return jsonify({'listeners' : listeners})
 
@@ -660,14 +659,14 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         Returns JSON describing the listener specified by listener_name.
         """
-        activeListenersRaw = execute_db_query(conn, 'SELECT * FROM listeners')
+        activeListenersRaw = execute_db_query(conn, 'SELECT id, name, module, listener_type, listener_category, options FROM listeners WHERE name=?', [listener_name])
         listeners = []
 
-        if listener_name != "" and main.listeners.is_listener_valid(listener_name):
-            for activeListener in activeListenersRaw:
-                [ID, name, host, port, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, listener_type, redirect_target, default_lost_limit] = activeListener
-                if name == listener_name:
-                    listeners.append({'ID':ID, 'name':name, 'host':host, 'port':port, 'cert_path':cert_path, 'staging_key':staging_key, 'default_delay':default_delay, 'default_jitter':default_jitter, 'default_profile':default_profile, 'kill_date':kill_date, 'working_hours':working_hours, 'listener_type':listener_type, 'redirect_target':redirect_target, 'default_lost_limit':default_lost_limit})
+        #if listener_name != "" and main.listeners.is_listener_valid(listener_name):
+        for activeListener in activeListenersRaw:
+            [ID, name, module, listener_type, listener_category, options] = activeListener
+            if name == listener_name:
+                listeners.append({'ID':ID, 'name':name, 'module':module, 'listener_type':listener_type, 'listener_category':listener_category, 'options':options })
 
             return jsonify({'listeners' : listeners})
         else:
