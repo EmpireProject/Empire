@@ -56,6 +56,11 @@ class Module:
                 'Description'   :   'Listener to use.',
                 'Required'      :   True,
                 'Value'         :   ''
+            },  
+            'SafeChecks' : {
+                'Description'   :   'Enable SafeChecks.',
+                'Required'      :   True,
+                'Value'         :   'True'
             },     
             'UserAgent' : {
                 'Description'   :   'User-agent string to use for the staging request (default, none, or other).',
@@ -84,9 +89,10 @@ class Module:
         # extract all of our options
         listenerName = self.options['Listener']['Value']
         userAgent = self.options['UserAgent']['Value']
+        safeChecks = self.options['UserAgent']['Value']
 
         # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='python', userAgent=userAgent)
+        launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='python', userAgent=userAgent, safeChecks=safeChecks)
 
         if launcher == "":
             print helpers.color("[!] Error in launcher command generation.")

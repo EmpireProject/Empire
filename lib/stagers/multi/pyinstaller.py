@@ -42,21 +42,21 @@ class Stager:
 				'Required'      :   True,
 				'Value'         :   ''
 			},
-            'Language' : {
-                'Description'   :   'Language of the stager to generate.',
-                'Required'      :   True,
-                'Value'         :   'python'
-            },
+      'Language' : {
+          'Description'   :   'Language of the stager to generate.',
+          'Required'      :   True,
+          'Value'         :   'python'
+      },
 			'BinaryFile' : {
 				'Description'   :   'File to output launcher to.',
 				'Required'      :   True,
 				'Value'         :   '/tmp/emPyre'
 			},
-            'SafeChecks' : {
-                'Description'   :   'Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.',
-                'Required'      :   True,
-                'Value'         :   'True'
-            },
+      'SafeChecks' : {
+          'Description'   :   'Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.',
+          'Required'      :   True,
+          'Value'         :   'True'
+      },
 			'Base64' : {
 				'Description'   :   'Switch. Base64 encode the output. Defaults to False.',
 				'Required'      :   True,
@@ -112,15 +112,21 @@ class Stager:
 				self.conn = self.mainMenu.conn
 				# pull out the code install path from the database config
 				cur = self.conn.cursor()
-				cur.execute("SELECT install_path FROM config")
-				installPath_Str = cur.fetchone()[0]
+				#cur.execute("SELECT install_path FROM config")
+				#installPath_Str = cur.fetchone()[0]
 				cur.close()
 				
 				import os
-				stagerFFP_Str = os.path.join(installPath_Str, "data/agent/stager.py")
+#<<<<<<< HEAD:lib/stagers/osx/pyinstaller.py
+				stagerFFP_Str = self.mainMenu.installPath + "/data/agent/stagers/http.py"
+				#stagerFFP_Str = os.path.join(installPath_Str, "data/agent/stager.py")
+#=======
+				stagerFFP_Str = os.path.join(installPath_Str, "data/agent/stagers/http.py")
+#>>>>>>> ec606351797a9f97676a33767f38e341bd1e18bf:lib/stagers/multi/pyinstaller.py
 				filesToExtractImportsFrom_List.append(stagerFFP_Str)
 				
-				agentFFP_Str = os.path.join(installPath_Str, "data/agent/agent.py")
+				agentFFP_Str = self.mainMenu.installPath + "/data/agent/agent.py"
+				#agentFFP_Str = os.path.join(installPath_Str, "data/agent/agent.py")
 				filesToExtractImportsFrom_List.append(agentFFP_Str)
 				
 				imports_List = []
@@ -135,6 +141,8 @@ class Stager:
 								helpers.color(line)
 								imports_List.append(line)
 
+				imports_List.append('import trace')
+				imports_List.append('import json')
 				imports_List = list(set(imports_List)) # removing duplicate strings
 				imports_Str = "\n".join(imports_List)
 				launcher = imports_Str + "\n" + launcher

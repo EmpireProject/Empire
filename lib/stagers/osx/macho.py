@@ -68,7 +68,9 @@ class Stager:
         safeChecks = self.options['SafeChecks']['Value']
 
         # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(listenerName, language=language, userAgent=userAgent,  safeChecks=safeChecks)
+        # turn base64 encoding off
+        encode = False
+        launcher = self.mainMenu.stagers.generate_launcher(listenerName, language=language, encode=encode, userAgent=userAgent,  safeChecks=safeChecks)
 
         if launcher == "":
             print helpers.color("[!] Error in launcher command generation.")

@@ -1,18 +1,22 @@
 <?php
 
 $server = rtrim("REPLACE_SERVER", '/');
+$hopName = "REPLACE_HOP_NAME";
 
 
 function do_get_request($url, $optionalHeaders = null)
 {
+  global $hopName;
   $aContext = array(
     'http' => array(
       'method' => 'GET'
     ),
   );
+  $headers = array('Hop-Name' => $hopName);
   if ($optionalHeaders !== null) {
-    $aContext['http']['header'] = $optionalHeaders;
+    $headers['Cookie'] = $optionalHeaders;
   }
+  $aContext['http']['header'] = prepareHeaders($headers);
   $cxContext = stream_context_create($aContext);
   echo file_get_contents($url, False, $cxContext);
 }
@@ -20,13 +24,16 @@ function do_get_request($url, $optionalHeaders = null)
 
 function do_post_request($url, $data, $optionalHeaders = null)
 {
+  global $hopName;
   $params = array('http' => array(
               'method' => 'POST',
               'content' => $data
             ));
+  $headers = array('Hop-Name' => $hopName);
   if ($optionalHeaders !== null) {
-    $params['http']['header'] = $optionalHeaders;
+    $headers['Cookie'] = $optionalHeaders;
   }
+  $params['http']['header'] = prepareHeaders($headers);
   $ctx = stream_context_create($params);
   $fp = @fopen($url, 'rb', false, $ctx);
   if (!$fp) {
@@ -39,11 +46,24 @@ function do_post_request($url, $data, $optionalHeaders = null)
   echo $response;
 }
 
+function prepareHeaders($headers) {
+  $flattened = array();
+
+  foreach ($headers as $key => $header) {
+    if (is_int($key)) {
+      $flattened[] = $header;
+    } else {
+      $flattened[] = $key.': '.$header;
+    }
+  }
+
+  return implode("\r\n", $flattened);
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
   $requestURI = $_SERVER['REQUEST_URI'];
   if(isset($_COOKIE['session'])) {
-    return do_get_request($server.$requestURI, "Cookie: session=".str_replace(' ', '+', $_COOKIE['session']));
+    return do_get_request($server.$requestURI, "session=".str_replace(' ', '+', $_COOKIE['session']));
   }
   else {
     return do_get_request($server.$requestURI);
@@ -56,7 +76,7 @@ else {
   $postdata = file_get_contents("php://input");
 
   if(isset($_COOKIE['session'])) {
-    return do_post_request($server.$requestURI, $postdata, "Cookie: session=".str_replace(' ', '+', $_COOKIE['session']));
+    return do_post_request($server.$requestURI, $postdata, "session=".str_replace(' ', '+', $_COOKIE['session']));
   }
   else {
     return do_post_request($server.$requestURI, $postdata);

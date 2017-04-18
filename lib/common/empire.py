@@ -29,6 +29,8 @@ import listeners
 import modules
 import stagers
 import credentials
+from zlib_wrapper import compress
+from zlib_wrapper import decompress
 
 
 # custom exceptions used for nested menu navigation
@@ -726,6 +728,17 @@ class MainMenu(cmd.Cmd):
             offs = len(mline) - len(text)
             return [s[offs:] for s in stagerNames if s.startswith(mline)]
 
+    def complete_setlist(self, text, line, begidx, endidx):
+        "Tab-complete a global list option"
+
+        options = ["listeners", "agents"]
+
+        if line.split(' ')[1].lower() in options:
+            return helpers.complete_path(text, line, arg=True)
+
+        mline = line.partition(' ')[2]
+        offs = len(mline) - len(text)
+        return [s[offs:] for s in options if s.startswith(mline)]
 
     def complete_set(self, text, line, begidx, endidx):
         "Tab-complete a global option."
@@ -774,6 +787,11 @@ class MainMenu(cmd.Cmd):
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
         return [s[offs:] for s in names if s.startswith(mline)]
+
+    def complete_list(self, text, line, begidx, endidx):
+        "Tab-complete list"
+
+        return self.complete_setlist(text, line, begidx, endidx)
 
 
 class AgentsMenu(cmd.Cmd):
@@ -912,7 +930,7 @@ class AgentsMenu(cmd.Cmd):
         if name.lower() == 'all':
             self.mainMenu.agents.clear_agent_tasks_db('all')
         elif name.lower() == 'autorun':
-            self.mainMenu.agents.clear_autoruns()
+            self.mainMenu.agents.clear_autoruns_db()
         else:
             # extract the sessionID and clear the agent tasking
             sessionID = self.mainMenu.agents.get_agent_id_db(name)
@@ -1668,19 +1686,26 @@ class PowerShellAgentMenu(cmd.Cmd):
                 uploadname = parts[1].strip()
 
             if parts[0] != "" and os.path.exists(parts[0]):
+                # Check the file size against the upload limit of 1 mb
+                
                 # read in the file and base64 encode it for transport
                 open_file = open(parts[0], 'r')
                 file_data = open_file.read()
                 open_file.close()
 
-                # update the agent log with the filename and MD5
-                msg = "Tasked agent to upload %s : %s" % (parts[0], hashlib.md5(file_data).hexdigest())
-                self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+                size = os.path.getsize(parts[0])
+                if size > 1048576:
+                    print helpers.color("[!] File size is too large. Upload limit is 1MB.")
+                else:
+                    # update the agent log with the filename and MD5
+                    print helpers.color("[*] Size of %s for upload: %s" %(uploadname, helpers.get_file_size(file_data)), color="green")
+                    msg = "Tasked agent to upload %s : %s" % (parts[0], hashlib.md5(file_data).hexdigest())
+                    self.mainMenu.agents.save_agent_log(self.sessionID, msg)
 
-                # upload packets -> "filename | script data"
-                file_data = helpers.encode_base64(file_data)
-                data = uploadname + "|" + file_data
-                self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_UPLOAD", data)
+                    # upload packets -> "filename | script data"
+                    file_data = helpers.encode_base64(file_data)
+                    data = uploadname + "|" + file_data
+                    self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_UPLOAD", data)
             else:
                 print helpers.color("[!] Please enter a valid file path to upload")
 
@@ -1709,7 +1734,7 @@ class PowerShellAgentMenu(cmd.Cmd):
             functions = helpers.parse_powershell_script(script_data)
 
             # set this agent's tab-completable functions
-            self.mainMenu.agents.set_agent_functions(self.sessionID, functions)
+            self.mainMenu.agents.set_agent_functions_db(self.sessionID, functions)
 
         else:
             print helpers.color("[!] Please enter a valid script path")
@@ -2434,6 +2459,26 @@ class PythonAgentMenu(cmd.Cmd):
             msg = "Tasked agent to run Python command %s" % (line)
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
 
+    def do_pythonscript(self, line):
+        "Load and execute a python script"
+        path = line.strip()
+
+        if os.path.splitext(path)[-1] == '.py' and os.path.isfile(path):
+            filename = os.path.basename(path).rstrip('.py')
+            open_file = open(path, 'r')
+            script = open_file.read()
+            open_file.close()
+            script = script.replace('\r\n', '\n')
+            script = script.replace('\r', '\n')
+
+            msg = "[*] Tasked agent to execute python script: "+filename
+            print helpers.color(msg, color="green")
+            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", script)
+            #update the agent log
+            self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+        else:
+            print helpers.color("[!] Please provide a valid path", color="red")
+
 
     def do_sysinfo(self, line):
         "Task an agent to get system information."
@@ -2474,28 +2519,31 @@ class PythonAgentMenu(cmd.Cmd):
 
             if parts[0] != "" and os.path.exists(parts[0]):
                 # TODO: reimplement Python file upload
-                pass
 
                 # # read in the file and base64 encode it for transport
-                # f = open(parts[0], 'r')
-                # fileData = f.read()
-                # f.close()
-                # # Get file size
-                # print helpers.color("[*] Starting size of %s for upload: %s" %(uploadname, helpers.get_file_size(fileData)), color="green")
-                # msg = "Tasked agent to upload " + parts[0] + " : " + hashlib.md5(fileData).hexdigest()
-                # # update the agent log with the filename and MD5
-                # self.mainMenu.agents.save_agent_log(self.sessionID, msg)
-                # # compress data before we base64
-                # c = compress.compress()
-                # start_crc32 = c.crc32_data(fileData)
-                # comp_data = c.comp_data(fileData, 9)
-                # fileData = c.build_header(comp_data, start_crc32)
-                # # get final file size
-                # print helpers.color("[*] Final tasked size of %s for upload: %s" %(uploadname, helpers.get_file_size(fileData)), color="green")
-                # fileData = helpers.encode_base64(fileData)
-                # # upload packets -> "filename | script data"
-                # data = uploadname + "|" + fileData
-                # self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_UPLOAD", data)
+                f = open(parts[0], 'r')
+                fileData = f.read()
+                f.close()
+                # Get file size
+                size = os.path.getsize(parts[0])
+                if size > 1048576:
+                    print helpers.color("[!] File size is too large. Upload limit is 1MB.")
+                else:
+                    print helpers.color("[*] Starting size of %s for upload: %s" %(uploadname, helpers.get_file_size(fileData)), color="green")
+                    msg = "Tasked agent to upload " + parts[0] + " : " + hashlib.md5(fileData).hexdigest()
+                    # update the agent log with the filename and MD5
+                    self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+                    # compress data before we base64
+                    c = compress.compress()
+                    start_crc32 = c.crc32_data(fileData)
+                    comp_data = c.comp_data(fileData, 9)
+                    fileData = c.build_header(comp_data, start_crc32)
+                    # get final file size
+                    print helpers.color("[*] Final tasked size of %s for upload: %s" %(uploadname, helpers.get_file_size(fileData)), color="green")
+                    fileData = helpers.encode_base64(fileData)
+                    # upload packets -> "filename | script data"
+                    data = uploadname + "|" + fileData
+                    self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_UPLOAD", data)
             else:
                 print helpers.color("[!] Please enter a valid file path to upload")
 
@@ -2522,11 +2570,98 @@ class PythonAgentMenu(cmd.Cmd):
         else:
             self.mainMenu.modules.search_modules(searchTerm)
 
+    def do_sc(self, line):
+        "Use pyobjc and Foundation libraries to take a screenshot, and save the image to the server"
+
+        if self.mainMenu.modules.modules['python/collection/osx/native_screenshot']:
+            module = self.mainMenu.modules.modules['python/collection/osx/native_screenshot']
+            module.options['Agent']['Value'] = self.mainMenu.agents.get_agent_name_db(self.sessionID)
+            #execute screenshot module
+            msg = "[*] Tasked agent to take a screenshot"
+            module_menu = ModuleMenu(self.mainMenu, 'python/collection/osx/native_screenshot')
+            print helpers.color(msg, color="green")
+            self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+            module_menu.do_execute("")
+        else:
+            print helpers.color("[!] python/collection/osx/screenshot module not loaded")
+
+    def do_ls(self, line):
+        "List directory contents at the specified path"
+        #http://stackoverflow.com/questions/17809386/how-to-convert-a-stat-output-to-a-unix-permissions-string
+        if self.mainMenu.modules.modules['python/management/osx/ls']:
+            module = self.mainMenu.modules.modules['python/management/osx/ls']
+            if line.strip() != '':
+                module.options['Path']['Value'] = line.strip()
+
+            module.options['Agent']['Value'] = self.mainMenu.agents.get_agent_name_db(self.sessionID)
+            module_menu = ModuleMenu(self.mainMenu, 'python/management/osx/ls')
+            msg = "[*] Tasked agent to list directory contents of: "+str(module.options['Path']['Value'])
+            print helpers.color(msg,color="green")
+            self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+            module_menu.do_execute("")
+
+        else:
+            print helpers.color("[!] python/management/osx/ls module not loaded")
+
+    def do_whoami(self, line):
+        "Print the currently logged in user"
+
+        command = "from AppKit import NSUserName; print str(NSUserName())"
+        self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", command)
+        msg = "Tasked agent to print currently logged on user"
+        self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+
+    def do_loadpymodule(self, line):
+        "Import zip file containing a .py module or package with an __init__.py"
+
+        path = line.strip()
+        #check the file ext and confirm that the path given is a file
+        if os.path.splitext(path)[-1] == '.zip' and os.path.isfile(path):
+            #open a handle to the file and save the data to a variable, zlib compress
+            filename = os.path.basename(path).rstrip('.zip')
+            open_file = open(path, 'rb')
+            module_data = open_file.read()
+            open_file.close()
+            msg = "Tasked agent to import "+path+" : "+hashlib.md5(module_data).hexdigest()
+            print helpers.color("[*] "+msg, color="green")
+            self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+            c = compress.compress()
+            start_crc32 = c.crc32_data(module_data)
+            comp_data = c.comp_data(module_data, 9)
+            module_data = c.build_header(comp_data, start_crc32)
+            module_data = helpers.encode_base64(module_data)
+            data = filename + '|' + module_data
+            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_IMPORT_MODULE", data)
+        else:
+            print helpers.color("[!] Please provide a valid zipfile path", color="red")
+
+    def do_viewrepo(self, line):
+        "View the contents of a repo. if none is specified, all files will be returned"
+        repoName = line.strip()
+        msg = "[*] Tasked agent to view repo contents: " + repoName
+        print helpers.color(msg, color="green")
+        self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+        self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_VIEW_MODULE", repoName)
+
+    def do_removerepo(self, line):
+        "Remove a repo"
+        repoName = line.strip()
+        msg = "[*] Tasked agent to remove repo: "+repoName
+        print helpers.color(msg, color="green")
+        self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+        self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_REMOVE_MODULE", repoName)
 
     def do_creds(self, line):
         "Display/return credentials from the database."
         self.mainMenu.do_creds(line)
 
+    def complete_loadpymodule(self, text, line, begidx, endidx):
+        "Tab-complete a zip file path"
+        return helpers.complete_path(text, line)
+
+    def complete_pythonscript(self, text, line, begidx, endidx):
+        "Tab-complete a zip file path"
+        return helpers.complete_path(text, line)
 
     def complete_usemodule(self, text, line, begidx, endidx):
         "Tab-complete an Empire Python module path"
@@ -3223,7 +3358,7 @@ class ModuleMenu(cmd.Cmd):
             # set the script to be the global autorun
             elif agentName.lower() == "autorun":
 
-                self.mainMenu.agents.set_autoruns(taskCommand, moduleData)
+                self.mainMenu.agents.set_autoruns_db(taskCommand, moduleData)
                 dispatcher.send("[*] Set module %s to be global script autorun." % (self.moduleName), sender="Empire")
 
             else:
@@ -3288,7 +3423,7 @@ class ModuleMenu(cmd.Cmd):
 
         elif line.split(' ')[1].lower().endswith("host"):
             return [helpers.lhost()]
-        
+
         elif line.split(' ')[1].lower().endswith("language"):
             languages = ['powershell', 'python']
             end_line = ' '.join(line.split(' ')[1:])
