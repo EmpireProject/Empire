@@ -39,7 +39,11 @@ elif lsb_release -d | grep -q "Ubuntu"; then
 	pip install pyOpenSSL
 elif [ -f /usr/bin/apt-get ]; then
 	echo "Looks like a Debian/Ubuntu variant. Trying apt-get..."
- 	apt-get install -y python-dev python-m2crypto swig python-pip libssl-dev
+ 	wget https://bootstrap.pypa.io/get-pip.py
+ 	python ./get-pip.py
+ 	apt-get install -y python-m2crypto swig python-pip libssl-dev build-essential libffi-dev python-dev
+ 	pip install cryptography
+ 	pip install pyopenssl
  	pip install pycrypto
  	pip install iptools
  	pip install pydispatcher
