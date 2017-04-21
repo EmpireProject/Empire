@@ -41,7 +41,7 @@ Param(
     $ProcName,
     
     [Parameter(Position = 6, Mandatory = $true)]
-    [ValidateLength(1,1200)]
+    [ValidateLength(1,3000)]
     [String]
     $PoshCode,
 
