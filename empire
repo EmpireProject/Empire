@@ -1090,7 +1090,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
         for reportingEvent in reportingRaw:
             [ID, name, event_type, message, time_stamp, taskID] = reportingEvent
-            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":message, "timestamp":timestamp, "taskID":taskID})
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":message, "timestamp":time_stamp, "taskID":taskID})
 
         return jsonify({'reporting' : reportingEvents})
 
