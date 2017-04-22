@@ -158,13 +158,18 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
     global serverExitCommand
 
     # if a username/password were not supplied, use the creds stored in the db
+
     (dbUsername, dbPassword) = execute_db_query(conn, "SELECT api_username, api_password FROM config")[0]
 
     if not username:
         username = dbUsername
+    else:
+        execute_db_query(conn, "UPDATE config SET api_username=?", username)
 
     if not password:
         password = dbPassword
+    else:
+        execute_db_query(conn, "UPDATE config SET api_password=?", password)
 
 
     class Namespace:
