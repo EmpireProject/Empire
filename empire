@@ -248,7 +248,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
     @app.route('/api/map', methods=['GET'])
     def list_routes():
         """
-        List all of the current registered routes.
+        List all of the current registered API routes.
         """
         import urllib
         output = []
@@ -274,10 +274,11 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         Returns JSON of the current Empire config.
         """
-        configRaw = execute_db_query(conn, 'SELECT * FROM config')
+        configRaw = execute_db_query(conn, 'SELECT staging_key, install_path, ip_whitelist, ip_blacklist, autorun_command, autorun_data, rootuser, api_username, api_password, api_current_token, api_permanent_token FROM config')
 
-        [staging_key, stage0_uri, stage1_uri, stage2_uri, default_delay, default_jitter, default_profile, default_cert_path, default_port, install_path, server_version, ip_whitelist, ip_blacklist, default_lost_limit, autorun_command, autorun_data, api_username, api_password, current_api_token, permanent_api_token] = configRaw[0]
-        config = [{"version":empire.VERSION, "staging_key":staging_key, "stage0_uri":stage0_uri, "stage1_uri":stage1_uri, "stage2_uri":stage2_uri, "default_delay":default_delay, "default_jitter":default_jitter, "default_profile":default_profile, "default_cert_path":default_cert_path, "default_port":default_port, "install_path":install_path, "server_version":server_version, "ip_whitelist":ip_whitelist, "ip_blacklist":ip_blacklist, "default_lost_limit":default_lost_limit, "autorun_command":autorun_command, "autorun_data":autorun_data, "api_username":api_username, "api_password":api_password, "current_api_token":current_api_token, "permanent_api_token":permanent_api_token}]
+        [staging_key, install_path, ip_whitelist, ip_blacklist, autorun_command, autorun_data, rootuser, api_username, api_password, api_current_token, api_permanent_token] = configRaw[0]
+        config = [{"api_password":api_password, "api_username":api_username, "autorun_command":autorun_command, "autorun_data":autorun_data, "current_api_token":api_current_token, "install_path":install_path, "ip_blacklist":ip_blacklist, "ip_whitelist":ip_whitelist, "permanent_api_token":api_permanent_token, "staging_key":staging_key, "version":empire.VERSION}]
+
         return jsonify({'config': config})
 
 
@@ -1084,7 +1085,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
         for reportingEvent in reportingRaw:
             [ID, name, event_type, message, time_stamp, taskID] = reportingEvent
-            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":message, "timestamp":time_stamp, "taskID":taskID})
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":message, "timestamp":timestamp, "taskID":taskID})
 
         return jsonify({'reporting' : reportingEvents})
 
