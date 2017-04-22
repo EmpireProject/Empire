@@ -10,7 +10,6 @@ from Crypto.Random import random
 # Empire imports
 from lib.common import empire
 from lib.common import helpers
-from lib.common import listeners #might not need this...
 
 global serverExitCommand
 serverExitCommand = 'restart'
@@ -832,7 +831,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
         for activeAgent in activeAgentsRaw:
             [ID, session_id, listener, name, language, language_version, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results] = activeAgent
-            activeAgents.append({"ID":ID, "sessionID":sessionID, "listener":listener, "name":name, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "uris":uris, "old_uris":old_uris, "user_agent":user_agent, "headers":headers, "functions":functions, "kill_date":kill_date, "working_hours":working_hours, "ps_version":ps_version, "lost_limit":lost_limit, "taskings":taskings, "results":results})
+            activeAgents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
 
         return jsonify({'agents' : activeAgents})
 
@@ -843,30 +842,22 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         Returns JSON describing the agent's results and removes the result field
         from the backend database.
         """
-
         agentTaskResults = []
 
         if agent_name.lower() == "all":
             # enumerate all target agent sessionIDs
-            agentNameIDs = execute_db_query(conn, "SELECT name,session_id FROM agents WHERE name like '%' OR session_id like '%'")
+            agentNameIDs = execute_db_query(conn, "SELECT name, session_id FROM agents WHERE name like '%' OR session_id like '%'")
         else:
-            agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
-
+            agentNameIDs = execute_db_query(conn, 'SELECT name, session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+        
         for agentNameID in agentNameIDs:
-            (agentName, agentSessionID) = agentNameID
+            [agentName, agentSessionID] = agentNameID
 
-            agentResults = execute_db_query(conn, 'SELECT results FROM agents WHERE session_id=?', [agentSessionID])[0]
+            agentResults = execute_db_query(conn, 'SELECT agent, data FROM results WHERE agent=?', [agentSessionID])
 
-            if agentResults and agentResults[0] and agentResults[0] != '':
-                out = json.loads(agentResults[0])
-                if out:
-                    agentResults = "\n".join(out)
-                else:
-                    agentResults = ''
-            else:
-                agentResults = ''
-
-            agentTaskResults.append({"agentname":agentName, "results":agentResults})
+            for result in agentResults:
+                [agent, data] = result
+                agentTaskResults.append({"agentname":result[0], "results":result[1]})
 
         return jsonify({'results': agentTaskResults})
 
