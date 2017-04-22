@@ -95,7 +95,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             for part in parts:
                 if "SESSIONID" in part:
                     # extract the sessionID value
-                    name, sessionID = part.split("=")
+                    name, sessionID = part.split("=", 1)
 
         # fire off an event for this GET (for logging)
         dispatcher.send("[*] "+resource+" requested from "+str(sessionID)+" at "+clientIP, sender="HttpHandler")
@@ -123,7 +123,7 @@ class RequestHandler(BaseHTTPRequestHandler):
             for part in parts:
                 if "SESSIONID" in part:
                     # extract the sessionID value
-                    name, sessionID = part.split("=")
+                    name, sessionID = part.split("=", 1)
 
         # fire off an event for this POST (for logging)
         dispatcher.send("[*] Post to "+resource+" from "+str(sessionID)+" at "+clientIP, sender="HttpHandler")
