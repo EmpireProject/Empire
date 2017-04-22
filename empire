@@ -1023,12 +1023,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         Returns JSON describing the reporting events from the backend database.
         """
-        reportingRaw = execute_db_query(conn, 'SELECT * FROM reporting')
+        reportingRaw = execute_db_query(conn, 'SELECT ID, name, event_type, message, time_stamp, taskID FROM reporting')
         reportingEvents = []
 
         for reportingEvent in reportingRaw:
-            [ID, name, eventType, message, timestamp, taskID] = reportingEvent
-            reportingEvents.append({"ID":ID, "agentname":name, "event_type":eventType, "message":message, "timestamp":timestamp, "taskID":taskID})
+            [ID, name, event_type, message, time_stamp, taskID] = reportingEvent
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":message, "timestamp":time_stamp, "taskID":taskID})
 
         return jsonify({'reporting' : reportingEvents})
 
@@ -1047,12 +1047,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         else:
             return jsonify({'reporting' : ''})
 
-        reportingRaw = execute_db_query(conn, 'SELECT * FROM reporting WHERE name=?', [sessionID])
+        reportingRaw = execute_db_query(conn, 'SELECT ID, name, event_type, message, time_stamp, taskID FROM reporting WHERE name=?', [sessionID])
         reportingEvents = []
 
         for reportingEvent in reportingRaw:
-            [ID, name, eventType, message, timestamp] = reportingEvent
-            reportingEvents.append({"ID":ID, "agentname":name, "event_type":eventType, "message":message, "timestamp":timestamp})
+            [ID, name, event_type, message, time_stamp, taskID] = reportingEvent
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":message, "timestamp":time_stamp, "taskID":taskID})
 
         return jsonify({'reporting' : reportingEvents})
 
@@ -1063,12 +1063,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         Returns JSON describing the reporting events from the backend database for
         the event type specified by event_type.
         """
-        reportingRaw = execute_db_query(conn, 'SELECT * FROM reporting WHERE event_type=?', [event_type])
+        reportingRaw = execute_db_query(conn, 'SELECT ID, name, event_type, message, time_stamp, taskID FROM reporting WHERE event_type=?', [event_type])
         reportingEvents = []
 
         for reportingEvent in reportingRaw:
-            [ID, name, eventType, message, timestamp] = reportingEvent
-            reportingEvents.append({"ID":ID, "agentname":name, "event_type":eventType, "message":message, "timestamp":timestamp})
+            [ID, name, event_type, message, time_stamp, taskID] = reportingEvent
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":message, "timestamp":time_stamp, "taskID":taskID})
 
         return jsonify({'reporting' : reportingEvents})
 
@@ -1079,12 +1079,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         Returns JSON describing the reporting events from the backend database for
         the any messages with *msg* specified by msg.
         """
-        reportingRaw = execute_db_query(conn, "SELECT * FROM reporting WHERE message like ?", ['%'+msg+'%'])
+        reportingRaw = execute_db_query(conn, "SELECT ID, name, event_type, message, time_stamp, taskID FROM reporting WHERE message like ?", ['%'+msg+'%'])
         reportingEvents = []
 
         for reportingEvent in reportingRaw:
-            [ID, name, eventType, message, timestamp] = reportingEvent
-            reportingEvents.append({"ID":ID, "agentname":name, "event_type":eventType, "message":message, "timestamp":timestamp})
+            [ID, name, event_type, message, time_stamp, taskID] = reportingEvent
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":message, "timestamp":time_stamp, "taskID":taskID})
 
         return jsonify({'reporting' : reportingEvents})
 
