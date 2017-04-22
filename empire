@@ -1008,12 +1008,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         Returns JSON describing the credentials stored in the backend database.
         """
-        credsRaw = execute_db_query(conn, 'SELECT * FROM credentials')
+        credsRaw = execute_db_query(conn, 'SELECT ID, credtype, domain, username, password, host, os, sid, notes FROM credentials')
         creds = []
 
         for credRaw in credsRaw:
-            [ID, credtype, domain, username, password, host, sid, notes] = credRaw
-            creds.append({"ID":ID, "credtype":credtype, "domain":domain, "username":username, "password":password, "host":host, "sid":sid, "notes":notes})
+            [ID, credtype, domain, username, password, host, os, sid, notes] = credRaw
+            creds.append({"ID":ID, "credtype":credtype, "domain":domain, "username":username, "password":password, "host":host, "os":os, "sid":sid, "notes":notes})
 
         return jsonify({'creds' : creds})
 
@@ -1027,8 +1027,8 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         reportingEvents = []
 
         for reportingEvent in reportingRaw:
-            [ID, name, eventType, message, timestamp] = reportingEvent
-            reportingEvents.append({"ID":ID, "agentname":name, "event_type":eventType, "message":message, "timestamp":timestamp})
+            [ID, name, eventType, message, timestamp, taskID] = reportingEvent
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":eventType, "message":message, "timestamp":timestamp, "taskID":taskID})
 
         return jsonify({'reporting' : reportingEvents})
 
