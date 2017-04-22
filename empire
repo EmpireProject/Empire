@@ -303,14 +303,13 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'stagers': stagers})
 
 
-    @app.route('/api/stagers/<string:stager_name>', methods=['GET'])
+    @app.route('/api/stagers/<path:stager_name>', methods=['GET'])
     def get_stagers_name(stager_name):
         """
         Returns JSON describing the specified stager_name passed.
         """
-
         if stager_name not in main.stagers.stagers:
-            return make_response(jsonify({'error': 'stager name %s not found' %(stager_name)}), 404)
+            return make_response(jsonify({'error': 'stager name %s not found, make sure to use [os]/[name] format, ie. windows/dll' %(stager_name)}), 404)
 
         stagers = []
         for stagerName, stager in main.stagers.stagers.iteritems():
@@ -683,7 +682,6 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         Kills the listener specified by listener_name.
         """
-
         if listener_name.lower() == "all":
             activeListenersRaw = execute_db_query(conn, 'SELECT id, name, module, listener_type, listener_category, options FROM listeners')
             for activeListener in activeListenersRaw:
@@ -707,7 +705,8 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         -- Is this deprecated? -bneg
         Returns JSON describing the current listener options.
         """
-        return jsonify({'listeneroptions' : [main.listeners.options]})
+        #return jsonify({'listeneroptions' : [main.listeners.options]})
+        return jsonify({'listeneroptions':'Deprecated. Retrieve from /api/listeners/[name]'})
 
 
     @app.route('/api/listeners', methods=['POST'])
@@ -717,20 +716,21 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
 
         # set all passed options
-        for option, values in request.json.iteritems():
-            returnVal = main.listeners.set_listener_option(option, values)
-            if not returnVal:
-                return make_response(jsonify({'error': 'error setting listener value %s with option %s' %(option, values)}), 400)
+        # for option, values in request.json.iteritems():
+        #     returnVal = main.listeners.set_listener_option(option, values)
+        #     if not returnVal:
+        #         return make_response(jsonify({'error': 'error setting listener value %s with option %s' %(option, values)}), 400)
 
-        valid = main.listeners.validate_listener_options()
-        if not valid:
-            return make_response(jsonify({'error': 'error validating listener options'}), 400)
+        # valid = main.listeners.validate_listener_options()
+        # if not valid:
+        #     return make_response(jsonify({'error': 'error validating listener options'}), 400)
 
-        (success, message) = main.listeners.add_listener_from_config()
-        if success:
-            return jsonify({'success': success, 'msg' : "listener '%s' successfully started." %(message)})
-        else:
-            return jsonify({'success': success, 'msg' : message})
+        # (success, message) = main.listeners.add_listener_from_config()
+        # if success:
+        #     return jsonify({'success': success, 'msg' : "listener '%s' successfully started." %(message)})
+        # else:
+        #     return jsonify({'success': success, 'msg' : message})
+        return jsonify({'error': 'Not yet supported in this version'})
 
 
     @app.route('/api/agents', methods=['GET'])
