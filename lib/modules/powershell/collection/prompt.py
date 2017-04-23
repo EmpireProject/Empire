@@ -120,5 +120,5 @@ Invoke-Prompt """
                     else:
                         script += " -" + str(option) + " \"" + str(values['Value'].strip("\"")) + "\""
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
         return script

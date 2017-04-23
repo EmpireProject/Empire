@@ -62,5 +62,5 @@ class Module:
         else:
             script = "'Logging off current user.'; Start-Sleep -s 3; shutdown /l /f"
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
         return script

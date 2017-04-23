@@ -71,5 +71,5 @@ class Module:
         # signal the existing listener that we're switching listeners, and the new comms code
         commsCode = "Send-Message -Packets $(Encode-Packet -Type 130 -Data '%s');\n%s" % (listenerName, commsCode)
         if obfuscate:
-            commsCode = helpers.obfuscate(psScript=commsCode, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+            commsCode = helpers.obfuscate(psScript=commsCode, obfuscationCommand=obfuscationCommand)
         return commsCode

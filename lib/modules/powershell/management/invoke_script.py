@@ -77,5 +77,5 @@ class Module:
 
         script += "%s" %(scriptCmd)
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
         return script

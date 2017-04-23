@@ -121,6 +121,6 @@ class Module:
         scriptEnd += " -Port "+str(self.options['Port']['Value'])
         scriptEnd += " -Cmd \"" + launcher + "\""
         if obfuscate:
-            scriptEnd = helpers.obfuscate(psScript=scriptEnd, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd
         return script

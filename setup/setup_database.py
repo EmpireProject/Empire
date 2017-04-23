@@ -62,7 +62,7 @@ API_PERMANENT_TOKEN = ''.join(random.choice(string.ascii_lowercase + string.digi
 OBFUSCATE = 0
 
 # default obfuscation command
-OBFUSCATE_COMMAND = "Token,All,1"
+OBFUSCATE_COMMAND = "Token\All\1"
 ###################################################
 #
 # Database setup.

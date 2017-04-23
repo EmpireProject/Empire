@@ -79,6 +79,6 @@ class Module:
 
         scriptEnd += '"memssp installed, check C:\Windows\System32\mimisla.log for logon events."'
         if obfuscate:
-            scriptEnd = helpers.obfuscate(psScript=scriptEnd, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd
         return script

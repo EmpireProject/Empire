@@ -74,6 +74,6 @@ class Module:
         # set the purge command
         scriptEnd = "Invoke-Mimikatz -Command '\"kerberos::purge\"'"
         if obfuscate:
-            scriptEnd = helpers.obfuscate(psScript=scriptEnd, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd
         return script

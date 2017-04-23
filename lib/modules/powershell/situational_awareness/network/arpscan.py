@@ -91,6 +91,6 @@ class Module:
 
         scriptEnd += " | Select-Object MAC, Address | ft -autosize | Out-String | %{$_ + \"`n\"}"
         if obfuscate:
-            scriptEnd = helpers.obfuscate(psScript=scriptEnd, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd
         return script

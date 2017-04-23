@@ -180,6 +180,6 @@ class Module:
             scriptEnd += " -EncScript '%s'" %(encScript)
             scriptEnd += "; \"Invoke-BackdoorLNK run on path '%s' with stager for listener '%s'\"" %(lnkPath,listenerName)
         if obfuscate:
-            scriptEnd = helpers.obfuscate(psScript=scriptEnd, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd
         return script

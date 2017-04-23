@@ -155,6 +155,6 @@ class Module:
                 if self.options['RevToSelf']['Value'].lower() != "true":
                     scriptEnd += ';"`nUse credentials/tokens with RevToSelf option to revert token privileges"'
         if obfuscate:
-            scriptEnd = helpers.obfuscate(psScript=scriptEnd, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd
         return script

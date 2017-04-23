@@ -102,7 +102,7 @@ class Module:
                         scriptEnd += 'Write-Output "Event ID 4624 (Logon):`n";'
                         scriptEnd += "Write-Output $Filtered4624.Values | Out-String"
                         if obfuscate:
-                            scriptEnd = helpers.obfuscate(psScript=scriptEnd, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+                            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
                         script += scriptEnd
                         return script
                     if option == "4648":
@@ -110,7 +110,7 @@ class Module:
                         scriptEnd += 'Write-Output "Event ID 4648 (Explicit Credential Logon):`n";'
                         scriptEnd += "Write-Output $Filtered4648.Values | Out-String"
                         if obfuscate:
-                            scriptEnd = helpers.obfuscate(psScript=scriptEnd, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+                            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
                         script += scriptEnd
                         return script
                     if option == "AppLocker":
@@ -118,7 +118,7 @@ class Module:
                         scriptEnd += 'Write-Output "AppLocker Process Starts:`n";'
                         scriptEnd += "Write-Output $AppLockerLogs.Values | Out-String"
                         if obfuscate:
-                            scriptEnd = helpers.obfuscate(psScript=scriptEnd, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+                            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
                         script += scriptEnd
                         return script
                     if option == "PSLogs":
@@ -126,7 +126,7 @@ class Module:
                         scriptEnd += 'Write-Output "PowerShell Script Executions:`n";'
                         scriptEnd += "Write-Output $PSLogs.Values | Out-String"
                         if obfuscate:
-                            scriptEnd = helpers.obfuscate(psScript=scriptEnd, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+                            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
                         script += scriptEnd
                         return script
                     if option == "SavedRDP":
@@ -134,13 +134,13 @@ class Module:
                         scriptEnd += 'Write-Output "RDP Client Data:`n";'
                         scriptEnd += "Write-Output $RdpClientData.Values | Out-String"
                         if obfuscate:
-                            scriptEnd = helpers.obfuscate(psScript=scriptEnd, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+                            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
                         script += scriptEnd
                         return script
 
         # if we get to this point, no switched were specified
         scriptEnd += "Get-ComputerDetails -ToString"
         if obfuscate:
-            scriptEnd = helpers.obfuscate(psScript=scriptEnd, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd
         return script

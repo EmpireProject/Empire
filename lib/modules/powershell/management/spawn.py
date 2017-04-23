@@ -100,5 +100,5 @@ class Module:
 
             code = "Start-Process -NoNewWindow -FilePath \"%s\" -ArgumentList '%s'; 'Agent spawned to %s'" % (parts[0], " ".join(parts[1:]), listenerName)
             if obfuscate:
-                code = helpers.obfuscate(psScript=code, installPath=self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+                code = helpers.obfuscate(psScript=code, obfuscationCommand=obfuscationCommand)
             return code
