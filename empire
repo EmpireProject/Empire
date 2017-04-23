@@ -647,9 +647,9 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         listeners = []
 
         for activeListener in activeListenersRaw:
-            [ID, name, host, port, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, listener_type, redirect_target, default_lost_limit] = activeListener
+            [ID, name, module, listener_type, listener_category, options] = activeListener
             # activeListeners[name] = {'ID':ID, 'name':name, 'host':host, 'port':port, 'cert_path':cert_path, 'staging_key':staging_key, 'default_delay':default_delay, 'default_jitter':default_jitter, 'default_profile':default_profile, 'kill_date':kill_date, 'working_hours':working_hours, 'listener_type':listener_type, 'redirect_target':redirect_target, 'default_lost_limit':default_lost_limit}
-            listeners.append({'ID':ID, 'name':name, 'host':host, 'port':port, 'cert_path':cert_path, 'staging_key':staging_key, 'default_delay':default_delay, 'default_jitter':default_jitter, 'default_profile':default_profile, 'kill_date':kill_date, 'working_hours':working_hours, 'listener_type':listener_type, 'redirect_target':redirect_target, 'default_lost_limit':default_lost_limit})
+            listeners.append({'ID':ID, 'name':name, 'module':module, 'listener_type':listener_type, 'listener_category':listener_category, 'options':options })
 
         return jsonify({'listeners' : listeners})
 

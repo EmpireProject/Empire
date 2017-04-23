@@ -551,6 +551,11 @@ Outputs a custom object containing the SamAccountName, DistinguishedName, Servic
                 $DistinguishedName = $Null
             }
 
+            # if a user has multiple SPNs we only take the first one otherwise the service ticket request fails miserably :)
+            if($UserSPN -is [System.DirectoryServices.ResultPropertyValueCollection]){
+                $UserSPN = $UserSPN[0]
+            }
+
             $Ticket = New-Object System.IdentityModel.Tokens.KerberosRequestorSecurityToken -ArgumentList $UserSPN
             $TicketByteStream = $Ticket.GetRequest()
             if ($TicketByteStream) {

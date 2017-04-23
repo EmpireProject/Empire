@@ -68,11 +68,8 @@ def pad(data):
     Performs PKCS#7 padding for 128 bit block size.
     """
 
-    if (len(data) % 16) == 0:
-        return data
-    else:
-        pad = 16 - (len(data) % 16)
-        return data + to_bufferable(chr(pad) * pad)
+    pad = 16 - (len(data) % 16)
+    return data + to_bufferable(chr(pad) * pad)
 
     # return str(s) + chr(16 - len(str(s)) % 16) * (16 - len(str(s)) % 16)
 
@@ -85,11 +82,7 @@ def depad(data):
         raise ValueError("invalid length")
 
     pad = _get_byte(data[-1])
-
-    if pad <= 16:
-        return data[:-pad]
-    else:
-        return data
+    return data[:-pad]
 
     # return s[:-(ord(s[-1]))]
 

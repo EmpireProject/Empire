@@ -64,7 +64,17 @@ def validate_ip(IP):
     """
     Uses iptools to validate an IP.
     """
-    return iptools.ipv4.validate_ip(IP)
+    try: 
+        validate_IPv4 = iptools.ipv4.validate_ip(IP)
+        validate_IPv6 = iptools.ipv6.validate_ip(IP)
+
+        if validate_IPv4 is True:
+            return validate_IPv4
+        elif validate_IPv6 is True:
+            return validate_IPv6
+    except Exception as e:
+        return e
+
 
 
 def validate_ntlm(data):
