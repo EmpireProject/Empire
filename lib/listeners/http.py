@@ -396,7 +396,7 @@ class Listener:
                         randomizedStager += line
             
             if obfuscate:
-                randomizedStager = helpers.obfuscate(randomizedStager, self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+                randomizedStager = helpers.obfuscate(randomizedStager, obfuscationCommand=obfuscationCommand)
             # base64 encode the stager and return it
             if encode:
                 return helpers.enc_powershell(randomizedStager)
@@ -483,7 +483,7 @@ class Listener:
             if workingHours != "":
                 code = code.replace('$WorkingHours,', "$WorkingHours = '" + str(workingHours) + "',")
             if obfuscate:
-                code = helpers.obfuscate(code, self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+                code = helpers.obfuscate(code, obfuscationCommand=obfuscationCommand)
             return code
 
         elif language == 'python':

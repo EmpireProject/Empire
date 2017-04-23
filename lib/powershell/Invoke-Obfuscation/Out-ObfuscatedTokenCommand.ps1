@@ -118,7 +118,7 @@ http://www.danielbohannon.com
         # 'RandomWhitespace' will be manually added last for reasons defined below.
         $ObfuscationChoices  = @()
         $ObfuscationChoices += 'Member'
-        # $ObfuscationChoices += 'Command'
+        $ObfuscationChoices += 'Command'
         $ObfuscationChoices += 'CommandArgument'
         $ObfuscationChoices += 'Variable'
         $ObfuscationChoices += 'Type'
@@ -257,8 +257,8 @@ http://www.danielbohannon.com
             $Counter--
 
             # Set valid obfuscation levels for current token type.
-            # $ValidObfuscationLevels = @(0,1,2,3,4)
-            $ValidObfuscationLevels = @(0,1,2)
+            $ValidObfuscationLevels = @(0,1,2,3,4)
+            
             # If invalid obfuscation level is passed to this function then default to highest obfuscation level available for current token type.
             If($ValidObfuscationLevels -NotContains $ObfuscationLevel) {$ObfuscationLevel = $ValidObfuscationLevels | Sort-Object -Descending | Select-Object -First 1}
 
