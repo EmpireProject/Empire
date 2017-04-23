@@ -445,6 +445,7 @@ def send_message(packets=None):
             f.close()
 
             hopCode = hopCode.replace('REPLACE_SERVER', redirectHost)
+            hopCode = hopCode.replace('REPLACE_HOP_NAME', self.options['Name']['Value'])
 
             saveFolder = self.options['OutFolder']['Value']
             for uri in uris:

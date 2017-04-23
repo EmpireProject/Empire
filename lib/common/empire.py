@@ -795,6 +795,17 @@ class MainMenu(cmd.Cmd):
             offs = len(mline) - len(text)
             return [s[offs:] for s in stagerNames if s.startswith(mline)]
 
+    def complete_setlist(self, text, line, begidx, endidx):
+        "Tab-complete a global list option"
+
+        options = ["listeners", "agents"]
+
+        if line.split(' ')[1].lower() in options:
+            return helpers.complete_path(text, line, arg=True)
+
+        mline = line.partition(' ')[2]
+        offs = len(mline) - len(text)
+        return [s[offs:] for s in options if s.startswith(mline)]
 
     def complete_set(self, text, line, begidx, endidx):
         "Tab-complete a global option."
@@ -844,6 +855,11 @@ class MainMenu(cmd.Cmd):
         offs = len(mline) - len(text)
         return [s[offs:] for s in names if s.startswith(mline)]
 
+    def complete_list(self, text, line, begidx, endidx):
+        "Tab-complete list"
+
+        return self.complete_setlist(text, line, begidx, endidx)
+
     def complete_preobfuscate(self, text, line, begidx, endidx):
         "Tab-complete an interact command"
         options = [ (option[len('data/module_source/'):]) for option in helpers.get_module_source_files() ]
@@ -852,6 +868,7 @@ class MainMenu(cmd.Cmd):
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
         return [s[offs:] for s in options if s.startswith(mline)]
+    
 
 class AgentsMenu(cmd.Cmd):
     """
@@ -1892,7 +1909,7 @@ class PowerShellAgentMenu(cmd.Cmd):
 
                     module.options['Agent']['Value'] = self.mainMenu.agents.get_agent_name_db(self.sessionID)
                     module_menu = ModuleMenu(self.mainMenu, 'powershell/management/psinject')
-                    module_menu.cmdloop()
+                    module_menu.do_execute("")
 
                 else:
                     print helpers.color("[!] Please enter <listenerName> <pid>")
