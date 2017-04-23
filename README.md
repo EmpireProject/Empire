@@ -6,7 +6,7 @@ To install, run the ./setup/install.sh script. There's also a [quickstart here](
 
 Empire relies heavily on the work from several other projects for its underlying functionality. We have tried to call out a few of those people we've interacted with [heavily here](http://www.powershellempire.com/?page_id=2) and have included author/reference link information in the source of each Empire module as appropriate. If we have failed to improperly cite existing or prior work, please let us know.
 
-Empire is developed by [@harmj0y](https://twitter.com/harmj0y), [@sixdub](https://twitter.com/sixdub), and [@enigma0x3](https://twitter.com/enigma0x3).
+Empire is developed by [@harmj0y](https://twitter.com/harmj0y), [@sixdub](https://twitter.com/sixdub), [@enigma0x3](https://twitter.com/enigma0x3), [@xorrior](https://twitter.com/xorrior), [@rvrsh3ll](https://twitter.com/rvrsh3ll), and [@killswitch-GUI](https://twitter.com/killswitch-GUI).
 
 Feel free to join us on Slack! http://adaptiveempire.herokuapp.com/
 
