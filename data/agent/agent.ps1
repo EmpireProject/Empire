@@ -561,7 +561,12 @@ function Invoke-Empire {
         param($bytes)
         # get a random IV
         $IV = [byte] 0..255 | Get-Random -count 16
-        $AES = New-Object System.Security.Cryptography.AesCryptoServiceProvider;
+        try {
+            $AES=New-Object System.Security.Cryptography.AesCryptoServiceProvider;
+        }
+        catch {
+            $AES=New-Object System.Security.Cryptography.RijndaelManaged;
+        }
         $AES.Mode = "CBC";
         $AES.Key = $Encoding.GetBytes($SessionKey);
         $AES.IV = $IV;
@@ -585,7 +590,12 @@ function Invoke-Empire {
 
             # extract the IV
             $IV = $inBytes[0..15];
-            $AES = New-Object System.Security.Cryptography.AesCryptoServiceProvider;
+            try {
+                $AES=New-Object System.Security.Cryptography.AesCryptoServiceProvider;
+            }
+            catch {
+                $AES=New-Object System.Security.Cryptography.RijndaelManaged;
+            }
             $AES.Mode = "CBC";
             $AES.Key = $Encoding.GetBytes($SessionKey);
             $AES.IV = $IV;
