@@ -1833,7 +1833,7 @@ class PowerShellAgentMenu(cmd.Cmd):
 
                     module.options['Agent']['Value'] = self.mainMenu.agents.get_agent_name_db(self.sessionID)
                     module_menu = ModuleMenu(self.mainMenu, 'powershell/management/psinject')
-                    module_menu.cmdloop()
+                    module_menu.do_execute("")
 
                 else:
                     print helpers.color("[!] Please enter <listenerName> <pid>")

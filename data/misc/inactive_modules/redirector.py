@@ -1,5 +1,4 @@
 from lib.common import helpers
-
 class Module:
 
     def __init__(self, mainMenu, params=[]):
@@ -166,8 +165,8 @@ Invoke-Redirector"""
                 else:
                     listenerName = values['Value']
                     # get the listener options and set them for the script
-                    [ID,name,host,port,cert_path,staging_key,default_delay,default_jitter,default_profile,kill_date,working_hours,listener_type,redirect_target,default_lost_limit] = self.mainMenu.listeners.get_listener(values['Value'])
-                    script += " -ConnectHost " + str(host)
+                    [Name,Host,Port,CertPath,StagingKey,DefaultDelay,DefaultJitter,DefaultProfile,KillDate,WorkingHours,DefaultLostLimit,BindIP,ServerVersion] = self.mainMenu.listeners.activeListeners[listenerName]['options']
+                    script += " -ConnectHost " + str(Host)
 
             elif option.lower() != "agent":
                 # check if we're adding this redirector as a pivot listener

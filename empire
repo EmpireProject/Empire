@@ -655,6 +655,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             [ID, name, module, listener_type, listener_category, options] = activeListener
             listeners.append({'ID':ID, 'name':name, 'module':module, 'listener_type':listener_type, 'listener_category':listener_category, 'options':pickle.loads(activeListener[5]) })  
 
+
         return jsonify({'listeners' : listeners})
 
 
