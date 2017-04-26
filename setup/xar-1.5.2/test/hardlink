@@ -1,0 +1,47 @@
+#!/bin/bash
+
+. functions
+
+echo "Checking hardlinks in a directory"
+
+rm -rf h h1 h.xar
+mkdir h h1
+touch h/a
+ln h/a h/b
+
+create_archive h.xar h
+
+cd h1
+extract_archive ../h.xar
+check_hardlink "h/a" "h/b"
+cd ..
+rm -rf h h1 h.xar
+
+echo "Checking hardlinks in ."
+mkdir -p h h1
+cd h
+touch a
+ln a b
+create_archive ../h.xar .
+cd ../h1
+extract_archive ../h.xar
+check_hardlink "a" "b"
+cd ..
+rm -rf h h1 h.xar
+
+echo "Checking link extraction (no original)"
+rm -rf h h1 h.xar
+mkdir h h1
+touch h/a
+ln h/a h/b
+create_archive h.xar h
+cd h1
+extract_archive ../h.xar
+if [ ! -f h/b ]; then
+	echo "Error extracting link"
+	exit 1;
+fi
+cd ..
+rm -rf h h1 h.xar
+
+echo "Hardlink success"

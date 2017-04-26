@@ -49,6 +49,7 @@ import sqlite3
 import iptools
 import threading
 import pickle
+import netifaces
 from time import localtime, strftime
 from Crypto.Random import random
 
@@ -597,6 +598,7 @@ def lhost():
     Return the local IP.
     """
 
+
     if os.name != 'nt':
         import fcntl
         import struct
@@ -621,15 +623,16 @@ def lhost():
         return ip
 
     if (ip == '' or ip.startswith('127.')) and os.name != 'nt':
-        interfaces = ['eth0','eth1','eth2','wlan0','wlan1','wifi0','ath0','ath1','ppp0']
+        interfaces = netifaces.interfaces()
         for ifname in interfaces:
-            try:
-                ip = get_interface_ip(ifname)
-                if ip != "":
-                    break
-            except:
-                print 'Unexpected error:', sys.exc_info()[0]
-                pass
+            if "lo" not in ifname:
+                try:
+                    ip = get_interface_ip(ifname) 
+                    if ip != "":
+                        break
+                except:
+                    print 'Unexpected error:', sys.exc_info()[0]
+                    pass
     return ip
 
 

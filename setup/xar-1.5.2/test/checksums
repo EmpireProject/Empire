@@ -1,0 +1,97 @@
+#!/bin/sh
+
+. functions
+
+echo "Testing handling of a broken TOC with default checksum"
+rm -rf bin.xar bin
+${XAR} -cf bin.xar /bin
+if [ $? -ne 0 ]; then
+	echo "Error creating test archive"
+	exit 1
+fi
+
+hdrsize=`${XAR} --dump-header -f bin.xar | grep size | awk '{print $2}'`
+
+offset=`expr ${hdrsize} + 4`
+
+dd if=/dev/random of=bin.xar seek=${offset} bs=100 count=1 > /dev/null 2>&1
+
+${XAR} -xf bin.xar > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+	echo "Didn't handle the broken toc properly"
+	exit 1
+fi
+
+if [ -d bin ]; then
+	echo "Extracted part of the broken archive.  badness."
+	exit 1
+fi
+
+echo "Testing handling of a broken TOC with MD5 checksum"
+rm -rf bin.xar bin
+${XAR} --toc-cksum=md5 -cf bin.xar /bin
+if [ $? -ne 0 ]; then
+	echo "Error creating test archive"
+	exit 1
+fi
+
+hdrsize=`${XAR} --dump-header -f bin.xar | grep size | awk '{print $2}'`
+
+offset=`expr ${hdrsize} + 4`
+
+dd if=/dev/random of=bin.xar seek=${offset} bs=100 count=1 > /dev/null 2>&1
+
+${XAR} -xf bin.xar > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+	echo "Didn't handle the broken toc properly"
+	exit 1
+fi
+
+if [ -d bin ]; then
+	echo "Extracted part of the broken archive.  badness."
+	exit 1
+fi
+
+echo "Testing handling of a broken TOC with SHA1 checksum"
+rm -rf bin.xar bin
+${XAR} --toc-cksum=sha1 -cf bin.xar /bin
+if [ $? -ne 0 ]; then
+	echo "Error creating test archive"
+	exit 1
+fi
+
+hdrsize=`${XAR} --dump-header -f bin.xar | grep size | awk '{print $2}'`
+
+offset=`expr ${hdrsize} + 4`
+
+dd if=/dev/random of=bin.xar seek=${offset} bs=100 count=1 > /dev/null 2>&1
+
+${XAR} -xf bin.xar > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+	echo "Didn't handle the broken toc properly"
+	exit 1
+fi
+
+if [ -d bin ]; then
+	echo "Extracted part of the broken archive.  badness."
+	exit 1
+fi
+
+rm -f bin.xar
+
+echo "Testing handling of a broken heap with defaults"
+rm -rf bin.xar bin
+create_archive bin.xar /bin
+hdrsize=`${XAR} --dump-header -f bin.xar | grep size | awk '{print $2}'`
+tocsize=`${XAR} --dump-header -f bin.xar | grep "Compressed" | awk '{print $4}'`
+offset=`expr ${hdrsize} + ${tocsize} + 20`
+dd if=/dev/random of=bin.xar seek=${offset} bs=100 count=1 > /dev/null 2>&1
+
+${XAR} -xf bin.xar > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+	echo "Didn't handle the broken heap properly"
+	exit 1
+fi
+
+rm -rf bin.xar bin
+echo "Success checking checksum handling"

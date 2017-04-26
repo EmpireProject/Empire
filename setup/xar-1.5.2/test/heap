@@ -1,0 +1,97 @@
+#!/bin/sh
+
+. functions
+
+cleanup() {
+	rm -rf h h1 h.xar h.toc h.out
+}
+
+echo "Checking normal heap archiving"
+cleanup
+mkdir -p h h1
+cp /bin/ls h
+cp h/ls h/foo
+
+cd h
+create_archive ../h.xar .
+cd ..
+${XAR} --dump-toc=h.toc -f h.xar
+cd h1
+extract_archive ../h.xar
+cd ..
+xsltproc heap1.xsl h.toc > h.out
+if [ $? -ne 0 ]; then
+	echo "Error processing toc"
+	cleanup
+	exit 1
+fi
+
+offset1=`head -1 h.out | awk '{print $2}'`
+offset2=`tail -1 h.out | awk '{print $2}'`
+if [ $offset1 -ge $offset2 ]; then
+	echo "Offset of first file is greater than or equal to offset of the first file"
+	cleanup
+	exit 1
+fi
+cleanup
+
+
+echo "Checking --coalesce-heap heap archiving"
+mkdir -p h h1
+cp /bin/ls h
+cp h/ls h/foo
+
+cd h
+${XAR} --coalesce-heap -cf ../h.xar .
+if [ $? -ne 0 ]; then
+	echo "Error creating archive"
+	cleanup
+	exit 1
+fi
+cd ..
+${XAR} --dump-toc=h.toc -f h.xar
+cd h1
+extract_archive ../h.xar
+cd ..
+xsltproc heap1.xsl h.toc > h.out
+if [ $? -ne 0 ]; then
+	echo "Error processing toc"
+	cleanup
+	exit 1
+fi
+
+offset1=`head -1 h.out | awk '{print $2}'`
+offset2=`tail -1 h.out | awk '{print $2}'`
+if [ $offset1 -ne $offset2 ]; then
+	echo "Offset of the files differ"
+	cleanup
+	exit 1
+fi
+cleanup
+
+
+echo "Checking --link-same heap archiving"
+mkdir -p h h1
+cp /bin/ls h
+cp h/ls h/foo
+
+cd h
+${XAR} --link-same -cf ../h.xar .
+if [ $? -ne 0 ]; then
+	echo "Error creating archive"
+	cleanup
+	exit 1
+fi
+cd ..
+${XAR} --dump-toc=h.toc -f h.xar
+cd h1
+extract_archive ../h.xar
+cd ..
+inode1=`ls -i h1/ls | awk '{print $1}'`
+inode2=`ls -i h1/foo | awk '{print $1}'`
+if [ $inode1 -ne $inode2 ]; then
+	echo "Inodes of extracted files don't match"
+	cleanup
+	exit 1
+fi
+cleanup

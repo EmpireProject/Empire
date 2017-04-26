@@ -1,0 +1,108 @@
+#!/bin/sh
+
+. functions
+
+cleanup() {
+	rm -rf h a a.xar
+}
+
+echo "Checking empty ea preservation on single empty file"
+cleanup
+mkdir h
+cd h
+touch a
+setfattr -n user.foo a
+if [ $? -ne 0 ]; then
+	echo "Error can't make user attribute on file"
+	cleanup
+	exit
+fi
+
+create_archive ../a.xar .
+cd ..
+extract_archive a.xar
+
+if [ ! -f a ]; then
+	echo "File didn't extract"
+	cleanup
+	exit 1
+fi
+
+count=`getfattr -d a | grep -c user.foo`
+if [ "$count" != "1" ]; then
+	echo "Didn't find the attribute after extraction"
+	cleanup
+	exit 1
+fi
+cleanup
+
+echo "Checking populated ea preservation on single empty file"
+cleanup
+mkdir h
+cd h
+touch a
+setfattr -n user.foo -v bar a
+if [ $? -ne 0 ]; then
+	echo "Error can't make user attribute on file"
+	cleanup
+	exit
+fi
+
+create_archive ../a.xar .
+cd ..
+extract_archive a.xar
+
+if [ ! -f a ]; then
+	echo "File didn't extract"
+	cleanup
+	exit 1
+fi
+
+count=`getfattr -d a | grep user.foo`
+if [ "$count" != "user.foo=\"bar\"" ]; then
+	echo "Didn't find the attribute after extraction"
+	#cleanup
+	exit 1
+fi
+
+cleanup
+
+echo "Checking populated ea preservation on single file with data"
+cleanup
+mkdir h
+cd h
+touch a
+echo "foo" > a
+setfattr -n user.foo -v bar a
+if [ $? -ne 0 ]; then
+	echo "Error can't make user attribute on file"
+	cleanup
+	exit
+fi
+
+create_archive ../a.xar .
+cd ..
+extract_archive a.xar
+
+if [ ! -f a ]; then
+	echo "File didn't extract"
+	cleanup
+	exit 1
+fi
+
+count=`getfattr -d a | grep user.foo`
+if [ "$count" != "user.foo=\"bar\"" ]; then
+	echo "Didn't find the attribute after extraction"
+	cleanup
+	exit 1
+fi
+
+contents=`cat a`
+if [ "$contents" != "foo" ]; then
+	echo "Contents of the file aren't the same after extraction"
+	cleanup
+	exit 1
+fi
+
+cleanup
+

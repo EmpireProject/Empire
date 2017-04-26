@@ -1,0 +1,93 @@
+#!/bin/sh
+
+. functions
+
+echo "Testing normal archival creation/extraction with default compression"
+rm -rf bin.xar bin
+${XAR} -cf bin.xar /bin
+if [ $? -ne 0 ]; then
+	echo "Error creating archive"
+	exit 1
+fi
+
+${XAR} -xf bin.xar
+if [ $? -ne 0 ]; then
+	echo "Error extracting archive"
+	exit 1
+fi
+
+if [ ! -e bin/sh ]; then
+	echo "Error with extracted contents"
+fi
+
+echo "Testing normal archival creation/extraction with gzip compression"
+rm -rf bin.xar bin
+${XAR} --compression=gzip -cf bin.xar /bin
+if [ $? -ne 0 ]; then
+	echo "Error creating archive"
+	exit 1
+fi
+
+${XAR} -xf bin.xar
+if [ $? -ne 0 ]; then
+	echo "Error extracting archive"
+	exit 1
+fi
+
+if [ ! -e bin/sh ]; then
+	echo "Error with extracted contents"
+fi
+
+echo "Testing normal archival creation/extraction with bzip2 compression"
+rm -rf bin.xar bin
+${XAR} --compression=bzip2 -cf bin.xar /bin
+if [ $? -ne 0 ]; then
+	echo "Error creating archive"
+	exit 1
+fi
+
+${XAR} -xf bin.xar
+if [ $? -ne 0 ]; then
+	echo "Error extracting archive"
+	exit 1
+fi
+
+if [ ! -e bin/sh ]; then
+	echo "Error with extracted contents"
+fi
+
+echo "Testing normal archival creation/extraction with no compression"
+rm -rf bin.xar bin
+${XAR} --compression=none -cf bin.xar /bin
+if [ $? -ne 0 ]; then
+	echo "Error creating archive"
+	exit 1
+fi
+
+${XAR} -xf bin.xar
+if [ $? -ne 0 ]; then
+	echo "Error extracting archive"
+	exit 1
+fi
+
+if [ ! -e bin/sh ]; then
+	echo "Error with extracted contents"
+fi
+${XAR} --compression=none -cf bin.xar /bin
+if [ $? -ne 0 ]; then
+	echo "Error creating archive"
+	exit 1
+fi
+
+${XAR} -xf bin.xar
+if [ $? -ne 0 ]; then
+	echo "Error extracting archive"
+	exit 1
+fi
+
+if [ ! -e bin/sh ]; then
+	echo "Error with extracted contents"
+fi
+
+rm -rf bin.xar bin
+echo "Success testing compression types"
