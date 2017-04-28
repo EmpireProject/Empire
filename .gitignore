@@ -6,3 +6,5 @@ downloads/*
 .vscode/*
 *.txt
 LastTask*
+setup/xar*
+setup/bomutils/*
