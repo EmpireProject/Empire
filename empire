@@ -703,11 +703,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
     @app.route('/api/listeners/options', methods=['GET'])
     def get_listener_options():
         """
-        -- Is this deprecated? -bneg
-        Returns JSON describing the current listener options.
+        Returns JSON describing the current listener options
         """
-        #return jsonify({'listeneroptions' : [main.listeners.options]})
-        return jsonify({'listeneroptions':'Deprecated. Retrieve from /api/listeners/[name]'})
+        optionsRaw = execute_db_query(conn, 'SELECT options FROM listeners')
+        options = pickle.loads(optionsRaw[0][0])
+
+        return jsonify({'listeneroptions' : options})
 
 
     @app.route('/api/listeners', methods=['POST'])
