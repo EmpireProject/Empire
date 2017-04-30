@@ -700,39 +700,45 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
                 return make_response(jsonify({'error': 'listener name %s not found' %(listener_name)}), 404)
 
 
-    @app.route('/api/listeners/options', methods=['GET'])
-    def get_listener_options():
+    @app.route('/api/listeners/options/<string:listener_type>', methods=['GET'])
+    def get_listener_options(listener_type):
         """
-        Returns JSON describing the current listener options
+        Returns JSON describing listener options for the specified listener type.
         """
-        optionsRaw = execute_db_query(conn, 'SELECT options FROM listeners')
-        options = pickle.loads(optionsRaw[0][0])
 
+        if listener_type.lower() not in main.listeners.loadedListeners:
+            return make_response(jsonify({'error':'listener type %s not found' %(listener_type)}), 404)
+
+        options = main.listeners.loadedListeners[listener_type].options
         return jsonify({'listeneroptions' : options})
 
 
-    @app.route('/api/listeners', methods=['POST'])
-    def start_listener():
+    @app.route('/api/listeners/<string:listener_type>', methods=['POST'])
+    def start_listener(listener_type):
         """
         Starts a listener with options supplied in the POST.
         """
+        if listener_type.lower() not in main.listeners.loadedListeners:
+            return make_response(jsonify({'error':'listener type %s not found' %(listener_type)}), 404)
 
+        listenerObject = main.listeners.loadedListeners[listener_type]
         # set all passed options
-        # for option, values in request.json.iteritems():
-        #     returnVal = main.listeners.set_listener_option(option, values)
-        #     if not returnVal:
-        #         return make_response(jsonify({'error': 'error setting listener value %s with option %s' %(option, values)}), 400)
+        for option, values in request.json.iteritems():
+            if option == "Name":
+                listenerName = values
 
-        # valid = main.listeners.validate_listener_options()
-        # if not valid:
-        #     return make_response(jsonify({'error': 'error validating listener options'}), 400)
+            returnVal = main.listeners.set_listener_option(listener_type, option, values)
+            if not returnVal:
+                 return make_response(jsonify({'error': 'error setting listener value %s with option %s' %(option, values)}), 400)
+        
+        main.listeners.start_listener(listener_type, listenerObject)
 
-        # (success, message) = main.listeners.add_listener_from_config()
-        # if success:
-        #     return jsonify({'success': success, 'msg' : "listener '%s' successfully started." %(message)})
-        # else:
-        #     return jsonify({'success': success, 'msg' : message})
-        return jsonify({'error': 'Not yet supported in this version'})
+        #check to see if the listener was created
+        listenerID = main.listeners.get_listener_id(listenerName)
+        if listenerID:
+            return jsonify({'success': 'listener %s successfully started' % listenerName})
+        else:
+            return jsonify({'error': 'failed to start listener %s' % listenerName})
 
 
     @app.route('/api/agents', methods=['GET'])
