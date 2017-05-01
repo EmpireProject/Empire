@@ -687,14 +687,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             activeListenersRaw = execute_db_query(conn, 'SELECT id, name, module, listener_type, listener_category, options FROM listeners')
             for activeListener in activeListenersRaw:
                 [ID, name, module, listener_type, listener_category, options] = activeListener
-                main.listeners.shutdown_listener(name)
-                main.listeners.delete_listener(name)
+                main.listeners.kill_listener(name)
 
             return jsonify({'success': True})
         else:
             if listener_name != "" and main.listeners.is_listener_valid(listener_name):
-                main.listeners.shutdown_listener(listener_name)
-                main.listeners.delete_listener(listener_name)
+                main.listeners.kill_listener(listener_name)
                 return jsonify({'success': True})
             else:
                 return make_response(jsonify({'error': 'listener name %s not found' %(listener_name)}), 404)
@@ -795,7 +793,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         agentsRaw = execute_db_query(conn, 'SELECT * FROM agents')
 
         for agent in agentsRaw:
-            [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit, taskings, results] = agent
+            [ID, sessionID, listener, name, language, language_version, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results] = agent
 
             intervalMax = (delay + delay * jitter)+30
 
@@ -883,12 +881,70 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         if agent_name.lower() == "all":
             # enumerate all target agent sessionIDs
-            execute_db_query(conn, "UPDATE agents SET results='' WHERE name like '%' OR session_id like '%'")
+            agentNameIDs = execute_db_query(conn, "SELECT name,session_id FROM agents WHERE name like '%' OR session_id like '%'")
         else:
-            execute_db_query(conn, "UPDATE agents SET results='' WHERE name like ? OR session_id like ?", [agent_name, agent_name])
+            agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+
+        if not agentNameIDs or len(agentNameIDs) == 0:
+            return make_response(jsonify({'error': 'agent name %s not found' %(agent_name)}), 404)
+
+        for agentNameID in agentNameIDs:
+            (agentName, agentSessionID) = agentNameID
+
+            
+            results = []
+            main.agents.update_agent_results_db(agentSessionID, results)
 
         return jsonify({'success': True})
 
+    @app.route('/api/agents/<string:agent_name>/upload', methods=['POST'])
+    def task_agent_upload(agent_name):
+        """
+        Tasks the specified agent to upload a file
+        """
+
+        if agent_name.lower() == "all":
+            # enumerate all target agent sessionIDs
+            agentNameIDs = execute_db_query(conn, "SELECT name,session_id FROM agents WHERE name like '%' OR session_id like '%'")
+        else:
+            agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+
+        if not agentNameIDs or len(agentNameIDs) == 0:
+            return make_response(jsonify({'error': 'agent name %s not found' %(agent_name)}), 404)
+
+        if not request.json['data']:
+            return make_response(jsonify({'error':'file data not provided'}), 404)
+
+        if not request.json['filename']:
+            return make_response(jsonify({'error':'file name not provided'}), 404)
+
+        fileData = request.json['data']
+        fileName = request.json['filename']
+
+        rawBytes = base64.b64decode(fileData)
+
+        if len(rawBytes) > 1048576:
+            return make_response(jsonify({'error':'file size too large'}), 404)
+
+        for agentNameID in agentNameIDs:
+            (agentName, agentSessionID) = agentNameID
+
+            agentTasks = execute_db_query(conn, 'SELECT taskings FROM agents WHERE session_id like ?', [agentSessionID])[0]
+            if agentTasks and agentTasks[0]:
+                agentTasks = json.loads(agentTasks[0])
+            else:
+                agentTasks = []
+
+            msg = "Tasked agent to upload %s : %s" % (fileName, hashlib.md5(rawBytes).hexdigest())
+            main.agents.save_agent_log(agentSessionID, msg)
+            data = fileName + "|" + fileData
+            agentTasks.append(['TASK_UPLOAD', data])
+            execute_db_query(conn, "UPDATE agents SET taskings=? WHERE session_id=?", [json.dumps(agentTasks), agentSessionID])
+
+            timeStamp = strftime("%Y-%m-%d %H:%M:%S", localtime())
+            execute_db_query(conn, "INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agentName, "task", "TASK_UPLOAD " + fileName, timeStamp))
+
+        return jsonify({'success': True})
 
     @app.route('/api/agents/<string:agent_name>/shell', methods=['POST'])
     def task_agent_shell(agent_name):
@@ -911,20 +967,8 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         for agentNameID in agentNameIDs:
             (agentName, agentSessionID) = agentNameID
 
-            # get existing agent taskings for each agent
-            agentTasks = execute_db_query(conn, 'SELECT taskings FROM agents WHERE session_id like ?', [agentSessionID])[0]
-            if agentTasks and agentTasks[0]:
-                agentTasks = json.loads(agentTasks[0])
-            else:
-                agentTasks = []
-
-            # append our new json-ified task and update the backend
-            agentTasks.append(['TASK_SHELL', command])
-
-            execute_db_query(conn, "UPDATE agents SET taskings=? WHERE session_id=?", [json.dumps(agentTasks), agentSessionID])
-
-            timeStamp = strftime("%Y-%m-%d %H:%M:%S", localtime())
-            execute_db_query(conn, "INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agentName, "task", "TASK_SHELL - " + command[0:50], timeStamp))
+            # add task command to agent taskings
+            main.agents.add_agent_task_db(agentSessionID, "TASK_SHELL", command)
 
         return jsonify({'success': True})
 
@@ -974,10 +1018,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         for agentNameID in agentNameIDs:
             (agentName, agentSessionID) = agentNameID
 
-            execute_db_query(conn, "UPDATE agents SET taskings=? WHERE session_id=?", ['', agentSessionID])
-
-            timeStamp = strftime("%Y-%m-%d %H:%M:%S", localtime())
-            execute_db_query(conn, "INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agentName, "clear", '', timeStamp))
+            main.agents.clear_agent_tasks_db(agentSessionID)
 
         return jsonify({'success': True})
 
