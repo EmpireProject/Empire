@@ -440,7 +440,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
                 if not main.agents.is_agent_present(sessionID):
                     return make_response(jsonify({'error': 'invalid agent name'}), 400)
 
-                modulePSVersion = int(module.info['MinPSVersion'])
+                modulePSVersion = int(module.info['MinLanguageVersion'])
                 agentPSVersion = int(main.agents.get_language_version_db(sessionID))
                 # check if the agent/module PowerShell versions are compatible
                 if modulePSVersion > agentPSVersion:
@@ -500,7 +500,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
             for agent in main.agents.get_agents():
                 sessionID = agent[1]
-                main.agents.add_agent_task(sessionID, taskCommand, moduleData)
+                main.agents.add_agent_task_db(sessionID, taskCommand, moduleData)
                 msg = "tasked agent %s to run module %s" %(sessionID, module_name)
                 main.agents.save_agent_log(sessionID, msg)
 
@@ -509,7 +509,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
         else:
             # set the agent's tasking in the cache
-            main.agents.add_agent_task(sessionID, taskCommand, moduleData)
+            main.agents.add_agent_task_db(sessionID, taskCommand, moduleData)
 
             # update the agent log
             msg = "tasked agent %s to run module %s" %(sessionID, module_name)
@@ -1039,20 +1039,8 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         for agentNameID in agentNameIDs:
             (agentName, agentSessionID) = agentNameID
 
-            # get existing agent taskings for each agent
-            agentTasks = execute_db_query(conn, 'SELECT taskings FROM agents WHERE session_id like ?', [agentSessionID])[0]
-            if agentTasks and agentTasks[0]:
-                agentTasks = json.loads(agentTasks[0])
-            else:
-                agentTasks = []
-
-            # append our new json-ified task and update the backend
-            agentTasks.append(['TASK_EXIT', ''])
-
-            execute_db_query(conn, "UPDATE agents SET taskings=? WHERE session_id=?", [json.dumps(agentTasks), agentSessionID])
-
-            timeStamp = strftime("%Y-%m-%d %H:%M:%S", localtime())
-            execute_db_query(conn, "INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agentName, "task", "TASK_EXIT", timeStamp))
+            # task the agent to exit
+            main.agents.add_agent_task_db(agentSessionID, 'TASK_EXIT')
 
         return jsonify({'success': True})
 
