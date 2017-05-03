@@ -441,7 +441,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
                     return make_response(jsonify({'error': 'invalid agent name'}), 400)
 
                 modulePSVersion = int(module.info['MinPSVersion'])
-                agentPSVersion = int(main.agents.get_language_version(sessionID))
+                agentPSVersion = int(main.agents.get_language_version_db(sessionID))
                 # check if the agent/module PowerShell versions are compatible
                 if modulePSVersion > agentPSVersion:
                     return make_response(jsonify({'error': "module requires PS version "+str(modulePSVersion)+" but agent running PS version "+str(agentPSVersion)}), 400)
