@@ -928,20 +928,10 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         for agentNameID in agentNameIDs:
             (agentName, agentSessionID) = agentNameID
 
-            agentTasks = execute_db_query(conn, 'SELECT taskings FROM agents WHERE session_id like ?', [agentSessionID])[0]
-            if agentTasks and agentTasks[0]:
-                agentTasks = json.loads(agentTasks[0])
-            else:
-                agentTasks = []
-
             msg = "Tasked agent to upload %s : %s" % (fileName, hashlib.md5(rawBytes).hexdigest())
             main.agents.save_agent_log(agentSessionID, msg)
             data = fileName + "|" + fileData
-            agentTasks.append(['TASK_UPLOAD', data])
-            execute_db_query(conn, "UPDATE agents SET taskings=? WHERE session_id=?", [json.dumps(agentTasks), agentSessionID])
-
-            timeStamp = strftime("%Y-%m-%d %H:%M:%S", localtime())
-            execute_db_query(conn, "INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agentName, "task", "TASK_UPLOAD " + fileName, timeStamp))
+            main.agents.add_agent_task_db(agentSessionID, 'TASK_UPLOAD', data)
 
         return jsonify({'success': True})
 
@@ -967,6 +957,8 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             (agentName, agentSessionID) = agentNameID
 
             # add task command to agent taskings
+            msg = "tasked agent %s to run command %s" %(sessionID, command)
+            main.agents.save_agent_log(sessionID, msg)
             main.agents.add_agent_task_db(agentSessionID, "TASK_SHELL", command)
 
         return jsonify({'success': True})
@@ -1040,6 +1032,8 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
             (agentName, agentSessionID) = agentNameID
 
             # task the agent to exit
+            msg = "tasked agent %s to exit" %(agentSessionID)
+            main.agents.save_agent_log(sessionID, msg)
             main.agents.add_agent_task_db(agentSessionID, 'TASK_EXIT')
 
         return jsonify({'success': True})
