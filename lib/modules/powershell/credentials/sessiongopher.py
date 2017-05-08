@@ -9,32 +9,35 @@ class Module:
             # name for the module that will appear in module menus
             'Name': 'Invoke-SessionGopher',
 
-            # list of one or more authors for the module
+            # List of one or more authors for the module
             'Author': ['@arvanaghi, created at FireEye'],
 
-            # more verbose multi-line description of the module
+            # More verbose multi-line description of the module
             'Description': ('Extract saved sessions & passwords for WinSCP, PuTTY, SuperPuTTY, FileZilla, '
                             'RDP, .ppk files, .rdp files, .sdtid files'),
 
             # True if the module needs to run in the background
-            'Background' : False,
+            'Background': False,
 
             # File extension to save the file as
-            'OutputExtension' : None,
+            'OutputExtension': None,
 
             # True if the module needs admin rights to run
-            'NeedsAdmin' : False,
+            'NeedsAdmin': False,
 
             # True if the method doesn't touch disk/is reasonably opsec safe
-            'OpsecSafe' : True,
-            
+            'OpsecSafe': True,
+
+            # The language for this module
+            'Language': 'powershell',
+
             # The minimum PowerShell version needed for the module to run
-            'MinPSVersion' : '2',
+            'MinLanguageVersion': '2',
 
             # list of any references/other comments
             'Comments': [
-            		'Twitter: @arvanaghi',
-            		'https://arvanaghi.com',
+            		'Twitter: @arvanaghi | ',
+            		'https://arvanaghi.com | ',
                 'https://github.com/fireeye/SessionGopher',
             ]
         }
