@@ -72,6 +72,11 @@ class Listener:
                 'Required'      :   True,
                 'Value'         :   '/results/'
             },
+            'Launcher' : {
+                'Description'   :   'Launcher string.',
+                'Required'      :   True,
+                'Value'         :   'powershell -noP -w 1 -enc '
+            },,
             'StagingKey' : {
                 'Description'   :   'Staging key for initial agent negotiation.',
                 'Required'      :   True,
@@ -156,7 +161,7 @@ class Listener:
             # host = listenerOptions['Host']['Value']
             stagingKey = listenerOptions['StagingKey']['Value']
             profile = listenerOptions['DefaultProfile']['Value']
-
+            launcher = listenerOptions['Launcher']['Value']
             stagingKey = listenerOptions['StagingKey']['Value']
             pollInterval = listenerOptions['PollInterval']['Value']
             apiToken = listenerOptions['APIToken']['Value']
@@ -230,7 +235,7 @@ class Listener:
 
                 # base64 encode the stager and return it
                 if encode:
-                    return helpers.powershell_launcher(stager)
+                    return helpers.powershell_launcher(stager, launcher)
                 else:
                     # otherwise return the case-randomized stager
                     return stager

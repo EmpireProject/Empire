@@ -1,6 +1,41 @@
-Running
+5/15/2017
 ---------
--Fix for issue 340 Added pip install setuptools and apt-get install libssl-dev
+-Version 2.0 Master Release
+	-Merge of Empyre and Empire projects
+	-Fix REST API
+	-Add Dropbox Listener
+	-Add support for IPv6 agents and listener
+	-Add DCOM lateral movement module
+	-Add module - Sudo Piggyback + Mail Persistence + Bash Profile Backdoor #357
+	-Add USB ETW Keylogger #396
+	-Fix dcos modules and fixed pyinstaller  #403
+	-Fix agent staging over http_hop listeners #404
+	-Fixed Get-SPNTicket multiple user SPNs bug #405
+	-Fix issue with Invoke-Shellcode Meterpreter stager #414
+	-Fix code_execution/invoke_reflectivepeinjection hangs empire if an invalid path is provided to DllPath #421
+	-Fix for PowerShell code in Invoke-PSInject too long #423
+	-Fix for agent shell commands #424
+	-Fix prompt line wrapping #430
+	-Fix screenshot module #435
+	-Add PowerUpSQL Modules #437
+	-Add module to monitor TCP connections #438
+	-Fix DLL stager #449
+	-Add VNC Inject #452
+	-Add HTTP headers to avoid proxy caching #455
+	-Fix hard-coded path in the OSX screenshot module. #465
+	-Add a module for wlrmdr.exe popup #472
+	-Add a module for SOCKSv5 proxy #478
+	-Fix bug in HTTP handler that can throw exceptions while parsing Cookies #479
+	-Add a BashBunny HID stager #480
+	-Update Inveigh 1.3.1 Modules #483
+	-Add support for Arch Linux and rejigged the Unknown distro option #484
+	-Fix for issue #420 non-ascii bug #489
+	-Fix the listeners API call #490
+	-Fix PKCS7 padding to be RFC compliant #492
+	-Add custom headers if any #495
+	-Fix using netifaces() for getting iface #496
+	-Add Session Gopher module
+	-Fix for issue 340 Added pip install setuptools and apt-get install libssl-dev
 
 
 9/23/2016

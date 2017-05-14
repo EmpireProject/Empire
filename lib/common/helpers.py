@@ -187,14 +187,14 @@ def enc_powershell(raw):
     return base64.b64encode("".join([char + "\x00" for char in unicode(raw)]))
 
 
-def powershell_launcher(raw):
+def powershell_launcher(raw, modifiable_launcher):
     """
     Build a one line PowerShell launcher with an -enc command.
     """
     # encode the data into a form usable by -enc
     encCMD = enc_powershell(raw)
 
-    return "powershell.exe -NoP -sta -NonI -W Hidden -Enc " + encCMD
+    return modifiable_launcher + " " + encCMD
 
 
 def parse_powershell_script(data):

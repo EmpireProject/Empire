@@ -57,6 +57,11 @@ class Listener:
                 'Required'      :   True,
                 'Value'         :   80
             },
+            'Launcher' : {
+                'Description'   :   'Launcher string.',
+                'Required'      :   True,
+                'Value'         :   'powershell -noP -w 1 -enc '
+            },
             'StagingKey' : {
                 'Description'   :   'Staging key for initial agent negotiation.',
                 'Required'      :   True,
@@ -155,6 +160,7 @@ class Listener:
             # extract the set options for this instantiated listener
             listenerOptions = self.mainMenu.listeners.activeListeners[listenerName]['options']
             host = listenerOptions['Host']['Value']
+            launcher = listenerOptions['Launcher']['Value']
             stagingKey = listenerOptions['StagingKey']['Value']
             profile = listenerOptions['DefaultProfile']['Value']
             uris = [a for a in profile.split('|')[0].split(',')]
@@ -211,7 +217,7 @@ class Listener:
 
                 # base64 encode the stager and return it
                 if encode:
-                    return helpers.powershell_launcher(stager)
+                    return helpers.powershell_launcher(stager, launcher)
                 else:
                     # otherwise return the case-randomized stager
                     return stager
