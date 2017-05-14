@@ -49,7 +49,7 @@ class Listener:
                 'Description'   :   'Launcher string.',
                 'Required'      :   True,
                 'Value'         :   'powershell -noP -w 1 -enc '
-            },,
+            },
             'StagingKey' : {
                 'Description'   :   'Staging key for initial agent negotiation.',
                 'Required'      :   True,
