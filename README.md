@@ -10,7 +10,6 @@ Empire is developed by [@harmj0y](https://twitter.com/harmj0y), [@sixdub](https:
 
 Feel free to join us on Slack! http://adaptiveempire.herokuapp.com/
 
-Feel free to join us on Slack! http://adaptiveempire.herokuapp.com/
 
 ## Contribution Rules
 
