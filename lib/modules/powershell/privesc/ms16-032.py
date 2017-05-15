@@ -34,7 +34,7 @@ class Module:
 
         self.options = {
             'Agent' : {
-                'Description'   :   'Agent to grab a screenshot from.',
+                'Description'   :   'Agent to run module on.',
                 'Required'      :   True,
                 'Value'         :   ''
             },

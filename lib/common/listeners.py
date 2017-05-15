@@ -366,6 +366,20 @@ class Listeners:
         else:
             return None
 
+    def get_listener_options(self):
+        """
+        Return the options for a listener type
+        """
+        cur = self.conn.cursor()
+        cur.execute('SELECT options FROM listeners')
+        results = cur.fetchall()
+        cur.close()
+
+        if results:
+            return results[0][0]
+        else:
+            return None
+
 
     def get_listener_names(self):
         """

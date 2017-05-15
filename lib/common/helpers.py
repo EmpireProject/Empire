@@ -49,6 +49,7 @@ import sqlite3
 import iptools
 import threading
 import pickle
+import netifaces
 from time import localtime, strftime
 from Crypto.Random import random
 import subprocess
@@ -187,14 +188,14 @@ def enc_powershell(raw):
     return base64.b64encode("".join([char + "\x00" for char in unicode(raw)]))
 
 
-def powershell_launcher(raw):
+def powershell_launcher(raw, modifiable_launcher):
     """
     Build a one line PowerShell launcher with an -enc command.
     """
     # encode the data into a form usable by -enc
     encCMD = enc_powershell(raw)
 
-    return "powershell.exe -NoP -sta -NonI -W Hidden -Enc " + encCMD
+    return modifiable_launcher + " " + encCMD
 
 
 def parse_powershell_script(data):
@@ -598,6 +599,7 @@ def lhost():
     Return the local IP.
     """
 
+
     if os.name != 'nt':
         import fcntl
         import struct
@@ -622,15 +624,16 @@ def lhost():
         return ip
 
     if (ip == '' or ip.startswith('127.')) and os.name != 'nt':
-        interfaces = ['eth0','eth1','eth2','wlan0','wlan1','wifi0','ath0','ath1','ppp0']
+        interfaces = netifaces.interfaces()
         for ifname in interfaces:
-            try:
-                ip = get_interface_ip(ifname)
-                if ip != "":
-                    break
-            except:
-                print 'Unexpected error:', sys.exc_info()[0]
-                pass
+            if "lo" not in ifname:
+                try:
+                    ip = get_interface_ip(ifname) 
+                    if ip != "":
+                        break
+                except:
+                    print 'Unexpected error:', sys.exc_info()[0]
+                    pass
     return ip
 
 

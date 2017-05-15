@@ -26,6 +26,7 @@ if lsb_release -d | grep -q "Fedora"; then
 	pip install pyOpenSSL
 	pip install pyinstaller
 	pip install zlib_wrapper
+	pip install netifaces
 elif lsb_release -d | grep -q "Kali"; then
 	Release=Kali
 	apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libssl-dev
@@ -39,18 +40,7 @@ elif lsb_release -d | grep -q "Kali"; then
 	pip install pyOpenSSL
 	pip install pyinstaller
 	pip install zlib_wrapper
-        if ! which powershell > /dev/null; then
-            apt-get install -y libunwind8
-            wget http://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
-            dpkg -i libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
-            wget https://github.com/PowerShell/PowerShell/releases/download/v6.0.0-alpha.16/powershell_6.0.0-alpha.16-1ubuntu1.16.04.1_amd64.deb
-            dpkg -i powershell_6.0.0-alpha.16-1ubuntu1.16.04.1_amd64.deb
-            apt-get install -f -y
-            rm libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
-            rm powershell_6.0.0-alpha.16-1ubuntu1.16.04.1_amd64.deb
-        fi
-        mkdir -p /usr/local/share/powershell/Modules
-        cp -r ../lib/powershell/Invoke-Obfuscation /usr/local/share/powershell/Modules
+	pip install netifaces
 elif lsb_release -d | grep -q "Ubuntu"; then
 	Release=Ubuntu
 	apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libssl-dev
@@ -65,18 +55,7 @@ elif lsb_release -d | grep -q "Ubuntu"; then
 	pip install pyopenssl
 	pip install pyinstaller
 	pip install zlib_wrapper
-        if ! which powershell > /dev/null; then
-            apt-get install -y libunwind8
-            wget http://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
-            dpkg -i libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
-            wget https://github.com/PowerShell/PowerShell/releases/download/v6.0.0-alpha.16/powershell_6.0.0-alpha.16-1ubuntu1.16.04.1_amd64.deb
-            dpkg -i powershell_6.0.0-alpha.16-1ubuntu1.16.04.1_amd64.deb
-            apt-get install -f -y
-            rm libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
-            rm powershell_6.0.0-alpha.16-1ubuntu1.16.04.1_amd64.deb
-        fi
-        mkdir -p /usr/local/share/powershell/Modules
-        cp -r ../lib/powershell/Invoke-Obfuscation /usr/local/share/powershell/Modules
+	pip install netifaces
 else
 	echo "Unknown distro - Debian/Ubuntu Fallback"
 	 apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libffi-dev libssl-dev
@@ -91,18 +70,7 @@ else
 	 pip install pyOpenSSL
 	 pip install pyinstaller
 	 pip install zlib_wrapper
-        if ! which powershell > /dev/null; then
-            apt-get install -y libunwind8
-            wget http://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
-            dpkg -i libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
-            wget https://github.com/PowerShell/PowerShell/releases/download/v6.0.0-alpha.16/powershell_6.0.0-alpha.16-1ubuntu1.16.04.1_amd64.deb
-            dpkg -i powershell_6.0.0-alpha.16-1ubuntu1.16.04.1_amd64.deb
-            apt-get install -f -y
-            rm libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
-            rm powershell_6.0.0-alpha.16-1ubuntu1.16.04.1_amd64.deb
-        fi
-        mkdir -p /usr/local/share/powershell/Modules
-        cp -r ../lib/powershell/Invoke-Obfuscation /usr/local/share/powershell/Modules
+	 pip install netifaces
 fi
 tar -xvf ../data/misc/xar-1.5.2.tar.gz
 (cd xar-1.5.2 && ./configure)
