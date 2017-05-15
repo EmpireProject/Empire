@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import sqlite3, argparse, sys, argparse, logging, json, string
-import os, re, time, signal, copy, base64
+import os, re, time, signal, copy, base64, pickle
 from flask import Flask, request, jsonify, make_response, abort, url_for
 from time import localtime, strftime
 from OpenSSL import SSL
@@ -158,13 +158,18 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
     global serverExitCommand
 
     # if a username/password were not supplied, use the creds stored in the db
+
     (dbUsername, dbPassword) = execute_db_query(conn, "SELECT api_username, api_password FROM config")[0]
 
     if not username:
         username = dbUsername
+    else:
+        execute_db_query(conn, "UPDATE config SET api_username=?", username)
 
     if not password:
         password = dbPassword
+    else:
+        execute_db_query(conn, "UPDATE config SET api_password=?", password)
 
 
     class Namespace:
@@ -248,7 +253,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
     @app.route('/api/map', methods=['GET'])
     def list_routes():
         """
-        List all of the current registered routes.
+        List all of the current registered API routes.
         """
         import urllib
         output = []
@@ -274,10 +279,11 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         Returns JSON of the current Empire config.
         """
-        configRaw = execute_db_query(conn, 'SELECT * FROM config')
+        configRaw = execute_db_query(conn, 'SELECT staging_key, install_path, ip_whitelist, ip_blacklist, autorun_command, autorun_data, rootuser, api_username, api_password, api_current_token, api_permanent_token FROM config')
 
-        [staging_key, stage0_uri, stage1_uri, stage2_uri, default_delay, default_jitter, default_profile, default_cert_path, default_port, install_path, server_version, ip_whitelist, ip_blacklist, default_lost_limit, autorun_command, autorun_data, api_username, api_password, current_api_token, permanent_api_token] = configRaw[0]
-        config = [{"version":empire.VERSION, "staging_key":staging_key, "stage0_uri":stage0_uri, "stage1_uri":stage1_uri, "stage2_uri":stage2_uri, "default_delay":default_delay, "default_jitter":default_jitter, "default_profile":default_profile, "default_cert_path":default_cert_path, "default_port":default_port, "install_path":install_path, "server_version":server_version, "ip_whitelist":ip_whitelist, "ip_blacklist":ip_blacklist, "default_lost_limit":default_lost_limit, "autorun_command":autorun_command, "autorun_data":autorun_data, "api_username":api_username, "api_password":api_password, "current_api_token":current_api_token, "permanent_api_token":permanent_api_token}]
+        [staging_key, install_path, ip_whitelist, ip_blacklist, autorun_command, autorun_data, rootuser, api_username, api_password, api_current_token, api_permanent_token] = configRaw[0]
+        config = [{"api_password":api_password, "api_username":api_username, "autorun_command":autorun_command, "autorun_data":autorun_data, "current_api_token":api_current_token, "install_path":install_path, "ip_blacklist":ip_blacklist, "ip_whitelist":ip_whitelist, "permanent_api_token":api_permanent_token, "staging_key":staging_key, "version":empire.VERSION}]
+
         return jsonify({'config': config})
 
 
@@ -297,14 +303,13 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         return jsonify({'stagers': stagers})
 
 
-    @app.route('/api/stagers/<string:stager_name>', methods=['GET'])
+    @app.route('/api/stagers/<path:stager_name>', methods=['GET'])
     def get_stagers_name(stager_name):
         """
         Returns JSON describing the specified stager_name passed.
         """
-
         if stager_name not in main.stagers.stagers:
-            return make_response(jsonify({'error': 'stager name %s not found' %(stager_name)}), 404)
+            return make_response(jsonify({'error': 'stager name %s not found, make sure to use [os]/[name] format, ie. windows/dll' %(stager_name)}), 404)
 
         stagers = []
         for stagerName, stager in main.stagers.stagers.iteritems():
@@ -435,8 +440,8 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
                 if not main.agents.is_agent_present(sessionID):
                     return make_response(jsonify({'error': 'invalid agent name'}), 400)
 
-                modulePSVersion = int(module.info['MinPSVersion'])
-                agentPSVersion = int(main.agents.get_language_version(sessionID))
+                modulePSVersion = int(module.info['MinLanguageVersion'])
+                agentPSVersion = int(main.agents.get_language_version_db(sessionID))
                 # check if the agent/module PowerShell versions are compatible
                 if modulePSVersion > agentPSVersion:
                     return make_response(jsonify({'error': "module requires PS version "+str(modulePSVersion)+" but agent running PS version "+str(agentPSVersion)}), 400)
@@ -495,7 +500,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
             for agent in main.agents.get_agents():
                 sessionID = agent[1]
-                main.agents.add_agent_task(sessionID, taskCommand, moduleData)
+                main.agents.add_agent_task_db(sessionID, taskCommand, moduleData)
                 msg = "tasked agent %s to run module %s" %(sessionID, module_name)
                 main.agents.save_agent_log(sessionID, msg)
 
@@ -504,7 +509,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
         else:
             # set the agent's tasking in the cache
-            main.agents.add_agent_task(sessionID, taskCommand, moduleData)
+            main.agents.add_agent_task_db(sessionID, taskCommand, moduleData)
 
             # update the agent log
             msg = "tasked agent %s to run module %s" %(sessionID, module_name)
@@ -643,13 +648,13 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         Returns JSON describing all currently registered listeners.
         """
-        activeListenersRaw = execute_db_query(conn, 'SELECT * FROM listeners')
+        activeListenersRaw = execute_db_query(conn, 'SELECT id, name, module, listener_type, listener_category, options FROM listeners')
         listeners = []
 
         for activeListener in activeListenersRaw:
             [ID, name, module, listener_type, listener_category, options] = activeListener
-            # activeListeners[name] = {'ID':ID, 'name':name, 'host':host, 'port':port, 'cert_path':cert_path, 'staging_key':staging_key, 'default_delay':default_delay, 'default_jitter':default_jitter, 'default_profile':default_profile, 'kill_date':kill_date, 'working_hours':working_hours, 'listener_type':listener_type, 'redirect_target':redirect_target, 'default_lost_limit':default_lost_limit}
-            listeners.append({'ID':ID, 'name':name, 'module':module, 'listener_type':listener_type, 'listener_category':listener_category, 'options':options })
+            listeners.append({'ID':ID, 'name':name, 'module':module, 'listener_type':listener_type, 'listener_category':listener_category, 'options':pickle.loads(activeListener[5]) })  
+
 
         return jsonify({'listeners' : listeners})
 
@@ -659,14 +664,14 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         Returns JSON describing the listener specified by listener_name.
         """
-        activeListenersRaw = execute_db_query(conn, 'SELECT * FROM listeners')
+        activeListenersRaw = execute_db_query(conn, 'SELECT id, name, module, listener_type, listener_category, options FROM listeners WHERE name=?', [listener_name])
         listeners = []
 
-        if listener_name != "" and main.listeners.is_listener_valid(listener_name):
-            for activeListener in activeListenersRaw:
-                [ID, name, host, port, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, listener_type, redirect_target, default_lost_limit] = activeListener
-                if name == listener_name:
-                    listeners.append({'ID':ID, 'name':name, 'host':host, 'port':port, 'cert_path':cert_path, 'staging_key':staging_key, 'default_delay':default_delay, 'default_jitter':default_jitter, 'default_profile':default_profile, 'kill_date':kill_date, 'working_hours':working_hours, 'listener_type':listener_type, 'redirect_target':redirect_target, 'default_lost_limit':default_lost_limit})
+        #if listener_name != "" and main.listeners.is_listener_valid(listener_name):
+        for activeListener in activeListenersRaw:
+            [ID, name, module, listener_type, listener_category, options] = activeListener
+            if name == listener_name:
+                listeners.append({'ID':ID, 'name':name, 'module':module, 'listener_type':listener_type, 'listener_category':listener_category, 'options':pickle.loads(activeListener[5]) })
 
             return jsonify({'listeners' : listeners})
         else:
@@ -678,53 +683,60 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         Kills the listener specified by listener_name.
         """
-
         if listener_name.lower() == "all":
-            activeListenersRaw = execute_db_query(conn, 'SELECT * FROM listeners')
+            activeListenersRaw = execute_db_query(conn, 'SELECT id, name, module, listener_type, listener_category, options FROM listeners')
             for activeListener in activeListenersRaw:
-                [ID, name, host, port, cert_path, staging_key, default_delay, default_jitter, default_profile, kill_date, working_hours, listener_type, redirect_target, default_lost_limit] = activeListener
-                main.listeners.shutdown_listener(name)
-                main.listeners.delete_listener(name)
+                [ID, name, module, listener_type, listener_category, options] = activeListener
+                main.listeners.kill_listener(name)
 
             return jsonify({'success': True})
         else:
             if listener_name != "" and main.listeners.is_listener_valid(listener_name):
-                main.listeners.shutdown_listener(listener_name)
-                main.listeners.delete_listener(listener_name)
+                main.listeners.kill_listener(listener_name)
                 return jsonify({'success': True})
             else:
                 return make_response(jsonify({'error': 'listener name %s not found' %(listener_name)}), 404)
 
 
-    @app.route('/api/listeners/options', methods=['GET'])
-    def get_listener_options():
+    @app.route('/api/listeners/options/<string:listener_type>', methods=['GET'])
+    def get_listener_options(listener_type):
         """
-        Returns JSON describing the current listener options.
+        Returns JSON describing listener options for the specified listener type.
         """
-        return jsonify({'listeneroptions' : [main.listeners.options]})
+
+        if listener_type.lower() not in main.listeners.loadedListeners:
+            return make_response(jsonify({'error':'listener type %s not found' %(listener_type)}), 404)
+
+        options = main.listeners.loadedListeners[listener_type].options
+        return jsonify({'listeneroptions' : options})
 
 
-    @app.route('/api/listeners', methods=['POST'])
-    def start_listener():
+    @app.route('/api/listeners/<string:listener_type>', methods=['POST'])
+    def start_listener(listener_type):
         """
         Starts a listener with options supplied in the POST.
         """
+        if listener_type.lower() not in main.listeners.loadedListeners:
+            return make_response(jsonify({'error':'listener type %s not found' %(listener_type)}), 404)
 
+        listenerObject = main.listeners.loadedListeners[listener_type]
         # set all passed options
         for option, values in request.json.iteritems():
-            returnVal = main.listeners.set_listener_option(option, values)
+            if option == "Name":
+                listenerName = values
+
+            returnVal = main.listeners.set_listener_option(listener_type, option, values)
             if not returnVal:
-                return make_response(jsonify({'error': 'error setting listener value %s with option %s' %(option, values)}), 400)
+                 return make_response(jsonify({'error': 'error setting listener value %s with option %s' %(option, values)}), 400)
+        
+        main.listeners.start_listener(listener_type, listenerObject)
 
-        valid = main.listeners.validate_listener_options()
-        if not valid:
-            return make_response(jsonify({'error': 'error validating listener options'}), 400)
-
-        (success, message) = main.listeners.add_listener_from_config()
-        if success:
-            return jsonify({'success': success, 'msg' : "listener '%s' successfully started." %(message)})
+        #check to see if the listener was created
+        listenerID = main.listeners.get_listener_id(listenerName)
+        if listenerID:
+            return jsonify({'success': 'listener %s successfully started' % listenerName})
         else:
-            return jsonify({'success': success, 'msg' : message})
+            return jsonify({'error': 'failed to start listener %s' % listenerName})
 
 
     @app.route('/api/agents', methods=['GET'])
@@ -732,12 +744,15 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         Returns JSON describing all currently registered agents.
         """
-        activeAgentsRaw = execute_db_query(conn, 'SELECT * FROM agents')
+        activeAgentsRaw = execute_db_query(conn, 'SELECT id, session_id, listener, name, language, language_version, delay, jitter, external_ip, '+
+            'internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, '+
+            'lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results FROM agents')
         agents = []
 
         for activeAgent in activeAgentsRaw:
-            [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit, taskings, results] = activeAgent
-            agents.append({"ID":ID, "sessionID":sessionID, "listener":listener, "name":name, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "uris":uris, "old_uris":old_uris, "user_agent":user_agent, "headers":headers, "functions":functions, "kill_date":kill_date, "working_hours":working_hours, "ps_version":ps_version, "lost_limit":lost_limit, "taskings":taskings, "results":results})
+            [ID, session_id, listener, name, language, language_version, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results] = activeAgent
+
+            agents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
 
         return jsonify({'agents' : agents})
 
@@ -748,11 +763,13 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         Returns JSON describing all stale agents.
         """
 
-        agentsRaw = execute_db_query(conn, 'SELECT * FROM agents')
+        agentsRaw = execute_db_query(conn, 'SELECT id, session_id, listener, name, language, language_version, delay, jitter, external_ip, '+
+            'internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, '+
+            'lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results FROM agents')
         staleAgents = []
 
         for agent in agentsRaw:
-            [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit, taskings, results] = agent
+            [ID, session_id, listener, name, language, language_version, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results] = agent
 
             intervalMax = (delay + delay * jitter)+30
 
@@ -761,7 +778,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
             if agentTime < time.mktime(time.localtime()) - intervalMax:
 
-                staleAgents.append({"ID":ID, "sessionID":sessionID, "listener":listener, "name":name, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "uris":uris, "old_uris":old_uris, "user_agent":user_agent, "headers":headers, "functions":functions, "kill_date":kill_date, "working_hours":working_hours, "ps_version":ps_version, "lost_limit":lost_limit, "taskings":taskings, "results":results})
+                staleAgents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
 
         return jsonify({'agents' : staleAgents})
 
@@ -776,7 +793,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         agentsRaw = execute_db_query(conn, 'SELECT * FROM agents')
 
         for agent in agentsRaw:
-            [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit, taskings, results] = agent
+            [ID, sessionID, listener, name, language, language_version, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results] = agent
 
             intervalMax = (delay + delay * jitter)+30
 
@@ -818,12 +835,15 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         Returns JSON describing the agent specified by agent_name.
         """
-        activeAgentsRaw = execute_db_query(conn, 'SELECT * FROM agents WHERE name=? OR session_id=?', [agent_name, agent_name])
+        activeAgentsRaw = execute_db_query(conn, 'SELECT id, session_id, listener, name, language, language_version, delay, jitter, external_ip, '+
+            'internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, '+
+            'lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results FROM agents ' +
+            'WHERE name=? OR session_id=?', [agent_name, agent_name])
         activeAgents = []
 
         for activeAgent in activeAgentsRaw:
-            [ID, sessionID, listener, name, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, checkin_time, lastseen_time, parent, children, servers, uris, old_uris, user_agent, headers, functions, kill_date, working_hours, ps_version, lost_limit, taskings, results] = activeAgent
-            activeAgents.append({"ID":ID, "sessionID":sessionID, "listener":listener, "name":name, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "uris":uris, "old_uris":old_uris, "user_agent":user_agent, "headers":headers, "functions":functions, "kill_date":kill_date, "working_hours":working_hours, "ps_version":ps_version, "lost_limit":lost_limit, "taskings":taskings, "results":results})
+            [ID, session_id, listener, name, language, language_version, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results] = activeAgent
+            activeAgents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
 
         return jsonify({'agents' : activeAgents})
 
@@ -834,30 +854,22 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         Returns JSON describing the agent's results and removes the result field
         from the backend database.
         """
-
         agentTaskResults = []
 
         if agent_name.lower() == "all":
             # enumerate all target agent sessionIDs
-            agentNameIDs = execute_db_query(conn, "SELECT name,session_id FROM agents WHERE name like '%' OR session_id like '%'")
+            agentNameIDs = execute_db_query(conn, "SELECT name, session_id FROM agents WHERE name like '%' OR session_id like '%'")
         else:
-            agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
-
+            agentNameIDs = execute_db_query(conn, 'SELECT name, session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+        
         for agentNameID in agentNameIDs:
-            (agentName, agentSessionID) = agentNameID
+            [agentName, agentSessionID] = agentNameID
 
-            agentResults = execute_db_query(conn, 'SELECT results FROM agents WHERE session_id=?', [agentSessionID])[0]
+            agentResults = execute_db_query(conn, 'SELECT agent, data FROM results WHERE agent=?', [agentSessionID])
 
-            if agentResults and agentResults[0] and agentResults[0] != '':
-                out = json.loads(agentResults[0])
-                if out:
-                    agentResults = "\n".join(out)
-                else:
-                    agentResults = ''
-            else:
-                agentResults = ''
-
-            agentTaskResults.append({"agentname":agentName, "results":agentResults})
+            for result in agentResults:
+                [agent, data] = result
+                agentTaskResults.append({"agentname":result[0], "results":result[1]})
 
         return jsonify({'results': agentTaskResults})
 
@@ -869,12 +881,59 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         if agent_name.lower() == "all":
             # enumerate all target agent sessionIDs
-            execute_db_query(conn, "UPDATE agents SET results='' WHERE name like '%' OR session_id like '%'")
+            agentNameIDs = execute_db_query(conn, "SELECT name,session_id FROM agents WHERE name like '%' OR session_id like '%'")
         else:
-            execute_db_query(conn, "UPDATE agents SET results='' WHERE name like ? OR session_id like ?", [agent_name, agent_name])
+            agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+
+        if not agentNameIDs or len(agentNameIDs) == 0:
+            return make_response(jsonify({'error': 'agent name %s not found' %(agent_name)}), 404)
+
+        for agentNameID in agentNameIDs:
+            (agentName, agentSessionID) = agentNameID
+
+            
+            execute_db_query(conn, 'UPDATE agents SET results=? WHERE session_id=?', ['', agentSessionID])
 
         return jsonify({'success': True})
 
+    @app.route('/api/agents/<string:agent_name>/upload', methods=['POST'])
+    def task_agent_upload(agent_name):
+        """
+        Tasks the specified agent to upload a file
+        """
+
+        if agent_name.lower() == "all":
+            # enumerate all target agent sessionIDs
+            agentNameIDs = execute_db_query(conn, "SELECT name,session_id FROM agents WHERE name like '%' OR session_id like '%'")
+        else:
+            agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+
+        if not agentNameIDs or len(agentNameIDs) == 0:
+            return make_response(jsonify({'error': 'agent name %s not found' %(agent_name)}), 404)
+
+        if not request.json['data']:
+            return make_response(jsonify({'error':'file data not provided'}), 404)
+
+        if not request.json['filename']:
+            return make_response(jsonify({'error':'file name not provided'}), 404)
+
+        fileData = request.json['data']
+        fileName = request.json['filename']
+
+        rawBytes = base64.b64decode(fileData)
+
+        if len(rawBytes) > 1048576:
+            return make_response(jsonify({'error':'file size too large'}), 404)
+
+        for agentNameID in agentNameIDs:
+            (agentName, agentSessionID) = agentNameID
+
+            msg = "Tasked agent to upload %s : %s" % (fileName, hashlib.md5(rawBytes).hexdigest())
+            main.agents.save_agent_log(agentSessionID, msg)
+            data = fileName + "|" + fileData
+            main.agents.add_agent_task_db(agentSessionID, 'TASK_UPLOAD', data)
+
+        return jsonify({'success': True})
 
     @app.route('/api/agents/<string:agent_name>/shell', methods=['POST'])
     def task_agent_shell(agent_name):
@@ -897,20 +956,10 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         for agentNameID in agentNameIDs:
             (agentName, agentSessionID) = agentNameID
 
-            # get existing agent taskings for each agent
-            agentTasks = execute_db_query(conn, 'SELECT taskings FROM agents WHERE session_id like ?', [agentSessionID])[0]
-            if agentTasks and agentTasks[0]:
-                agentTasks = json.loads(agentTasks[0])
-            else:
-                agentTasks = []
-
-            # append our new json-ified task and update the backend
-            agentTasks.append(['TASK_SHELL', command])
-
-            execute_db_query(conn, "UPDATE agents SET taskings=? WHERE session_id=?", [json.dumps(agentTasks), agentSessionID])
-
-            timeStamp = strftime("%Y-%m-%d %H:%M:%S", localtime())
-            execute_db_query(conn, "INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agentName, "task", "TASK_SHELL - " + command[0:50], timeStamp))
+            # add task command to agent taskings
+            msg = "tasked agent %s to run command %s" %(agentSessionID, command)
+            main.agents.save_agent_log(agentSessionID, msg)
+            main.agents.add_agent_task_db(agentSessionID, "TASK_SHELL", command)
 
         return jsonify({'success': True})
 
@@ -960,10 +1009,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         for agentNameID in agentNameIDs:
             (agentName, agentSessionID) = agentNameID
 
-            execute_db_query(conn, "UPDATE agents SET taskings=? WHERE session_id=?", ['', agentSessionID])
-
-            timeStamp = strftime("%Y-%m-%d %H:%M:%S", localtime())
-            execute_db_query(conn, "INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agentName, "clear", '', timeStamp))
+            main.agents.clear_agent_tasks_db(agentSessionID)
 
         return jsonify({'success': True})
 
@@ -985,20 +1031,10 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         for agentNameID in agentNameIDs:
             (agentName, agentSessionID) = agentNameID
 
-            # get existing agent taskings for each agent
-            agentTasks = execute_db_query(conn, 'SELECT taskings FROM agents WHERE session_id like ?', [agentSessionID])[0]
-            if agentTasks and agentTasks[0]:
-                agentTasks = json.loads(agentTasks[0])
-            else:
-                agentTasks = []
-
-            # append our new json-ified task and update the backend
-            agentTasks.append(['TASK_EXIT', ''])
-
-            execute_db_query(conn, "UPDATE agents SET taskings=? WHERE session_id=?", [json.dumps(agentTasks), agentSessionID])
-
-            timeStamp = strftime("%Y-%m-%d %H:%M:%S", localtime())
-            execute_db_query(conn, "INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (agentName, "task", "TASK_EXIT", timeStamp))
+            # task the agent to exit
+            msg = "tasked agent %s to exit" %(agentSessionID)
+            main.agents.save_agent_log(sessionID, msg)
+            main.agents.add_agent_task_db(agentSessionID, 'TASK_EXIT')
 
         return jsonify({'success': True})
 
@@ -1008,12 +1044,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         Returns JSON describing the credentials stored in the backend database.
         """
-        credsRaw = execute_db_query(conn, 'SELECT * FROM credentials')
+        credsRaw = execute_db_query(conn, 'SELECT ID, credtype, domain, username, password, host, os, sid, notes FROM credentials')
         creds = []
 
         for credRaw in credsRaw:
-            [ID, credtype, domain, username, password, host, sid, notes] = credRaw
-            creds.append({"ID":ID, "credtype":credtype, "domain":domain, "username":username, "password":password, "host":host, "sid":sid, "notes":notes})
+            [ID, credtype, domain, username, password, host, os, sid, notes] = credRaw
+            creds.append({"ID":ID, "credtype":credtype, "domain":domain, "username":username, "password":password, "host":host, "os":os, "sid":sid, "notes":notes})
 
         return jsonify({'creds' : creds})
 
@@ -1023,12 +1059,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         """
         Returns JSON describing the reporting events from the backend database.
         """
-        reportingRaw = execute_db_query(conn, 'SELECT * FROM reporting')
+        reportingRaw = execute_db_query(conn, 'SELECT ID, name, event_type, message, time_stamp, taskID FROM reporting')
         reportingEvents = []
 
         for reportingEvent in reportingRaw:
-            [ID, name, eventType, message, timestamp] = reportingEvent
-            reportingEvents.append({"ID":ID, "agentname":name, "event_type":eventType, "message":message, "timestamp":timestamp})
+            [ID, name, event_type, message, time_stamp, taskID] = reportingEvent
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":message, "timestamp":time_stamp, "taskID":taskID})
 
         return jsonify({'reporting' : reportingEvents})
 
@@ -1047,12 +1083,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         else:
             return jsonify({'reporting' : ''})
 
-        reportingRaw = execute_db_query(conn, 'SELECT * FROM reporting WHERE name=?', [sessionID])
+        reportingRaw = execute_db_query(conn, 'SELECT ID, name, event_type, message, time_stamp, taskID FROM reporting WHERE name=?', [sessionID])
         reportingEvents = []
 
         for reportingEvent in reportingRaw:
-            [ID, name, eventType, message, timestamp] = reportingEvent
-            reportingEvents.append({"ID":ID, "agentname":name, "event_type":eventType, "message":message, "timestamp":timestamp})
+            [ID, name, event_type, message, time_stamp, taskID] = reportingEvent
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":message, "timestamp":time_stamp, "taskID":taskID})
 
         return jsonify({'reporting' : reportingEvents})
 
@@ -1063,12 +1099,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         Returns JSON describing the reporting events from the backend database for
         the event type specified by event_type.
         """
-        reportingRaw = execute_db_query(conn, 'SELECT * FROM reporting WHERE event_type=?', [event_type])
+        reportingRaw = execute_db_query(conn, 'SELECT ID, name, event_type, message, time_stamp, taskID FROM reporting WHERE event_type=?', [event_type])
         reportingEvents = []
 
         for reportingEvent in reportingRaw:
-            [ID, name, eventType, message, timestamp] = reportingEvent
-            reportingEvents.append({"ID":ID, "agentname":name, "event_type":eventType, "message":message, "timestamp":timestamp})
+            [ID, name, event_type, message, time_stamp, taskID] = reportingEvent
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":message, "timestamp":time_stamp, "taskID":taskID})
 
         return jsonify({'reporting' : reportingEvents})
 
@@ -1079,12 +1115,12 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         Returns JSON describing the reporting events from the backend database for
         the any messages with *msg* specified by msg.
         """
-        reportingRaw = execute_db_query(conn, "SELECT * FROM reporting WHERE message like ?", ['%'+msg+'%'])
+        reportingRaw = execute_db_query(conn, "SELECT ID, name, event_type, message, time_stamp, taskID FROM reporting WHERE message like ?", ['%'+msg+'%'])
         reportingEvents = []
 
         for reportingEvent in reportingRaw:
-            [ID, name, eventType, message, timestamp] = reportingEvent
-            reportingEvents.append({"ID":ID, "agentname":name, "event_type":eventType, "message":message, "timestamp":timestamp})
+            [ID, name, event_type, message, time_stamp, taskID] = reportingEvent
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":message, "timestamp":time_stamp, "taskID":taskID})
 
         return jsonify({'reporting' : reportingEvents})
 
@@ -1105,7 +1141,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         # try to prevent some basic bruting
         time.sleep(2)
 
-        if suppliedUsername == username and suppliedPassword == password:
+        if suppliedUsername == username[0] and suppliedPassword == password[0]:
             return jsonify({'token': apiToken})
         else:
             return make_response('', 401)
