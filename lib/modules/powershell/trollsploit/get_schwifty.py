@@ -5,7 +5,7 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Get-Shwifty',
+            'Name': 'Get-Schwifty',
 
             'Author': ['@424f424f'],
 
@@ -39,7 +39,7 @@ class Module:
                 'Value'         :   ''
             },
             'VideoURL' : {
-                'Description'   :   'Other YouTube video URL to play instead of Thunderstruck.',
+                'Description'   :   'Other YouTube video URL to play instead of Get Schwifty.',
                 'Required'      :   False,
                 'Value'         :   ''
             }
