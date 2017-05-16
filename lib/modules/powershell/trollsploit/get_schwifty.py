@@ -5,11 +5,11 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-Thunderstruck',
+            'Name': 'Get-Shwifty',
 
-            'Author': ['@obscuresec'],
+            'Author': ['@424f424f'],
 
-            'Description': ("Play's a hidden version of AC/DC's Thunderstruck video while "
+            'Description': ("Play's a hidden version of Rick and Morty Get Schwifty video while "
                             "maxing out a computer's volume."),
 
             'Background' : True,
@@ -59,13 +59,13 @@ class Module:
     def generate(self):
         
         script = """
-Function Invoke-Thunderstruck
+Function Get-Schwifty
 {
     [CmdletBinding()]
     Param (
         [Parameter(Mandatory = $False, Position = 0)]
         [ValidateNotNullOrEmpty()]
-        [String] $VideoURL = "https://www.youtube.com/watch?v=leJ_wj7mDa0"
+        [String] $VideoURL = "https://www.youtube.com/watch?v=I1188GO4p1E"
     )
     
     Function Set-Speaker($Volume){$wshShell = new-object -com wscript.shell;1..50 | % {$wshShell.SendKeys([char]174)};1..$Volume | % {$wshShell.SendKeys([char]175)}}
@@ -86,7 +86,7 @@ Function Invoke-Thunderstruck
        $WscriptObject.SendKeys([char]175)
     }
     until ((Get-Date) -gt $EndTime)
-} Invoke-Thunderstruck"""
+} Get-Schwifty"""
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent" and option.lower() != "computername":
@@ -97,6 +97,6 @@ Function Invoke-Thunderstruck
                     else:
                         script += " -" + str(option) + " " + str(values['Value'])
 
-        script += "; 'Agent Thunderstruck.'"
+        script += "; 'Agent is getting schwifty!'"
 
         return script
