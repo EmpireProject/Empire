@@ -404,6 +404,7 @@ class Listener:
             
             if obfuscate:
                 randomizedStager = helpers.obfuscate(randomizedStager, obfuscationCommand=obfuscationCommand)
+            print randomizedStager
             # base64 encode the stager and return it
             if encode:
                 return helpers.enc_powershell(randomizedStager)

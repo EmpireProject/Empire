@@ -41,6 +41,21 @@ elif lsb_release -d | grep -q "Kali"; then
 	pip install pyinstaller
 	pip install zlib_wrapper
 	pip install netifaces
+        if ! which powershell > /dev/null; then
+            curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+            curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
+            wget http://ftp.debian.org/debian/pool/main/i/icu/libicu52_52.1-8+deb8u5_amd64.deb
+            wget http://ftp.debian.org/debian/pool/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
+            dpkg -i libicu52_52.1-8+deb8u5_amd64.deb
+            dpkg -i libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
+            apt-get install -y apt-transport-https
+            apt-get update
+            apt-get install -y powershell
+            rm libicu52_52.1-8+deb8u5_amd64.deb
+            rm libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
+        fi
+        mkdir -p /usr/local/share/powershell/Modules
+        cp -r ../lib/powershell/Invoke-Obfuscation /usr/local/share/powershell/Modules
 elif lsb_release -d | grep -q "Ubuntu"; then
 	Release=Ubuntu
 	apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libssl-dev
@@ -56,6 +71,15 @@ elif lsb_release -d | grep -q "Ubuntu"; then
 	pip install pyinstaller
 	pip install zlib_wrapper
 	pip install netifaces
+        if ! which powershell > /dev/null; then
+            curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+            curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
+            apt-get install -y apt-transport-https
+            apt-get update
+            apt-get install -y powershell
+         fi
+         mkdir -p /usr/local/share/powershell/Modules
+         cp -r ../lib/powershell/Invoke-Obfuscation /usr/local/share/powershell/Modules
 else
 	echo "Unknown distro - Debian/Ubuntu Fallback"
 	 apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libffi-dev libssl-dev
@@ -71,6 +95,15 @@ else
 	 pip install pyinstaller
 	 pip install zlib_wrapper
 	 pip install netifaces
+         if ! which powershell > /dev/null; then
+            curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+            curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
+            apt-get install -y apt-transport-https
+            apt-get update
+            apt-get install -y powershell
+         fi
+         mkdir -p /usr/local/share/powershell/Modules
+         cp -r ../lib/powershell/Invoke-Obfuscation /usr/local/share/powershell/Modules
 fi
 tar -xvf ../data/misc/xar-1.5.2.tar.gz
 (cd xar-1.5.2 && ./configure)
