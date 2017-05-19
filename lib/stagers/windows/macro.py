@@ -82,9 +82,8 @@ class Stager:
 
         # generate the launcher code
         launcher = self.mainMenu.stagers.generate_launcher(listenerName, language=language, encode=True, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds, stagerRetries=stagerRetries)
-        LengthOfVari=random.randint(1,len(listenerName))
-        Str = ''.join(random.choice(string.letters) for i in range(LengthOfVari))
-        Method=''.join(random.choice(string.letters) for i in range(LengthOfVari))
+        Str = ''.join(random.choice(string.letters) for i in range(random.randint(1,len(listenerName))))
+        Method=''.join(random.choice(string.letters) for i in range(random.randint(1,len(listenerName))))
 
         if launcher == "":
             print helpers.color("[!] Error in launcher command generation.")
