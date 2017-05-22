@@ -45,7 +45,7 @@ class Listener:
             'Launcher' : {
                 'Description'   :   'Launcher string.',
                 'Required'      :   True,
-                'Value'         :   'powershell -noP -w 1 -enc '
+                'Value'         :   'powershell -noP -sta -w 1 -enc '
             },
             'RedirectStagingKey' : {
                 'Description'   :   'The staging key for the redirect listener, extracted from RedirectListener automatically.',
