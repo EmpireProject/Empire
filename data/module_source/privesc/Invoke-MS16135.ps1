@@ -5,11 +5,18 @@ function Invoke-MS16135 {
 		PowerShell implementation of MS16-135 (CVE-2016-7255). 
 		Discovered by Neel Mehta and Billy Leonard of Google Threat Analysis Group Feike Hacquebord, Peter Pi and Brooks Li of Trend Micro 
 		Credit for the original PoC : TinySec (@TinySecEx)
-		Credit for the Powershell implementation : Ruben Boonen @FuzzySec)
+		Credit for the Powershell implementation : Ruben Boonen (@FuzzySec)
         
         Targets:
         
         * Win7-Win10 (x64 only)
+        
+        Successfully tested on :
+        
+        * Win7 x64
+        * Win8.1 x64
+        * Win10 x64
+        * Win2k12 R2 x64
 
     .DESCRIPTION
 

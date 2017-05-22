@@ -5,12 +5,13 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-MS16032',
+            'Name': 'Invoke-MS16135',
 
             'Author': ['@TinySecEx', '@FuzzySec', 'ThePirateWhoSmellsOfSunflowers (github)'],
 
             'Description': ('Spawns a new Listener as SYSTEM by'
-                            ' leveraging the MS16-135 local exploit. This exploit is for x64 only!'
+                            ' leveraging the MS16-135 local exploit. This exploit is for x64 only'
+                            ' and only works on unlocked session.'
                             ' Note: the exploit performs fast windows switching, victim\'s desktop'
                             ' may flash. A named pipe is also created.'
                             ' Thus, opsec is not guaranteed'),
