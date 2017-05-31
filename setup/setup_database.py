@@ -172,7 +172,7 @@ c.execute('''CREATE TABLE "reporting" (
     "time_stamp" text,
     "taskID" integer,
     FOREIGN KEY(taskID) REFERENCES results(id)
-    )''')
+)''')
 
 # commit the changes and close everything off
 conn.commit()
