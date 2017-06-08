@@ -850,8 +850,9 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
             for result in agentResults:
                 [resultid, agent, data] = result
-                agentTaskResults.append({"taskID":result[0], "agentname":result[1], "results":result[2]})
 
+                agentTaskResults.append({"taskID": result[0], "agentname": result[1], "results": result[2]})
+              
         return jsonify({'results': agentTaskResults})
 
 
@@ -940,10 +941,9 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             # add task command to agent taskings
             msg = "tasked agent %s to run command %s" %(agentSessionID, command)
             main.agents.save_agent_log(agentSessionID, msg)
-            main.agents.add_agent_task_db(agentSessionID, "TASK_SHELL", command)
+            taskID = main.agents.add_agent_task_db(agentSessionID, "TASK_SHELL", command)
 
-        return jsonify({'success': True})
-
+        return jsonify({'success': True, 'taskID': taskID})
 
     @app.route('/api/agents/<string:agent_name>/rename', methods=['POST'])
     def task_agent_rename(agent_name):
