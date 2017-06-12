@@ -60,7 +60,7 @@ class MainMenu(cmd.Cmd):
     The main class used by Empire to drive the 'main' menu
     displayed when Empire starts.
     """
-    def __init__(self, args=None):
+    def __init__(self, args=None, restAPI=False):
 
         cmd.Cmd.__init__(self)
 
