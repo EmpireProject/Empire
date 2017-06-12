@@ -45,7 +45,7 @@ class Stagers:
         Load stagers from the install + "/lib/stagers/*" path
         """
 
-        rootPath = "%slib/stagers/" % (self.mainMenu.installPath)
+        rootPath = "%s/lib/stagers/" % (self.mainMenu.installPath)
         pattern = '*.py'
 
         print helpers.color("[*] Loading stagers from: %s" % (rootPath))
