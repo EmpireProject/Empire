@@ -128,7 +128,7 @@ http://www.danielbohannon.com
         # Run 'Comment' first since it will be the least number of tokens to iterate through, and comments may be introduced as obfuscation technique in future revisions.
         $ObfuscationTypeOrder += 'Comment'
         # Run 'String' second since otherwise we will have unnecessary command bloat since other obfuscation functions create additional strings.
-        # $ObfuscationTypeOrder += 'String'
+        $ObfuscationTypeOrder += 'String'
         $ObfuscationTypeOrder += (Get-Random -Input $ObfuscationChoices -Count $ObfuscationChoices.Count)
 
         # Apply each randomly-ordered $ObfuscationType from above step.
@@ -691,11 +691,35 @@ http://www.danielbohannon.com
                 default {Write-Error "An invalid `$ObfuscationLevel value ($ObfuscationLevel) was passed to switch block for String Token Obfuscation."; Exit}
             }
         }
-
         # Evenly trim leading/trailing parentheses.
         While($ObfuscatedToken.StartsWith('(') -AND $ObfuscatedToken.EndsWith(')'))
         {
-            $ObfuscatedToken = ($ObfuscatedToken.SubString(1,$ObfuscatedToken.Length-2)).Trim()
+            $TrimmedObfuscatedToken = ($ObfuscatedToken.SubString(1,$ObfuscatedToken.Length-2)).Trim()
+            # Check if the parentheses are balanced before permenantly trimming
+            $Balanced = $True
+            $Counter = 0
+            ForEach($char in $TrimmedObfuscatedToken.ToCharArray()) {
+                If($char -eq '(') {
+                    $Counter = $Counter + 1
+                }
+                ElseIf($char -eq ')') {
+                    If($Counter -eq 0) {
+                        $Balanced = $False
+                        break
+                    }
+                    Else {
+                        $Counter = $Counter - 1
+                    }
+                }
+            }
+            # If parantheses are balanced, we can safely trim the parentheses
+            If($Balanced -and $Counter -eq 0) {
+                $ObfuscatedToken = $TrimmedObfuscatedToken
+            }
+            # If parentheses cannot be trimmed, break out of loop
+            Else {
+                break
+            }
         }
     }
 
@@ -1157,6 +1181,9 @@ http://www.danielbohannon.com
     $SubSubString = $ScriptString.SubString($Token.Start+$Token.Length,$RemainingSubString)
     
     If(($Token.Content.ToLower() -eq 'invoke') `
+    -OR ($Token.Content.ToLower() -eq 'computehash') `
+    -OR ($Token.Content.ToLower() -eq 'tobase64string') `
+    -OR ($Token.Content.ToLower() -eq 'getstring') `
     -OR (((($Token.Start -gt 0) -AND ($ScriptString.SubString($Token.Start-1,1) -eq '.')) `
     -OR (($Token.Start -gt 1) -AND ($ScriptString.SubString($Token.Start-2,2) -eq '::'))) `
     -AND (($ScriptString.Length -ge $Token.Start+$Token.Length+1) -AND (($SubSubString.SubString(0,1) -ne '(') -OR (($SubSubString.Contains('[')) -AND !($SubSubString.SubString(0,$SubSubString.IndexOf('[')).Contains(')')))))))

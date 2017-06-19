@@ -42,17 +42,17 @@ elif lsb_release -d | grep -q "Kali"; then
 	pip install zlib_wrapper
 	pip install netifaces
         if ! which powershell > /dev/null; then
-            curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
-            curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
-            wget http://ftp.debian.org/debian/pool/main/i/icu/libicu52_52.1-8+deb8u5_amd64.deb
+            wget http://archive.ubuntu.com/ubuntu/pool/main/i/icu/libicu55_55.1-7_amd64.deb
             wget http://ftp.debian.org/debian/pool/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
-            dpkg -i libicu52_52.1-8+deb8u5_amd64.deb
+            wget https://github.com/PowerShell/PowerShell/releases/download/v6.0.0-alpha.16/powershell_6.0.0-alpha.16-1ubuntu1.16.04.1_amd64.deb
+            apt-get install -y libunwind8
+            dpkg -i libicu55_55.1-7_amd64.deb
             dpkg -i libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
-            apt-get install -y apt-transport-https
-            apt-get update
-            apt-get install -y powershell
-            rm libicu52_52.1-8+deb8u5_amd64.deb
+            dpkg -i powershell_6.0.0-alpha.16-1ubuntu1.16.04.1_amd64.deb
+            apt-get install -f -y
+            rm libicu55_55.1-7_amd64.deb
             rm libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
+            rm powershell_6.0.0-alpha.16-1ubuntu1.16.04.1_amd64.deb
         fi
         mkdir -p /usr/local/share/powershell/Modules
         cp -r ../lib/powershell/Invoke-Obfuscation /usr/local/share/powershell/Modules
@@ -72,14 +72,20 @@ elif lsb_release -d | grep -q "Ubuntu"; then
 	pip install zlib_wrapper
 	pip install netifaces
         if ! which powershell > /dev/null; then
-            curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
-            curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
-            apt-get install -y apt-transport-https
-            apt-get update
-            apt-get install -y powershell
-         fi
-         mkdir -p /usr/local/share/powershell/Modules
-         cp -r ../lib/powershell/Invoke-Obfuscation /usr/local/share/powershell/Modules
+            wget http://archive.ubuntu.com/ubuntu/pool/main/i/icu/libicu55_55.1-7_amd64.deb
+            wget http://ftp.debian.org/debian/pool/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
+            wget https://github.com/PowerShell/PowerShell/releases/download/v6.0.0-alpha.16/powershell_6.0.0-alpha.16-1ubuntu1.16.04.1_amd64.deb
+            apt-get install -y libunwind8
+            dpkg -i libicu55_55.1-7_amd64.deb
+            dpkg -i libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
+            dpkg -i powershell_6.0.0-alpha.16-1ubuntu1.16.04.1_amd64.deb
+            apt-get install -f -y
+            rm libicu55_55.1-7_amd64.deb
+            rm libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
+            rm powershell_6.0.0-alpha.16-1ubuntu1.16.04.1_amd64.deb
+        fi
+        mkdir -p /usr/local/share/powershell/Modules
+        cp -r ../lib/powershell/Invoke-Obfuscation /usr/local/share/powershell/Modules
 else
 	echo "Unknown distro - Debian/Ubuntu Fallback"
 	 apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libffi-dev libssl-dev
@@ -96,11 +102,17 @@ else
 	 pip install zlib_wrapper
 	 pip install netifaces
          if ! which powershell > /dev/null; then
-            curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
-            curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
-            apt-get install -y apt-transport-https
-            apt-get update
-            apt-get install -y powershell
+            wget http://archive.ubuntu.com/ubuntu/pool/main/i/icu/libicu55_55.1-7_amd64.deb
+            wget http://ftp.debian.org/debian/pool/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
+            wget https://github.com/PowerShell/PowerShell/releases/download/v6.0.0-alpha.16/powershell_6.0.0-alpha.16-1ubuntu1.16.04.1_amd64.deb
+            apt-get install -y libunwind8
+            dpkg -i libicu55_55.1-7_amd64.deb
+            dpkg -i libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
+            dpkg -i powershell_6.0.0-alpha.16-1ubuntu1.16.04.1_amd64.deb
+            apt-get install -f -y
+            rm libicu55_55.1-7_amd64.deb
+            rm libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
+            rm powershell_6.0.0-alpha.16-1ubuntu1.16.04.1_amd64.deb
          fi
          mkdir -p /usr/local/share/powershell/Modules
          cp -r ../lib/powershell/Invoke-Obfuscation /usr/local/share/powershell/Modules

@@ -795,10 +795,8 @@ def obfuscate(psScript, obfuscationCommand):
     toObfuscateFile = open(toObfuscateFilename, 'w')
     toObfuscateFile.write(psScript)
     toObfuscateFile.close()
-    
     # Obfuscate using Invoke-Obfuscation w/ PowerShell
     subprocess.call("powershell 'Invoke-Obfuscation -ScriptPath %s -Command \"%s\" -Quiet | Out-File -Encoding ASCII %s'" % (toObfuscateFilename, convert_obfuscation_command(obfuscationCommand), obfuscatedFilename), shell=True)
-
     obfuscatedFile = open(obfuscatedFilename , 'r')
     # Obfuscation writes a newline character to the end of the file, ignoring that character
     psScript = obfuscatedFile.read()[0:-1]
@@ -820,13 +818,13 @@ def obfuscate_module(moduleSource, obfuscationCommand="", forceReobfuscation=Fal
     f.close()
 
     # obfuscate and write to obfuscated source path
+    obfuscatedCode = obfuscate(psScript=moduleCode, obfuscationCommand=obfuscationCommand)
     obfuscatedSource = moduleSource.replace("module_source", "obfuscated_module_source")
     try:
         f = open(obfuscatedSource, 'w')
     except:
         print color("[!] Could not read obfuscated module source path at: " + obfuscatedSource)
         return ""
-    obfuscatedCode = obfuscate(psScript=moduleCode, obfuscationCommand=obfuscationCommand)
     f.write(obfuscatedCode)
     f.close()
     
