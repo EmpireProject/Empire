@@ -100,7 +100,7 @@ class Module:
         # script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
         script = moduleCode
 
-        scriptEnd = moduleName + " "
+        scriptEnd = ';' + moduleName + " "
 
         # extract all of our options
         listenerName = self.options['Listener']['Value']

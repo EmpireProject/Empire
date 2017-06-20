@@ -117,7 +117,7 @@ class Module:
 
 
         # PowerShell code to write the launcher.bat out
-        scriptEnd = "$tempLoc = \"$env:temp\\debug.bat\""
+        scriptEnd = ";$tempLoc = \"$env:temp\\debug.bat\""
         scriptEnd += "\n$batCode = @\"\n" + launcherCode + "\"@\n"
         scriptEnd += "$batCode | Out-File -Encoding ASCII $tempLoc ;\n"
         scriptEnd += "\"Launcher bat written to $tempLoc `n\";\n"

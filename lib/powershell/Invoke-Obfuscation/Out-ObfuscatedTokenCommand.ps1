@@ -240,7 +240,6 @@ http://www.danielbohannon.com
             $ParameterValidationAttributesToTreatStringAsScriptblock += 'validatenotnullorempty'
 
             $ParameterValidationAttributesToTreatStringAsScriptblock += 'helpmessage'
-            $ParameterValidationAttributesToTreatStringAsScriptblock += 'confirmimpact'
             $ParameterValidationAttributesToTreatStringAsScriptblock += 'outputtype'
 
             Switch($ObfuscationLevel)
@@ -672,7 +671,7 @@ http://www.danielbohannon.com
             $EncapsulateAsScriptBlockInsteadOfParentheses = $TRUE
         }
 
-        If($SubString.Contains('parametersetname') -AND !$SubString.Contains('defaultparametersetname') -AND $SubString.Contains('='))
+        If(($SubString.Contains('parametersetname') -OR $SubString.Contains('confirmimpact')) -AND !$SubString.Contains('defaultparametersetname') -AND $SubString.Contains('='))
         {
             # For strings in ParameterSetName parameter binding (but not DefaultParameterSetName) then we will only obfuscate with tick marks.
             # Otherwise we may get errors depending on the version of PowerShell being run.

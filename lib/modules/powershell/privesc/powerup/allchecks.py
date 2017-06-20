@@ -72,7 +72,7 @@ class Module:
         # script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
         script = moduleCode
 
-        scriptEnd = moduleName + " "
+        scriptEnd = ';' + moduleName + " "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
