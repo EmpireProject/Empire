@@ -735,7 +735,12 @@ http://www.danielbohannon.com
         }
         ElseIf(($ObfuscatedToken.Length -eq $TokenContent.Length + 5) -AND $ObfuscatedToken.SubString(2,$ObfuscatedToken.Length-4) -eq ($TokenContent + ' '))
         {
-            $ObfuscatedToken = $TokenContent
+            If($ContainsVariableSpecialCases) {
+                $ObfuscatedToken = '"' + $TokenContent + '"'
+            }
+            Else {
+                $ObfuscatedToken = $TokenContent
+            }
         }
         ElseIf($ObfuscatedToken.StartsWith('"') -AND $ObfuscatedToken.EndsWith('"') -AND !$ObfuscatedToken.Contains('+') -AND !$ObfuscatedToken.Contains('-f'))
         {
@@ -855,7 +860,9 @@ http://www.danielbohannon.com
         [Int]
         $ObfuscationLevel
     )
-
+    if($Token.Type -ne 'Command') {
+        $ScriptString
+    }
     # Set $Token.Content in a separate variable so it can be modified since Content is a ReadOnly property of $Token.
     $TokenContent = $Token.Content
 
@@ -1183,6 +1190,7 @@ http://www.danielbohannon.com
     -OR ($Token.Content.ToLower() -eq 'computehash') `
     -OR ($Token.Content.ToLower() -eq 'tobase64string') `
     -OR ($Token.Content.ToLower() -eq 'getstring') `
+    -OR ($Token.Content.ToLower() -eq 'getconstructor') `
     -OR (((($Token.Start -gt 0) -AND ($ScriptString.SubString($Token.Start-1,1) -eq '.')) `
     -OR (($Token.Start -gt 1) -AND ($ScriptString.SubString($Token.Start-2,2) -eq '::'))) `
     -AND (($ScriptString.Length -ge $Token.Start+$Token.Length+1) -AND (($SubSubString.SubString(0,1) -ne '(') -OR (($SubSubString.Contains('[')) -AND !($SubSubString.SubString(0,$SubSubString.IndexOf('[')).Contains(')')))))))
@@ -1636,7 +1644,7 @@ http://www.danielbohannon.com
     )
 
     # Return as-is if the variable is already encapsulated with ${}. Otherwise you will get errors if you have something like ${var} turned into ${${var}}
-    If($ScriptString.SubString($Token.Start,2) -eq '${')
+    If($ScriptString.SubString($Token.Start,2) -eq '${' -OR $ScriptString.SubString($Token.Start,1) -eq '@')
     {
         Return $ScriptString
     }
