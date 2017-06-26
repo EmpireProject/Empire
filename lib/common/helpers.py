@@ -2,12 +2,54 @@
 
 Misc. helper functions used in Empire.
 
-Includes the PowerShell functions that generate the
-randomized stagers.
+Includes:
+
+    validate_ip() - uses iptools to validate an IP
+    validate_ntlm() - checks if the passed string is an NTLM hash
+    generate_ip_list() - generates an IP range list from a variety of inputs
+    random_string() - returns a random string of the specified number of characters
+    randomize_capitalization() - randomizes the capitalization of a string
+    chunks() - used to split a string into chunks
+    strip_python_comments() - strips Python newlines and comments
+    enc_powershell() - encodes a PowerShell command into a form usable by powershell.exe -enc ...
+    powershell_launcher() - builds a command line powershell.exe launcher
+    parse_powershell_script() - parses a raw PowerShell file and return the function names
+    strip_powershell_comments() - strips PowerShell newlines and comments
+    get_powerview_psreflect_overhead() - extracts some of the psreflect overhead for PowerView
+    get_dependent_functions() - extracts function dependenies from a PowerShell script
+    find_all_dependent_functions() - takes a PowerShell script and a set of functions, and returns all dependencies
+    generate_dynamic_powershell_script() - takes a PowerShell script and set of functions and returns a minimized script
+    parse_credentials() - enumerate module output, looking for any parseable credential sections
+    parse_mimikatz() - parses the output of Invoke-Mimikatz
+    get_config() - pulls config information from the database output of normal menu execution
+    get_listener_options() - gets listener options outside of normal menu execution
+    get_datetime() - returns the current date time in a standard format
+    get_file_datetime() - returns the current date time in a format savable to a file
+    get_file_size() - returns a string representing file size
+    lhost() - returns the local IP
+    color() - used for colorizing output in the Linux terminal
+    unique() - uniquifies a list, order preserving
+    uniquify_tuples() - uniquifies Mimikatz tuples based on the password
+    decode_base64() - tries to base64 decode a string
+    encode_base64() - tries to base64 encode a string
+    complete_path() - helper to tab-complete file paths
+    dict_factory() - helper that returns the SQLite query results as a dictionary
+    KThread() - a subclass of threading.Thread, with a kill() method
 
 """
 
-import re, string, commands, base64, binascii, sys, os, socket, sqlite3, iptools
+import re
+import string
+import base64
+import binascii
+import sys
+import os
+import socket
+import sqlite3
+import iptools
+import threading
+import pickle
+import netifaces
 from time import localtime, strftime
 from Crypto.Random import random
 
@@ -18,25 +60,27 @@ from Crypto.Random import random
 #
 ###############################################################
 
-def validate_hostname(hostname):
-    """
-    Tries to validate a hostname.
-    """
-    if len(hostname) > 255: return False
-    if hostname[-1:] == ".": hostname = hostname[:-1]
-    allowed = re.compile("(?!-)[A-Z\d-]{1,63}(?<!-)$", re.IGNORECASE)
-    return all(allowed.match(x) for x in hostname.split("."))
-
-
 def validate_ip(IP):
     """
     Uses iptools to validate an IP.
     """
-    return iptools.ipv4.validate_ip(IP)
+    try: 
+        validate_IPv4 = iptools.ipv4.validate_ip(IP)
+        validate_IPv6 = iptools.ipv6.validate_ip(IP)
+
+        if validate_IPv4 is True:
+            return validate_IPv4
+        elif validate_IPv6 is True:
+            return validate_IPv6
+    except Exception as e:
+        return e
+
 
 
 def validate_ntlm(data):
-
+    """
+    Checks if the passed string is an NTLM hash.
+    """
     allowed = re.compile("^[0-9a-f]{32}", re.IGNORECASE)
     if allowed.match(data):
         return True
@@ -96,19 +140,6 @@ def random_string(length=-1, charset=string.ascii_letters):
     return random_string
 
 
-def obfuscate_num(N, mod):
-    """
-    Take a number and modulus and return an obsucfated form.
-
-    Returns a string of the obfuscated number N
-    """
-    d = random.randint(1, mod)
-    left = int(N/d)
-    right = d
-    remainder = N % d
-    return "(%s*%s+%s)" %(left, right, remainder)
-
-
 def randomize_capitalization(data):
     """
     Randomize the capitalization of a string.
@@ -119,6 +150,8 @@ def randomize_capitalization(data):
 def chunks(l, n):
     """
     Generator to split a string l into chunks of size n.
+
+    Used by macro modules.
     """
     for i in xrange(0, len(l), n):
         yield l[i:i+n]
@@ -126,7 +159,24 @@ def chunks(l, n):
 
 ####################################################################################
 #
-# Specific PowerShell helpers
+# Python-specific helpers
+#
+####################################################################################
+
+def strip_python_comments(data):
+    """
+    Strip block comments, line comments, empty lines, verbose statements,
+    and debug statements from a Python source file.
+    """
+    # TODO: implement pyminifier functionality
+    lines = data.split("\n")
+    strippedLines = [line for line in lines if ((not line.strip().startswith("#")) and (line.strip() != ''))]
+    return "\n".join(strippedLines)
+
+
+####################################################################################
+#
+# PowerShell-specific helpers
 #
 ####################################################################################
 
@@ -137,32 +187,14 @@ def enc_powershell(raw):
     return base64.b64encode("".join([char + "\x00" for char in unicode(raw)]))
 
 
-def powershell_launcher_arch(raw):
-    """
-    Build a one line PowerShell launcher with an -enc command.
-    Architecture independent.
-    """
-    # encode the data into a form usable by -enc
-    encCMD = enc_powershell(raw)
-
-    # get the correct PowerShell path and set it temporarily to %pspath%
-    triggerCMD = "if %PROCESSOR_ARCHITECTURE%==x86 (set pspath='') else (set pspath=%WinDir%\\syswow64\\windowspowershell\\v1.0\\)&"
-    
-    # invoke PowerShell with the appropriate options
-    # triggerCMD += "call %pspath%powershell.exe -NoP -NonI -W Hidden -Exec Bypass -Enc " + encCMD
-    triggerCMD += "call %pspath%powershell.exe -NoP -NonI -W Hidden -Enc " + encCMD
-
-    return triggerCMD
-
-
-def powershell_launcher(raw):
+def powershell_launcher(raw, modifiable_launcher):
     """
     Build a one line PowerShell launcher with an -enc command.
     """
     # encode the data into a form usable by -enc
     encCMD = enc_powershell(raw)
 
-    return "powershell.exe -NoP -sta -NonI -W Hidden -Enc " + encCMD
+    return modifiable_launcher + " " + encCMD
 
 
 def parse_powershell_script(data):
@@ -180,7 +212,7 @@ def strip_powershell_comments(data):
     """
     
     # strip block comments
-    strippedCode = re.sub(re.compile('<#.*?#>', re.DOTALL), '', data)
+    strippedCode = re.sub(re.compile('<#.*?#>', re.DOTALL), '\n', data)
 
     # strip blank lines, lines starting with #, and verbose/debug statements
     strippedCode = "\n".join([line for line in strippedCode.split('\n') if ((line.strip() != '') and (not line.strip().startswith("#")) and (not line.strip().lower().startswith("write-verbose ")) and (not line.strip().lower().startswith("write-debug ")) )])
@@ -188,18 +220,27 @@ def strip_powershell_comments(data):
     return strippedCode
 
 
-# PowerView dynamic helpers
+####################################################################################
+#
+# PowerView dynamic generation helpers
+#
+####################################################################################
 
 def get_powerview_psreflect_overhead(script):
     """
-    Helper to extract some of the psreflect overhead for PowerView.
+    Helper to extract some of the psreflect overhead for PowerView/PowerUp.
     """
-    pattern = re.compile(r'\n\$Mod =.*\[\'wtsapi32\'\]', re.DOTALL)
+
+    if 'PowerUp' in script[0:100]:
+        pattern = re.compile(r'\n\$Module =.*\[\'kernel32\'\]', re.DOTALL)
+    else:
+        # otherwise extracting from PowerView
+        pattern = re.compile(r'\n\$Mod =.*\[\'wtsapi32\'\]', re.DOTALL)
     
     try:
         return strip_powershell_comments(pattern.findall(script)[0])
     except:
-        print color("[!] Error extracting psreflect overhead from powerview.ps1 !")
+        print color("[!] Error extracting psreflect overhead from script!")
         return ""
 
 
@@ -213,6 +254,8 @@ def get_dependent_functions(code, functionNames):
     for functionName in functionNames:
         # find all function names that aren't followed by another alpha character
         if re.search("[^A-Za-z']+"+functionName+"[^A-Za-z']+", code, re.IGNORECASE):
+            # if "'AbuseFunction' \"%s" % (functionName) not in code:
+            # TODO: fix superflous functions from being added to PowerUp Invoke-AllChecks code...
             dependentFunctions.add(functionName)
 
     if re.search("\$Netapi32|\$Advapi32|\$Kernel32|\$Wtsapi32", code, re.IGNORECASE):
@@ -281,7 +324,6 @@ def generate_dynamic_powershell_script(script, functionNames):
 
     # build a mapping of functionNames -> stripped function code
     functions = {}
-    # pattern = re.compile(r'\nfunction.*?{.*?\n}\n', re.DOTALL)
     pattern = re.compile(r'\n(?:function|filter).*?{.*?\n}\n', re.DOTALL)
 
     for match in pattern.findall(script):
@@ -317,7 +359,7 @@ def generate_dynamic_powershell_script(script, functionNames):
 
 def parse_credentials(data):
     """
-    Parse module output, looking for any parseable sections.
+    Enumerate module output, looking for any parseable credential sections.
     """
 
     parts = data.split("\n")
@@ -492,12 +534,29 @@ def get_config(fields):
     conn.isolation_level = None
 
     cur = conn.cursor()
-    cur.execute("SELECT %s FROM config" %(fields))
+    cur.execute("SELECT %s FROM config" % (fields))
     results = cur.fetchone()
     cur.close()
     conn.close()
 
     return results
+
+
+def get_listener_options(listenerName):
+    """
+    Returns the options for a specified listenername from the database outside
+    of the normal menu execution.
+    """
+    conn = sqlite3.connect('./data/empire.db', check_same_thread=False)
+    conn.isolation_level = None
+    conn.row_factory = dict_factory
+    cur = conn.cursor()
+    cur.execute("SELECT options FROM listeners WHERE name = ?", [listenerName] )
+    result = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    return pickle.loads(result['options'])
 
 
 def get_datetime():
@@ -514,13 +573,33 @@ def get_file_datetime():
     return strftime("%Y-%m-%d_%H-%M-%S", localtime())
 
 
+def get_file_size(file):
+    """
+    Returns a string with the file size and highest rating.
+    """
+    byte_size = sys.getsizeof(file)
+    kb_size = byte_size / 1024
+    if kb_size == 0:
+        byte_size = "%s Bytes" % (byte_size)
+        return byte_size
+    mb_size = kb_size / 1024
+    if mb_size == 0:
+        kb_size = "%s KB" % (kb_size)
+        return kb_size
+    gb_size = mb_size / 1024 % (mb_size)
+    if gb_size == 0:
+        mb_size = "%s MB" %(mb_size)
+        return mb_size
+    return "%s GB" % (gb_size)
+
+
 def lhost():
     """
     Return the local IP.
-
     """
 
-    if os.name != "nt":
+
+    if os.name != 'nt':
         import fcntl
         import struct
         def get_interface_ip(ifname):
@@ -529,12 +608,12 @@ def lhost():
                 return socket.inet_ntoa(fcntl.ioctl(
                         s.fileno(),
                         0x8915,  # SIOCGIFADDR
-                        struct.pack('256s', ifname[:15])
+                        struct.pack('256s', str(ifname[:15]))
                     )[20:24])
             except IOError as e:
                 return ""
 
-    ip = ""
+    ip = ''
     try:
         ip = socket.gethostbyname(socket.gethostname())
     except socket.gaierror:
@@ -543,16 +622,17 @@ def lhost():
         print "Unexpected error:", sys.exc_info()[0]
         return ip
 
-    if (ip == "" or ip.startswith("127.")) and os.name != "nt":
-        interfaces = ["eth0","eth1","eth2","wlan0","wlan1","wifi0","ath0","ath1","ppp0"]
+    if (ip == '' or ip.startswith('127.')) and os.name != 'nt':
+        interfaces = netifaces.interfaces()
         for ifname in interfaces:
-            try:
-                ip = get_interface_ip(ifname)
-                if ip != "":
-                    break
-            except:
-                print "Unexpected error:", sys.exc_info()[0]
-                pass
+            if "lo" not in ifname:
+                try:
+                    ip = get_interface_ip(ifname) 
+                    if ip != "":
+                        break
+                except:
+                    print 'Unexpected error:', sys.exc_info()[0]
+                    pass
     return ip
 
 
@@ -589,8 +669,11 @@ def color(string, color=None):
 
 
 def unique(seq, idfun=None):
-    # uniquify a list, order preserving
-    # from http://www.peterbe.com/plog/uniqifiers-benchmark
+    """
+    Uniquifies a list, order preserving.
+    
+    from http://www.peterbe.com/plog/uniqifiers-benchmark
+    """
     if idfun is None:
         def idfun(x): return x
     seen = {}
@@ -607,8 +690,11 @@ def unique(seq, idfun=None):
 
 
 def uniquify_tuples(tuples):
-    # uniquify mimikatz tuples based on the password
-    # cred format- (credType, domain, username, password, hostname, sid)
+    """
+    Uniquifies Mimikatz tuples based on the password.
+    
+    cred format- (credType, domain, username, password, hostname, sid)
+    """
     seen = set()
     return [item for item in tuples if "%s%s%s%s"%(item[0],item[1],item[2],item[3]) not in seen and not seen.add("%s%s%s%s"%(item[0],item[1],item[2],item[3]))]
 
@@ -670,3 +756,53 @@ def complete_path(text, line, arg=False):
                     completions.append(f+'/')
 
     return completions
+
+
+def dict_factory(cursor, row):
+    """
+    Helper that returns the SQLite query results as a dictionary.
+
+    From Colin Burnett: http://stackoverflow.com/questions/811548/sqlite-and-python-return-a-dictionary-using-fetchone
+    """
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        d[col[0]] = row[idx]
+    return d
+
+
+class KThread(threading.Thread):
+    """
+    A subclass of threading.Thread, with a kill() method.
+    From https://web.archive.org/web/20130503082442/http://mail.python.org/pipermail/python-list/2004-May/281943.html
+    """
+
+    def __init__(self, *args, **keywords):
+        threading.Thread.__init__(self, *args, **keywords)
+        self.killed = False
+
+    def start(self):
+        """Start the thread."""
+        self.__run_backup = self.run
+        self.run = self.__run      # Force the Thread toinstall our trace.
+        threading.Thread.start(self)
+
+    def __run(self):
+        """Hacked run function, which installs the trace."""
+        sys.settrace(self.globaltrace)
+        self.__run_backup()
+        self.run = self.__run_backup
+
+    def globaltrace(self, frame, why, arg):
+        if why == 'call':
+            return self.localtrace
+        else:
+            return None
+
+    def localtrace(self, frame, why, arg):
+        if self.killed:
+            if why == 'line':
+                raise SystemExit()
+        return self.localtrace
+
+    def kill(self):
+        self.killed = True

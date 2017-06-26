@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<pkg-info overwrite-permissions="true" relocatable="false" identifier="com.apple.APPNAME" postinstall-action="none" version="1.0" format-version="2" generator-version="InstallCmds-554 (15G31)" install-location="/" auth="root">
+    <payload numberOfFiles="NUMOFFILES" installKBytes="PAYLOADSIZE"/>
+    <bundle path="./APPNAME.app" id="com.apple.APPNAME" CFBundleShortVersionString="1.0" CFBundleVersion="1"/>
+    <bundle-version>
+        <bundle id="com.apple.APPNAME"/>
+    </bundle-version>
+    <upgrade-bundle>
+        <bundle id="com.apple.APPNAME"/>
+    </upgrade-bundle>
+    <update-bundle/>
+    <atomic-update-bundle/>
+    <strict-identifier>
+        <bundle id="com.apple.APPNAME"/>
+    </strict-identifier>
+    <relocate>
+        <bundle id="com.apple.APPNAME"/>
+    </relocate>
+    <scripts>
+        <postinstall file="./postinstall"/>
+    </scripts>
+</pkg-info>

