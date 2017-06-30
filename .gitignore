@@ -1,5 +1,6 @@
 data/empire.db
-data/empire.pem
+data/empire-chain.pem
+data/empire-priv.key
 empire.debug
 *.pyc
 downloads/*
@@ -11,3 +12,4 @@ data/misc/ToObfuscate.ps1
 data/misc/Obfuscated.ps1
 setup/xar*
 setup/bomutils/*
+.venv

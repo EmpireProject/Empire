@@ -845,7 +845,8 @@ def send_message(packets=None):
             host = listenerOptions['Host']['Value']
             if certPath.strip() != '' and host.startswith('https'):
 		certPath = os.path.abspath(certPath)
-                app.run(host=bindIP, port=int(port), threaded=True, ssl_context=(certPath,certPath))
+		context = ("%s/empire-chain.pem" % (certPath), "%s/empire-priv.key"  % (certPath))
+                app.run(host=bindIP, port=int(port), threaded=True, ssl_context=context)
             else:
                 app.run(host=bindIP, port=int(port), threaded=True)
 
