@@ -18,7 +18,7 @@ class Module:
             
             'NeedsAdmin' : False,
 
-            'OpsecSafe' : True,
+            'OpsecSafe' : False,
             
             'Language' : 'powershell',
 
