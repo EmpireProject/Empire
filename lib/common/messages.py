@@ -427,6 +427,7 @@ def display_module_search(moduleName, module):
     Displays the name/description of a module for search results.
     """
 
+    # Suffix modules requring elevated context with '*'
     if module.info['NeedsAdmin']:
         print " %s*\n" % (helpers.color(moduleName, 'blue'))
     else:

@@ -433,6 +433,7 @@ class MainMenu(cmd.Cmd):
 
     def do_usemodule(self, line):
         "Use an Empire module."
+        # Strip asterisks added by MainMenu.complete_usemodule()
         line = line.rstrip("*")
         if line not in self.modules.modules:
             print helpers.color("[!] Error: invalid module")
@@ -695,14 +696,14 @@ class MainMenu(cmd.Cmd):
 
         module_names = self.modules.modules.keys()
 
-		# suffix each module requiring elevated context with ' *' to indicate need for elevated context
+        # suffix each module requiring elevated context with '*'
         for module_name in module_names:
-        	try:
-        		if self.modules.modules[module_name].info['NeedsAdmin']:
-        			module_names[module_names.index(module_name)] = (module_name+"*")
-        	# handle modules without a NeedAdmins info key
-        	except KeyError:
-        		pass
+            try:
+                if self.modules.modules[module_name].info['NeedsAdmin']:
+                    module_names[module_names.index(module_name)] = (module_name+"*")
+            # handle modules without a NeedAdmins info key
+            except KeyError:
+                pass
 
         if language:
             module_names = [ (module_name[len(language)+1:]) for module_name in module_names if module_name.startswith(language)]
@@ -1221,6 +1222,7 @@ class AgentsMenu(cmd.Cmd):
     def do_usemodule(self, line):
         "Use an Empire PowerShell module."
 
+        # Strip asterisks added by MainMenu.complete_usemodule()
         module = line.strip().rstrip("*")
 
         if module not in self.mainMenu.modules.modules:
@@ -1769,6 +1771,7 @@ class PowerShellAgentMenu(cmd.Cmd):
     def do_usemodule(self, line):
         "Use an Empire PowerShell module."
 
+        # Strip asterisks added by MainMenu.complete_usemodule()
         module = "powershell/%s" %(line.strip().rstrip("*"))
 
         if module not in self.mainMenu.modules.modules:
@@ -2566,6 +2569,7 @@ class PythonAgentMenu(cmd.Cmd):
     def do_usemodule(self, line):
         "Use an Empire Python module."
 
+        # Strip asterisks added by MainMenu.complete_usemodule()
         module = "python/%s" %(line.strip().rstrip("*"))
 
         if module not in self.mainMenu.modules.modules:
@@ -3275,6 +3279,7 @@ class ModuleMenu(cmd.Cmd):
     def do_usemodule(self, line):
         "Use an Empire PowerShell module."
 
+        # Strip asterisks added by MainMenu.complete_usemodule()
         module = line.strip().rstrip("*")
 
         if module not in self.mainMenu.modules.modules:
