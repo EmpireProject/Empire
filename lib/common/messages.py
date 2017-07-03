@@ -427,7 +427,10 @@ def display_module_search(moduleName, module):
     Displays the name/description of a module for search results.
     """
 
-    print " %s\n" % (helpers.color(moduleName, 'blue'))
+    if module.info['NeedsAdmin']:
+        print " %s*\n" % (helpers.color(moduleName, 'blue'))
+    else:
+        print " %s\n" % (helpers.color(moduleName, 'blue'))
     # width=40, indent=32, indentAll=False,
 
     lines = textwrap.wrap(textwrap.dedent(module.info['Description']).strip(), width=70)
