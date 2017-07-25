@@ -46,6 +46,11 @@ class Listener:
                 'Required'      :   True,
                 'Value'         :   80
             },
+            'Launcher' : {
+                'Description'   :   'Launcher string.',
+                'Required'      :   True,
+                'Value'         :   'powershell -noP -sta -w 1 -enc '
+            },
             'StagingKey' : {
                 'Description'   :   'Staging key for initial agent negotiation.',
                 'Required'      :   True,
@@ -116,7 +121,7 @@ class Listener:
         return True
 
 
-    def generate_launcher(self, encode=True, userAgent='default', proxy='default', proxyCreds='default', stagerRetries='0', language=None, safeChecks='', listenerName=None):
+    def generate_launcher(self, encode=True, obfuscate=False, obfuscationCommand="", userAgent='default', proxy='default', proxyCreds='default', stagerRetries='0', language=None, safeChecks='', listenerName=None):
         """
         Generate a basic launcher for the specified listener.
         """
@@ -151,7 +156,7 @@ class Listener:
             print helpers.color("[!] listeners/template generate_launcher(): invalid listener name specification!")
 
 
-    def generate_stager(self, listenerOptions, encode=False, encrypt=True, language=None):
+    def generate_stager(self, listenerOptions, encode=False, encrypt=True, obfuscate=False, obfuscationCommand="", language=None):
         """
         If you want to support staging for the listener module, generate_stager must be
         implemented to return the stage1 key-negotiation stager code.
@@ -160,7 +165,7 @@ class Listener:
         return ''
 
 
-    def generate_agent(self, listenerOptions, language=None):
+    def generate_agent(self, listenerOptions, language=None, obfuscate=False, obfuscationCommand=""):
         """
         If you want to support staging for the listener module, generate_agent must be
         implemented to return the actual staged agent code.

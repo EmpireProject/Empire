@@ -1180,6 +1180,7 @@ class Agents:
             try:
                 message = encryption.aes_decrypt_and_verify(stagingKey, encData)
             except Exception as e:
+                print 'exception e:' + str(e)
                 # if we have an error during decryption
                 dispatcher.send("[!] HMAC verification failed from '%s'" % (sessionID), sender='Agents')
                 return 'ERROR: HMAC verification failed'
