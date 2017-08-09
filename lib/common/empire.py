@@ -86,16 +86,17 @@ class MainMenu(cmd.Cmd):
 
         # parse/handle any passed command line arguments
         self.args = args
-        self.handle_args()
-
-        dispatcher.send('[*] Empire starting up...', sender="Empire")
-
         # instantiate the agents, listeners, and stagers objects
         self.agents = agents.Agents(self, args=args)
         self.credentials = credentials.Credentials(self, args=args)
         self.stagers = stagers.Stagers(self, args=args)
         self.modules = modules.Modules(self, args=args)
         self.listeners = listeners.Listeners(self, args=args)
+        self.handle_args()
+
+        dispatcher.send('[*] Empire starting up...', sender="Empire")
+
+        
 
         # print the loading menu
         messages.loading()
