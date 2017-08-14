@@ -229,7 +229,7 @@ class Agents:
         parts = path.split("\\")
 
         # construct the appropriate save path
-        save_path = "%s/downloads/%s%s" % (self.installPath, sessionID, "/".join(parts[0:-1]))
+        save_path = "%sdownloads/%s%s" % (self.installPath, sessionID, "/".join(parts[0:-1]))
         filename = os.path.basename(parts[-1])
 
         try:
@@ -249,11 +249,9 @@ class Agents:
             # overwrite an existing file
             if not append:
                 f = open("%s/%s" % (save_path, filename), 'wb')
-                dispatcher.send("[!] Saving to path %s" % (save_path), sender='Agents')
             else:
                 # otherwise append
                 f = open("%s/%s" % (save_path, filename), 'ab')
-                dispatcher.send("[!] Appending to path %s" % (save_path), sender='Agents')
                 
             if "python" in lang:
                 print helpers.color("\n[*] Compressed size of %s download: %s" %(filename, helpers.get_file_size(data)), color="green")
@@ -1601,13 +1599,12 @@ class Agents:
                 # decode the file data and save it off as appropriate
                 file_data = helpers.decode_base64(data)
                 name = self.get_agent_name_db(sessionID)
+                dispatcher.send("[!] Received file data with length: %s" % (str(len(file_data))), sender='Agents')
 
                 if index == "0":
-                    dispatcher.send("[+] At index 0, saving file", sender='Agents')
                     self.save_file(name, path, file_data)
                 else:
                     self.save_file(name, path, file_data, append=True)
-                    dispatcher.send("[+] Not at index 0, saving file", sender='Agents')
                 # update the agent log
                 msg = "file download: %s, part: %s" % (path, index)
                 dispatcher.send(msg + " " + sessionID, sender='Agents')

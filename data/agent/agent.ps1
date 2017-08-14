@@ -1023,11 +1023,11 @@ function Get-FilePart {
                     $Path = $Path.Trim('"').Trim("'")
 
                     # hardcoded floor/ceiling limits
-                    if($ChunkSize -lt 64KB) {
-                        $ChunkSize = 64KB
+                    if($ChunkSize -lt 32KB) {
+                        $ChunkSize = 32KB
                     }
-                    elseif($ChunkSize -gt 8MB) {
-                        $ChunkSize = 8MB
+                    elseif($ChunkSize -gt 4MB) {
+                        $ChunkSize = 4MB
                     }
 
                     # resolve the complete path 
