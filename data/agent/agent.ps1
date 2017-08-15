@@ -996,7 +996,7 @@ function Get-FilePart {
             elseif($type -eq 41) {
                 "In Download task" | Out-File -Append "d.log"
                 try {
-                    $ChunkSize = 10KB
+                    $ChunkSize = 256KB
 
                     $Parts = $Data.Split(" ")
 
@@ -1006,7 +1006,7 @@ function Get-FilePart {
                             $ChunkSize = $Parts[-1]/1
                             if($Parts[-1] -notlike "*b*") {
                                 # if MB/KB not specified, assume KB and adjust accordingly
-                                $ChunkSize = $ChunkSize * 128
+                                $ChunkSize = $ChunkSize * 1024
                             }
                         }
                         catch {
@@ -1022,11 +1022,11 @@ function Get-FilePart {
                     $Path = $Path.Trim('"').Trim("'")
 
                     # hardcoded floor/ceiling limits
-                    if($ChunkSize -lt 10KB) {
-                        $ChunkSize = 10KB
+                    if($ChunkSize -lt 32KB) {
+                        $ChunkSize = 32KB
                     }
-                    elseif($ChunkSize -gt 1MB) {
-                        $ChunkSize = 1MB
+                    elseif($ChunkSize -gt 8MB) {
+                        $ChunkSize = 8MB
                     }
 
                     # resolve the complete path
