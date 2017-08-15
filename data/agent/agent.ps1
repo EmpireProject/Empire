@@ -1034,7 +1034,7 @@ function Get-FilePart {
 
                     # read in and send the specified chunk size back for as long as the file has more parts
                     $jobID = Start-DownloadJob -ScriptString $Download -type $type -Path $Path -ResultID $ResultID -ChunkSize $ChunkSize
-                    "Called Start-DownloadJob: $jobID"
+                    Write-Host "Called Start-DownloadJob: $jobID"
                 }
                 catch {
                     Encode-Packet -type 0 -data '[!] File does not exist or cannot be accessed' -ResultID $ResultID
