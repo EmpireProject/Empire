@@ -1027,7 +1027,7 @@ function Get-FilePart {
                     $script:ResultIDs[$jobID]=$ResultID
                 }
                 catch {
-                    Encode-Packet -type 0 -data '[!] File does not exist or cannot be accessed' -ResultID `$ResultID
+                    Encode-Packet -type 0 -data '[!] File does not exist or cannot be accessed' -ResultID $ResultID
                 }
             }
             # file upload
@@ -1299,9 +1299,11 @@ function Get-FilePart {
             if(Get-DownloadJobCompleted -JobName $JobName) {
                 # the job has stopped, so receive results/cleanup
                 $Results = Stop-DownloadJob -JobName $JobName
+                "Final data: $($Results.Length)"
             }
             else {
                 $Results = Receive-DownloadJob -JobName $JobName
+                "Received Data: $($Results.Length)"
             }
 
             if($Results) {
