@@ -22,7 +22,7 @@ class Module:
             'OutputExtension' : "",
 
             # if the module needs administrative privileges
-            'NeedsAdmin' : False,
+            'NeedsAdmin' : True,
 
             # True if the method doesn't touch disk/is reasonably opsec safe
             'OpsecSafe' : True,
