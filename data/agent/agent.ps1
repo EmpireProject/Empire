@@ -1308,11 +1308,11 @@ function Get-FilePart {
             if(Get-DownloadJobCompleted -JobName $JobName) {
                 # the job has stopped, so receive results/cleanup
                 $Results = Stop-DownloadJob -JobName $JobName
-                
+		Write-Host "Job $JobName complete: $($Results.Length)"                
             }
             else {
                 $Results = Receive-DownloadJob -JobName $JobName
-                
+                Write-Host "Job $JobName received: $($Results.Length)"
             }
 
             if($Results) {
