@@ -996,7 +996,7 @@ function Get-FilePart {
             elseif($type -eq 41) {
                 
                 try {
-                    $ChunkSize = 64KB
+                    $ChunkSize = 128KB
 
                     $Parts = $Data.Split(" ")
 
@@ -1022,8 +1022,8 @@ function Get-FilePart {
                     $Path = $Path.Trim('"').Trim("'")
 
                     # hardcoded floor/ceiling limits
-                    if($ChunkSize -lt 32KB) {
-                        $ChunkSize = 32KB
+                    if($ChunkSize -lt 64KB) {
+                        $ChunkSize = 64KB
                     }
                     elseif($ChunkSize -gt 4MB) {
                         $ChunkSize = 4MB
