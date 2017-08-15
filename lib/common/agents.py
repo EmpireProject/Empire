@@ -312,7 +312,6 @@ class Agents:
             # make the recursive directory structure if it doesn't already exist
             if not os.path.exists(save_path):
                 os.makedirs(save_path)
-                print "Saving file download to: " + save_path
 
             # save the file out
             f = open(save_path + "/" + filename, 'w')
