@@ -74,7 +74,6 @@ class Module:
 
         scriptEnd = "\nSend-mDNSCommand -Command %s" % (command)
 
-        scriptEnd += " | Out-String "
         if obfuscate:
             scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd

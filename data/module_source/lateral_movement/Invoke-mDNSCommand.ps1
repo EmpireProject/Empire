@@ -56,8 +56,9 @@ function Send-mDNSCommand {
             $udp_client.JoinMulticastGroup($multicast_group)
             While ($true) {
                 $receivebytes = $udp_client.Receive([ref]$endpoint)
-                $receive_data = ([text.encoding]::ASCII).GetString($receivebytes)
-                Write-Host $receive_data
+                ([text.encoding]::ASCII).GetString($receivebytes)
+                $udp_client.Close()
+                break
                 
             } 
         }                
