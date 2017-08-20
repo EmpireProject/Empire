@@ -57,7 +57,7 @@ function Send-mDNSCommand {
             While ($true) {
                 $receivebytes = $udp_client.Receive([ref]$endpoint)
                 ([text.encoding]::ASCII).GetString($receivebytes)
-                $udp_client.Close()
+                $udp_client.Close()|Out-Null
                 break
                 
             } 
