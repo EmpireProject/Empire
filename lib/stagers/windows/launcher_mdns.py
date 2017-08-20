@@ -105,8 +105,7 @@ function Start-mDNSServer {
         $udp_client.Close()
     }
 }
-Start-mDNSServer"""
-        print server_script    
+Start-mDNSServer""" 
         base64_script = base64.b64encode(str(server_script).encode('UTF-16LE'))
         base64_launcher = base64_script.replace('\n','')
 
