@@ -1570,7 +1570,7 @@ class Agents:
 
         elif responseName == "TASK_EXIT":
             # exit command response
-
+	    data = "[!] Agent %s exiting" % (sessionID)
             # let everyone know this agent exited
             dispatcher.send(data, sender='Agents')
 
