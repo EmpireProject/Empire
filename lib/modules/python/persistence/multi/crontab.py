@@ -82,7 +82,7 @@ class Module:
                 if option in self.options:
                     self.options[option]['Value'] = value
 
-    def generate(self):
+    def generate(self, obfuscate=False, obfuscationCommand=""):
         Remove = self.options['Remove']['Value']
         Hourly = self.options['Hourly']['Value']
         Hour = self.options['Hour']['Value']

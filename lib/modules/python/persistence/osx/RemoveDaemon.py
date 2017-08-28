@@ -76,7 +76,7 @@ class Module:
                     self.options[option]['Value'] = value
 
 
-    def generate(self):
+    def generate(self, obfuscate=False, obfuscationCommand=""):
         
         plistpath = self.options['PlistPath']['Value']
         programpath = self.options['ProgramPath']['Value']
