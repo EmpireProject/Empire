@@ -434,6 +434,8 @@ class MainMenu(cmd.Cmd):
 
     def do_usemodule(self, line):
         "Use an Empire module."
+        # Strip asterisks added by MainMenu.complete_usemodule()
+        line = line.rstrip("*")
         if line not in self.modules.modules:
             print helpers.color("[!] Error: invalid module")
         else:
@@ -761,12 +763,26 @@ class MainMenu(cmd.Cmd):
         "Tab-complete an Empire module path."
 
         module_names = self.modules.modules.keys()
+
+        # suffix each module requiring elevated context with '*'
+        for module_name in module_names:
+            try:
+                if self.modules.modules[module_name].info['NeedsAdmin']:
+                    module_names[module_names.index(module_name)] = (module_name+"*")
+            # handle modules without a NeedAdmins info key
+            except KeyError:
+                pass
+
         if language:
             module_names = [ (module_name[len(language)+1:]) for module_name in module_names if module_name.startswith(language)]
 
         mline = line.partition(' ')[2]
+
         offs = len(mline) - len(text)
-        return [s[offs:] for s in module_names if s.startswith(mline)]
+
+        module_names = [s[offs:] for s in module_names if s.startswith(mline)]
+
+        return module_names
 
 
     def complete_reload(self, text, line, begidx, endidx):
@@ -1283,7 +1299,8 @@ class AgentsMenu(cmd.Cmd):
     def do_usemodule(self, line):
         "Use an Empire PowerShell module."
 
-        module = line.strip()
+        # Strip asterisks added by MainMenu.complete_usemodule()
+        module = line.strip().rstrip("*")
 
         if module not in self.mainMenu.modules.modules:
             print helpers.color("[!] Error: invalid module")
@@ -1848,7 +1865,8 @@ class PowerShellAgentMenu(cmd.Cmd):
     def do_usemodule(self, line):
         "Use an Empire PowerShell module."
 
-        module = "powershell/%s" %(line.strip())
+        # Strip asterisks added by MainMenu.complete_usemodule()
+        module = "powershell/%s" %(line.strip().rstrip("*"))
 
         if module not in self.mainMenu.modules.modules:
             print helpers.color("[!] Error: invalid module")
@@ -2645,7 +2663,8 @@ class PythonAgentMenu(cmd.Cmd):
     def do_usemodule(self, line):
         "Use an Empire Python module."
 
-        module = "python/%s" %(line.strip())
+        # Strip asterisks added by MainMenu.complete_usemodule()
+        module = "python/%s" %(line.strip().rstrip("*"))
 
         if module not in self.mainMenu.modules.modules:
             print helpers.color("[!] Error: invalid module")
@@ -3358,7 +3377,8 @@ class ModuleMenu(cmd.Cmd):
     def do_usemodule(self, line):
         "Use an Empire PowerShell module."
 
-        module = line.strip()
+        # Strip asterisks added by MainMenu.complete_usemodule()
+        module = line.strip().rstrip("*")
 
         if module not in self.mainMenu.modules.modules:
             print helpers.color("[!] Error: invalid module")
