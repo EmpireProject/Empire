@@ -29,6 +29,7 @@
 	-Update Invoke-Kerberoast @424f424f
 	-Tab complete shows elevated modules: #599
 	- Additional bypassUAC modules added: #596
+	- Added show uac level module
 
 5/15/2017
 ---------
