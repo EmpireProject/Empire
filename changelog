@@ -30,6 +30,7 @@
 	-Tab complete shows elevated modules: #599
 	- Additional bypassUAC modules added: #596
 	- Added show uac level module #609
+	- Fixed shebangs: #640
 
 5/15/2017
 ---------
