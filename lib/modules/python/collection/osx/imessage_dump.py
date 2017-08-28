@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 class Module:
     def __init__(self, mainMenu, params=[]):
         # metadata info about the module, not modified during runtime
