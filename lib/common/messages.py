@@ -29,7 +29,7 @@ def title(version):
     # print ' [Empire]  PowerShell/Python post-exploitation framework'
     print " [Empire]  Post-Exploitation Framework"
     print '================================================================'
-    print " [Version] %s | [Web] https://theempire.io" % (version)
+    print " [Version] %s | [Web] https://github.com/empireProject/Empire" % (version)
     print '================================================================'
     print """
    _______ .___  ___. .______    __  .______       _______
