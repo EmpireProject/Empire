@@ -27,6 +27,7 @@
 	-Add backgrounding for downloads in PowerShell agent @xorrior
 	-Fix warning patch in http listener @viss
 	-Update Invoke-Kerberoast @424f424f
+	-Tab complete shows elevated modules: #599
 
 5/15/2017
 ---------
