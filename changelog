@@ -26,6 +26,7 @@
 	-Fix libssl-dev and libssl1.0.0 packages @xorrior
 	-Add backgrounding for downloads in PowerShell agent @xorrior
 	-Fix warning patch in http listener @viss
+	-Update Invoke-Kerberoast @424f424f
 
 5/15/2017
 ---------
