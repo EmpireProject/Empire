@@ -108,6 +108,7 @@ else
 	 pip install pyinstaller
 	 pip install zlib_wrapper
 	 pip install netifaces
+	 pip install M2Crypto
          if ! which powershell > /dev/null; then
             wget http://archive.ubuntu.com/ubuntu/pool/main/i/icu/libicu55_55.1-7_amd64.deb
             wget http://ftp.debian.org/debian/pool/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
