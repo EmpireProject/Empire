@@ -3,10 +3,10 @@
 - Version 2.1 Master Release
 	-Add get schwifty trollsploit module @424f424f
 	-Add -sta flag to launcher @xorrior
-	-Fixed hardoced cert path @xorrior
+	-Fixed hardcoded cert path @xorrior
 	-Fix for #567
 	-Merge Capture OSX credentials from Prompt Module in Empire DB @malcomvetter.
-	-Rest Api fixups #526 @byt3bl33d3r
+	-Rest API fixups #526 @byt3bl33d3r
 	-Added MS16-135 exploit module @ThePirateWhoSmellsOfSunflowers
 	-Updated Bloodhound Ingestion module @424f424f
 	-Added Dropbox exfil module @ktevora1
