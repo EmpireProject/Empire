@@ -2,9 +2,9 @@ import logging
 import base64
 import random
 import os
+import ssl
 import time
 import copy
-import ssl
 from pydispatch import dispatcher
 from flask import Flask, request, make_response
 import pdb
