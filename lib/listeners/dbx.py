@@ -415,6 +415,7 @@ class Listener:
         jitter = listenerOptions['DefaultJitter']['Value']
         profile = listenerOptions['DefaultProfile']['Value']
         lostLimit = listenerOptions['DefaultLostLimit']['Value']
+        workingHours = listenerOptions['WorkingHours']['Value']
         killDate = listenerOptions['KillDate']['Value']
         b64DefaultResponse = base64.b64encode(self.default_response())
 
