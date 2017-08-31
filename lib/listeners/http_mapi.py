@@ -253,6 +253,7 @@ class Listener:
         uris = [a.strip('/') for a in profile.split('|')[0].split(',')]
         stagingKey = listenerOptions['StagingKey']['Value']
         host = listenerOptions['Host']['Value']
+        workingHours = listenerOptions['WorkingHours']['Value']
         folder = listenerOptions['Folder']['Value']
 
         if language.lower() == 'powershell':
@@ -269,6 +270,10 @@ class Listener:
             # patch the server and key information
             stager = stager.replace('REPLACE_STAGING_KEY', stagingKey)
             stager = stager.replace('REPLACE_FOLDER', folder)
+
+            #patch in working hours if any
+            if workingHours != "":
+                stager = stager.replace('WORKING_HOURS_REPLACE', workingHours)
 
             randomizedStager = ''
 
@@ -310,7 +315,6 @@ class Listener:
         profile = listenerOptions['DefaultProfile']['Value']
         lostLimit = listenerOptions['DefaultLostLimit']['Value']
         killDate = listenerOptions['KillDate']['Value']
-        workingHours = listenerOptions['WorkingHours']['Value']
         folder = listenerOptions['Folder']['Value']
         b64DefaultResponse = base64.b64encode(self.default_response())
 
@@ -338,8 +342,6 @@ class Listener:
             # patch in the killDate and workingHours if they're specified
             if killDate != "":
                 code = code.replace('$KillDate,', "$KillDate = '" + str(killDate) + "',")
-            if workingHours != "":
-                code = code.replace('$WorkingHours,', "$WorkingHours = '" + str(workingHours) + "',")
 
             return code
         else:
