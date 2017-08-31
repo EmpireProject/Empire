@@ -416,6 +416,7 @@ class Listener:
         profile = listenerOptions['DefaultProfile']['Value']
         lostLimit = listenerOptions['DefaultLostLimit']['Value']
         killDate = listenerOptions['KillDate']['Value']
+        workingHours = listenerOptions['WorkingHours']['Value']
         b64DefaultResponse = base64.b64encode(self.default_response())
 
         if language == 'powershell':
