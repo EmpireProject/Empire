@@ -1,6 +1,7 @@
 Running
 --------
 - Fix Eternal Blue Issue #656
+- Merge Invoke-Kerberoast: Print hashes only. Formatting with a text editor is no longer required. #663
 
 8/28/2017
 --------
