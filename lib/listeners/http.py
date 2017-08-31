@@ -4,6 +4,7 @@ import random
 import os
 import time
 import copy
+import ssl
 from pydispatch import dispatcher
 from flask import Flask, request, make_response
 import pdb
@@ -878,8 +879,9 @@ def send_message(packets=None):
             certPath = listenerOptions['CertPath']['Value']
             host = listenerOptions['Host']['Value']
             if certPath.strip() != '' and host.startswith('https'):
-		certPath = os.path.abspath(certPath)
-		context = ("%s/empire-chain.pem" % (certPath), "%s/empire-priv.key"  % (certPath))
+                certPath = os.path.abspath(certPath)
+                context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+                context.load_cert_chain("%s/empire-chain.pem" % (certPath), "%s/empire-priv.key"  % (certPath))
                 app.run(host=bindIP, port=int(port), threaded=True, ssl_context=context)
             else:
                 app.run(host=bindIP, port=int(port), threaded=True)
