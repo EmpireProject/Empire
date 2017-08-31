@@ -596,7 +596,12 @@ class Listener:
                                 $wc = New-Object System.Net.WebClient
 
                                 # set the proxy settings for the WC to be the default system settings
-                                $wc.Proxy = $Script:Proxy;
+                                $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+                                $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+                                if($Script:Proxy) {
+                                    $wc.Proxy = $Script:Proxy;
+                                }
+                                
                                 $wc.Headers.Add("User-Agent",$script:UserAgent)
                                 $script:Headers.GetEnumerator() | % {$wc.Headers.Add($_.Name, $_.Value)}
                                 $wc.Headers.Add("Cookie", "session=$RoutingCookie")
@@ -633,7 +638,12 @@ class Listener:
                                 # build the web request object
                                 $wc = New-Object System.Net.WebClient
                                 # set the proxy settings for the WC to be the default system settings
-                                $wc.Proxy = $Script:Proxy;
+                                $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+                                $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+                                if($Script:Proxy) {
+                                    $wc.Proxy = $Script:Proxy;
+                                }
+                                
                                 $wc.Headers.Add('User-Agent', $Script:UserAgent)
                                 $Script:Headers.GetEnumerator() | ForEach-Object {$wc.Headers.Add($_.Name, $_.Value)}
 
