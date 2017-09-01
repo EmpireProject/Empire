@@ -34,7 +34,7 @@ def database_connect():
 
     except Exception:
         print helpers.color("[!] Could not connect to database")
-        print helpers.color("[!] Please run database_setup.py")
+        print helpers.color("[!] Please run setup_database.py")
         sys.exit()
 
 
