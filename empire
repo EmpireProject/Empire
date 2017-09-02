@@ -165,12 +165,13 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         username = dbUsername
     else:
         execute_db_query(conn, "UPDATE config SET api_username=?", username)
+        username = username[0]
 
     if not password:
         password = dbPassword
     else:
         execute_db_query(conn, "UPDATE config SET api_password=?", password)
-
+        password = password[0]
 
     class Namespace:
         """
@@ -1141,7 +1142,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
         # try to prevent some basic bruting
         time.sleep(2)
 
-        if suppliedUsername == username[0] and suppliedPassword == password[0]:
+        if suppliedUsername == username and suppliedPassword == password:
             return jsonify({'token': apiToken})
         else:
             return make_response('', 401)
