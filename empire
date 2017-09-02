@@ -1033,7 +1033,7 @@ def start_restful_api(startEmpire=False, suppress=False, username=None, password
 
             # task the agent to exit
             msg = "tasked agent %s to exit" %(agentSessionID)
-            main.agents.save_agent_log(sessionID, msg)
+            main.agents.save_agent_log(agentSessionID, msg)
             main.agents.add_agent_task_db(agentSessionID, 'TASK_EXIT')
 
         return jsonify({'success': True})
