@@ -6,7 +6,7 @@ from flask import Flask, request, jsonify, make_response, abort, url_for
 from time import localtime, strftime
 from OpenSSL import SSL
 from Crypto.Random import random
-
+import ssl
 # Empire imports
 from lib.common import empire
 from lib.common import helpers
