@@ -846,12 +846,10 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         for agentNameID in agentNameIDs:
             [agentName, agentSessionID] = agentNameID
 
-            agentResults = execute_db_query(conn, 'SELECT id, agent, data FROM results WHERE agent=?', [agentSessionID])
+            agentResults = execute_db_query(conn, "SELECT results FROM agents WHERE session_id=?", [agentSessionID])
 
-            for result in agentResults:
-                [resultid, agent, data] = result
-
-                agentTaskResults.append({"taskID": result[0], "agentname": result[1], "results": result[2]})
+            if agentResults and agentResults[0] and agentResults[0] != '':
+                agentTaskResults.append({"AgentName":agentSessionID, "AgentResults":agentResults[0]})
               
         return jsonify({'results': agentTaskResults})
 
