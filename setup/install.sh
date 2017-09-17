@@ -116,6 +116,7 @@ else
 	 pip install pyinstaller
 	 pip install zlib_wrapper
 	 pip install netifaces
+	 pip install M2Crypto
          if ! which powershell > /dev/null; then
             if lsb_release -d | grep -q Debian | grep 9; then
               if uname -a | grep -q amd64; then
