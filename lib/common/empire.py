@@ -1465,7 +1465,6 @@ class PowerShellAgentMenu(cmd.Cmd):
         """
         Handle agent event signals.
         """
-
         if '[!] Agent' in signal and 'exiting' in signal:
             pass
 
@@ -1476,7 +1475,11 @@ class PowerShellAgentMenu(cmd.Cmd):
             # while we are interacting with it
             results = self.mainMenu.agents.get_agent_results_db(self.sessionID)
             if results:
-                print "\n" + results
+		if sender == "AgentsPsKeyLogger" and "Job started:" not in results:
+		    with open("%s/downloads/%s/keystrokes.txt" % (self.mainMenu.installPath,self.sessionID),"a+") as f:
+		        f.write(results)
+		else:   
+                    print "\n" + results
 
         elif "[+] Part of file" in signal and "saved" in signal:
             if (str(self.sessionID) in signal) or (str(name) in signal):
