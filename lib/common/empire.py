@@ -1475,11 +1475,16 @@ class PowerShellAgentMenu(cmd.Cmd):
             # while we are interacting with it
             results = self.mainMenu.agents.get_agent_results_db(self.sessionID)
             if results:
-		if sender == "AgentsPsKeyLogger" and "Job started:" not in results:
-		    with open("%s/downloads/%s/keystrokes.txt" % (self.mainMenu.installPath,self.sessionID),"a+") as f:
+		if sender == "AgentsPsKeyLogger" and ("Job started:" not in results) and ("killed." not in results):
+            	    safePath = os.path.abspath("%sdownloads/" % self.mainMenu.installPath)
+		    savePath = "%sdownloads/%s/keystrokes.txt" % (self.mainMenu.installPath,self.sessionID)
+		    if not os.path.abspath(savePath).startswith(safePath):
+                        dispatcher.send("[!] WARNING: agent %s attempted skywalker exploit!" % (self.sessionID), sender='Agents')
+                 	return
+		    with open(savePath,"a+") as f:
 		        f.write(results)
-		else:   
-                    print "\n" + results
+		else:
+                   print "\n" + results
 
         elif "[+] Part of file" in signal and "saved" in signal:
             if (str(self.sessionID) in signal) or (str(name) in signal):
