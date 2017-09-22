@@ -1482,7 +1482,8 @@ class PowerShellAgentMenu(cmd.Cmd):
                         dispatcher.send("[!] WARNING: agent %s attempted skywalker exploit!" % (self.sessionID), sender='Agents')
                  	return
 		    with open(savePath,"a+") as f:
-		        f.write(results)
+			new_results = results.replace("\r\n","").replace("[SpaceBar]", "").replace('\b', '').replace("[Shift]", "").replace("[Enter]\r","\r\n")
+		        f.write(new_results)
 		else:
                    print "\n" + results
 
