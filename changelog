@@ -3,7 +3,7 @@ Running
 - Update crontab to work hourly #667
 - Update keylogger to log to disk on server side by @clr2of8 
 - Fix macro launcher #681
-
+- Fixes vbscript string literal quoting. #702
 8/28/2017
 --------
 - Version 2.1 Master Release
