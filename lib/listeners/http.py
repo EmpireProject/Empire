@@ -394,12 +394,14 @@ class Listener:
         if not language:
             print helpers.color('[!] listeners/http generate_stager(): no language specified!')
             return None
-
+        
+        
         profile = listenerOptions['DefaultProfile']['Value']
         uris = [a.strip('/') for a in profile.split('|')[0].split(',')]
         launcher = listenerOptions['Launcher']['Value']
         stagingKey = listenerOptions['StagingKey']['Value']
         workingHours = listenerOptions['WorkingHours']['Value']
+        killDate = listenerOptions['KillDate']['Value']
         host = listenerOptions['Host']['Value']
         customHeaders = profile.split('|')[2:]
 
@@ -426,6 +428,10 @@ class Listener:
             #patch in working hours, if any
             if workingHours != "":
                 stager = stager.replace('WORKING_HOURS_REPLACE', workingHours)
+
+            #Patch in the killdate, if any
+            if killDate != "":
+                stager = stager.replace('REPLACE_KILLDATE', killDate)
 
             # patch the server and key information
             stager = stager.replace('REPLACE_SERVER', host)
@@ -467,6 +473,12 @@ class Listener:
 
             if host.endswith("/"):
                 host = host[0:-1]
+
+            if workingHours != "":
+                stager = stager.replace('SET_WORKINGHOURS', workingHours)
+
+            if killDate != "":
+                stager = stager.replace('SET_KILLDATE', killDate)
 
             # # patch the server and key information
             stager = stager.replace("REPLACE_STAGING_KEY", stagingKey)
