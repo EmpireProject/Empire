@@ -2,6 +2,7 @@ Running
 --------
 - Update crontab to work hourly #667
 - Update keylogger to log to disk on server side by @clr2of8 
+- Fix macro launcher #681
 
 8/28/2017
 --------
