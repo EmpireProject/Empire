@@ -111,7 +111,17 @@ class Listener:
                 'Description'   :   'Hours for the agent to operate (09:00-17:00).',
                 'Required'      :   False,
                 'Value'         :   ''
-            }
+            },
+            'SocksAddress' : {
+                'Description'   :   'Address the SOCKS Proxy is bound to.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'SocksPort' : {
+                'Description'   :   'Port the SOCKS Proxy listens on.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
         }
 
         # required:
@@ -516,6 +526,7 @@ class Listener:
         taskingsFolder = "/%s/%s" % (baseFolder, listenerOptions['TaskingsFolder']['Value'].strip('/'))
         resultsFolder = "/%s/%s" % (baseFolder, listenerOptions['ResultsFolder']['Value'].strip('/'))
 
+
         if language:
             if language.lower() == 'powershell':
 
@@ -799,6 +810,19 @@ def send_message(packets=None):
         stagingFolder = "/%s/%s" % (baseFolder, listenerOptions['StagingFolder']['Value'].strip('/'))
         taskingsFolder = "/%s/%s" % (baseFolder, listenerOptions['TaskingsFolder']['Value'].strip('/'))
         resultsFolder = "/%s/%s" % (baseFolder, listenerOptions['ResultsFolder']['Value'].strip('/'))
+        socksAddr = listenerOptions['SocksAddress']['Value']
+        socksPort = listenerOptions['SocksPort']['Value']
+        if socksAddr!='':
+                if socksPort!='':
+                        import socks
+                        import socket
+                        socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, socksAddr, int(socksPort))
+                        socket.socket = socks.socksocket
+                        #><>Magic*~*!*+*zzZ) FIX FOR DNS LEAKING
+                        def getaddrinfo(*args):
+                                return [(socket.AF_INET, socket.SOCK_STREAM, 6, '', (args[0], args[1]))]
+                        socket.getaddrinfo = getaddrinfo
+                        reload(dropbox)
 
         dbx = dropbox.Dropbox(apiToken)
 
