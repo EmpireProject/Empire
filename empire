@@ -1160,7 +1160,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         return jsonify({'success': True})
 
 
-    if not os.path.exists('./data/empire.pem'):
+    if not os.path.exists('./data/empire-chain.pem'):
         print "[!] Error: cannot find certificate ./data/empire.pem"
         sys.exit()
 
