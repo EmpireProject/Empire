@@ -584,7 +584,7 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
                         $UserDomain = 'UNKNOWN'
                     }
                     # hashcat output format
-                        $HashFormat = "`$krb5tgs`$$encType`$*$SamAccountName`$$UserDomain`$$($Ticket.ServicePrincipalName)*`$$Hash"
+                    $HashFormat = "`$krb5tgs`$$encType`$*$SamAccountName`$$UserDomain`$$($Ticket.ServicePrincipalName)*`$$Hash"
                    
                 }
                 $Out | Add-Member Noteproperty 'Hash' $HashFormat
