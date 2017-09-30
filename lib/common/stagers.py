@@ -459,3 +459,18 @@ class Stagers:
         os.remove('Run.jar')
 
         return jar 
+
+   def generate_upload(self, file, path):
+      script = """
+$b64 = "BASE64_BLOB_GOES_HERE"
+$filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
+[IO.FILE]::WriteAllBytes($filename, [Convert]::FromBase64String($b64))
+
+"""
+
+      file_encoded = base64.b64encode(file)
+
+      script = script.replace("BASE64_BLOB_GOES_HERE", file_encoded)
+      script = script.replace("FILE_UPLOAD_FULL_PATH_GOES_HERE", path)
+
+      return script
