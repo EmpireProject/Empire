@@ -8,6 +8,7 @@ Running
 - Add @enigma0x3 Token Manipulation script as a BypassUAC module @424f424f
 - Hide true host name when using domain fronting #730 @clr2of8
 - Fixed custom proxy config in launcher code #728 @dirkjanm
+- generate_upload function added to Stagers #722 @hightopfade
 
 8/28/2017
 --------
