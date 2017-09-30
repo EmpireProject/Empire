@@ -6,6 +6,8 @@ Running
 - Fixes vbscript string literal quoting. #702
 - Add option to host a stager payload in the http listener @424f424f
 - Add @enigma0x3 Token Manipulation script as a BypassUAC module @424f424f
+- Hide true host name when using domain fronting #730 @clr2of8
+
 8/28/2017
 --------
 - Version 2.1 Master Release
