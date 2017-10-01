@@ -9,6 +9,7 @@ Running
 - Hide true host name when using domain fronting #730 @clr2of8
 - Fixed custom proxy config in launcher code #728 @dirkjanm
 - generate_upload function added to Stagers #722 @hightopfade
+- Aes kerberoast #725 @elitest
 
 8/28/2017
 --------
