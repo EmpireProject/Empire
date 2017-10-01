@@ -10,6 +10,7 @@ Running
 - Fixed custom proxy config in launcher code #728 @dirkjanm
 - generate_upload function added to Stagers #722 @hightopfade
 - Aes kerberoast #725 @elitest
+- DBX Improvements (SOCKS, Hide window via WindowHandler) #721 @IljaSchumacher
 
 8/28/2017
 --------
