@@ -31,7 +31,6 @@ if lsb_release -d | grep -q "Fedora"; then
 	pip install pyinstaller
 	pip install zlib_wrapper
 	pip install netifaces
-	pip install PySocks
 elif lsb_release -d | grep -q "Kali"; then
 	Release=Kali
 	apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libssl1.0.0 libssl-dev
@@ -47,7 +46,6 @@ elif lsb_release -d | grep -q "Kali"; then
 	pip install pyinstaller
 	pip install zlib_wrapper
 	pip install netifaces
-	pip install PySocks
         if ! which powershell > /dev/null; then
             wget http://archive.ubuntu.com/ubuntu/pool/main/i/icu/libicu55_55.1-7_amd64.deb
             wget http://ftp.debian.org/debian/pool/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
@@ -79,7 +77,6 @@ elif lsb_release -d | grep -q "Ubuntu"; then
 	pip install pyinstaller
 	pip install zlib_wrapper
 	pip install netifaces
-	pip install PySocks
         if ! which powershell > /dev/null; then
             wget http://archive.ubuntu.com/ubuntu/pool/main/i/icu/libicu55_55.1-7_amd64.deb
             wget http://ftp.debian.org/debian/pool/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
@@ -111,7 +108,6 @@ else
 	 pip install pyinstaller
 	 pip install zlib_wrapper
 	 pip install netifaces
-	 pip install PySocks
          if ! which powershell > /dev/null; then
             wget http://archive.ubuntu.com/ubuntu/pool/main/i/icu/libicu55_55.1-7_amd64.deb
             wget http://ftp.debian.org/debian/pool/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
