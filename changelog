@@ -12,6 +12,7 @@ Running
 - Aes kerberoast #725 @elitest
 - DBX Improvements (SOCKS, Hide window via WindowHandler) #721 @IljaSchumacher
 - Improved ScriptBlock logging bypasses #740 @cobbr_io
+- Slack Integration - Notification for new Agents #737 @dchrastil
 
 8/28/2017
 --------
