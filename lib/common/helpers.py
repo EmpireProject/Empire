@@ -35,6 +35,7 @@ Includes:
     complete_path() - helper to tab-complete file paths
     dict_factory() - helper that returns the SQLite query results as a dictionary
     KThread() - a subclass of threading.Thread, with a kill() method
+    slackMessage() - send notifications to the Slack API
 
 """
 
@@ -54,6 +55,7 @@ from time import localtime, strftime
 from Crypto.Random import random
 import subprocess
 import fnmatch
+import urllib, urllib2
 
 ###############################################################
 #
@@ -878,3 +880,9 @@ class KThread(threading.Thread):
 
     def kill(self):
         self.killed = True
+
+def slackMessage(slackToken, slackChannel, slackText):
+	url = "https://slack.com/api/chat.postMessage"
+	data = urllib.urlencode({'token': slackToken, 'channel':slackChannel, 'text':slackText})
+ 	req = urllib2.Request(url, data)
+ 	resp = urllib2.urlopen(req)
