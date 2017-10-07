@@ -13,6 +13,7 @@ Running
 - DBX Improvements (SOCKS, Hide window via WindowHandler) #721 @IljaSchumacher
 - Improved ScriptBlock logging bypasses #740 @cobbr_io
 - Slack Integration - Notification for new Agents #737 @dchrastil
+- Improve Get-ChromeDump #734 @ThePirateWhoSmellsOfSunFlowers
 
 8/28/2017
 --------
