@@ -782,7 +782,7 @@ def get_module_source_files():
                 paths.append(os.path.join(root, filename))
     return paths
 
-def obfuscate(psScript, obfuscationCommand):
+def obfuscate(installPath, psScript, obfuscationCommand):
     """
     Obfuscate PowerShell scripts using Invoke-Obfuscation
     """
@@ -790,13 +790,13 @@ def obfuscate(psScript, obfuscationCommand):
         print color("[!] PowerShell is not installed and is required to use obfuscation, please install it first.")
         return ""
     # When obfuscating large scripts, command line length is too long. Need to save to temp file
-    toObfuscateFilename = "data/misc/ToObfuscate.ps1"
-    obfuscatedFilename = "data/misc/Obfuscated.ps1"
+    toObfuscateFilename = installPath + "data/misc/ToObfuscate.ps1"
+    obfuscatedFilename = installPath + "data/misc/Obfuscated.ps1"
     toObfuscateFile = open(toObfuscateFilename, 'w')
     toObfuscateFile.write(psScript)
     toObfuscateFile.close()
     # Obfuscate using Invoke-Obfuscation w/ PowerShell
-    subprocess.call("powershell 'Invoke-Obfuscation -ScriptPath %s -Command \"%s\" -Quiet | Out-File -Encoding ASCII %s'" % (toObfuscateFilename, convert_obfuscation_command(obfuscationCommand), obfuscatedFilename), shell=True)
+    subprocess.call("powershell -C '$ErrorActionPreference = \"SilentlyContinue\";Invoke-Obfuscation -ScriptPath %s -Command \"%s\" -Quiet | Out-File -Encoding ASCII %s'" % (toObfuscateFilename, convert_obfuscation_command(obfuscationCommand), obfuscatedFilename), shell=True)
     obfuscatedFile = open(obfuscatedFilename , 'r')
     # Obfuscation writes a newline character to the end of the file, ignoring that character
     psScript = obfuscatedFile.read()[0:-1]
@@ -818,7 +818,8 @@ def obfuscate_module(moduleSource, obfuscationCommand="", forceReobfuscation=Fal
     f.close()
 
     # obfuscate and write to obfuscated source path
-    obfuscatedCode = obfuscate(psScript=moduleCode, obfuscationCommand=obfuscationCommand)
+    path = os.path.abspath('../../') + '/'
+    obfuscatedCode = obfuscate(path, moduleCode, obfuscationCommand)
     obfuscatedSource = moduleSource.replace("module_source", "obfuscated_module_source")
     try:
         f = open(obfuscatedSource, 'w')
