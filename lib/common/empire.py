@@ -1600,7 +1600,7 @@ class PowerShellAgentMenu(cmd.Cmd):
 
         try:
             choice = raw_input(helpers.color("[>] Task agent to exit? [y/N] ", "red"))
-            if choice.lower() != "" and choice.lower()[0] == "y":
+            if choice.lower() == "y":
 
                 self.mainMenu.agents.add_agent_task_db(self.sessionID, 'TASK_EXIT')
                 # update the agent log
@@ -2394,7 +2394,7 @@ class PythonAgentMenu(cmd.Cmd):
 
         try:
             choice = raw_input(helpers.color("[>] Task agent to exit? [y/N] ", "red"))
-            if choice.lower() != "" and choice.lower()[0] == "y":
+            if choice.lower() == "y":
 
                 self.mainMenu.agents.add_agent_task_db(self.sessionID, 'TASK_EXIT')
                 # update the agent log
