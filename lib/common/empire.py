@@ -753,6 +753,7 @@ class MainMenu(cmd.Cmd):
             else:
                 files = [self.installPath + 'data/module_source/' + module]
             for file in files:
+                file = self.installPath + file
                 if reobfuscate or not helpers.is_obfuscated(file):
                     print helpers.color("[*] Obfuscating " + os.path.basename(file) + "...")
                 else:
