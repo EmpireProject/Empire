@@ -2890,10 +2890,8 @@ class ListenersMenu(cmd.Cmd):
         raise NavMain()
 
     def postcmd(self, stop, line):
-	print "in postcmd listeners"
 	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
 	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
-	print 6
 
     def do_agents(self, line):
         "Jump to the Agents menu."
@@ -3836,7 +3834,6 @@ class StagerMenu(cmd.Cmd):
 
     def do_generate(self, line):
         "Generate/execute the given Empire stager."
-
         if not self.validate_options():
             return
 
@@ -3867,7 +3864,6 @@ class StagerMenu(cmd.Cmd):
                 os.chmod(savePath, 777)
 
             print "\n" + helpers.color("[*] Stager output written out to: %s\n" % (savePath))
-
         else:
             print stagerOutput
 
