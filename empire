@@ -4,11 +4,17 @@ import sqlite3, argparse, sys, argparse, logging, json, string
 import os, re, time, signal, copy, base64, pickle
 from flask import Flask, request, jsonify, make_response, abort, url_for
 from time import localtime, strftime, sleep
+<<<<<<< HEAD
 import hashlib
 from OpenSSL import SSL
 from Crypto.Random import random
 import ssl
 
+=======
+from OpenSSL import SSL
+from Crypto.Random import random
+import ssl
+>>>>>>> master
 # Empire imports
 from lib.common import empire
 from lib.common import helpers
@@ -199,7 +205,6 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         # suppress all stdout and don't initiate the main cmdloop
         sys.stdout = open(os.devnull, 'w')
-
 
     # validate API token before every request except for the login URI
     @app.before_request
@@ -1221,7 +1226,10 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         signal.signal(signal.SIGINT, signal.default_int_handler)
         sys.exit()
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> master
     try:
         signal.signal(signal.SIGINT, signal_handler)
     except ValueError:
@@ -1232,7 +1240,6 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
     context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
     context.load_cert_chain("%s/empire-chain.pem" % (certPath), "%s/empire-priv.key" % (certPath))
     app.run(host='0.0.0.0', port=int(port), ssl_context=context, threaded=True)
-
 
 
 if __name__ == '__main__':
@@ -1267,7 +1274,11 @@ if __name__ == '__main__':
         print empire.VERSION
 
     elif args.rest:
+<<<<<<< HEAD
          # start an Empire instance and RESTful API
+=======
+        # start an Empire instance and RESTful API
+>>>>>>> master
         main = empire.MainMenu(args=args)
         def thread_api(empireMenu):
             while serverExitCommand == 'restart':
@@ -1290,7 +1301,11 @@ if __name__ == '__main__':
                 start_restful_api(empireMenu=main, suppress=True, username=args.username, password=args.password, port=args.restport)
             except SystemExit as e:
                 pass
+<<<<<<< HEAD
                 
+=======
+
+>>>>>>> master
     else:
         # normal execution
         main = empire.MainMenu(args=args)
