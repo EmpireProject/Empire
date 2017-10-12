@@ -272,7 +272,7 @@ class MainMenu(cmd.Cmd):
                     print "       " + helpers.color(str(num_agents), "green") + " agents currently active\n\n"
 
 		    if self.resourceQueue and len(self.resourceQueue) > 0:
-	    		self.cmdqueue = [self.resourceQueue.pop(0)]
+	    		self.cmdqueue.append(self.resourceQueue.pop(0))
 
                     cmd.Cmd.cmdloop(self)
 
@@ -382,7 +382,7 @@ class MainMenu(cmd.Cmd):
 
     def postcmd(self, stop, line):
 	if self.resourceQueue and len(self.resourceQueue) > 0:
-	    self.cmdqueue = [self.resourceQueue.pop(0)]
+	    self.cmdqueue.append(self.resourceQueue.pop(0))
 
 	
 
@@ -390,9 +390,10 @@ class MainMenu(cmd.Cmd):
         "Default handler."
         pass
 
-    def do_resource(self, line):
-	self.resourceQueue = ["listeners","uselistener http","set Name http81","set DefaultProfile some/default/profile,some/other,and/one/more", "set Host 1.2.3.4","set Port 81","info","execute","back","?","?","agents","back","listeners","uselistener http","set Name http82","set Port 82","execute","listeners","kill http81","kill http82"]
-	#self.resourceQueue = ["agents","?","?"]
+    def do_resource(self, arg):
+	self.resourceQueue = []
+	with open(arg) as f:
+	    self.resourceQueue.extend(f.read().splitlines())
 
     def do_exit(self, line):
         "Exit Empire"
@@ -931,7 +932,7 @@ class AgentsMenu(cmd.Cmd):
 
     def cmdloop(self):
 	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
+	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
 	cmd.Cmd.cmdloop(self)
 
     def emptyline(self):
@@ -939,8 +940,7 @@ class AgentsMenu(cmd.Cmd):
 
     def postcmd(self, stop, line):
 	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    nextcmd = self.mainMenu.resourceQueue.pop(0)
-	    self.cmdqueue = [nextcmd]
+	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
 
     def do_back(self, line):
         "Go back to the main menu."
@@ -1478,7 +1478,7 @@ class PowerShellAgentMenu(cmd.Cmd):
 
     def cmdloop(self):
 	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
+	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
 	cmd.Cmd.cmdloop(self)
 
     # def preloop(self):
@@ -1557,7 +1557,7 @@ class PowerShellAgentMenu(cmd.Cmd):
 
     def postcmd(self, stop, line):
 	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
+	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
 
     def do_agents(self, line):
         "Jump to the Agents menu."
@@ -2311,7 +2311,7 @@ class PythonAgentMenu(cmd.Cmd):
 
     def cmdloop(self):
 	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
+	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
 	cmd.Cmd.cmdloop(self)
     # def preloop(self):
     #     traceback.print_stack()
@@ -2363,7 +2363,7 @@ class PythonAgentMenu(cmd.Cmd):
 
     def postcmd(self, stop, line):
 	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
+	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
 
     def do_agents(self, line):
         "Jump to the Agents menu."
@@ -2712,8 +2712,6 @@ class PythonAgentMenu(cmd.Cmd):
             print helpers.color("[!] Error: invalid module")
         else:
             module_menu = ModuleMenu(self.mainMenu, module, agent=self.sessionID)
-##	    if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-##	        module_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
             module_menu.cmdloop()
 
 
@@ -2853,7 +2851,7 @@ class ListenersMenu(cmd.Cmd):
 
     def cmdloop(self):
 	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
+	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
 	cmd.Cmd.cmdloop(self)
 
     # def preloop(self):
@@ -2880,9 +2878,10 @@ class ListenersMenu(cmd.Cmd):
         raise NavMain()
 
     def postcmd(self, stop, line):
+	print "in postcmd listeners"
 	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    nextcmd = self.mainMenu.resourceQueue.pop(0)
-	    self.cmdqueue = [nextcmd]
+	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
+	print 6
 
     def do_agents(self, line):
         "Jump to the Agents menu."
@@ -3078,7 +3077,7 @@ class ListenerMenu(cmd.Cmd):
 
     def cmdloop(self):
 	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
+	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
 	cmd.Cmd.cmdloop(self)
 
     def emptyline(self):
@@ -3094,7 +3093,7 @@ class ListenerMenu(cmd.Cmd):
 
     def postcmd(self, stop, line):
 	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
+	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
 
     def do_agents(self, line):
         "Jump to the Agents menu."
@@ -3269,7 +3268,7 @@ class ModuleMenu(cmd.Cmd):
 
     def cmdloop(self):
 	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
+	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
 	cmd.Cmd.cmdloop(self)
 
     # def preloop(self):
@@ -3344,7 +3343,7 @@ class ModuleMenu(cmd.Cmd):
 
     def postcmd(self, stop, line):
 	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
+	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
 
     def do_agents(self, line):
         "Jump to the Agents menu."
@@ -3678,7 +3677,7 @@ class StagerMenu(cmd.Cmd):
 
     def cmdloop(self):
 	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
+	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
 	cmd.Cmd.cmdloop(self)
 
     def validate_options(self):
@@ -3720,7 +3719,7 @@ class StagerMenu(cmd.Cmd):
 
     def postcmd(self, stop, line):
 	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
+	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
 
     def do_agents(self, line):
         "Jump to the Agents menu."
