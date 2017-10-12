@@ -4,17 +4,11 @@ import sqlite3, argparse, sys, argparse, logging, json, string
 import os, re, time, signal, copy, base64, pickle
 from flask import Flask, request, jsonify, make_response, abort, url_for
 from time import localtime, strftime, sleep
-<<<<<<< HEAD
 import hashlib
 from OpenSSL import SSL
 from Crypto.Random import random
 import ssl
 
-=======
-from OpenSSL import SSL
-from Crypto.Random import random
-import ssl
->>>>>>> master
 # Empire imports
 from lib.common import empire
 from lib.common import helpers
