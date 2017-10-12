@@ -96,7 +96,7 @@ class MainMenu(cmd.Cmd):
 
         dispatcher.send('[*] Empire starting up...', sender="Empire")
 
-        
+        self.resourceQueue = []
 
         # print the loading menu
         messages.loading()
@@ -271,6 +271,9 @@ class MainMenu(cmd.Cmd):
                     print "       " + helpers.color(str(num_listeners), "green") + " listeners currently active\n"
                     print "       " + helpers.color(str(num_agents), "green") + " agents currently active\n\n"
 
+		    if self.resourceQueue and len(self.resourceQueue) > 0:
+	    		self.cmdqueue = [self.resourceQueue.pop(0)]
+
                     cmd.Cmd.cmdloop(self)
 
 
@@ -377,10 +380,18 @@ class MainMenu(cmd.Cmd):
     # CMD methods
     ###################################################
 
+    def postcmd(self, stop, line):
+	if self.resourceQueue and len(self.resourceQueue) > 0:
+	    self.cmdqueue = [self.resourceQueue.pop(0)]
+
+	
+
     def default(self, line):
         "Default handler."
         pass
 
+    def do_resource(self, line):
+	self.resourceQueue = ["listeners","uselistener http","set Name http81","set DefaultProfile some/default/profile,some/other,and/one/more", "set Host 1.2.3.4","set Port 81","info","execute","back","?","?","agents","back","listeners","uselistener http","set Name http82","set Port 82","execute","listeners","kill http81","kill http82"]
 
     def do_exit(self, line):
         "Exit Empire"
@@ -391,6 +402,8 @@ class MainMenu(cmd.Cmd):
         "Jump to the Agents menu."
         try:
             agents_menu = AgentsMenu(self)
+	    if self.resourceQueue and len(self.resourceQueue) > 0:
+	        agents_menu.cmdqueue = [self.resourceQueue.pop(0)]
             agents_menu.cmdloop()
         except Exception as e:
             raise e
@@ -400,6 +413,8 @@ class MainMenu(cmd.Cmd):
         "Interact with active listeners."
         try:
             listener_menu = ListenersMenu(self)
+	    if self.resourceQueue and len(self.resourceQueue) > 0:
+	        listener_menu.cmdqueue.append(self.resourceQueue.pop(0))
             listener_menu.cmdloop()
         except Exception as e:
             raise e
@@ -416,6 +431,8 @@ class MainMenu(cmd.Cmd):
 
             elif len(parts) == 1:
                 stager_menu = StagerMenu(self, parts[0])
+	        if self.resourceQueue and len(self.resourceQueue) > 0:
+	            stager_menu.cmdqueue.append(self.resourceQueue.pop(0))
                 stager_menu.cmdloop()
             elif len(parts) == 2:
                 listener = parts[1]
@@ -424,6 +441,8 @@ class MainMenu(cmd.Cmd):
                 else:
                     self.stagers.set_stager_option('Listener', listener)
                     stager_menu = StagerMenu(self, parts[0])
+	            if self.resourceQueue and len(self.resourceQueue) > 0:
+	                stager_menu.cmdqueue.append(self.resourceQueue.pop(0))
                     stager_menu.cmdloop()
             else:
                 print helpers.color("[!] Error in MainMenu's do_userstager()")
@@ -441,6 +460,8 @@ class MainMenu(cmd.Cmd):
         else:
             try:
                 module_menu = ModuleMenu(self, line)
+	        if self.resourceQueue and len(self.resourceQueue) > 0:
+	            module_menu.cmdqueue.append(self.resourceQueue.pop(0))
                 module_menu.cmdloop()
             except Exception as e:
                 raise e
@@ -921,6 +942,10 @@ class AgentsMenu(cmd.Cmd):
     def emptyline(self):
         pass
 
+    def postcmd(self, stop, line):
+	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	    nextcmd = self.mainMenu.resourceQueue.pop(0)
+	    self.cmdqueue = [nextcmd]
 
     def do_back(self, line):
         "Go back to the main menu."
@@ -1283,6 +1308,8 @@ class AgentsMenu(cmd.Cmd):
 
         elif len(parts) == 1:
             stager_menu = StagerMenu(self.mainMenu, parts[0])
+	    if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	        stager_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
             stager_menu.cmdloop()
         elif len(parts) == 2:
             listener = parts[1]
@@ -1291,6 +1318,8 @@ class AgentsMenu(cmd.Cmd):
             else:
                 self.mainMenu.stagers.set_stager_option('Listener', listener)
                 stager_menu = StagerMenu(self.mainMenu, parts[0])
+	        if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	            stager_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
                 stager_menu.cmdloop()
         else:
             print helpers.color("[!] Error in AgentsMenu's do_userstager()")
@@ -1307,6 +1336,8 @@ class AgentsMenu(cmd.Cmd):
         else:
             # set agent to "all"
             module_menu = ModuleMenu(self.mainMenu, line, agent="all")
+	    if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	        module_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
             module_menu.cmdloop()
 
 
@@ -1419,9 +1450,13 @@ class AgentMenu(cmd.Cmd):
 
         if agentLanguage.lower() == 'powershell':
             agent_menu = PowerShellAgentMenu(mainMenu, sessionID)
+	    if mainMenu.resourceQueue and len(mainMenu.resourceQueue) > 0:
+	        agent_menu.cmdqueue.append(mainMenu.resourceQueue.pop(0))
             agent_menu.cmdloop()
         elif agentLanguage.lower() == 'python':
             agent_menu = PythonAgentMenu(mainMenu, sessionID)
+	    if mainMenu.resourceQueue and len(mainMenu.resourceQueue) > 0:
+	        agent_menu.cmdqueue.append(mainMenu.resourceQueue.pop(0))
             agent_menu.cmdloop()
         else:
             print helpers.color("[!] Agent language %s not recognized." % (agentLanguage))
@@ -1532,6 +1567,9 @@ class PowerShellAgentMenu(cmd.Cmd):
         "Go back a menu."
         return True
 
+    def postcmd(self, stop, line):
+	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
 
     def do_agents(self, line):
         "Jump to the Agents menu."
@@ -1881,6 +1919,8 @@ class PowerShellAgentMenu(cmd.Cmd):
             print helpers.color("[!] Error: invalid module")
         else:
             module_menu = ModuleMenu(self.mainMenu, module, agent=self.sessionID)
+	    if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	        module_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
             module_menu.cmdloop()
 
 
@@ -1989,6 +2029,8 @@ class PowerShellAgentMenu(cmd.Cmd):
                         module.options['ProcessID']['Value'] = pid
 
                     module_menu = ModuleMenu(self.mainMenu, 'powershell/code_execution/invoke_shellcode')
+	    	    if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	        	module_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
                     module_menu.cmdloop()
 
                 else:
@@ -2046,6 +2088,8 @@ class PowerShellAgentMenu(cmd.Cmd):
 
                     # jump to the spawn module
                     module_menu = ModuleMenu(self.mainMenu, "powershell/management/spawn")
+	    	    if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	        	module_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
                     module_menu.cmdloop()
 
                 else:
@@ -2331,6 +2375,9 @@ class PythonAgentMenu(cmd.Cmd):
         "Go back a menu."
         return True
 
+    def postcmd(self, stop, line):
+	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
 
     def do_agents(self, line):
         "Jump to the Agents menu."
@@ -2679,6 +2726,8 @@ class PythonAgentMenu(cmd.Cmd):
             print helpers.color("[!] Error: invalid module")
         else:
             module_menu = ModuleMenu(self.mainMenu, module, agent=self.sessionID)
+	    if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	        module_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
             module_menu.cmdloop()
 
 
@@ -2839,6 +2888,10 @@ class ListenersMenu(cmd.Cmd):
         "Go back to the main menu."
         raise NavMain()
 
+    def postcmd(self, stop, line):
+	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	    nextcmd = self.mainMenu.resourceQueue.pop(0)
+	    self.cmdqueue = [nextcmd]
 
     def do_agents(self, line):
         "Jump to the Agents menu."
@@ -2893,6 +2946,8 @@ class ListenersMenu(cmd.Cmd):
 
         elif len(parts) == 1:
             stager_menu = StagerMenu(self.mainMenu, parts[0])
+	    if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	        stager_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
             stager_menu.cmdloop()
         elif len(parts) == 2:
             listener = parts[1]
@@ -2901,6 +2956,8 @@ class ListenersMenu(cmd.Cmd):
             else:
                 self.mainMenu.stagers.set_stager_option('Listener', listener)
                 stager_menu = StagerMenu(self.mainMenu, parts[0])
+	        if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	            stager_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
                 stager_menu.cmdloop()
         else:
             print helpers.color("[!] Error in ListenerMenu's do_userstager()")
@@ -2915,6 +2972,8 @@ class ListenersMenu(cmd.Cmd):
             print helpers.color("[!] Error: invalid listener module")
         else:
             listenerMenu = ListenerMenu(self.mainMenu, parts[0])
+	    if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	        listenerMenu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
             listenerMenu.cmdloop()
 
 
@@ -3044,6 +3103,9 @@ class ListenerMenu(cmd.Cmd):
         "Go back a menu."
         return True
 
+    def postcmd(self, stop, line):
+	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
 
     def do_agents(self, line):
         "Jump to the Agents menu."
@@ -3286,6 +3348,9 @@ class ModuleMenu(cmd.Cmd):
         "Go back a menu."
         return True
 
+    def postcmd(self, stop, line):
+	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
 
     def do_agents(self, line):
         "Jump to the Agents menu."
@@ -3393,6 +3458,8 @@ class ModuleMenu(cmd.Cmd):
             print helpers.color("[!] Error: invalid module")
         else:
             module_menu = ModuleMenu(self.mainMenu, line, agent=self.module.options['Agent']['Value'])
+	    if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	        module_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
             module_menu.cmdloop()
 
 
@@ -3655,6 +3722,9 @@ class StagerMenu(cmd.Cmd):
         "Go back a menu."
         return True
 
+    def postcmd(self, stop, line):
+	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
 
     def do_agents(self, line):
         "Jump to the Agents menu."
