@@ -1220,10 +1220,6 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         signal.signal(signal.SIGINT, signal.default_int_handler)
         sys.exit()
 
-<<<<<<< HEAD
-
-=======
->>>>>>> master
     try:
         signal.signal(signal.SIGINT, signal_handler)
     except ValueError:
@@ -1268,11 +1264,7 @@ if __name__ == '__main__':
         print empire.VERSION
 
     elif args.rest:
-<<<<<<< HEAD
          # start an Empire instance and RESTful API
-=======
-        # start an Empire instance and RESTful API
->>>>>>> master
         main = empire.MainMenu(args=args)
         def thread_api(empireMenu):
             while serverExitCommand == 'restart':
@@ -1295,11 +1287,7 @@ if __name__ == '__main__':
                 start_restful_api(empireMenu=main, suppress=True, username=args.username, password=args.password, port=args.restport)
             except SystemExit as e:
                 pass
-<<<<<<< HEAD
                 
-=======
-
->>>>>>> master
     else:
         # normal execution
         main = empire.MainMenu(args=args)
