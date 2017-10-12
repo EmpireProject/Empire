@@ -956,6 +956,10 @@ class AgentsMenu(cmd.Cmd):
         "Go back to the main menu."
         raise NavMain()
 
+    def do_resource(self, arg):
+	self.mainMenu.resourceQueue = []
+	with open(arg) as f:
+	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
 
     def do_exit(self, line):
         "Exit Empire."
@@ -1618,6 +1622,10 @@ class PowerShellAgentMenu(cmd.Cmd):
         agent = self.mainMenu.agents.get_agent_db(self.sessionID)
         messages.display_agent(agent)
 
+    def do_resource(self, arg):
+	self.mainMenu.resourceQueue = []
+	with open(arg) as f:
+	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
 
     def do_exit(self, line):
         "Task agent to exit."
@@ -2419,6 +2427,10 @@ class PythonAgentMenu(cmd.Cmd):
         agent = self.mainMenu.agents.get_agent_db(self.sessionID)
         messages.display_agent(agent)
 
+    def do_resource(self, arg):
+	self.mainMenu.resourceQueue = []
+	with open(arg) as f:
+	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
 
     def do_exit(self, line):
         "Task agent to exit."
@@ -2892,6 +2904,10 @@ class ListenersMenu(cmd.Cmd):
         "Go back to the main menu."
         raise NavMain()
 
+    def do_resource(self, arg):
+	self.mainMenu.resourceQueue = []
+	with open(arg) as f:
+	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
 
     def do_exit(self, line):
         "Exit Empire."
@@ -3109,6 +3125,10 @@ class ListenerMenu(cmd.Cmd):
         "Go back to the main menu."
         raise NavMain()
 
+    def do_resource(self, arg):
+	self.mainMenu.resourceQueue = []
+	with open(arg) as f:
+	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
 
     def do_exit(self, line):
         "Exit Empire."
@@ -3359,6 +3379,10 @@ class ModuleMenu(cmd.Cmd):
         "Go back to the main menu."
         raise NavMain()
 
+    def do_resource(self, arg):
+	self.mainMenu.resourceQueue = []
+	with open(arg) as f:
+	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
 
     def do_exit(self, line):
         "Exit Empire."
@@ -3735,6 +3759,10 @@ class StagerMenu(cmd.Cmd):
         "Go back to the main menu."
         raise NavMain()
 
+    def do_resource(self, arg):
+	self.mainMenu.resourceQueue = []
+	with open(arg) as f:
+	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
 
     def do_exit(self, line):
         "Exit Empire."
