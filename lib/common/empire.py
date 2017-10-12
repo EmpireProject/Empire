@@ -392,6 +392,7 @@ class MainMenu(cmd.Cmd):
 
     def do_resource(self, line):
 	self.resourceQueue = ["listeners","uselistener http","set Name http81","set DefaultProfile some/default/profile,some/other,and/one/more", "set Host 1.2.3.4","set Port 81","info","execute","back","?","?","agents","back","listeners","uselistener http","set Name http82","set Port 82","execute","listeners","kill http81","kill http82"]
+	#self.resourceQueue = ["agents","?","?"]
 
     def do_exit(self, line):
         "Exit Empire"
@@ -402,8 +403,6 @@ class MainMenu(cmd.Cmd):
         "Jump to the Agents menu."
         try:
             agents_menu = AgentsMenu(self)
-	    if self.resourceQueue and len(self.resourceQueue) > 0:
-	        agents_menu.cmdqueue = [self.resourceQueue.pop(0)]
             agents_menu.cmdloop()
         except Exception as e:
             raise e
@@ -413,8 +412,6 @@ class MainMenu(cmd.Cmd):
         "Interact with active listeners."
         try:
             listener_menu = ListenersMenu(self)
-	    if self.resourceQueue and len(self.resourceQueue) > 0:
-	        listener_menu.cmdqueue.append(self.resourceQueue.pop(0))
             listener_menu.cmdloop()
         except Exception as e:
             raise e
@@ -431,8 +428,6 @@ class MainMenu(cmd.Cmd):
 
             elif len(parts) == 1:
                 stager_menu = StagerMenu(self, parts[0])
-	        if self.resourceQueue and len(self.resourceQueue) > 0:
-	            stager_menu.cmdqueue.append(self.resourceQueue.pop(0))
                 stager_menu.cmdloop()
             elif len(parts) == 2:
                 listener = parts[1]
@@ -441,8 +436,6 @@ class MainMenu(cmd.Cmd):
                 else:
                     self.stagers.set_stager_option('Listener', listener)
                     stager_menu = StagerMenu(self, parts[0])
-	            if self.resourceQueue and len(self.resourceQueue) > 0:
-	                stager_menu.cmdqueue.append(self.resourceQueue.pop(0))
                     stager_menu.cmdloop()
             else:
                 print helpers.color("[!] Error in MainMenu's do_userstager()")
@@ -460,8 +453,6 @@ class MainMenu(cmd.Cmd):
         else:
             try:
                 module_menu = ModuleMenu(self, line)
-	        if self.resourceQueue and len(self.resourceQueue) > 0:
-	            module_menu.cmdqueue.append(self.resourceQueue.pop(0))
                 module_menu.cmdloop()
             except Exception as e:
                 raise e
@@ -938,6 +929,10 @@ class AgentsMenu(cmd.Cmd):
                 self.stdout.write("%s %s\n" % (command.ljust(17), getattr(self, 'do_' + command).__doc__))
             self.stdout.write("\n")
 
+    def cmdloop(self):
+	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
+	cmd.Cmd.cmdloop(self)
 
     def emptyline(self):
         pass
@@ -1308,8 +1303,6 @@ class AgentsMenu(cmd.Cmd):
 
         elif len(parts) == 1:
             stager_menu = StagerMenu(self.mainMenu, parts[0])
-	    if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	        stager_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
             stager_menu.cmdloop()
         elif len(parts) == 2:
             listener = parts[1]
@@ -1318,8 +1311,6 @@ class AgentsMenu(cmd.Cmd):
             else:
                 self.mainMenu.stagers.set_stager_option('Listener', listener)
                 stager_menu = StagerMenu(self.mainMenu, parts[0])
-	        if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	            stager_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
                 stager_menu.cmdloop()
         else:
             print helpers.color("[!] Error in AgentsMenu's do_userstager()")
@@ -1336,8 +1327,6 @@ class AgentsMenu(cmd.Cmd):
         else:
             # set agent to "all"
             module_menu = ModuleMenu(self.mainMenu, line, agent="all")
-	    if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	        module_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
             module_menu.cmdloop()
 
 
@@ -1450,17 +1439,12 @@ class AgentMenu(cmd.Cmd):
 
         if agentLanguage.lower() == 'powershell':
             agent_menu = PowerShellAgentMenu(mainMenu, sessionID)
-	    if mainMenu.resourceQueue and len(mainMenu.resourceQueue) > 0:
-	        agent_menu.cmdqueue.append(mainMenu.resourceQueue.pop(0))
             agent_menu.cmdloop()
         elif agentLanguage.lower() == 'python':
             agent_menu = PythonAgentMenu(mainMenu, sessionID)
-	    if mainMenu.resourceQueue and len(mainMenu.resourceQueue) > 0:
-	        agent_menu.cmdqueue.append(mainMenu.resourceQueue.pop(0))
             agent_menu.cmdloop()
         else:
             print helpers.color("[!] Agent language %s not recognized." % (agentLanguage))
-
 
 class PowerShellAgentMenu(cmd.Cmd):
     """
@@ -1492,6 +1476,10 @@ class PowerShellAgentMenu(cmd.Cmd):
         # listen for messages from this specific agent
         dispatcher.connect(self.handle_agent_event, sender=dispatcher.Any)
 
+    def cmdloop(self):
+	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
+	cmd.Cmd.cmdloop(self)
 
     # def preloop(self):
     #     traceback.print_stack()
@@ -1919,8 +1907,6 @@ class PowerShellAgentMenu(cmd.Cmd):
             print helpers.color("[!] Error: invalid module")
         else:
             module_menu = ModuleMenu(self.mainMenu, module, agent=self.sessionID)
-	    if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	        module_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
             module_menu.cmdloop()
 
 
@@ -2029,8 +2015,6 @@ class PowerShellAgentMenu(cmd.Cmd):
                         module.options['ProcessID']['Value'] = pid
 
                     module_menu = ModuleMenu(self.mainMenu, 'powershell/code_execution/invoke_shellcode')
-	    	    if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	        	module_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
                     module_menu.cmdloop()
 
                 else:
@@ -2088,8 +2072,6 @@ class PowerShellAgentMenu(cmd.Cmd):
 
                     # jump to the spawn module
                     module_menu = ModuleMenu(self.mainMenu, "powershell/management/spawn")
-	    	    if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	        	module_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
                     module_menu.cmdloop()
 
                 else:
@@ -2327,6 +2309,10 @@ class PythonAgentMenu(cmd.Cmd):
         if results:
             print "\n" + results.rstrip('\r\n')
 
+    def cmdloop(self):
+	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
+	cmd.Cmd.cmdloop(self)
     # def preloop(self):
     #     traceback.print_stack()
 
@@ -2726,8 +2712,8 @@ class PythonAgentMenu(cmd.Cmd):
             print helpers.color("[!] Error: invalid module")
         else:
             module_menu = ModuleMenu(self.mainMenu, module, agent=self.sessionID)
-	    if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	        module_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
+##	    if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+##	        module_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
             module_menu.cmdloop()
 
 
@@ -2865,6 +2851,11 @@ class ListenersMenu(cmd.Cmd):
         # display all active listeners on menu startup
         messages.display_active_listeners(self.mainMenu.listeners.activeListeners)
 
+    def cmdloop(self):
+	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
+	cmd.Cmd.cmdloop(self)
+
     # def preloop(self):
     #     traceback.print_stack()
 
@@ -2946,8 +2937,6 @@ class ListenersMenu(cmd.Cmd):
 
         elif len(parts) == 1:
             stager_menu = StagerMenu(self.mainMenu, parts[0])
-	    if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	        stager_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
             stager_menu.cmdloop()
         elif len(parts) == 2:
             listener = parts[1]
@@ -2956,8 +2945,6 @@ class ListenersMenu(cmd.Cmd):
             else:
                 self.mainMenu.stagers.set_stager_option('Listener', listener)
                 stager_menu = StagerMenu(self.mainMenu, parts[0])
-	        if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	            stager_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
                 stager_menu.cmdloop()
         else:
             print helpers.color("[!] Error in ListenerMenu's do_userstager()")
@@ -2972,8 +2959,6 @@ class ListenersMenu(cmd.Cmd):
             print helpers.color("[!] Error: invalid listener module")
         else:
             listenerMenu = ListenerMenu(self.mainMenu, parts[0])
-	    if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	        listenerMenu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
             listenerMenu.cmdloop()
 
 
@@ -3091,6 +3076,10 @@ class ListenerMenu(cmd.Cmd):
         # set the text prompt
         self.prompt = '(Empire: ' + helpers.color("listeners/%s" % (listenerName), 'red') + ') > '
 
+    def cmdloop(self):
+	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
+	cmd.Cmd.cmdloop(self)
 
     def emptyline(self):
         """
@@ -3278,6 +3267,11 @@ class ModuleMenu(cmd.Cmd):
         except Exception as e:
             print helpers.color("[!] ModuleMenu() init error: %s" % (e))
 
+    def cmdloop(self):
+	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
+	cmd.Cmd.cmdloop(self)
+
     # def preloop(self):
     #     traceback.print_stack()
 
@@ -3458,8 +3452,6 @@ class ModuleMenu(cmd.Cmd):
             print helpers.color("[!] Error: invalid module")
         else:
             module_menu = ModuleMenu(self.mainMenu, line, agent=self.module.options['Agent']['Value'])
-	    if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	        module_menu.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
             module_menu.cmdloop()
 
 
@@ -3684,6 +3676,10 @@ class StagerMenu(cmd.Cmd):
             listener = self.mainMenu.listeners.get_listener(listener)
             self.stager.options['Listener']['Value'] = listener
 
+    def cmdloop(self):
+	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	    self.cmdqueue = [self.mainMenu.resourceQueue.pop(0)]
+	cmd.Cmd.cmdloop(self)
 
     def validate_options(self):
         "Make sure all required stager options are completed."
