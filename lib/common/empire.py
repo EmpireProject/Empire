@@ -391,6 +391,7 @@ class MainMenu(cmd.Cmd):
         pass
 
     def do_resource(self, arg):
+	"Read and execute a list of Empire commands from a file."
 	self.resourceQueue = []
 	with open(arg) as f:
 	    self.resourceQueue.extend(f.read().splitlines())
@@ -957,6 +958,7 @@ class AgentsMenu(cmd.Cmd):
         raise NavMain()
 
     def do_resource(self, arg):
+	"Read and execute a list of Empire commands from a file."
 	self.mainMenu.resourceQueue = []
 	with open(arg) as f:
 	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
@@ -1623,6 +1625,7 @@ class PowerShellAgentMenu(cmd.Cmd):
         messages.display_agent(agent)
 
     def do_resource(self, arg):
+	"Read and execute a list of Empire commands from a file."
 	self.mainMenu.resourceQueue = []
 	with open(arg) as f:
 	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
@@ -2428,6 +2431,7 @@ class PythonAgentMenu(cmd.Cmd):
         messages.display_agent(agent)
 
     def do_resource(self, arg):
+	"Read and execute a list of Empire commands from a file."
 	self.mainMenu.resourceQueue = []
 	with open(arg) as f:
 	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
@@ -2903,6 +2907,7 @@ class ListenersMenu(cmd.Cmd):
         raise NavMain()
 
     def do_resource(self, arg):
+	"Read and execute a list of Empire commands from a file."
 	self.mainMenu.resourceQueue = []
 	with open(arg) as f:
 	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
@@ -3124,6 +3129,7 @@ class ListenerMenu(cmd.Cmd):
         raise NavMain()
 
     def do_resource(self, arg):
+	"Read and execute a list of Empire commands from a file."
 	self.mainMenu.resourceQueue = []
 	with open(arg) as f:
 	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
@@ -3378,6 +3384,7 @@ class ModuleMenu(cmd.Cmd):
         raise NavMain()
 
     def do_resource(self, arg):
+	"Read and execute a list of Empire commands from a file."
 	self.mainMenu.resourceQueue = []
 	with open(arg) as f:
 	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
@@ -3758,6 +3765,7 @@ class StagerMenu(cmd.Cmd):
         raise NavMain()
 
     def do_resource(self, arg):
+	"Read and execute a list of Empire commands from a file."
 	self.mainMenu.resourceQueue = []
 	with open(arg) as f:
 	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
