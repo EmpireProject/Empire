@@ -84,7 +84,7 @@ class Module:
                 if option in self.options:
                     self.options[option]['Value'] = value
 
-    def generate(self):
+    def generate(self, obfuscate=False, obfuscationCommand=""):
         count = self.options['Messages']['Value']
         script = "count = " + str(count) + '\n'
         if self.options['Debug']['Value']:

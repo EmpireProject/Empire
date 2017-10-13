@@ -9,7 +9,7 @@ menu loops.
 """
 
 # make version for Empire
-VERSION = "2.1"
+VERSION = "2.2"
 
 from pydispatch import dispatcher
 
@@ -20,6 +20,7 @@ import os
 import hashlib
 import time
 import fnmatch
+import shlex
 
 # Empire imports
 import helpers
@@ -468,10 +469,10 @@ class MainMenu(cmd.Cmd):
         if filterTerm == "":
             creds = self.credentials.get_credentials()
 
-        elif filterTerm.split()[0].lower() == "add":
+        elif shlex.split(filterTerm)[0].lower() == "add":
 
             # add format: "domain username password <notes> <credType> <sid>
-            args = filterTerm.split()[1:]
+            args = shlex.split(filterTerm)[1:]
 
             if len(args) == 3:
                 domain, username, password = args
@@ -502,10 +503,10 @@ class MainMenu(cmd.Cmd):
 
             creds = self.credentials.get_credentials()
 
-        elif filterTerm.split()[0].lower() == "remove":
+        elif shlex.split(filterTerm)[0].lower() == "remove":
 
             try:
-                args = filterTerm.split()[1:]
+                args = shlex.split(filterTerm)[1:]
                 if len(args) != 1:
                     print helpers.color("[!] Format is 'remove <credID>/<credID-credID>/all'")
                 else:
@@ -531,8 +532,8 @@ class MainMenu(cmd.Cmd):
             return
 
 
-        elif filterTerm.split()[0].lower() == "export":
-            args = filterTerm.split()[1:]
+        elif shlex.split(filterTerm)[0].lower() == "export":
+            args = shlex.split(filterTerm)[1:]
 
             if len(args) != 1:
                 print helpers.color("[!] Please supply an output filename/filepath.")
@@ -541,13 +542,13 @@ class MainMenu(cmd.Cmd):
                 self.credentials.export_credentials(args[0])
                 return
 
-        elif filterTerm.split()[0].lower() == "plaintext":
+        elif shlex.split(filterTerm)[0].lower() == "plaintext":
             creds = self.credentials.get_credentials(credtype="plaintext")
 
-        elif filterTerm.split()[0].lower() == "hash":
+        elif shlex.split(filterTerm)[0].lower() == "hash":
             creds = self.credentials.get_credentials(credtype="hash")
 
-        elif filterTerm.split()[0].lower() == "krbtgt":
+        elif shlex.split(filterTerm)[0].lower() == "krbtgt":
             creds = self.credentials.get_krbtgt()
 
         else:
@@ -761,6 +762,7 @@ class MainMenu(cmd.Cmd):
             else:
                 files = [self.installPath + 'data/module_source/' + module]
             for file in files:
+                file = self.installPath + file
                 if reobfuscate or not helpers.is_obfuscated(file):
                     print helpers.color("[*] Obfuscating " + os.path.basename(file) + "...")
                 else:
@@ -1577,7 +1579,7 @@ class PowerShellAgentMenu(SubMenu):
 
         try:
             choice = raw_input(helpers.color("[>] Task agent to exit? [y/N] ", "red"))
-            if choice.lower() != "" and choice.lower()[0] == "y":
+            if choice.lower() == "y":
 
                 self.mainMenu.agents.add_agent_task_db(self.sessionID, 'TASK_EXIT')
                 # update the agent log
@@ -2333,7 +2335,7 @@ class PythonAgentMenu(SubMenu):
 
         try:
             choice = raw_input(helpers.color("[>] Task agent to exit? [y/N] ", "red"))
-            if choice.lower() != "" and choice.lower()[0] == "y":
+            if choice.lower() == "y":
 
                 self.mainMenu.agents.add_agent_task_db(self.sessionID, 'TASK_EXIT')
                 # update the agent log

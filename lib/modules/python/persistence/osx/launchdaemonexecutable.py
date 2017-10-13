@@ -88,7 +88,7 @@ class Module:
                 if option in self.options:
                     self.options[option]['Value'] = value
 
-    def generate(self):
+    def generate(self, obfuscate=False, obfuscationCommand=""):
 
         daemonName = self.options['DaemonName']['Value']
         programname = self.options['DaemonLocation']['Value']

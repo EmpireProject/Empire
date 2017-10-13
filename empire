@@ -4,6 +4,7 @@ import sqlite3, argparse, sys, argparse, logging, json, string
 import os, re, time, signal, copy, base64, pickle
 from flask import Flask, request, jsonify, make_response, abort, url_for
 from time import localtime, strftime, sleep
+import hashlib
 from OpenSSL import SSL
 from Crypto.Random import random
 import ssl
@@ -198,7 +199,6 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         # suppress all stdout and don't initiate the main cmdloop
         sys.stdout = open(os.devnull, 'w')
-
 
     # validate API token before every request except for the login URI
     @app.before_request
@@ -1160,7 +1160,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         return jsonify({'success': True})
 
 
-    if not os.path.exists('./data/empire.pem'):
+    if not os.path.exists('./data/empire-chain.pem'):
         print "[!] Error: cannot find certificate ./data/empire.pem"
         sys.exit()
 
@@ -1220,7 +1220,6 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         signal.signal(signal.SIGINT, signal.default_int_handler)
         sys.exit()
 
-
     try:
         signal.signal(signal.SIGINT, signal_handler)
     except ValueError:
@@ -1231,7 +1230,6 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
     context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
     context.load_cert_chain("%s/empire-chain.pem" % (certPath), "%s/empire-priv.key" % (certPath))
     app.run(host='0.0.0.0', port=int(port), ssl_context=context, threaded=True)
-
 
 
 if __name__ == '__main__':
