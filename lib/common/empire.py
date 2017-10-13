@@ -925,6 +925,10 @@ class SubMenu(cmd.Cmd):
         "Jump to the listeners menu."
         raise NavListeners()
 
+    def do_agents(self, line):
+        "Jump to the agents menu."
+        raise NavAgents()
+
     def do_main(self, line):
         "Go back to the main menu."
         raise NavMain()
