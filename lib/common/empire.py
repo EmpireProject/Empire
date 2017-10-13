@@ -229,11 +229,6 @@ class MainMenu(cmd.Cmd):
             print helpers.color("[!] Please run database_setup.py")
             sys.exit()
 
-
-    # def preloop(self):
-    #     traceback.print_stack()
-
-
     def cmdloop(self):
         """
         The main cmdloop logic that handles navigation to other menus.
@@ -899,37 +894,12 @@ class MainMenu(cmd.Cmd):
         mline = line.partition(' ')[2]
         offs = len(mline) - len(text)
         return [s[offs:] for s in options if s.startswith(mline)]
-    
 
-class AgentsMenu(cmd.Cmd):
-    """
-    The main class used by Empire to drive the 'agents' menu.
-    """
+class SubMenu(cmd.Cmd):
+
     def __init__(self, mainMenu):
         cmd.Cmd.__init__(self)
-
         self.mainMenu = mainMenu
-
-        self.doc_header = 'Commands'
-
-        # set the prompt text
-        self.prompt = '(Empire: ' + helpers.color("agents", color="blue") + ') > '
-
-        messages.display_agents(self.mainMenu.agents.get_agents_db())
-
-    # def preloop(self):
-    #     traceback.print_stack()
-
-    # print a nicely formatted help menu
-    #   stolen/adapted from recon-ng
-    def print_topics(self, header, commands, cmdlen, maxcol):
-        if commands:
-            self.stdout.write("%s\n" % str(header))
-            if self.ruler:
-                self.stdout.write("%s\n" % str(self.ruler * len(header)))
-            for command in commands:
-                self.stdout.write("%s %s\n" % (command.ljust(17), getattr(self, 'do_' + command).__doc__))
-            self.stdout.write("\n")
 
     def cmdloop(self):
 	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
@@ -940,18 +910,18 @@ class AgentsMenu(cmd.Cmd):
         pass
 
     def postcmd(self, stop, line):
+	if line == "back":
+	    return True
 	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
 	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
 
     def do_back(self, line):
-        "Go back to the main menu."
-        raise NavMain()
-
+	"Go back a menu."
+	return True
 
     def do_listeners(self, line):
         "Jump to the listeners menu."
         raise NavListeners()
-
 
     def do_main(self, line):
         "Go back to the main menu."
@@ -967,6 +937,41 @@ class AgentsMenu(cmd.Cmd):
         "Exit Empire."
         raise KeyboardInterrupt
 
+    def do_creds(self, line):
+        "Display/return credentials from the database."
+        self.mainMenu.do_creds(line)
+
+    # print a nicely formatted help menu
+    #   stolen/adapted from recon-ng
+    def print_topics(self, header, commands, cmdlen, maxcol):
+        if commands:
+            self.stdout.write("%s\n" % str(header))
+            if self.ruler:
+                self.stdout.write("%s\n" % str(self.ruler * len(header)))
+            for command in commands:
+                self.stdout.write("%s %s\n" % (command.ljust(17), getattr(self, 'do_' + command).__doc__))
+            self.stdout.write("\n")
+
+    # def preloop(self):
+    #     traceback.print_stack()
+
+class AgentsMenu(SubMenu):
+    """
+    The main class used by Empire to drive the 'agents' menu.
+    """
+    def __init__(self, mainMenu):
+        SubMenu.__init__(self, mainMenu)
+
+        self.doc_header = 'Commands'
+
+        # set the prompt text
+        self.prompt = '(Empire: ' + helpers.color("agents", color="blue") + ') > '
+
+        messages.display_agents(self.mainMenu.agents.get_agents_db())
+
+    def do_back(self, line):
+        "Go back to the main menu."
+        raise NavMain()
 
     def do_list(self, line):
         "Lists all active agents (or listeners)."
@@ -977,7 +982,6 @@ class AgentsMenu(cmd.Cmd):
             self.mainMenu.do_list("agents " + str(' '.join(line.split(' ')[1:])))
         else:
             self.mainMenu.do_list("agents " + str(line))
-
 
     def do_rename(self, line):
         "Rename a particular agent."
@@ -1034,12 +1038,6 @@ class AgentsMenu(cmd.Cmd):
                     print helpers.color("[!] Invalid agent name")
             except KeyboardInterrupt:
                 print ''
-
-
-    def do_creds(self, line):
-        "Display/return credentials from the database."
-        self.mainMenu.do_creds(line)
-
 
     def do_clear(self, line):
         "Clear one or more agent's taskings."
@@ -1434,7 +1432,7 @@ class AgentsMenu(cmd.Cmd):
         return self.mainMenu.complete_creds(text, line, begidx, endidx)
 
 
-class AgentMenu(cmd.Cmd):
+class AgentMenu(SubMenu):
     """
     An abstracted class used by Empire to determine which agent menu type
     to instantiate.
@@ -1452,15 +1450,14 @@ class AgentMenu(cmd.Cmd):
         else:
             print helpers.color("[!] Agent language %s not recognized." % (agentLanguage))
 
-class PowerShellAgentMenu(cmd.Cmd):
+class PowerShellAgentMenu(SubMenu):
     """
     The main class used by Empire to drive an individual 'agent' menu.
     """
     def __init__(self, mainMenu, sessionID):
 
-        cmd.Cmd.__init__(self)
+        SubMenu.__init__(self, mainMenu)
 
-        self.mainMenu = mainMenu
         self.sessionID = sessionID
         self.doc_header = 'Agent Commands'
 
@@ -1481,11 +1478,6 @@ class PowerShellAgentMenu(cmd.Cmd):
 
         # listen for messages from this specific agent
         dispatcher.connect(self.handle_agent_event, sender=dispatcher.Any)
-
-    def cmdloop(self):
-	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
-	cmd.Cmd.cmdloop(self)
 
     # def preloop(self):
     #     traceback.print_stack()
@@ -1520,23 +1512,6 @@ class PowerShellAgentMenu(cmd.Cmd):
             if (str(self.sessionID) in signal) or (str(name) in signal):
                 print helpers.color(signal)
 
-
-    # print a nicely formatted help menu
-    #   stolen/adapted from recon-ng
-    def print_topics(self, header, commands, cmdlen, maxcol):
-        if commands:
-            self.stdout.write("%s\n" % str(header))
-            if self.ruler:
-                self.stdout.write("%s\n" % str(self.ruler * len(header)))
-            for command in commands:
-                self.stdout.write("%s %s\n" % (command.ljust(17), getattr(self, 'do_' + command).__doc__))
-            self.stdout.write("\n")
-
-
-    def emptyline(self):
-        pass
-
-
     def default(self, line):
         "Default handler"
 
@@ -1556,30 +1531,6 @@ class PowerShellAgentMenu(cmd.Cmd):
                 print helpers.color("[!] Command not recognized.")
                 print helpers.color("[*] Use 'help' or 'help agentcmds' to see available commands.")
 
-
-    def do_back(self, line):
-        "Go back a menu."
-        return True
-
-    def postcmd(self, stop, line):
-	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
-
-    def do_agents(self, line):
-        "Jump to the Agents menu."
-        raise NavAgents()
-
-
-    def do_listeners(self, line):
-        "Jump to the listeners menu."
-        raise NavListeners()
-
-
-    def do_main(self, line):
-        "Go back to the main menu."
-        raise NavMain()
-
-
     def do_help(self, *args):
         "Displays the help menu or syntax for particular commands."
 
@@ -1587,8 +1538,7 @@ class PowerShellAgentMenu(cmd.Cmd):
             print "\n" + helpers.color("[*] Available opsec-safe agent commands:\n")
             print "     " + messages.wrap_columns(", ".join(self.agentCommands), ' ', width1=50, width2=10, indent=5) + "\n"
         else:
-            cmd.Cmd.do_help(self, *args)
-
+            SubMenu.do_help(self, *args)
 
     def do_list(self, line):
         "Lists all active agents (or listeners)."
@@ -1599,7 +1549,6 @@ class PowerShellAgentMenu(cmd.Cmd):
             self.mainMenu.do_list("agents " + str(' '.join(line.split(' ')[1:])))
         else:
             print helpers.color("[!] Please use 'list [agents/listeners] <modifier>'.")
-
 
     def do_rename(self, line):
         "Rename the agent."
@@ -1616,19 +1565,12 @@ class PowerShellAgentMenu(cmd.Cmd):
         else:
             print helpers.color("[!] Please enter a new name for the agent")
 
-
     def do_info(self, line):
         "Display information about this agent"
 
         # get the agent name, if applicable
         agent = self.mainMenu.agents.get_agent_db(self.sessionID)
         messages.display_agent(agent)
-
-    def do_resource(self, arg):
-	"Read and execute a list of Empire commands from a file."
-	self.mainMenu.resourceQueue = []
-	with open(arg) as f:
-	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
 
     def do_exit(self, line):
         "Task agent to exit."
@@ -2293,13 +2235,11 @@ class PowerShellAgentMenu(cmd.Cmd):
         return self.mainMenu.complete_creds(text, line, begidx, endidx)
 
 
-class PythonAgentMenu(cmd.Cmd):
+class PythonAgentMenu(SubMenu):
 
     def __init__(self, mainMenu, sessionID):
 
-        cmd.Cmd.__init__(self)
-
-        self.mainMenu = mainMenu
+        SubMenu.__init__(self, mainMenu)
 
         self.sessionID = sessionID
 
@@ -2320,13 +2260,6 @@ class PythonAgentMenu(cmd.Cmd):
         if results:
             print "\n" + results.rstrip('\r\n')
 
-    def cmdloop(self):
-	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
-	cmd.Cmd.cmdloop(self)
-    # def preloop(self):
-    #     traceback.print_stack()
-
     def handle_agent_event(self, signal, sender):
         """
         Handle agent event signals.
@@ -2346,54 +2279,13 @@ class PythonAgentMenu(cmd.Cmd):
             if (str(self.sessionID) in signal) or (str(name) in signal):
                 print helpers.color(signal)
 
-
-    # print a nicely formatted help menu
-    #   stolen/adapted from recon-ng
-    def print_topics(self, header, cmds, cmdlen, maxcol):
-        if cmds:
-            self.stdout.write("%s\n" % str(header))
-            if self.ruler:
-                self.stdout.write("%s\n" % str(self.ruler * len(header)))
-            for c in cmds:
-                self.stdout.write("%s %s\n" % (c.ljust(17), getattr(self, 'do_' + c).__doc__))
-            self.stdout.write("\n")
-
-
-    def emptyline(self):
-        pass
-
-
     def default(self, line):
         "Default handler"
         print helpers.color("[!] Command not recognized, use 'help' to see available commands")
 
-
-    def do_back(self, line):
-        "Go back a menu."
-        return True
-
-    def postcmd(self, stop, line):
-	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
-
-    def do_agents(self, line):
-        "Jump to the Agents menu."
-        raise NavAgents()
-
-
-    def do_listeners(self, line):
-        "Jump to the listeners menu."
-        raise NavListeners()
-
-
-    def do_main(self, line):
-        "Go back to the main menu."
-        raise NavMain()
-
-
     def do_help(self, *args):
         "Displays the help menu or syntax for particular commands."
-        cmd.Cmd.do_help(self, *args)
+        SubMenu.do_help(self, *args)
 
 
     def do_list(self, line):
@@ -2848,14 +2740,12 @@ class PythonAgentMenu(cmd.Cmd):
     #     return helpers.complete_path(text,line)
 
 
-class ListenersMenu(cmd.Cmd):
+class ListenersMenu(SubMenu):
     """
     The main class used by Empire to drive the 'listener' menu.
     """
     def __init__(self, mainMenu):
-        cmd.Cmd.__init__(self)
-
-        self.mainMenu = mainMenu
+        SubMenu.__init__(self, mainMenu)
 
         self.doc_header = 'Listener Commands'
 
@@ -2865,57 +2755,9 @@ class ListenersMenu(cmd.Cmd):
         # display all active listeners on menu startup
         messages.display_active_listeners(self.mainMenu.listeners.activeListeners)
 
-    def cmdloop(self):
-	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
-	cmd.Cmd.cmdloop(self)
-
-    # def preloop(self):
-    #     traceback.print_stack()
-
-    # print a nicely formatted help menu
-    # stolen/adapted from recon-ng
-    def print_topics(self, header, commands, cmdlen, maxcol):
-        if commands:
-            self.stdout.write("%s\n" % str(header))
-            if self.ruler:
-                self.stdout.write("%s\n" % str(self.ruler * len(header)))
-            for command in commands:
-                self.stdout.write("%s %s\n" % (command.ljust(17), getattr(self, 'do_' + command).__doc__))
-            self.stdout.write("\n")
-
-
-    def emptyline(self):
-        pass
-
-
     def do_back(self, line):
         "Go back to the main menu."
         raise NavMain()
-
-    def postcmd(self, stop, line):
-	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
-
-    def do_agents(self, line):
-        "Jump to the Agents menu."
-        raise NavAgents()
-
-
-    def do_main(self, line):
-        "Go back to the main menu."
-        raise NavMain()
-
-    def do_resource(self, arg):
-	"Read and execute a list of Empire commands from a file."
-	self.mainMenu.resourceQueue = []
-	with open(arg) as f:
-	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
-
-    def do_exit(self, line):
-        "Exit Empire."
-        raise KeyboardInterrupt
-
 
     def do_list(self, line):
         "List all active listeners (or agents)."
@@ -3074,13 +2916,11 @@ class ListenersMenu(cmd.Cmd):
         return [s[offs:] for s in names if s.startswith(mline)]
 
 
-class ListenerMenu(cmd.Cmd):
+class ListenerMenu(SubMenu):
 
     def __init__(self, mainMenu, listenerName):
 
-        cmd.Cmd.__init__(self)
-
-        self.mainMenu = mainMenu
+        SubMenu.__init__(self, mainMenu)
 
         if listenerName not in self.mainMenu.listeners.loadedListeners:
             print helpers.color("[!] Listener '%s' not currently valid!" % (listenerName))
@@ -3093,51 +2933,6 @@ class ListenerMenu(cmd.Cmd):
 
         # set the text prompt
         self.prompt = '(Empire: ' + helpers.color("listeners/%s" % (listenerName), 'red') + ') > '
-
-    def cmdloop(self):
-	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
-	cmd.Cmd.cmdloop(self)
-
-    def emptyline(self):
-        """
-        If any empty line is entered, do nothing.
-        """
-        pass
-
-
-    def do_back(self, line):
-        "Go back a menu."
-        return True
-
-    def postcmd(self, stop, line):
-	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
-
-    def do_agents(self, line):
-        "Jump to the Agents menu."
-        raise NavAgents()
-
-
-    def do_listeners(self, line):
-        "Jump to the listeners menu."
-        raise NavListeners()
-
-
-    def do_main(self, line):
-        "Go back to the main menu."
-        raise NavMain()
-
-    def do_resource(self, arg):
-	"Read and execute a list of Empire commands from a file."
-	self.mainMenu.resourceQueue = []
-	with open(arg) as f:
-	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
-
-    def do_exit(self, line):
-        "Exit Empire."
-        raise KeyboardInterrupt
-
 
     def do_info(self, line):
         "Display listener module options."
@@ -3263,15 +3058,14 @@ class ListenerMenu(cmd.Cmd):
         return [s[offs:] for s in languages if s.startswith(mline)]
 
 
-class ModuleMenu(cmd.Cmd):
+class ModuleMenu(SubMenu):
     """
     The main class used by Empire to drive the 'module' menu.
     """
     def __init__(self, mainMenu, moduleName, agent=None):
 
-        cmd.Cmd.__init__(self)
+        SubMenu.__init__(self, mainMenu)
         self.doc_header = 'Module Commands'
-        self.mainMenu = mainMenu
 
         try:
             # get the current module/name
@@ -3289,14 +3083,6 @@ class ModuleMenu(cmd.Cmd):
 
         except Exception as e:
             print helpers.color("[!] ModuleMenu() init error: %s" % (e))
-
-    def cmdloop(self):
-	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
-	cmd.Cmd.cmdloop(self)
-
-    # def preloop(self):
-    #     traceback.print_stack()
 
     def validate_options(self):
         "Ensure all required module options are completed."
@@ -3344,56 +3130,6 @@ class ModuleMenu(cmd.Cmd):
 
         return True
 
-
-    def emptyline(self):
-        pass
-
-
-    # print a nicely formatted help menu
-    # stolen/adapted from recon-ng
-    def print_topics(self, header, commands, cmdlen, maxcol):
-        if commands:
-            self.stdout.write("%s\n" % str(header))
-            if self.ruler:
-                self.stdout.write("%s\n" % str(self.ruler * len(header)))
-            for command in commands:
-                self.stdout.write("%s %s\n" % (command.ljust(17), getattr(self, 'do_' + command).__doc__))
-            self.stdout.write("\n")
-
-
-    def do_back(self, line):
-        "Go back a menu."
-        return True
-
-    def postcmd(self, stop, line):
-	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
-
-    def do_agents(self, line):
-        "Jump to the Agents menu."
-        raise NavAgents()
-
-
-    def do_listeners(self, line):
-        "Jump to the listeners menu."
-        raise NavListeners()
-
-
-    def do_main(self, line):
-        "Go back to the main menu."
-        raise NavMain()
-
-    def do_resource(self, arg):
-	"Read and execute a list of Empire commands from a file."
-	self.mainMenu.resourceQueue = []
-	with open(arg) as f:
-	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
-
-    def do_exit(self, line):
-        "Exit Empire."
-        raise KeyboardInterrupt
-
-
     def do_list(self, line):
         "Lists all active agents (or listeners)."
 
@@ -3403,7 +3139,6 @@ class ModuleMenu(cmd.Cmd):
             self.mainMenu.do_list("agents " + str(' '.join(line.split(' ')[1:])))
         else:
             print helpers.color("[!] Please use 'list [agents/listeners] <modifier>'.")
-
 
     def do_reload(self, line):
         "Reload the current module."
@@ -3681,15 +3416,13 @@ class ModuleMenu(cmd.Cmd):
         return [s[offs:] for s in names if s.startswith(mline)]
 
 
-class StagerMenu(cmd.Cmd):
+class StagerMenu(SubMenu):
     """
     The main class used by Empire to drive the 'stager' menu.
     """
     def __init__(self, mainMenu, stagerName, listener=None):
-        cmd.Cmd.__init__(self)
+        SubMenu.__init__(self, mainMenu)
         self.doc_header = 'Stager Menu'
-
-        self.mainMenu = mainMenu
 
         # get the current stager name
         self.stagerName = stagerName
@@ -3703,11 +3436,6 @@ class StagerMenu(cmd.Cmd):
             # resolve the listener ID to a name, if applicable
             listener = self.mainMenu.listeners.get_listener(listener)
             self.stager.options['Listener']['Value'] = listener
-
-    def cmdloop(self):
-	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
-	cmd.Cmd.cmdloop(self)
 
     def validate_options(self):
         "Make sure all required stager options are completed."
@@ -3724,56 +3452,6 @@ class StagerMenu(cmd.Cmd):
             return False
 
         return True
-
-
-    def emptyline(self):
-        pass
-
-
-    # print a nicely formatted help menu
-    # stolen/adapted from recon-ng
-    def print_topics(self, header, commands, cmdlen, maxcol):
-        if commands:
-            self.stdout.write("%s\n" % str(header))
-            if self.ruler:
-                self.stdout.write("%s\n" % str(self.ruler * len(header)))
-            for command in commands:
-                self.stdout.write("%s %s\n" % (command.ljust(17), getattr(self, 'do_' + command).__doc__))
-            self.stdout.write("\n")
-
-
-    def do_back(self, line):
-        "Go back a menu."
-        return True
-
-    def postcmd(self, stop, line):
-	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
-
-    def do_agents(self, line):
-        "Jump to the Agents menu."
-        raise NavAgents()
-
-
-    def do_listeners(self, line):
-        "Jump to the listeners menu."
-        raise NavListeners()
-
-
-    def do_main(self, line):
-        "Go back to the main menu."
-        raise NavMain()
-
-    def do_resource(self, arg):
-	"Read and execute a list of Empire commands from a file."
-	self.mainMenu.resourceQueue = []
-	with open(arg) as f:
-	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
-
-    def do_exit(self, line):
-        "Exit Empire."
-        raise KeyboardInterrupt
-
 
     def do_list(self, line):
         "Lists all active agents (or listeners)."
