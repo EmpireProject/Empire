@@ -71,6 +71,16 @@ class Listener:
                 'Description'   :   'Folder to output redirectors to.',
                 'Required'      :   True,
                 'Value'         :   '/tmp/http_hop/'
+            },
+            'SlackToken' : {
+                'Description'   :   'Your SlackBot API token to communicate with your Slack instance.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'SlackChannel' : {
+                'Description'   :   'The Slack channel or DM that notifications will be sent to.',
+                'Required'      :   False,
+                'Value'         :   '#general'
             }
         }
 
