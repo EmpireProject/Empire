@@ -2328,11 +2328,6 @@ class PythonAgentMenu(SubMenu):
         agent = self.mainMenu.agents.get_agent_db(self.sessionID)
         messages.display_agent(agent)
 
-    def do_resource(self, arg):
-	"Read and execute a list of Empire commands from a file."
-	self.mainMenu.resourceQueue = []
-	with open(arg) as f:
-	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
 
     def do_exit(self, line):
         "Task agent to exit."
