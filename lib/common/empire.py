@@ -1783,7 +1783,7 @@ class PowerShellAgentMenu(cmd.Cmd):
         "Task an agent to download a file."
 
         line = line.strip()
-
+        
         if line != "":
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_DOWNLOAD", line)
             # update the agent log
