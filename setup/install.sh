@@ -33,6 +33,8 @@ if lsb_release -d | grep -q "Fedora"; then
 	pip install netifaces
 elif lsb_release -d | grep -q "Kali"; then
 	Release=Kali
+    echo "deb http://security.debian.org/debian-security wheezy/updates main" >> /etc/apt/sources.list
+    apt-get update
 	apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libssl1.0.0 libssl-dev
 	pip install --upgrade urllib3
 	pip install setuptools
