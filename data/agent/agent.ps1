@@ -550,7 +550,7 @@ function Get-FilePart {
         # load the PowerShell dependency assemblies in the new runspace and instantiate a PS runspace
         $PSHost = $AppDomain.Load([PSObject].Assembly.FullName).GetType('System.Management.Automation.PowerShell')::Create()
 
-        $ScriptString = "$ScriptString`n Download-File -Type $type -Path $Path -ResultID $ResultID -ChunkSize $ChunkSize -Delay $($script:AgentDelay) -Jitter $($script:AgentJitter)"
+        $ScriptString = "$ScriptString`n Download-File -Type $type -Path `"$Path`" -ResultID $ResultID -ChunkSize $ChunkSize -Delay $($script:AgentDelay) -Jitter $($script:AgentJitter)"
 
         # add the target script into the new runspace/appdomain
         $null = $PSHost.AddScript($ScriptString)
