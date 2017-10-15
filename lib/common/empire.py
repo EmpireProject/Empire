@@ -3394,7 +3394,12 @@ class ModuleMenu(cmd.Cmd):
         if module not in self.mainMenu.modules.modules:
             print helpers.color("[!] Error: invalid module")
         else:
-            module_menu = ModuleMenu(self.mainMenu, line, agent=self.module.options['Agent']['Value'])
+            _agent = ''
+            if 'Agent' in self.module.options:
+                _agent = self.module.options['Agent']['Value']
+	    
+	    line = line.strip("*")
+            module_menu = ModuleMenu(self.mainMenu, line, agent=_agent)
             module_menu.cmdloop()
 
 
