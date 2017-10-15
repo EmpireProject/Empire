@@ -3397,6 +3397,8 @@ class ModuleMenu(cmd.Cmd):
             _agent = ''
             if 'Agent' in self.module.options:
                 _agent = self.module.options['Agent']['Value']
+	    
+	    line = line.strip("*")
             module_menu = ModuleMenu(self.mainMenu, line, agent=_agent)
             module_menu.cmdloop()
 
