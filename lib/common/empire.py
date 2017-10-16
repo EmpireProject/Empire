@@ -999,9 +999,9 @@ class AgentsMenu(SubMenu):
 	resourceFile = cmds[0]
 	language = None
         if len(cmds) > 1:
-	    language = cmds[1]
+	    language = cmds[1].lower()
 	elif not resourceFile == "show" and not resourceFile == "clear":
-	    print helpers.color("[!] You must specify the agent language to run this module on. e.g. 'autorun /root/res.rc powershell' or 'autorun /root/res.rc pythono'")
+	    print helpers.color("[!] You must specify the agent language to run this module on. e.g. 'autorun /root/res.rc powershell' or 'autorun /root/res.rc python'")
 	    return
 	#show the current autorun settings by language or all
 	if resourceFile == "show":
