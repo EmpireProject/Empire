@@ -1343,7 +1343,7 @@ class Agents:
             if autorun and autorun[0] != '' and autorun[1] != '':
                 self.add_agent_task_db(sessionID, autorun[0], autorun[1])
 
-	    if len(self.mainMenu.autoRuns) > 0:
+	    if self.mainMenu.autoRuns.has_key(language.lower()) and len(self.mainMenu.autoRuns[language.lower()]) > 0:
 		autorunCmds = ["interact %s" % sessionID]
 		autorunCmds.extend(self.mainMenu.autoRuns[language.lower()])
 		autorunCmds.extend(["lastautoruncmd"])
