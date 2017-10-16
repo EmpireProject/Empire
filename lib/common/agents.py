@@ -1345,7 +1345,7 @@ class Agents:
 
 	    if len(self.mainMenu.autoRuns) > 0:
 		autorunCmds = ["interact %s" % sessionID]
-		autorunCmds.extend(self.mainMenu.autoRuns)
+		autorunCmds.extend(self.mainMenu.autoRuns[language.lower()])
 		autorunCmds.extend(["lastautoruncmd"])
 		self.mainMenu.resourceQueue.extend(autorunCmds)
 		try:

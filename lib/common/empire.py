@@ -94,7 +94,8 @@ class MainMenu(cmd.Cmd):
         self.modules = modules.Modules(self, args=args)
         self.listeners = listeners.Listeners(self, args=args)
         self.resourceQueue = []
-	self.autoRuns = []
+	#A hashtable of autruns based on agent language
+	self.autoRuns = {}
 
         self.handle_args()
 
@@ -988,19 +989,46 @@ class AgentsMenu(SubMenu):
         "Go back to the main menu."
         raise NavMain()
 
-    def do_autorun(self, arg):
-	"Read and execute a list of Empire commands from a file and execute on each new agent. Or clear any autorun setting with \"autorun clear\" and show current autorun settings with \"autorun show\""	
-	if arg == "show":
-	    print self.mainMenu.autoRuns
-	elif arg == "clear":
-	    self.mainMenu.autoRuns = []
+    def do_autorun(self, line):
+	"Read and execute a list of Empire commands from a file and execute on each new agent \"autorun <resource file> <agent language>\" e.g. \"autorun /root/ps.rc powershell\". Or clear any autorun setting with \"autorun clear\" and show current autorun settings with \"autorun show\""
+	line = line.strip()
+        if not line:
+	    print helpers.color("[!] You must specify a resource file, show or clear. e.g. 'autorun /root/res.rc powershell' or 'autorun clear'")
+	    return
+	cmds = line.split(' ')
+	resourceFile = cmds[0]
+	language = None
+        if len(cmds) > 1:
+	    language = cmds[1]
+	elif not resourceFile == "show" and not resourceFile == "clear":
+	    print helpers.color("[!] You must specify the agent language to run this module on. e.g. 'autorun /root/res.rc powershell' or 'autorun /root/res.rc pythono'")
+	    return
+	#show the current autorun settings by language or all
+	if resourceFile == "show":
+	    if language:
+		if self.mainMenu.autoRuns.has_key(language):
+		    print self.mainMenu.autoRuns[language]
+		else:
+		    print "No autorun commands for language %s" % language
+	    else:
+	        print self.mainMenu.autoRuns
+	#clear autorun settings by language or all
+	elif resourceFile == "clear":
+	    if language and not language == "all":
+		if self.mainMenu.autoRuns.has_key(language):
+		    self.mainMenu.autoRuns.pop(language)
+		else:
+		    print "No autorun commands for language %s" % language
+	    else:
+		#clear all autoruns
+		self.mainMenu.autoRuns.clear()
+	#read in empire commands from the specified resource file
 	else:
-	    self.mainMenu.autoRuns = []
-	    with open(arg) as f:
+	    with open(resourceFile) as f:
 	        cmds = f.read().splitlines()
 	    #don't prompt for user confirmation when running autorun commands
 	    noPromptCmds = [cmd + " noprompt" if cmd == "execute" else cmd for cmd in cmds]
-	    self.mainMenu.autoRuns.extend(noPromptCmds)
+	    self.mainMenu.autoRuns[language] = noPromptCmds
 
 
     def do_list(self, line):
