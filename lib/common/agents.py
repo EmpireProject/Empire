@@ -1343,6 +1343,20 @@ class Agents:
             if autorun and autorun[0] != '' and autorun[1] != '':
                 self.add_agent_task_db(sessionID, autorun[0], autorun[1])
 
+	    if len(self.mainMenu.autoRuns) > 0:
+		autorunCmds = ["interact %s" % sessionID]
+		autorunCmds.extend(self.mainMenu.autoRuns)
+		autorunCmds.extend(["lastautoruncmd"])
+		self.mainMenu.resourceQueue.extend(autorunCmds)
+		try:
+		    #this will cause the cmdloop() to start processing the autoruns
+		    self.mainMenu.do_agents("kickit")
+		except Exception as e:
+		    if e.message == "endautorun":
+			pass
+		    else:
+		        raise e
+
             return "STAGE2: %s" % (sessionID)
 
         else:
@@ -1399,7 +1413,6 @@ class Agents:
 
         TODO: does this need self.lock?
         """
-
         if sessionID not in self.agents:
             dispatcher.send("[!] handle_agent_request(): sessionID %s not present" % (sessionID), sender='Agents')
             return None
@@ -1417,6 +1430,7 @@ class Agents:
             # build tasking packets for everything we have
             for tasking in taskings:
                 task_name, task_data, res_id = tasking
+
                 all_task_packets += packets.build_task_packet(task_name, task_data, res_id)
 
             # get the session key for the agent

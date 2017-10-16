@@ -93,11 +93,12 @@ class MainMenu(cmd.Cmd):
         self.stagers = stagers.Stagers(self, args=args)
         self.modules = modules.Modules(self, args=args)
         self.listeners = listeners.Listeners(self, args=args)
+        self.resourceQueue = []
+	self.autoRuns = []
+
         self.handle_args()
 
         dispatcher.send('[*] Empire starting up...', sender="Empire")
-
-        self.resourceQueue = []
 
         # print the loading menu
         messages.loading()
@@ -137,6 +138,14 @@ class MainMenu(cmd.Cmd):
         """
         Handle any passed arguments.
         """
+
+	if self.args.resource:
+	    resourceFile = self.args.resource[0]
+	    if os.path.isfile(resourceFile):
+	    	self.do_resource(resourceFile)
+	    else:
+		print helpers.color("\n[!] The resource file specified does not exist '%s'\n" % (resourceFile))
+		time.sleep(5)
 
         if self.args.listener or self.args.stager:
             # if we're displaying listeners/stagers or generating a stager
@@ -267,7 +276,7 @@ class MainMenu(cmd.Cmd):
                     print "       " + helpers.color(str(num_listeners), "green") + " listeners currently active\n"
                     print "       " + helpers.color(str(num_agents), "green") + " agents currently active\n\n"
 
-		    if self.resourceQueue and len(self.resourceQueue) > 0:
+		    if len(self.resourceQueue) > 0:
 	    		self.cmdqueue.append(self.resourceQueue.pop(0))
 
                     cmd.Cmd.cmdloop(self)
@@ -377,10 +386,9 @@ class MainMenu(cmd.Cmd):
     ###################################################
 
     def postcmd(self, stop, line):
-	if self.resourceQueue and len(self.resourceQueue) > 0:
-	    self.cmdqueue.append(self.resourceQueue.pop(0))
-
-	
+	if len(self.resourceQueue) > 0:
+	    nextcmd = self.resourceQueue.pop(0)
+	    self.cmdqueue.append(nextcmd)
 
     def default(self, line):
         "Default handler."
@@ -388,7 +396,6 @@ class MainMenu(cmd.Cmd):
 
     def do_resource(self, arg):
 	"Read and execute a list of Empire commands from a file."
-	self.resourceQueue = []
 	with open(arg) as f:
 	    self.resourceQueue.extend(f.read().splitlines())
 
@@ -437,7 +444,6 @@ class MainMenu(cmd.Cmd):
                     stager_menu.cmdloop()
             else:
                 print helpers.color("[!] Error in MainMenu's do_userstager()")
-
         except Exception as e:
             raise e
 
@@ -904,18 +910,22 @@ class SubMenu(cmd.Cmd):
         self.mainMenu = mainMenu
 
     def cmdloop(self):
-	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
+	if len(self.mainMenu.resourceQueue) > 0:
 	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
 	cmd.Cmd.cmdloop(self)
 
     def emptyline(self):
         pass
 
+
     def postcmd(self, stop, line):
 	if line == "back":
 	    return True
-	if self.mainMenu.resourceQueue and len(self.mainMenu.resourceQueue) > 0:
-	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
+	if len(self.mainMenu.resourceQueue) > 0:
+	    nextcmd = self.mainMenu.resourceQueue.pop(0)
+	    if nextcmd == "lastautoruncmd":
+	        raise Exception("endautorun")
+	    self.cmdqueue.append(nextcmd)
 
     def do_back(self, line):
 	"Go back a menu."
@@ -935,7 +945,6 @@ class SubMenu(cmd.Cmd):
 
     def do_resource(self, arg):
 	"Read and execute a list of Empire commands from a file."
-	self.mainMenu.resourceQueue = []
 	with open(arg) as f:
 	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
 
@@ -978,6 +987,21 @@ class AgentsMenu(SubMenu):
     def do_back(self, line):
         "Go back to the main menu."
         raise NavMain()
+
+    def do_autorun(self, arg):
+	"Read and execute a list of Empire commands from a file and execute on each new agent. Or clear any autorun setting with \"autorun clear\" and show current autorun settings with \"autorun show\""	
+	if arg == "show":
+	    print self.mainMenu.autoRuns
+	elif arg == "clear":
+	    self.mainMenu.autoRuns = []
+	else:
+	    self.mainMenu.autoRuns = []
+	    with open(arg) as f:
+	        cmds = f.read().splitlines()
+	    #don't prompt for user confirmation when running autorun commands
+	    noPromptCmds = [cmd + " noprompt" if cmd == "execute" else cmd for cmd in cmds]
+	    self.mainMenu.autoRuns.extend(noPromptCmds)
+
 
     def do_list(self, line):
         "Lists all active agents (or listeners)."
@@ -1447,14 +1471,15 @@ class AgentMenu(SubMenu):
 
         agentLanguage = mainMenu.agents.get_language_db(sessionID)
 
-        if agentLanguage.lower() == 'powershell':
-            agent_menu = PowerShellAgentMenu(mainMenu, sessionID)
-            agent_menu.cmdloop()
-        elif agentLanguage.lower() == 'python':
-            agent_menu = PythonAgentMenu(mainMenu, sessionID)
-            agent_menu.cmdloop()
-        else:
-            print helpers.color("[!] Agent language %s not recognized." % (agentLanguage))
+	if agentLanguage.lower() == 'powershell':
+	    agent_menu = PowerShellAgentMenu(mainMenu, sessionID)
+	    agent_menu.cmdloop()
+	elif agentLanguage.lower() == 'python':
+	    agent_menu = PythonAgentMenu(mainMenu, sessionID)
+	    agent_menu.cmdloop()
+	else:
+	    print helpers.color("[!] Agent language %s not recognized." % (agentLanguage))
+
 
 class PowerShellAgentMenu(SubMenu):
     """
@@ -2617,6 +2642,7 @@ class PythonAgentMenu(SubMenu):
         # Strip asterisks added by MainMenu.complete_usemodule()
         module = "python/%s" %(line.strip().rstrip("*"))
 
+
         if module not in self.mainMenu.modules.modules:
             print helpers.color("[!] Error: invalid module")
         else:
@@ -3085,7 +3111,7 @@ class ModuleMenu(SubMenu):
         except Exception as e:
             print helpers.color("[!] ModuleMenu() init error: %s" % (e))
 
-    def validate_options(self):
+    def validate_options(self, prompt):
         "Ensure all required module options are completed."
 
         # ensure all 'Required=True' options are filled in
@@ -3119,8 +3145,9 @@ class ModuleMenu(SubMenu):
                         print helpers.color("[!] Error: module needs to run in an elevated context.")
                         return False
 
-        # if the module isn't opsec safe, prompt before running
-        if ('OpsecSafe' in self.module.info) and (not self.module.info['OpsecSafe']):
+        # if the module isn't opsec safe, prompt before running (unless "execute noprompt" was issued)
+        if prompt and ('OpsecSafe' in self.module.info) and (not self.module.info['OpsecSafe']):
+
             try:
                 choice = raw_input(helpers.color("[>] Module is not opsec safe, run? [y/N] ", "red"))
                 if not (choice.lower() != "" and choice.lower()[0] == "y"):
@@ -3227,7 +3254,11 @@ class ModuleMenu(SubMenu):
     def do_execute(self, line):
         "Execute the given Empire module."
 
-        if not self.validate_options():
+	prompt = True
+	if line == "noprompt":
+	    prompt = False
+
+        if not self.validate_options(prompt):
             return
 
         if self.moduleName.lower().startswith('external/'):
