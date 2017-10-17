@@ -739,7 +739,6 @@ class MainMenu(cmd.Cmd):
         name = line.strip()
 
         sessionID = self.agents.get_agent_id_db(name)
-
         if sessionID and sessionID != '' and sessionID in self.agents.agents:
             AgentMenu(self, sessionID)
         else:
@@ -1560,27 +1559,17 @@ class PowerShellAgentMenu(SubMenu):
         """
         Handle agent event signals.
         """
+
         if '[!] Agent' in signal and 'exiting' in signal:
             pass
 
         name = self.mainMenu.agents.get_agent_name_db(self.sessionID)
-
         if (str(self.sessionID) + " returned results" in signal) or (str(name) + " returned results" in signal):
             # display any results returned by this agent that are returned
-            # while we are interacting with it
+            # while we are interacting with it, unless they are from the powershell keylogger
             results = self.mainMenu.agents.get_agent_results_db(self.sessionID)
-            if results:
-		if sender == "AgentsPsKeyLogger" and ("Job started:" not in results) and ("killed." not in results):
-            	    safePath = os.path.abspath("%sdownloads/" % self.mainMenu.installPath)
-		    savePath = "%sdownloads/%s/keystrokes.txt" % (self.mainMenu.installPath,self.sessionID)
-		    if not os.path.abspath(savePath).startswith(safePath):
-                        dispatcher.send("[!] WARNING: agent %s attempted skywalker exploit!" % (self.sessionID), sender='Agents')
-                 	return
-		    with open(savePath,"a+") as f:
-			new_results = results.replace("\r\n","").replace("[SpaceBar]", "").replace('\b', '').replace("[Shift]", "").replace("[Enter]\r","\r\n")
-		        f.write(new_results)
-		else:
-                   print "\n" + results
+            if results and not sender == "AgentsPsKeyLogger":
+                print "\n" + results
 
         elif "[+] Part of file" in signal and "saved" in signal:
             if (str(self.sessionID) in signal) or (str(name) in signal):
@@ -1758,7 +1747,6 @@ class PowerShellAgentMenu(SubMenu):
 
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", command)
 
-            # update the agent log
             msg = "Tasked agent to kill process: " + str(process)
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
 
