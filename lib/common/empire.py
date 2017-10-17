@@ -139,14 +139,9 @@ class MainMenu(cmd.Cmd):
         """
         Handle any passed arguments.
         """
-
 	if self.args.resource:
 	    resourceFile = self.args.resource[0]
-	    if os.path.isfile(resourceFile):
-	    	self.do_resource(resourceFile)
-	    else:
-		print helpers.color("\n[!] The resource file specified does not exist '%s'\n" % (resourceFile))
-		time.sleep(5)
+	    self.do_resource(resourceFile)
 
         if self.args.listener or self.args.stager:
             # if we're displaying listeners/stagers or generating a stager
@@ -397,8 +392,32 @@ class MainMenu(cmd.Cmd):
 
     def do_resource(self, arg):
 	"Read and execute a list of Empire commands from a file."
-	with open(arg) as f:
-	    self.resourceQueue.extend(f.read().splitlines())
+	self.resourceQueue.extend(self.buildQueue(arg))
+
+    def buildQueue(self, resourceFile, autoRun=False):
+	cmds = []
+	if os.path.isfile(resourceFile):
+	    with open(resourceFile, 'r') as f:
+		lines = []
+		lines.extend(f.read().splitlines())
+	else:
+	    raise Exception("[!] Error: The resource file specified \"%s\" does not exist" % resourceFile)
+	for lineFull in lines:
+	    line = lineFull.strip()
+	    #ignore lines that start with the comment symbol (#)
+	    if line.startswith("#"):
+		continue
+	    #read in another resource file
+	    elif line.startswith("resource "):
+		rf = line.split(' ')[1]
+		cmds.extend(self.buildQueue(rf, autoRun))
+	    #add noprompt option to execute without user confirmation
+	    elif autoRun and line == "execute":
+		cmds.append(line + " noprompt")
+	    else:
+		cmds.append(line)
+
+	return cmds
 
     def do_exit(self, line):
         "Exit Empire"
@@ -928,6 +947,7 @@ class SubMenu(cmd.Cmd):
 	        raise Exception("endautorun")
 	    self.cmdqueue.append(nextcmd)
 
+
     def do_back(self, line):
 	"Go back a menu."
 	return True
@@ -946,8 +966,7 @@ class SubMenu(cmd.Cmd):
 
     def do_resource(self, arg):
 	"Read and execute a list of Empire commands from a file."
-	with open(arg) as f:
-	    self.mainMenu.resourceQueue.extend(f.read().splitlines())
+	self.mainMenu.resourceQueue.extend(self.mainMenu.buildQueue(arg))
 
     def do_exit(self, line):
         "Exit Empire."
@@ -1024,11 +1043,7 @@ class AgentsMenu(SubMenu):
 		self.mainMenu.autoRuns.clear()
 	#read in empire commands from the specified resource file
 	else:
-	    with open(resourceFile) as f:
-	        cmds = f.read().splitlines()
-	    #don't prompt for user confirmation when running autorun commands
-	    noPromptCmds = [cmd + " noprompt" if cmd == "execute" else cmd for cmd in cmds]
-	    self.mainMenu.autoRuns[language] = noPromptCmds
+	    self.mainMenu.autoRuns[language] = self.mainMenu.buildQueue(resourceFile, True)
 
 
     def do_list(self, line):
