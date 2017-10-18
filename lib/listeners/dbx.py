@@ -530,7 +530,6 @@ class Listener:
 
                 updateServers = """
     $Script:APIToken = "%s";
-    $Script:ControlServers = @('dropbox')
                 """ % (apiToken)
 
                 getTask = """
@@ -716,6 +715,7 @@ def send_message(packets=None):
 
     return ('', '')
 """
+                
                 sendMessage = sendMessage.replace('REPLACE_TASKSING_FOLDER', taskingsFolder)
                 sendMessage = sendMessage.replace('REPLACE_RESULTS_FOLDER', resultsFolder)
                 sendMessage = sendMessage.replace('REPLACE_API_TOKEN', apiToken)

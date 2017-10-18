@@ -766,7 +766,7 @@ def send_message(packets=None):
         return (URLerror.reason, '')
 
     return ('', '')
-"""
+""" 
                 return updateServers + sendMessage
 
             else:
