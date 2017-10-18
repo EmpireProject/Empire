@@ -8,10 +8,10 @@ Install steps...
 -- try: apt-get -y install python-pip && pip install pyinstaller
 
 - copy into stagers directory
--- ./EmPyre/lib/stagers/
+-- ./Empire/lib/stagers/
 
-- kick off the emPyre agent on a remote target
--- /tmp/emPyre &
+- kick off the empire agent on a remote target
+-- /tmp/empire &
 
 @TweekFawkes
 
@@ -26,7 +26,7 @@ class Stager:
 
 			'Author': ['@TweekFawkes'],
 
-			'Description': ('Generates an ELF binary payload launcher for EmPyre using pyInstaller.'),
+			'Description': ('Generates an ELF binary payload launcher for Empire using pyInstaller.'),
 
 			'Comments': [
 				'Needs to have pyInstaller setup on the system you are creating the stager on. For debian based operatins systems try the following command: apt-get -y install python-pip && pip install pyinstaller'
@@ -50,7 +50,7 @@ class Stager:
 			'BinaryFile' : {
 				'Description'   :   'File to output launcher to.',
 				'Required'      :   True,
-				'Value'         :   '/tmp/emPyre'
+				'Value'         :   '/tmp/empire'
 			},
       'SafeChecks' : {
           'Description'   :   'Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.',
