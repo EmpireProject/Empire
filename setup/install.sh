@@ -22,6 +22,7 @@ if lsb_release -d | grep -q "Fedora"; then
 	pip install --upgrade urllib3
 	pip install setuptools
 	pip install pycrypto
+	pip install cryptography
 	pip install iptools
 	pip install pydispatcher
 	pip install flask

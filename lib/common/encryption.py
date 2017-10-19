@@ -24,11 +24,12 @@ import hashlib
 import hmac
 import string
 import M2Crypto
+import os
+import random
 
 from xml.dom.minidom import parseString
-from Crypto.Cipher import AES
-from Crypto import Random
-from Crypto.Random import random
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.backends import default_backend
 from binascii import hexlify
 
 
@@ -126,9 +127,12 @@ def aes_encrypt(key, data):
     Generate a random IV and new AES cipher object with the given
     key, and return IV + encryptedData.
     """
-    IV = Random.new().read(16)
-    cipher = AES.new(key, AES.MODE_CBC, IV)
-    return IV + cipher.encrypt(pad(data))
+    backend = default_backend()
+    IV = os.urandom(16)
+    cipher = Cipher(algorithms.AES(key), modes.CBC(IV), backend=backend)
+    encryptor = cipher.encryptor()
+    ct = encryptor.update(pad(data))+encryptor.finalize()
+    return IV + ct
 
 
 def aes_encrypt_then_hmac(key, data):
@@ -146,9 +150,12 @@ def aes_decrypt(key, data):
     and return the unencrypted data.
     """
     if len(data) > 16:
+        backend = default_backend()
         IV = data[0:16]
-        cipher = AES.new(key, AES.MODE_CBC, IV)
-        return depad(cipher.decrypt(data[16:]))
+        cipher = Cipher(algorithms.AES(key), modes.CBC(IV), backend=backend)
+        decryptor = cipher.decryptor()
+        pt = depad(decryptor.update(data[16:])+decryptor.finalize())
+        return pt
 
 
 def verify_hmac(key, data):
@@ -177,7 +184,7 @@ def aes_decrypt_and_verify(key, data):
 
 def generate_aes_key():
     """
-    Generate a random new 128-bit AES key using Pycrypto's secure Random functions.
+    Generate a random new 128-bit AES key using OS' secure Random functions.
     """
     punctuation = '!#$%&()*+,-./:;<=>?@[\]^_`{|}~'
     return ''.join(random.sample(string.ascii_letters + string.digits + '!#$%&()*+,-./:;<=>?@[\]^_`{|}~', 32))
