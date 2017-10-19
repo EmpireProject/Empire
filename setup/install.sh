@@ -21,7 +21,6 @@ if lsb_release -d | grep -q "Fedora"; then
 	dnf install -y make g++ python-devel m2crypto python-m2ext swig python-iptools python3-iptools libxml2-devel default-jdk openssl-devel libssl1.0.0 libssl-dev
 	pip install --upgrade urllib3
 	pip install setuptools
-	pip install pycrypto
 	pip install cryptography
 	pip install iptools
 	pip install pydispatcher
