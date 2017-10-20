@@ -460,6 +460,7 @@ class Stagers:
 
         return jar 
 
+
     def generate_upload(self, file, path):
         script = """
 $b64 = "BASE64_BLOB_GOES_HERE"
