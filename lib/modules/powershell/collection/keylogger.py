@@ -9,7 +9,7 @@ class Module:
 
             'Author': ['@obscuresec', '@mattifestation', '@harmj0y'],
 
-            'Description': ('Logs keys pressed, time and the active window (when changed).'),
+            'Description': ('Logs keys pressed, time and the active window (when changed) to the keystrokes.txt file. This file is located in the agents downloads directory Empire/downloads/<AgentName>/keystrokes.txt.'),
 
             'Background' : True,
 

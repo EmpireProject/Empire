@@ -88,6 +88,7 @@ class Module:
         Hour = self.options['Hour']['Value']
         FileName = self.options['FileName']['Value']
 
+# updated Hour option to callback on the specified hr was previously set to every hour on specified minute
         script = """
 import subprocess
 import sys
@@ -111,7 +112,7 @@ else:
         print "Finished"
 
     elif Hour:
-            cmd = 'crontab -l | { cat; echo "%s * * * * %s"; } | crontab -'
+            cmd = 'crontab -l | { cat; echo "0 %s * * * %s"; } | crontab -'
             print subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE).stdout.read()
             print subprocess.Popen('crontab -l', shell=True, stdout=subprocess.PIPE).stdout.read()
             print subprocess.Popen('chmod +x %s', shell=True, stdout=subprocess.PIPE).stdout.read()

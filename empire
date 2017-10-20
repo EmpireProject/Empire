@@ -4,9 +4,11 @@ import sqlite3, argparse, sys, argparse, logging, json, string
 import os, re, time, signal, copy, base64, pickle
 from flask import Flask, request, jsonify, make_response, abort, url_for
 from time import localtime, strftime, sleep
+import hashlib
 from OpenSSL import SSL
 from Crypto.Random import random
 import ssl
+
 # Empire imports
 from lib.common import empire
 from lib.common import helpers
@@ -167,13 +169,18 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         username = dbUsername
     else:
         execute_db_query(conn, "UPDATE config SET api_username=?", username)
+        username = username[0]
 
     if not password:
         password = dbPassword
     else:
         execute_db_query(conn, "UPDATE config SET api_password=?", password)
+        password = password[0]
+
 
     print ''
+
+
 
     print " * Starting Empire RESTful API on port: %s" %(port)
 
@@ -1120,7 +1127,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         # try to prevent some basic bruting
         time.sleep(2)
 
-        if suppliedUsername == username[0] and suppliedPassword == password[0]:
+        if suppliedUsername == username and suppliedPassword == password:
             return jsonify({'token': apiToken})
         else:
             return make_response('', 401)
@@ -1153,7 +1160,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         return jsonify({'success': True})
 
 
-    if not os.path.exists('./data/empire.pem'):
+    if not os.path.exists('./data/empire-chain.pem'):
         print "[!] Error: cannot find certificate ./data/empire.pem"
         sys.exit()
 
@@ -1220,7 +1227,16 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
     # wrap the Flask connection in SSL and start it
     certPath = os.path.abspath("./data/")
-    context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+
+    # support any version of tls
+    if pyversion[0] == 2 and pyversion[1] == 7 and pyversion[2] >= 13:
+        proto = ssl.PROTOCOL_TLS
+    elif pyversion[0] >= 3:
+        proto = ssl.PROTOCOL_TLS
+    else:
+        proto = ssl.PROTOCOL_SSLv23
+
+    context = ssl.SSLContext(proto)
     context.load_cert_chain("%s/empire-chain.pem" % (certPath), "%s/empire-priv.key" % (certPath))
     app.run(host='0.0.0.0', port=int(port), ssl_context=context, threaded=True)
 
@@ -1232,6 +1248,7 @@ if __name__ == '__main__':
     generalGroup = parser.add_argument_group('General Options')
     generalGroup.add_argument('--debug', nargs='?', const='1', help='Debug level for output (default of 1, 2 for msg display).')
     generalGroup.add_argument('-v', '--version', action='store_true', help='Display current Empire version.')
+    generalGroup.add_argument('-r','--resource', nargs=1, help='Run the Empire commands in the specified resource file after startup.')
 
     cliGroup = parser.add_argument_group('CLI Payload Options')
     cliGroup.add_argument('-l', '--listener', nargs='?', const="list", help='Display listener options. Displays all listeners if nothing is specified.')
@@ -1257,7 +1274,7 @@ if __name__ == '__main__':
         print empire.VERSION
 
     elif args.rest:
-        # start an Empire instance and RESTful API
+         # start an Empire instance and RESTful API
         main = empire.MainMenu(args=args)
         def thread_api(empireMenu):
             while serverExitCommand == 'restart':
@@ -1280,7 +1297,7 @@ if __name__ == '__main__':
                 start_restful_api(empireMenu=main, suppress=True, username=args.username, password=args.password, port=args.restport)
             except SystemExit as e:
                 pass
-
+                
     else:
         # normal execution
         main = empire.MainMenu(args=args)

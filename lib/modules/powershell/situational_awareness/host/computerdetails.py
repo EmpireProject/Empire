@@ -37,6 +37,11 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'Limit' : {
+                'Description'   :   'Limit the number of event log entries returned. Defaults to 100',
+                'Required'      :   False,
+                'Value'         :   '100'
+            },
             '4648' : {
                 'Description'   :   'Switch. Only return 4648 logon information (RDP to another machine).',
                 'Required'      :   False,
@@ -139,7 +144,7 @@ class Module:
                         return script
 
         # if we get to this point, no switched were specified
-        scriptEnd += "Get-ComputerDetails -ToString"
+        scriptEnd += "Get-ComputerDetails -Limit " + str(self.options['Limit']['Value']) + " -ToString"
         if obfuscate:
             scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd

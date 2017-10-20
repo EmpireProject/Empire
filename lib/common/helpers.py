@@ -35,6 +35,7 @@ Includes:
     complete_path() - helper to tab-complete file paths
     dict_factory() - helper that returns the SQLite query results as a dictionary
     KThread() - a subclass of threading.Thread, with a kill() method
+    slackMessage() - send notifications to the Slack API
 
 """
 
@@ -54,6 +55,7 @@ from time import localtime, strftime
 from Crypto.Random import random
 import subprocess
 import fnmatch
+import urllib, urllib2
 
 ###############################################################
 #
@@ -789,7 +791,7 @@ def get_module_source_files():
                 paths.append(os.path.join(root, filename))
     return paths
 
-def obfuscate(psScript, obfuscationCommand):
+def obfuscate(installPath, psScript, obfuscationCommand):
     """
     Obfuscate PowerShell scripts using Invoke-Obfuscation
     """
@@ -797,13 +799,13 @@ def obfuscate(psScript, obfuscationCommand):
         print color("[!] PowerShell is not installed and is required to use obfuscation, please install it first.")
         return ""
     # When obfuscating large scripts, command line length is too long. Need to save to temp file
-    toObfuscateFilename = "data/misc/ToObfuscate.ps1"
-    obfuscatedFilename = "data/misc/Obfuscated.ps1"
+    toObfuscateFilename = installPath + "data/misc/ToObfuscate.ps1"
+    obfuscatedFilename = installPath + "data/misc/Obfuscated.ps1"
     toObfuscateFile = open(toObfuscateFilename, 'w')
     toObfuscateFile.write(psScript)
     toObfuscateFile.close()
     # Obfuscate using Invoke-Obfuscation w/ PowerShell
-    subprocess.call("powershell -c 'Invoke-Obfuscation -ScriptPath %s -Command \"%s\" -Quiet | Out-File -Encoding ASCII %s'" % (toObfuscateFilename, convert_obfuscation_command(obfuscationCommand), obfuscatedFilename), shell=True)
+    subprocess.call("powershell -C '$ErrorActionPreference = \"SilentlyContinue\";Invoke-Obfuscation -ScriptPath %s -Command \"%s\" -Quiet | Out-File -Encoding ASCII %s'" % (toObfuscateFilename, convert_obfuscation_command(obfuscationCommand), obfuscatedFilename), shell=True)
     obfuscatedFile = open(obfuscatedFilename , 'r')
     # Obfuscation writes a newline character to the end of the file, ignoring that character
     psScript = obfuscatedFile.read()[0:-1]
@@ -825,7 +827,8 @@ def obfuscate_module(moduleSource, obfuscationCommand="", forceReobfuscation=Fal
     f.close()
 
     # obfuscate and write to obfuscated source path
-    obfuscatedCode = obfuscate(psScript=moduleCode, obfuscationCommand=obfuscationCommand)
+    path = os.path.abspath('empire.py').split('empire.py')[0] + "/"
+    obfuscatedCode = obfuscate(path, moduleCode, obfuscationCommand)
     obfuscatedSource = moduleSource.replace("module_source", "obfuscated_module_source")
     try:
         f = open(obfuscatedSource, 'w')
@@ -885,3 +888,9 @@ class KThread(threading.Thread):
 
     def kill(self):
         self.killed = True
+
+def slackMessage(slackToken, slackChannel, slackText):
+	url = "https://slack.com/api/chat.postMessage"
+	data = urllib.urlencode({'token': slackToken, 'channel':slackChannel, 'text':slackText})
+ 	req = urllib2.Request(url, data)
+ 	resp = urllib2.urlopen(req)
