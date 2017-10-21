@@ -110,5 +110,5 @@ Invoke-ProcessKiller"""
                         script += " -" + str(option) + " " + str(values['Value']) 
         
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
         return script

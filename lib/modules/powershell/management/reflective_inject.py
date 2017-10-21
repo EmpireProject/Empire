@@ -146,7 +146,7 @@ class Module:
                 UploadScript = self.mainMenu.stagers.generate_upload(dll, fullUploadPath)
 
                 if obfuscate:
-                    scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
+                    scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
 
                 script += "\r\n"
                 script += UploadScript

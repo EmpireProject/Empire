@@ -85,5 +85,5 @@ Invoke-VoiceTroll"""
                     else:
                         script += " -" + str(option) + " \"" + str(values['Value'].strip("\"")) + "\""
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
         return script
