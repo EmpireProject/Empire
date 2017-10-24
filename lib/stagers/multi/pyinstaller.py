@@ -6,7 +6,8 @@ import os
 Install steps...
 
 - install pyInstaller
--- try: apt-get -y install python-pip && pip install pyinstaller
+-- try: 
+
 
 - copy into stagers directory
 -- ./Empire/lib/stagers/
@@ -113,8 +114,7 @@ class Stager:
 				self.conn = self.mainMenu.conn
 				# pull out the code install path from the database config
 				cur = self.conn.cursor()
-				#cur.execute("SELECT install_path FROM config")
-				#installPath_Str = cur.fetchone()[0]
+				
 				cur.close()
 				
 				
