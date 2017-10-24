@@ -451,6 +451,10 @@ class Listener:
                                 }
                                 catch [System.Net.WebException]{
                                     # exception posting data...
+                                    if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
+                                        # restart key negotiation
+                                        Start-Negotiate -S "$ser" -SK $SK -UA $ua
+                                    }
                                 }
                             }
                         }
