@@ -2893,7 +2893,7 @@ class ListenersMenu(SubMenu):
 
     def do_launcher(self, line):
         "Generate an initial launcher for a listener."
-
+        
         parts = line.strip().split()
         if len(parts) != 2:
             print helpers.color("[!] Please enter 'launcher <language> <listenerName>'")
