@@ -18,6 +18,8 @@ import socket
 import subprocess
 from binascii import hexlify
 
+
+    
 LANGUAGE = {
     'NONE' : 0,
     'POWERSHELL' : 1,
@@ -335,10 +337,10 @@ class AES(object):
 
             tt = tk[KC - 1]
             tk[0] ^= ((self.S[(tt >> 16) & 0xFF] << 24) ^
-                      (self.S[(tt >>  8) & 0xFF] << 16) ^
-                      (self.S[ tt        & 0xFF] <<  8) ^
-                       self.S[(tt >> 24) & 0xFF]        ^
-                      (self.rcon[rconpointer] << 24))
+                    (self.S[(tt >>  8) & 0xFF] << 16) ^
+                    (self.S[ tt        & 0xFF] <<  8) ^
+                    self.S[(tt >> 24) & 0xFF]        ^
+                    (self.rcon[rconpointer] << 24))
             rconpointer += 1
 
             if KC != 8:
@@ -352,9 +354,9 @@ class AES(object):
                 tt = tk[KC // 2 - 1]
 
                 tk[KC // 2] ^= (self.S[ tt        & 0xFF]        ^
-                               (self.S[(tt >>  8) & 0xFF] <<  8) ^
-                               (self.S[(tt >> 16) & 0xFF] << 16) ^
-                               (self.S[(tt >> 24) & 0xFF] << 24))
+                            (self.S[(tt >>  8) & 0xFF] <<  8) ^
+                            (self.S[(tt >> 16) & 0xFF] << 16) ^
+                            (self.S[(tt >> 24) & 0xFF] << 24))
 
                 for i in xrange(KC // 2 + 1, KC):
                     tk[i] ^= tk[i - 1]
@@ -372,9 +374,9 @@ class AES(object):
             for j in xrange(0, 4):
                 tt = self._Kd[r][j]
                 self._Kd[r][j] = (self.U1[(tt >> 24) & 0xFF] ^
-                                  self.U2[(tt >> 16) & 0xFF] ^
-                                  self.U3[(tt >>  8) & 0xFF] ^
-                                  self.U4[ tt        & 0xFF])
+                                self.U2[(tt >> 16) & 0xFF] ^
+                                self.U3[(tt >>  8) & 0xFF] ^
+                                self.U4[ tt        & 0xFF])
 
     def encrypt(self, plaintext):
         'Encrypt a block of plain text using the AES block cipher.'

