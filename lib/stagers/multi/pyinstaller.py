@@ -1,4 +1,5 @@
 from lib.common import helpers
+import os
 
 """
 
@@ -42,21 +43,21 @@ class Stager:
 				'Required'      :   True,
 				'Value'         :   ''
 			},
-      'Language' : {
-          'Description'   :   'Language of the stager to generate.',
-          'Required'      :   True,
-          'Value'         :   'python'
-      },
+			'Language' : {
+				'Description'   :   'Language of the stager to generate.',
+				'Required'      :   True,
+				'Value'         :   'python'
+			},
 			'BinaryFile' : {
 				'Description'   :   'File to output launcher to.',
 				'Required'      :   True,
 				'Value'         :   '/tmp/empire'
 			},
-      'SafeChecks' : {
-          'Description'   :   'Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.',
-          'Required'      :   True,
-          'Value'         :   'True'
-      },
+			'SafeChecks' : {
+				'Description'   :   'Switch. Checks for LittleSnitch or a SandBox, exit the staging process if true. Defaults to True.',
+				'Required'      :   True,
+				'Value'         :   'True'
+			},
 			'Base64' : {
 				'Description'   :   'Switch. Base64 encode the output. Defaults to False.',
 				'Required'      :   True,
@@ -116,17 +117,13 @@ class Stager:
 				#installPath_Str = cur.fetchone()[0]
 				cur.close()
 				
-				import os
-#<<<<<<< HEAD:lib/stagers/osx/pyinstaller.py
+				
 				stagerFFP_Str = self.mainMenu.installPath + "/data/agent/stagers/http.py"
-				#stagerFFP_Str = os.path.join(installPath_Str, "data/agent/stager.py")
-#=======
-				stagerFFP_Str = os.path.join(installPath_Str, "data/agent/stagers/http.py")
-#>>>>>>> ec606351797a9f97676a33767f38e341bd1e18bf:lib/stagers/multi/pyinstaller.py
+				stagerFFP_Str = os.path.join(self.mainMenu.installPath, "data/agent/stagers/http.py")
+
 				filesToExtractImportsFrom_List.append(stagerFFP_Str)
 				
 				agentFFP_Str = self.mainMenu.installPath + "/data/agent/agent.py"
-				#agentFFP_Str = os.path.join(installPath_Str, "data/agent/agent.py")
 				filesToExtractImportsFrom_List.append(agentFFP_Str)
 				
 				imports_List = []
