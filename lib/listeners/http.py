@@ -762,6 +762,10 @@ def send_message(packets=None):
     except urllib2.HTTPError as HTTPError:
         # if the server is reached, but returns an erro (like 404)
         missedCheckins = missedCheckins + 1
+        #if signaled for restaging, exit.
+        if HTTPError.code == 401:
+            sys.exit(0)
+        
         return (HTTPError.code, '')
 
     except urllib2.URLError as URLerror:
