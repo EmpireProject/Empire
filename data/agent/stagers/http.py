@@ -251,13 +251,9 @@ except Exception:
     def _get_byte(c):
         return c
 
-
 def append_PKCS7_padding(data):
-    if (len(data) % 16) == 0:
-        return data
-    else:
-        pad = 16 - (len(data) % 16)
-        return data + to_bufferable(chr(pad) * pad)
+    pad = 16 - (len(data) % 16)
+    return data + to_bufferable(chr(pad) * pad)
 
 
 def strip_PKCS7_padding(data):
@@ -265,11 +261,7 @@ def strip_PKCS7_padding(data):
         raise ValueError("invalid length")
 
     pad = _get_byte(data[-1])
-
-    if pad <= 16:
-        return data[:-pad]
-    else:
-        return data
+    return data[:-pad]
 
 
 class AES(object):
@@ -530,10 +522,13 @@ class AESModeOfOperationCBC(AESBlockModeOfOperation):
 
 def CBCenc(aesObj, plaintext, base64=False):
 
-    # break the blocks in 16 byte chunks, padding the last chunk if necessary
-    blocks = [plaintext[0+i:16+i] for i in range(0, len(plaintext), 16)]
-    blocks[-1] = append_PKCS7_padding(blocks[-1])
+    # First we padd the plaintext
+    paddedPlaintext = append_PKCS7_padding(plaintext)
+    
+    # The we break the padded plaintext in 16 byte chunks
+    blocks = [paddedPlaintext[0+i:16+i] for i in range(0, len(paddedPlaintext), 16)]
 
+    # Finally we encypt each block
     ciphertext = ""
     for block in blocks:
         ciphertext += aesObj.encrypt(block)
@@ -543,15 +538,16 @@ def CBCenc(aesObj, plaintext, base64=False):
 
 def CBCdec(aesObj, ciphertext, base64=False):
 
-    # break the blocks in 16 byte chunks, padding the last chunk if necessary
+    # First we break the cyphertext in 16 byte chunks
     blocks = [ciphertext[0+i:16+i] for i in range(0, len(ciphertext), 16)]
 
-    plaintext = ""
+    # Then we decrypt each block
+    paddedPlaintext = ""
+    for block in blocks:
+        paddedPlaintext += aesObj.decrypt(block)
 
-    for x in xrange(0, len(blocks)-1):
-        plaintext += aesObj.decrypt(blocks[x])
-
-    plaintext += strip_PKCS7_padding(aesObj.decrypt(blocks[-1]))
+    # Finally we strip the padding 
+    plaintext = strip_PKCS7_padding(paddedPlaintext)
 
     return plaintext
 
