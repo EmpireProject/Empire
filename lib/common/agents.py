@@ -1481,10 +1481,10 @@ class Agents:
             conn = self.get_db_connection()
             cur = conn.cursor()      
             data = cur.execute("SELECT data FROM taskings WHERE agent=? AND id=?", [sessionID,taskID]).fetchone()[0]
-	    cur.close()
-	    theSender="Agents"
-	    if data.startswith("function Get-Keystrokes"):
-		theSender += "PsKeyLogger"
+            cur.close()
+            theSender="Agents"
+            if data.startswith("function Get-Keystrokes"):
+		        theSender += "PsKeyLogger"
             if results:
                 # signal that this agent returned results
                 dispatcher.send("[*] Agent %s returned results." % (sessionID), sender=theSender)

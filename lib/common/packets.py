@@ -199,14 +199,7 @@ def parse_result_packet(packet, offset=0):
         taskID = struct.unpack('=H', packet[6+offset:8+offset])[0]
         length = struct.unpack('=L', packet[8+offset:12+offset])[0]
         if length != '0':
-            if length % 4:
-                #padding fix
-                datapart = packet[12+offset:12+offset+length]
-                datapart += '=' * (4 - length % 4)
-                data = base64.b64decode(datapart)
-            else:
-                data = base64.b64decode(packet[12+offset:12+offset+length])
-            #data = base64.b64decode(packet[12+offset:12+offset+length])
+            data = base64.b64decode(packet[12+offset:12+offset+length])
         else:
             data = None
         remainingData = packet[12+offset+length:]
