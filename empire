@@ -1161,7 +1161,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
 
     if not os.path.exists('./data/empire-chain.pem'):
-        print "[!] Error: cannot find certificate ./data/empire.pem"
+        print "[!] Error: cannot find certificate ./data/empire-chain.pem"
         sys.exit()
 
 
@@ -1229,6 +1229,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
     certPath = os.path.abspath("./data/")
 
     # support any version of tls
+    pyversion = sys.version_info
     if pyversion[0] == 2 and pyversion[1] == 7 and pyversion[2] >= 13:
         proto = ssl.PROTOCOL_TLS
     elif pyversion[0] >= 3:
@@ -1277,11 +1278,11 @@ if __name__ == '__main__':
          # start an Empire instance and RESTful API
         main = empire.MainMenu(args=args)
         def thread_api(empireMenu):
-            while serverExitCommand == 'restart':
-                try:
-                    start_restful_api(empireMenu=empireMenu, suppress=False, username=args.username, password=args.password, port=args.restport)
-                except SystemExit as e:
-                    pass
+            
+            try:
+                start_restful_api(empireMenu=empireMenu, suppress=False, username=args.username, password=args.password, port=args.restport)
+            except SystemExit as e:
+                pass
 
         thread = helpers.KThread(target=thread_api, args=(main,))
         thread.daemon = True
@@ -1292,11 +1293,11 @@ if __name__ == '__main__':
     elif args.headless:
         # start an Empire instance and RESTful API and suppress output
         main = empire.MainMenu(args=args)
-        while serverExitCommand == 'restart':
-            try:
-                start_restful_api(empireMenu=main, suppress=True, username=args.username, password=args.password, port=args.restport)
-            except SystemExit as e:
-                pass
+        
+        try:
+            start_restful_api(empireMenu=main, suppress=True, username=args.username, password=args.password, port=args.restport)
+        except SystemExit as e:
+            pass
                 
     else:
         # normal execution
