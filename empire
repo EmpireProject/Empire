@@ -1044,10 +1044,16 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         """
         Adds credentials to the database
         """
-        if not request.json or not 'credentials' in request.json:
-            abort(400)
+        if not request.json:
+            return make_response(jsonify({'error':'request body must be valid JSON'}), 400)
+
+        if not 'credentials' in request.json:
+            return make_response(jsonify({'error':'JSON body must include key "credentials"'}), 400)
 
         creds = request.json['credentials']
+
+        if not type(creds) == list:
+            return make_response(jsonify({'error':'credentials must be provided as a list'}), 400)
 
         required_fields = ["credtype", "domain", "username", "password", "host"]
         optional_fields = ["OS", "notes", "sid"]
