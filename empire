@@ -10,8 +10,7 @@ from Crypto.Random import random
 import ssl
 
 # Empire imports
-from lib.common import empire
-from lib.common import helpers
+from lib.common import empire, helpers
 
 global serverExitCommand
 serverExitCommand = 'restart'
@@ -134,6 +133,7 @@ def get_permanent_token(conn):
 #    GET      http://localhost:1337/api/reporting/msg/Z      return all logged events matching message Z, wildcards accepted
 #
 #    GET      http://localhost:1337/api/creds                return stored credentials
+#    POST     http://localhost:1337/api/creds                add creds to the database
 #
 #    GET      http://localhost:1337/api/admin/login          retrieve the API token given the correct username and password
 #    GET      http://localhost:1337/api/admin/permanenttoken retrieve the permanent API token, generating/storing one if it doesn't already exist
@@ -1038,6 +1038,67 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             creds.append({"ID":ID, "credtype":credtype, "domain":domain, "username":username, "password":password, "host":host, "os":os, "sid":sid, "notes":notes})
 
         return jsonify({'creds' : creds})
+
+    @app.route('/api/creds', methods=['POST'])
+    def add_creds():
+        """
+        Adds credentials to the database
+        """
+        if not request.json:
+            return make_response(jsonify({'error':'request body must be valid JSON'}), 400)
+
+        if not 'credentials' in request.json:
+            return make_response(jsonify({'error':'JSON body must include key "credentials"'}), 400)
+
+        creds = request.json['credentials']
+
+        if not type(creds) == list:
+            return make_response(jsonify({'error':'credentials must be provided as a list'}), 400)
+
+        required_fields = ["credtype", "domain", "username", "password", "host"]
+        optional_fields = ["OS", "notes", "sid"]
+
+        for cred in creds:
+            # ensure every credential given to us has all the required fields
+            if not all (k in cred for k in required_fields):
+                return make_response(jsonify({'error':'invalid credential %s' %(cred)}), 400)
+
+            # ensure the type is either "hash" or "plaintext"
+            if not (cred['credtype'] == u'hash' or cred['credtype'] == u'plaintext'):
+                return make_response(jsonify({'error':'invalid credential type in %s, must be "hash" or "plaintext"' %(cred)}), 400)
+
+        # other than that... just assume everything is valid
+
+        # this would be way faster if batched but will work for now
+        for cred in creds:
+            # get the optional stuff, if it's there
+            try:
+                os = cred['os']
+            except KeyError:
+                os = ''
+
+            try:
+                sid = cred['sid']
+            except KeyError:
+                sid = ''
+
+            try:
+                notes = cred['notes']
+            except KeyError:
+                notes = ''
+
+            main.credentials.add_credential(
+                cred['credtype'],
+                cred['domain'],
+                cred['username'],
+                cred['password'],
+                cred['host'],
+                os,
+                sid,
+                notes
+            )
+
+        return jsonify({'success': '%s credentials added' % len(creds)})
 
 
     @app.route('/api/reporting', methods=['GET'])
