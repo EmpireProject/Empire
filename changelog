@@ -1,3 +1,22 @@
+10/29/2017
+------------
+- Version 2.3 Master Release
+	— Fix for #755
+	— Merge PR from byt3bl33d3r for TLS version
+	— Removed option to set chunk size for file downloads
+	— Fix for #729
+	— Fix renegotiation in powershell agent. Patched python agent to exit on 401 response.
+	— Fix for #774
+	— Added resource scripts capability (Carrie Roberts)
+	— Fix for #749
+	— Fix for #369
+	— Added logic to log keystrokes to a file server side
+	— Merge Invoke-PowerDump fix
+	— Merge fixes for 718, 750, 762
+	— Merge nits execution module
+	— Updated generate function signatures in all modules
+	— Fixed stagerURI option (rvrsh3ll)
+
 10/12/2017
 --------
 - Version 2.2 Master Release

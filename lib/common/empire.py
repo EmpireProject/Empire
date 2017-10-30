@@ -9,7 +9,7 @@ menu loops.
 """
 
 # make version for Empire
-VERSION = "2.2"
+VERSION = "2.3"
 
 from pydispatch import dispatcher
 
