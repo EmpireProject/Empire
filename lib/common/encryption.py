@@ -173,9 +173,6 @@ def aes_decrypt_and_verify(key, data):
     if len(data) > 32 and verify_hmac(key, data):
         return aes_decrypt(key, data[:-10])
     raise Exception("Invalid ciphertext received.")
-    #if len(data) > 32 and verify_hmac(key, data):
-    return aes_decrypt(key, data[:-10])
-    #raise Exception("Invalid ciphertext received.")
 
 
 def generate_aes_key():
