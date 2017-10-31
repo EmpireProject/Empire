@@ -408,8 +408,8 @@ class MainMenu(cmd.Cmd):
         if numFound > 0:
             print("\tName\tActive")
             print("\t----\t------")
+            activePlugins = self.loadedPlugins.keys()
             for name in pluginNames:
-                activePlugins = self.loadedPlugins.keys()
                 active = ""
                 if name in activePlugins:
                     active = "******"
@@ -428,18 +428,10 @@ class MainMenu(cmd.Cmd):
         pluginNames = [name for _, name, _ in pkgutil.walk_packages([pluginPath])]
         if pluginName in pluginNames:
             print(helpers.color("[*] Plugin {} found.".format(pluginName)))
-            # note the 'plugins' package so the loader can find our plugin
-            fullPluginName = "plugins." + pluginName
-            plugin = importlib.import_module(fullPluginName)
-
-            self.load_plugin(plugin, pluginName)
+            # 'self' is the mainMenu object
+            plugins.load_plugin(self, pluginName)
         else:
             raise Exception("[!] Error: the plugin specified does not exist in {}.".format(pluginPath))
-
-    def load_plugin(self, module, pluginName):
-        # "self" refers to the mainmenu object
-        plugin = module.Plugin(self)
-        self.loadedPlugins[pluginName] = plugin
 
     def postcmd(self, stop, line):
 	if len(self.resourceQueue) > 0:
