@@ -21,6 +21,8 @@ import hashlib
 import time
 import fnmatch
 import shlex
+import pkgutil
+import importlib
 
 # Empire imports
 import helpers
@@ -30,6 +32,7 @@ import listeners
 import modules
 import stagers
 import credentials
+import plugins
 from zlib_wrapper import compress
 from zlib_wrapper import decompress
 
@@ -67,6 +70,10 @@ class MainMenu(cmd.Cmd):
 
         # globalOptions[optionName] = (value, required, description)
         self.globalOptions = {}
+
+        # currently active plugins:
+        # {'pluginName': classObject}
+        self.loadedPlugins = {}
 
         # empty database object
         self.conn = self.database_connect()
@@ -380,6 +387,59 @@ class MainMenu(cmd.Cmd):
     ###################################################
     # CMD methods
     ###################################################
+
+    def do_plugins(self, args):
+        "List all available and active plugins."
+        pluginPath = os.path.abspath("plugins")
+        print(helpers.color("[*] Searching for plugins at {}".format(pluginPath)))
+        # From walk_packages: "Note that this function must import all packages
+        # (not all modules!) on the given path, in order to access the __path__
+        # attribute to find submodules."
+        pluginNames = [name for _, name, _ in pkgutil.walk_packages([pluginPath])]
+        numFound = len(pluginNames)
+
+        # say how many we found, handling the 1 case
+        if numFound == 1:
+            print(helpers.color("[*] {} plugin found".format(numFound)))
+        else:
+            print(helpers.color("[*] {} plugins found".format(numFound)))
+
+        # if we found any, list them
+        if numFound > 0:
+            print("\tName\tActive")
+            print("\t----\t------")
+            for name in pluginNames:
+                activePlugins = self.loadedPlugins.keys()
+                active = ""
+                if name in activePlugins:
+                    active = "******"
+                print("\t" + name + "\t" + active)
+
+        print("")
+        print(helpers.color("[*] Use \"plugin <plugin name>\" to load a plugin."))
+
+    def do_plugin(self, pluginName):
+        "Load a plugin file to extend Empire."
+        pluginPath = os.path.abspath("plugins")
+        print(helpers.color("[*] Searching for plugins at {}".format(pluginPath)))
+        # From walk_packages: "Note that this function must import all packages
+        # (not all modules!) on the given path, in order to access the __path__
+        # attribute to find submodules."
+        pluginNames = [name for _, name, _ in pkgutil.walk_packages([pluginPath])]
+        if pluginName in pluginNames:
+            print(helpers.color("[*] Plugin {} found.".format(pluginName)))
+            # note the 'plugins' package so the loader can find our plugin
+            fullPluginName = "plugins." + pluginName
+            plugin = importlib.import_module(fullPluginName)
+
+            self.load_plugin(plugin, pluginName)
+        else:
+            raise Exception("[!] Error: the plugin specified does not exist in {}.".format(pluginPath))
+
+    def load_plugin(self, module, pluginName):
+        # "self" refers to the mainmenu object
+        plugin = module.Plugin(self)
+        self.loadedPlugins[pluginName] = plugin
 
     def postcmd(self, stop, line):
 	if len(self.resourceQueue) > 0:
