@@ -1534,7 +1534,10 @@ class Agents:
                     pk = (pk + 1) % 65536
                     cur.execute("INSERT INTO results (id, agent, data) VALUES (?,?,?)",(pk, sessionID, data))
                 else:
-		    keyLogTaskID = cur.execute("SELECT id FROM taskings WHERE agent=? AND data LIKE \"function Get-Keystrokes%\"", [sessionID]).fetchone()[0]
+                    try:
+                        keyLogTaskID = cur.execute("SELECT id FROM taskings WHERE agent=? AND data LIKE \"function Get-Keystrokes%\"", [sessionID]).fetchone()[0]
+                    except Exception as e:
+                        pass
                     cur.execute("UPDATE results SET data=data||? WHERE id=? AND agent=?", [data, taskID, sessionID])
 
         finally:
