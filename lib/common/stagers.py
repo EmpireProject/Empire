@@ -18,6 +18,7 @@ import fnmatch
 import imp
 import helpers
 import os
+import errno
 import macholib.MachO
 import shutil
 import zipfile
@@ -443,6 +444,15 @@ class Stagers:
         javacode = file.read()
         file.close()
         javacode = javacode.replace("LAUNCHER",launcherCode)
+        jarpath = self.mainMenu.installPath+'data/misc/classes/com/installer/apple/'
+        try:
+            os.makedirs(jarpath)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+            else:
+                pass
+
         file = open(self.mainMenu.installPath+'data/misc/classes/com/installer/apple/Run.java','w')
         file.write(javacode)
         file.close()
