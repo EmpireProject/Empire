@@ -149,7 +149,7 @@ class Module:
             script += "Remove-ItemProperty -Force -Path HKCU:Software\\Microsoft\\Windows\\CurrentVersion\\Run\\ -Name "+keyName+";"
             script += "'Registry Persistence removed.'"
             if obfuscate:
-                script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
+                script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
             return script
 
         if extFile != '':
@@ -236,5 +236,5 @@ class Module:
 
         script += "'Registry persistence established "+statusMsg+"'"
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
         return script

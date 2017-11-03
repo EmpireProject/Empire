@@ -14,7 +14,7 @@ class Module:
             'Author': ['@harmj0y'],
 
             # more verbose multi-line description of the module
-            'Description': ('Spawns a new EmPyre agent.'),
+            'Description': ('Spawns a new Empire agent.'),
 
             # True if the module needs to run in the background
             'Background' : False,

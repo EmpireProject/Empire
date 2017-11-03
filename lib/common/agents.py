@@ -1343,6 +1343,20 @@ class Agents:
             if autorun and autorun[0] != '' and autorun[1] != '':
                 self.add_agent_task_db(sessionID, autorun[0], autorun[1])
 
+	    if self.mainMenu.autoRuns.has_key(language.lower()) and len(self.mainMenu.autoRuns[language.lower()]) > 0:
+		autorunCmds = ["interact %s" % sessionID]
+		autorunCmds.extend(self.mainMenu.autoRuns[language.lower()])
+		autorunCmds.extend(["lastautoruncmd"])
+		self.mainMenu.resourceQueue.extend(autorunCmds)
+		try:
+		    #this will cause the cmdloop() to start processing the autoruns
+		    self.mainMenu.do_agents("kickit")
+		except Exception as e:
+		    if e.message == "endautorun":
+			pass
+		    else:
+		        raise e
+
             return "STAGE2: %s" % (sessionID)
 
         else:
@@ -1399,7 +1413,6 @@ class Agents:
 
         TODO: does this need self.lock?
         """
-
         if sessionID not in self.agents:
             dispatcher.send("[!] handle_agent_request(): sessionID %s not present" % (sessionID), sender='Agents')
             return None
@@ -1417,6 +1430,7 @@ class Agents:
             # build tasking packets for everything we have
             for tasking in taskings:
                 task_name, task_data, res_id = tasking
+
                 all_task_packets += packets.build_task_packet(task_name, task_data, res_id)
 
             # get the session key for the agent
@@ -1495,6 +1509,7 @@ class Agents:
         """
 
         agentSessionID = sessionID
+	keyLogTaskID = None
 
         # see if we were passed a name instead of an ID
         nameid = self.get_agent_id_db(sessionID)
@@ -1519,6 +1534,10 @@ class Agents:
                     pk = (pk + 1) % 65536
                     cur.execute("INSERT INTO results (id, agent, data) VALUES (?,?,?)",(pk, sessionID, data))
                 else:
+                    try:
+                        keyLogTaskID = cur.execute("SELECT id FROM taskings WHERE agent=? AND data LIKE \"function Get-Keystrokes%\"", [sessionID]).fetchone()[0]
+                    except Exception as e:
+                        pass
                     cur.execute("UPDATE results SET data=data||? WHERE id=? AND agent=?", [data, taskID, sessionID])
 
         finally:
@@ -1703,9 +1722,20 @@ class Agents:
 
 
         elif responseName == "TASK_CMD_JOB":
+	    #check if this is the powershell keylogging task, if so, write output to file instead of screen
+            if keyLogTaskID and keyLogTaskID == taskID:
+            	safePath = os.path.abspath("%sdownloads/" % self.mainMenu.installPath)
+		savePath = "%sdownloads/%s/keystrokes.txt" % (self.mainMenu.installPath,sessionID)
+		if not os.path.abspath(savePath).startswith(safePath):
+                    dispatcher.send("[!] WARNING: agent %s attempted skywalker exploit!" % (self.sessionID), sender='Agents')
+                    return
+		with open(savePath,"a+") as f:
+		    new_results = data.replace("\r\n","").replace("[SpaceBar]", "").replace('\b', '').replace("[Shift]", "").replace("[Enter]\r","\r\n")
+		    f.write(new_results)
+	    else:
+                # dynamic script output -> non-blocking
+                self.update_agent_results_db(sessionID, data)
 
-            # dynamic script output -> non-blocking
-            self.update_agent_results_db(sessionID, data)
             # update the agent log
             self.save_agent_log(sessionID, data)
 

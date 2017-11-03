@@ -13,7 +13,7 @@ class Module:
             'Author': ['@xorrior'],
 
             # more verbose multi-line description of the module
-            'Description': ('Remove an EmPyre Launch Daemon.'),
+            'Description': ('Remove an Empire Launch Daemon.'),
 
             # True if the module needs to run in the background
             'Background' : False,

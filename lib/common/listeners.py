@@ -4,7 +4,7 @@
 Listener handling functionality for Empire.
 
 """
-
+import sys
 import fnmatch
 import imp
 import helpers

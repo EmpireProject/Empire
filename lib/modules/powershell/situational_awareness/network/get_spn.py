@@ -93,6 +93,6 @@ class Module:
         
         scriptEnd += " -List yes | Format-Table -Wrap | Out-String | %{$_ + \"`n\"}"
         if obfuscate:
-            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
+            scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd
         return script

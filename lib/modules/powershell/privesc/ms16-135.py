@@ -102,5 +102,5 @@ class Module:
         script += 'Invoke-MS16135 -Command "' + launcherCode + '"'
         script += ';`nInvoke-MS16135 completed.'
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
         return script

