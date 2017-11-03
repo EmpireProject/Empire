@@ -1982,14 +1982,17 @@ class PowerShellAgentMenu(SubMenu):
                 print helpers.color("[!] Please enter a valid listenername.")
             else:
                 activeListener = self.mainMenu.listeners.activeListeners[listenerID]
-                listenerOptions = activeListener['options']
-                listenerComms = self.mainMenu.listeners.loadedListeners[activeListener['moduleName']].generate_comms(listenerOptions, language="powershell")
+                if activeListener['moduleName'] != 'meterpreter' or activeListener['moduleName'] != 'http_mapi':
+                    listenerOptions = activeListener['options']
+                    listenerComms = self.mainMenu.listeners.loadedListeners[activeListener['moduleName']].generate_comms(listenerOptions, language="powershell")
 
-                self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_UPDATE_LISTENERNAME", listenerOptions['Name']['Value'])
-                self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SWITCH_LISTENER", listenerComms)
-                
-                msg = "Tasked agent to update comms to %s listener" % listenerID
-                self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+                    self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_UPDATE_LISTENERNAME", listenerOptions['Name']['Value'])
+                    self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SWITCH_LISTENER", listenerComms)
+                    
+                    msg = "Tasked agent to update comms to %s listener" % listenerID
+                    self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+                else:
+                    print helpers.color("[!] Ineligible listener for updatecomms command: %s" % activeListener['moduleName'])
 
         else:
             print helpers.color("[!] Please enter a valid listenername.")
@@ -2801,13 +2804,6 @@ class PythonAgentMenu(SubMenu):
     def do_creds(self, line):
         "Display/return credentials from the database."
         self.mainMenu.do_creds(line)
-
-    def complete_updatecomms(self, text, line, begidx, endidx):
-        "Tab-complete a listener"
-
-        mline = line.partition(' ')[2]
-        offs = len(mline) - len(text)
-        return [s[offs:] for s in self.mainMenu.listeners.get_listener_names() if s.startswith(mline)]
 
     def complete_loadpymodule(self, text, line, begidx, endidx):
         "Tab-complete a zip file path"
