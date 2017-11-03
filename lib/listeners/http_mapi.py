@@ -5,6 +5,7 @@ import os
 import ssl
 import time
 import copy
+import sys
 from pydispatch import dispatcher
 from flask import Flask, request, make_response
 
@@ -618,6 +619,7 @@ class Listener:
                 certPath = os.path.abspath(certPath)
 
                 # support any version of tls
+                pyversion = sys.version_info
                 if pyversion[0] == 2 and pyversion[1] == 7 and pyversion[2] >= 13:
                     proto = ssl.PROTOCOL_TLS
                 elif pyversion[0] >= 3:
