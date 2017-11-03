@@ -974,6 +974,7 @@ def send_message(packets=None):
                 pyversion = sys.version_info
 
                 # support any version of tls
+                pyversion = sys.version_info
                 if pyversion[0] == 2 and pyversion[1] == 7 and pyversion[2] >= 13:
                     proto = ssl.PROTOCOL_TLS
                 elif pyversion[0] >= 3:
