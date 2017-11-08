@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 
+import functools
 import sqlite3, argparse, sys, argparse, logging, json, string
 import os, re, time, signal, copy, base64, pickle
-from flask import Flask, request, jsonify, make_response, abort, url_for
+from flask import Flask, request, jsonify, make_response, abort, url_for, render_template
+from flask_socketio import SocketIO, join_room, leave_room, disconnect, send, emit
+from flask_login import current_user, login_manager, login_required, login_user, logout_user, UserMixin, LoginManager
 from time import localtime, strftime, sleep
 import hashlib
 from OpenSSL import SSL
@@ -10,7 +13,7 @@ from Crypto.Random import random
 import ssl
 
 # Empire imports
-from lib.common import empire, helpers
+from lib.common import empire, helpers, users
 
 global serverExitCommand
 serverExitCommand = 'restart'
@@ -140,9 +143,36 @@ def get_permanent_token(conn):
 #    GET      http://localhost:1337/api/admin/shutdown       shutdown the RESTful API
 #    GET      http://localhost:1337/api/admin/restart        restart the RESTful API
 #
+#    Websockets Server guide:
+#       
+#    - Any client may connect to the server but all custom events require authentication.
+#    - Clients can emit the 'login' custom event to do so. The data should be json (serialized) and include both a username and password field.
+#    - Once the disconnect event occurs on the user is removed from the users table
+#
+#   
+#    - There are custom events for each menu/class per se:
+#    - listeners, modules, agents, stagers
+#    - Data sent from the client for any custom event should be in the following json format
+#    
+#   Event - listeners
+#         - Action: VIEW, KILL, EXECUTE
+#         - Arguments: arguments can vary per action, per event.
+#
+#   Event - modules
+#         - Action: VIEW, EXECUTE
+#         - Arguments: arguments can vary per action, per event.
+#   
+#   Event - agents
+#         - Action: VIEW, KILL, INTERACT
+#         - Arguments: arguments can vary per action, per event.
+#
+#
+#   Event - stagers
+#         - Action: VIEW, EXECUTE
+#         - Arguments: arguments can vary per action, per event.
 ####################################################################
 
-def start_restful_api(empireMenu, suppress=False, username=None, password=None, port=1337):
+def start_restful_api(empireMenu, user_handler, suppress=False, username=None, password=None, port=1337):
     """
     Kick off the RESTful API with the given parameters.
 
@@ -157,7 +187,11 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
     conn = database_connect()
 
+    socketio = SocketIO(app)
+
     main = empireMenu
+
+    users = user_handler
 
     global serverExitCommand
 
@@ -212,6 +246,37 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
                 return make_response('', 401)
             if (token != apiToken) and (token != permanentApiToken):
                 return make_response('', 401)
+
+    @socketio.on('login')
+    def handle_login(data):
+        """
+        Authenticate clients. Should be called before anything else, after connecting
+        """
+        data = json.loads(data)
+        if data['username'] and data['password']:
+            if users.authenticate_user(request.id, data['username'], data['password']):
+                emit('user_login', {'message': "{0} has logged in".format(data['username'])})
+            else:
+                send("Logon failure")
+        else:
+            send("missing username and/or password")
+
+
+    @socketio.on('connect')
+    def handle_connect():
+        """
+        Handle when new clients connect. Authentication is not required here. Only when accessing any of the custom events
+        """
+        emit('new_session', {"message": "New session from {0}".format(request.id)})
+
+    
+    @socketio.on('disconnect')
+    def handle_disconnect(data):
+        """
+        Handle when a client disconnects
+        """
+        users.remove_user(request.id)
+        emit('user_disconnected', {"message": "Session from {0} has disconnected".format(request.id)})
 
 
     @app.errorhandler(Exception)
@@ -273,6 +338,26 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         config = [{"api_password":api_password, "api_username":api_username, "autorun_command":autorun_command, "autorun_data":autorun_data, "current_api_token":api_current_token, "install_path":install_path, "ip_blacklist":ip_blacklist, "ip_whitelist":ip_whitelist, "permanent_api_token":api_permanent_token, "staging_key":staging_key, "version":empire.VERSION}]
 
         return jsonify({'config': config})
+
+    @socketio.on('stagers')
+    def handle_stagers_event(data):
+        """
+        Handles all client messages for 'stagers' event
+        """
+
+        if users.is_authenticated(request.id):
+            data = json.loads(data)
+            stagers = ""
+            if data['Action'] and data['Action'] == 'VIEW':
+                if data['Arguments'] and data['Arguments']['path'] == '':
+                    stagers = get_stagers()
+                elif data['Arguments'] and data['Arguments']['path'] != '':
+                    stagers = get_stagers_name(data['Arguments']['path'])
+
+            send(jsonify("Result": stagers))
+        else:
+            send(jsonify("Result": "Failed"))
+
 
 
     @app.route('/api/stagers', methods=['GET'])
@@ -1221,6 +1306,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         return jsonify({'success': True})
 
 
+
     if not os.path.exists('./data/empire-chain.pem'):
         print "[!] Error: cannot find certificate ./data/empire-chain.pem"
         sys.exit()
@@ -1300,7 +1386,9 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
     context = ssl.SSLContext(proto)
     context.load_cert_chain("%s/empire-chain.pem" % (certPath), "%s/empire-priv.key" % (certPath))
-    app.run(host='0.0.0.0', port=int(port), ssl_context=context, threaded=True)
+    #app.run(host='0.0.0.0', port=int(port), ssl_context=context, threaded=True)
+    socketio.run(app, host='0.0.0.0', port=int(port), ssl_context=context)
+
 
 
 if __name__ == '__main__':
@@ -1338,10 +1426,11 @@ if __name__ == '__main__':
     elif args.rest:
          # start an Empire instance and RESTful API
         main = empire.MainMenu(args=args)
+        users = users.Users(main, args=args)
         def thread_api(empireMenu):
             
             try:
-                start_restful_api(empireMenu=empireMenu, suppress=False, username=args.username, password=args.password, port=args.restport)
+                start_restful_api(empireMenu=empireMenu, user_handler=users, suppress=False, username=args.username, password=args.password, port=args.restport)
             except SystemExit as e:
                 pass
 
@@ -1354,12 +1443,12 @@ if __name__ == '__main__':
     elif args.headless:
         # start an Empire instance and RESTful API and suppress output
         main = empire.MainMenu(args=args)
-        
+        users = users.Users(main, args=args)
         try:
-            start_restful_api(empireMenu=main, suppress=True, username=args.username, password=args.password, port=args.restport)
+            start_restful_api(empireMenu=main, user_handler=users, suppress=True, username=args.username, password=args.password, port=args.restport)
         except SystemExit as e:
             pass
-                
+
     else:
         # normal execution
         main = empire.MainMenu(args=args)
