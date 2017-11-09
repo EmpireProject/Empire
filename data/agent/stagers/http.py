@@ -739,7 +739,7 @@ def get_sysinfo(nonce='00000000'):
     __FAILED_FUNCTION = '[FAILED QUERY]'
 
     try:
-        username = pwd.getpwuid(os.getuid())[0]
+        username = pwd.getpwuid(os.getuid())[0].strip("\\")
     except Exception as e:
         username = __FAILED_FUNCTION
     try:
@@ -761,8 +761,10 @@ def get_sysinfo(nonce='00000000'):
     try:
         internalIP = socket.gethostbyname(socket.gethostname())
     except Exception as e:
-        internalIP = __FAILED_FUNCTION
-    
+        try:
+            internalIP = os.popen("ifconfig|grep inet|grep inet6 -v|grep -v 127.0.0.1|cut -d' ' -f2").read()
+        except Exception as e1:
+            internalIP = __FAILED_FUNCTION
     try:
         osDetails = ",".join(osDetails)
     except Exception as e:
