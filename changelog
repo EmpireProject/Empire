@@ -1,3 +1,27 @@
+Running
+------------
+- Added Kevin Robertson's Invoke-SMBExec.ps1
+- Update Invoke-DCOM
+
+10/29/2017
+------------
+- Version 2.3 Master Release
+	— Fix for #755
+	— Merge PR from byt3bl33d3r for TLS version
+	— Removed option to set chunk size for file downloads
+	— Fix for #729 (Unable to download files with spaces)
+	— Fix renegotiation in powershell agent. Patched python agent to exit on 401 response.
+	— Fix for #774 (Fix pyinstaller module)
+	— Added resource scripts capability (Carrie Roberts)
+	— Fix for #749 (Fix external agent modules)
+	— Fix for #369 (Fixed http_hop listener with ssl and self-signed certificate)
+	— Merge Invoke-PowerDump fix
+	— Merge fixes for 718 (Fix generate function signature for module @nikaiw)
+	— Merge fixes for 762 (Code cleanup from EmPyre @elitest)
+	— Merge ntds execution module (@hightopfade)
+	— Updated generate function signatures in all modules
+	— Fixed stagerURI option (rvrsh3ll)
+
 10/12/2017
 --------
 - Version 2.2 Master Release

