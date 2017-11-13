@@ -12,8 +12,11 @@ then
     cd ./setup
 fi
 
-wget https://bootstrap.pypa.io/get-pip.py
-python get-pip.py
+if [[ ! -f get-pip.py ]]
+then
+   wget https://bootstrap.pypa.io/get-pip.py
+   python get-pip.py
+fi
 
 version=$( lsb_release -r | grep -oP "[0-9]+" | head -1 )
 if lsb_release -d | grep -q "Fedora"; then
@@ -33,7 +36,9 @@ if lsb_release -d | grep -q "Fedora"; then
 	pip install netifaces
 elif lsb_release -d | grep -q "Kali"; then
 	Release=Kali
-    echo "deb http://security.debian.org/debian-security wheezy/updates main" >> /etc/apt/sources.list
+    if ! grep "deb http://security.debian.org/debian-security wheezy/updates main" /etc/apt/sources.list; then
+      echo "deb http://security.debian.org/debian-security wheezy/updates main" >> /etc/apt/sources.list
+    fi
     apt-get update
 	apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libssl1.0.0 libssl-dev
 	pip install --upgrade urllib3
