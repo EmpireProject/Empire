@@ -5,7 +5,7 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Get-NetDomainController',
+            'Name': 'Get-DomainController',
 
             'Author': ['@harmj0y'],
 
@@ -43,8 +43,8 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'DomainController' : {
-                'Description'   :   'Domain controller to reflect LDAP queries through.',
+            'Server' : {
+                'Description'   :   'Specifies an Active Directory server (domain controller) to bind to.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
