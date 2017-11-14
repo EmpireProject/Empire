@@ -74,7 +74,8 @@ class Module:
         instance = self.options['Instance']['Value']
         no_defaults = self.options['NoDefaults']['Value']
         check_all = self.options['CheckAll']['Value']
-
+        scriptEnd = ""
+        
         # read in the common module source code
         moduleSource = self.mainMenu.installPath + "data/module_source/collection/Get-SQLColumnSampleData.ps1"
         script = ""
