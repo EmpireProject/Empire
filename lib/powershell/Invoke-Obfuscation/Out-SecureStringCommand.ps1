@@ -348,7 +348,7 @@ http://www.danielbohannon.com
         Else
         {
             # Obfuscation isn't about saving space, and there are reasons you'd potentially want to fully path powershell.exe (more info on this soon).
-            #$CommandLineOutput = "C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe $($CommandlineOptions) `"$NewScript`""
+            #$CommandLineOutput = "$($Env:windir)\System32\WindowsPowerShell\v1.0\powershell.exe $($CommandlineOptions) `"$NewScript`""
             $CommandLineOutput = "powershell $($CommandlineOptions) `"$NewScript`""
         }
 

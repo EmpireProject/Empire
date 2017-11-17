@@ -53,28 +53,14 @@ elif lsb_release -d | grep -q "Kali"; then
 	pip install pyinstaller
 	pip install zlib_wrapper
 	pip install netifaces
-        if ! which powershell > /dev/null; then
-            if uname -a | grep -q amd64; then
-                wget http://archive.ubuntu.com/ubuntu/pool/main/i/icu/libicu52_52.1-3_amd64.deb
-                wget http://ftp.debian.org/debian/pool/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
-                dpkg -i libicu52_52.1-3_amd64.deb
-                dpkg -i libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
-                rm libicu52_52.1-3_amd64.deb
-                rm libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
-            elif uname -a | grep -q i386; then
-                wget http://archive.ubuntu.com/ubuntu/pool/main/i/icu/libicu52_52.1-3_i386.deb
-                wget http://ftp.debian.org/debian/pool/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u6_i386.deb
-                dpkg -i libicu52_52.1-3_i386.deb
-                dpkg -i libssl1.0.0_1.0.1t-1+deb8u6_i386.deb
-                rm libicu52_52.1-3_i386.deb
-                rm libssl1.0.0_1.0.1t-1+deb8u6_i386.deb
-            fi
+        if [ ! which powershell > /dev/null ] && [ ! which pwsh > /dev/null ]; then
             curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
             curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
             apt-get update
-            apt-get install -y powershell
+        fi
+        apt-get install -y powershell
+        if ls /opt/microsoft/powershell/*/DELETE_ME_TO_DISABLE_CONSOLEHOST_TELEMETRY; then
             rm /opt/microsoft/powershell/*/DELETE_ME_TO_DISABLE_CONSOLEHOST_TELEMETRY
-            
         fi
         mkdir -p /usr/local/share/powershell/Modules
         cp -r ../lib/powershell/Invoke-Obfuscation /usr/local/share/powershell/Modules
@@ -94,7 +80,7 @@ elif lsb_release -d | grep -q "Ubuntu"; then
 	pip install pyinstaller
 	pip install zlib_wrapper
 	pip install netifaces
-        if ! which powershell > /dev/null; then
+        if [ ! which powershell > /dev/null ] && [ ! which pwsh > /dev/null ]; then
             curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
             if lsb_release -r | grep -q "14.04"; then
                 curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
@@ -102,7 +88,9 @@ elif lsb_release -d | grep -q "Ubuntu"; then
                 curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
             fi
             apt-get update
-            apt-get install -y powershell
+        fi
+        apt-get install -y powershell
+        if ls /opt/microsoft/powershell/*/DELETE_ME_TO_DISABLE_CONSOLEHOST_TELEMETRY; then
             rm /opt/microsoft/powershell/*/DELETE_ME_TO_DISABLE_CONSOLEHOST_TELEMETRY
         fi
         mkdir -p /usr/local/share/powershell/Modules
@@ -124,31 +112,15 @@ else
 	 pip install zlib_wrapper
 	 pip install netifaces
 	 pip install M2Crypto
-         if ! which powershell > /dev/null; then
-            if lsb_release -d | grep -q Debian | grep 9; then
-              if uname -a | grep -q amd64; then
-                  wget http://archive.ubuntu.com/ubuntu/pool/main/i/icu/libicu52_52.1-3_amd64.deb
-                  wget http://ftp.debian.org/debian/pool/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
-                  dpkg -i libicu52_52.1-3_amd64.deb
-                  dpkg -i libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
-                  rm libicu52_52.1-3_amd64.deb
-                  rm libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
-              elif uname -a | grep -q i386; then
-                  wget http://archive.ubuntu.com/ubuntu/pool/main/i/icu/libicu52_52.1-3_i386.deb
-                  wget http://ftp.debian.org/debian/pool/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u6_i386.deb
-                  dpkg -i libicu52_52.1-3_i386.deb
-                  dpkg -i libssl1.0.0_1.0.1t-1+deb8u6_i386.deb
-                  rm libicu52_52.1-3_i386.deb
-                  rm libssl1.0.0_1.0.1t-1+deb8u6_i386.deb
-              fi
-            fi
-            curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
-            curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
-            apt-get update
-            apt-get install -y powershell
-            rm /opt/microsoft/powershell/*/DELETE_ME_TO_DISABLE_CONSOLEHOST_TELEMETRY
+         if [ ! which powershell > /dev/null ] && [ ! which pwsh > /dev/null ]; then
+             curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
+             curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
+             apt-get update
          fi
-
+         apt-get install -y powershell
+         if ls /opt/microsoft/powershell/*/DELETE_ME_TO_DISABLE_CONSOLEHOST_TELEMETRY; then
+             rm /opt/microsoft/powershell/*/DELETE_ME_TO_DISABLE_CONSOLEHOST_TELEMETRY
+         fi
          mkdir -p /usr/local/share/powershell/Modules
          cp -r ../lib/powershell/Invoke-Obfuscation /usr/local/share/powershell/Modules
 fi
