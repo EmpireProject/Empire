@@ -89,6 +89,6 @@ class Module:
                         sc = ",0".join(values['Value'].split("\\"))[1:]
                         scriptEnd += " -" + str(option) + " @(" + sc + ")"
         if obfuscate:
-            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
+            scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd
         return script

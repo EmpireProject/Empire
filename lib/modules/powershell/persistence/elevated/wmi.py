@@ -124,7 +124,7 @@ class Module:
             script += "Get-WmiObject __FilterToConsumerBinding -Namespace root\subscription | Where-Object { $_.filter -match '"+subName+"'} | Remove-WmiObject;"
             script += "'WMI persistence removed.'"
             if obfuscate:
-                script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
+                script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
             return script
 
         if extFile != '':
@@ -199,5 +199,5 @@ class Module:
 
         script += "'WMI persistence established "+statusMsg+"'"
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
         return script

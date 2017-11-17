@@ -4,7 +4,7 @@
 Listener handling functionality for Empire.
 
 """
-
+import sys
 import fnmatch
 import imp
 import helpers
@@ -12,7 +12,6 @@ import os
 import pickle
 import hashlib
 import copy
-
 
 class Listeners:
     """

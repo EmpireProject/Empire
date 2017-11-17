@@ -88,6 +88,6 @@ class Module:
         scriptEnd += " | ?{!($_.ITEMURL -like '*AppData*')} | Select-Object ITEMURL, COMPUTERNAME, FILEOWNER, SIZE, DATECREATED, DATEACCESSED, DATEMODIFIED, AUTOSUMMARY"
         scriptEnd += " | fl | Out-String;"
         if obfuscate:
-            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
+            scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd
         return script

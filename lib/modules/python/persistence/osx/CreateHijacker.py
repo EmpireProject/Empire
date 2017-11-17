@@ -12,7 +12,7 @@ class Module:
             'Author': ['@patrickwardle,@xorrior'],
 
             # more verbose multi-line description of the module
-            'Description': ('Configures and EmPyre dylib for use in a Dylib hijack, given the path to a legitimate dylib of a vulnerable application. The architecture of the dylib must match the target application. The configured dylib will be copied local to the hijackerPath'),
+            'Description': ('Configures and Empire dylib for use in a Dylib hijack, given the path to a legitimate dylib of a vulnerable application. The architecture of the dylib must match the target application. The configured dylib will be copied local to the hijackerPath'),
 
             # True if the module needs to run in the background
             'Background' : False,

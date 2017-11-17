@@ -5,7 +5,7 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Get-DomainPolicy',
+            'Name': 'Get-DomainPolicyData',
 
             'Author': ['@harmj0y','@DisK0nn3cT','@OrOneEqualsOne'],
 
@@ -37,8 +37,8 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Source' : {
-                'Description'   :   'Extract Domain or DC (domain controller) policies.',
+            'Policy' : {
+                'Description'   :   'Extract Domain or DC (domain controller) policies, or All',
                 'Required'      :   True,
                 'Value'         :   'Domain'
             },
@@ -47,23 +47,13 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'DomainController' : {
-                'Description'   :   'Domain controller to reflect LDAP queries through.',
+            'Server' : {
+                'Description'   :   'Specifies an Active Directory server (domain controller) to bind to.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'ResolveSids' : {
-                'Description'   :   'Switch. Resolve Sids from a DC policy to object names.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'FullData' : {
-                'Description'   :   'Switch. Return full subnet objects instead of just object names (the default).',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'ExpandObject' : {
-                'Description'   :   'Expand a specific object from the domain policy. For example \'System Access\', entered without quotes',
+            'ServerTimeLimit' : {
+                'Description'   :   'Specifies the maximum amount of time the server spends searching. Default of 120 seconds',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -119,5 +109,5 @@ class Module:
         else:
             script += moduleName + " " + pscript + ' | fl | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed! Use ExpandObject option to expand one of the objects above such as \'System Access\'"'
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
         return script

@@ -4,13 +4,13 @@ import sqlite3, argparse, sys, argparse, logging, json, string
 import os, re, time, signal, copy, base64, pickle
 from flask import Flask, request, jsonify, make_response, abort, url_for
 from time import localtime, strftime, sleep
+import hashlib
 from OpenSSL import SSL
 from Crypto.Random import random
 import ssl
 
 # Empire imports
-from lib.common import empire
-from lib.common import helpers
+from lib.common import empire, helpers
 
 global serverExitCommand
 serverExitCommand = 'restart'
@@ -133,6 +133,7 @@ def get_permanent_token(conn):
 #    GET      http://localhost:1337/api/reporting/msg/Z      return all logged events matching message Z, wildcards accepted
 #
 #    GET      http://localhost:1337/api/creds                return stored credentials
+#    POST     http://localhost:1337/api/creds                add creds to the database
 #
 #    GET      http://localhost:1337/api/admin/login          retrieve the API token given the correct username and password
 #    GET      http://localhost:1337/api/admin/permanenttoken retrieve the permanent API token, generating/storing one if it doesn't already exist
@@ -198,7 +199,6 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         # suppress all stdout and don't initiate the main cmdloop
         sys.stdout = open(os.devnull, 'w')
-
 
     # validate API token before every request except for the login URI
     @app.before_request
@@ -1039,6 +1039,67 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         return jsonify({'creds' : creds})
 
+    @app.route('/api/creds', methods=['POST'])
+    def add_creds():
+        """
+        Adds credentials to the database
+        """
+        if not request.json:
+            return make_response(jsonify({'error':'request body must be valid JSON'}), 400)
+
+        if not 'credentials' in request.json:
+            return make_response(jsonify({'error':'JSON body must include key "credentials"'}), 400)
+
+        creds = request.json['credentials']
+
+        if not type(creds) == list:
+            return make_response(jsonify({'error':'credentials must be provided as a list'}), 400)
+
+        required_fields = ["credtype", "domain", "username", "password", "host"]
+        optional_fields = ["OS", "notes", "sid"]
+
+        for cred in creds:
+            # ensure every credential given to us has all the required fields
+            if not all (k in cred for k in required_fields):
+                return make_response(jsonify({'error':'invalid credential %s' %(cred)}), 400)
+
+            # ensure the type is either "hash" or "plaintext"
+            if not (cred['credtype'] == u'hash' or cred['credtype'] == u'plaintext'):
+                return make_response(jsonify({'error':'invalid credential type in %s, must be "hash" or "plaintext"' %(cred)}), 400)
+
+        # other than that... just assume everything is valid
+
+        # this would be way faster if batched but will work for now
+        for cred in creds:
+            # get the optional stuff, if it's there
+            try:
+                os = cred['os']
+            except KeyError:
+                os = ''
+
+            try:
+                sid = cred['sid']
+            except KeyError:
+                sid = ''
+
+            try:
+                notes = cred['notes']
+            except KeyError:
+                notes = ''
+
+            main.credentials.add_credential(
+                cred['credtype'],
+                cred['domain'],
+                cred['username'],
+                cred['password'],
+                cred['host'],
+                os,
+                sid,
+                notes
+            )
+
+        return jsonify({'success': '%s credentials added' % len(creds)})
+
 
     @app.route('/api/reporting', methods=['GET'])
     def get_reporting():
@@ -1161,7 +1222,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
 
     if not os.path.exists('./data/empire-chain.pem'):
-        print "[!] Error: cannot find certificate ./data/empire.pem"
+        print "[!] Error: cannot find certificate ./data/empire-chain.pem"
         sys.exit()
 
 
@@ -1220,7 +1281,6 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         signal.signal(signal.SIGINT, signal.default_int_handler)
         sys.exit()
 
-
     try:
         signal.signal(signal.SIGINT, signal_handler)
     except ValueError:
@@ -1228,10 +1288,19 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
     # wrap the Flask connection in SSL and start it
     certPath = os.path.abspath("./data/")
-    context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+
+    # support any version of tls
+    pyversion = sys.version_info
+    if pyversion[0] == 2 and pyversion[1] == 7 and pyversion[2] >= 13:
+        proto = ssl.PROTOCOL_TLS
+    elif pyversion[0] >= 3:
+        proto = ssl.PROTOCOL_TLS
+    else:
+        proto = ssl.PROTOCOL_SSLv23
+
+    context = ssl.SSLContext(proto)
     context.load_cert_chain("%s/empire-chain.pem" % (certPath), "%s/empire-priv.key" % (certPath))
     app.run(host='0.0.0.0', port=int(port), ssl_context=context, threaded=True)
-
 
 
 if __name__ == '__main__':
@@ -1241,6 +1310,7 @@ if __name__ == '__main__':
     generalGroup = parser.add_argument_group('General Options')
     generalGroup.add_argument('--debug', nargs='?', const='1', help='Debug level for output (default of 1, 2 for msg display).')
     generalGroup.add_argument('-v', '--version', action='store_true', help='Display current Empire version.')
+    generalGroup.add_argument('-r','--resource', nargs=1, help='Run the Empire commands in the specified resource file after startup.')
 
     cliGroup = parser.add_argument_group('CLI Payload Options')
     cliGroup.add_argument('-l', '--listener', nargs='?', const="list", help='Display listener options. Displays all listeners if nothing is specified.')
@@ -1269,11 +1339,11 @@ if __name__ == '__main__':
          # start an Empire instance and RESTful API
         main = empire.MainMenu(args=args)
         def thread_api(empireMenu):
-            while serverExitCommand == 'restart':
-                try:
-                    start_restful_api(empireMenu=empireMenu, suppress=False, username=args.username, password=args.password, port=args.restport)
-                except SystemExit as e:
-                    pass
+            
+            try:
+                start_restful_api(empireMenu=empireMenu, suppress=False, username=args.username, password=args.password, port=args.restport)
+            except SystemExit as e:
+                pass
 
         thread = helpers.KThread(target=thread_api, args=(main,))
         thread.daemon = True
@@ -1284,11 +1354,11 @@ if __name__ == '__main__':
     elif args.headless:
         # start an Empire instance and RESTful API and suppress output
         main = empire.MainMenu(args=args)
-        while serverExitCommand == 'restart':
-            try:
-                start_restful_api(empireMenu=main, suppress=True, username=args.username, password=args.password, port=args.restport)
-            except SystemExit as e:
-                pass
+        
+        try:
+            start_restful_api(empireMenu=main, suppress=True, username=args.username, password=args.password, port=args.restport)
+        except SystemExit as e:
+            pass
                 
     else:
         # normal execution

