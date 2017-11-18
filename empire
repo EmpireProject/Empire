@@ -153,10 +153,15 @@ def get_permanent_token(conn):
 #    - There are custom events for each menu/class per se:
 #    - listeners, modules, agents, stagers
 #    - Data sent from the client for any custom event should be in the following json format
-#    
+#    * - required arguments
+#
 #   Event - listeners
-#         - Action: VIEW, KILL, EXECUTE
-#         - Arguments: arguments can vary per action, per event.
+#         - Action: VIEW, KILL, OPTIONS, EXECUTE
+#         - Arguments _____________
+#           -VIEW    --- Name
+#           -KILL    --- Name*
+#           -OPTIONS --- Type*
+#           -EXECUTE --- Type*,Options
 #
 #   Event - modules
 #         - Action: VIEW, EXECUTE
@@ -345,8 +350,7 @@ def start_restful_api(empireMenu, user_handler, suppress=False, username=None, p
         Handles all client messages for 'stagers' event
         """
 
-        if users.is_authenticated(request.id):
-            data = json.loads(data)
+        if users.is_authenticated(request.sid):
             stagers = ""
             if data['Action'] and data['Action'] == 'VIEW':
                 if data['Arguments'] and data['Arguments']['path'] == '':
@@ -354,10 +358,102 @@ def start_restful_api(empireMenu, user_handler, suppress=False, username=None, p
                 elif data['Arguments'] and data['Arguments']['path'] != '':
                     stagers = get_stagers_name(data['Arguments']['path'])
 
-            send(jsonify("Result": stagers))
+            send({"Result": stagers})
         else:
-            send(jsonify("Result": "Failed"))
+            send({"Result": "Failed"})
 
+    @socketio.on('listeners')
+    def handle_listener_event(data):
+        """
+        Handles all client messages for 'listeners' event
+        """
+
+        if users.is_authenticated(request.sid):
+            listeners = ""
+            if data['Action'] and data['Action'] == 'VIEW':
+                activeListenersRaw = execute_db_query(conn, 'SELECT id, name, module, listener_type, listener_category, options FROM listeners')
+                listeners = []
+
+
+                for activeListeners in activeListenersRaw:
+                    [ID, name, module, listener_type, listener_category, options] = activeListener
+                    listeners.append({'ID':ID, 'name':name, 'module':module, 'listener_type':listener_type, 'listener_category':listener_category, 'options':pickle.loads(activeListener[5]) })
+
+                send({'Result':listeners})
+
+            elif data['Action'] and data['Action'] == 'VIEW' and data['Arguments']['Name']:
+                listener_name = data['Arguments']['Name']
+                activeListenersRaw = execute_db_query(conn, 'SELECT id, name, module, listener_type, listener_category, options FROM listeners WHERE name=?', [listener_name])
+                listeners = []
+
+                for activeListener in activeListenersRaw:
+                    [ID, name, module, listener_type, listener_category, options] = activeListener
+                    if name == listener_name:
+                        listeners.append({'ID':ID, 'name':name, 'module':module, 'listener_type':listener_type, 'listener_category':listener_category, 'options':pickle.loads(activeListener[5]) })
+
+                
+                send({'Result':listeners})
+
+            elif data['Action'] and data['Action'] == 'OPTIONS' and data['Arguments']['Type']:
+                listener_type = data['Arguments']['Type']
+
+                if listener_type.lower() not in main.listeners.loadedListeners:
+                    send({'Result':'listener type %s not found' % (listener_type)})
+
+                
+                options = main.listeners.loadedListeners[listener_type].options
+                send({'Result':options})
+
+            elif data['Action'] and data['Action'] == 'KILL' and data['Arguments']['Name']:
+                listener_name = data['Arguments']['Name']
+
+                if listener_name.lower() == "all":
+                    activeListenersRaw = execute_db_query(conn, 'SELECT id, name, module, listener_type, listener_category, options FROM listeners')
+                    for activeListener in activeListenersRaw:
+                        [ID, name, module, listener_type, listener_category, options] = activeListener
+                        main.listeners.kill_listener(name)
+
+                    send({'Result':'Success'})
+
+                else:
+                    if listener_name != "" and main.listeners.is_listener_valid(listener_name):
+                        main.listeners.kill_listener(listener_name)
+                        send({'Result': 'Success'})
+                    else:
+                        send({'Result':'listener name %s not found' % (listener_name)})
+
+            elif data['Action'] and data['Action'] == 'EXECUTE' and data['Arguments']['Type']:
+                listener_type = data['Arguments']['Type']
+
+                if listener_type.lower() not in main.listeners.loadedListeners:
+                    send({'Result':'listener type %s not found' % (listener_type)})
+
+                listenerObject = main.listeners.loadedListeners[listener_type]
+
+                if data['Arguments']['Options']:
+                    # Options aren't required
+                    for option, values in data['Arguments']['Options'].iteritems():
+                        if option == "Name":
+                            listenerName = values
+
+                        returnVal = main.listeners.set_listener_option(listener_type, option, values)
+                        if not returnVal:
+                            send({'Result':'error setting listener value %s with option %s' % (option, values)})
+                    
+                
+                main.listeners.start_listener(listener_type, listenerObject)
+
+                listenerID = main.listeners.get_listener_id(listenerName)
+                if listenerID:
+                    send({'Result':'listener %s successfully started' % (listenerName)})
+                else:
+                    send({'Result': 'failed to start listener %s' % (listenerName)})
+
+            else:
+                send({'Result':'Missing or incorrect listener action'})
+        
+        else:
+            send({'Result':'Authorization required'})
 
 
     @app.route('/api/stagers', methods=['GET'])
