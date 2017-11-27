@@ -418,6 +418,21 @@ def process_packet(packetType, data, resultID):
         # TODO: implement job structure
         pass
 
+    elif packetType == 121:
+        #base64 decode the script and execute
+        script = base64.b64decode(data)
+        try:
+            buffer = StringIO()
+            sys.stdout = buffer
+            code_obj = compile(script, '<string>', 'exec')
+            exec code_obj in globals()
+            sys.stdout = sys.__stdout__
+            result = str(buffer.getvalue())
+            return build_response_packet(121, result, resultID)
+        except Exception as e:
+            errorData = str(buffer.getvalue())
+            return build_response_packet(0, "error executing specified Python data %s \nBuffer data recovered:\n%s" %(e, errorData), resultID)
+
     elif packetType == 122:
         #base64 decode and decompress the data
         try:
