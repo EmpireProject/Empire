@@ -21,6 +21,9 @@ import hashlib
 import time
 import fnmatch
 import shlex
+import pkgutil
+import importlib
+import base64
 
 # Empire imports
 import helpers
@@ -2589,10 +2592,10 @@ class PythonAgentMenu(SubMenu):
             open_file.close()
             script = script.replace('\r\n', '\n')
             script = script.replace('\r', '\n')
-
+            encScript = base64.b64encode(script)
             msg = "[*] Tasked agent to execute python script: "+filename
             print helpers.color(msg, color="green")
-            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", script)
+            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SCRIPT_COMMAND", encScript)
             #update the agent log
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
         else:
