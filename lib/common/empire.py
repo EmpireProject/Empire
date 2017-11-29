@@ -2745,7 +2745,7 @@ class PythonAgentMenu(SubMenu):
             self.mainMenu.modules.search_modules(searchTerm)
 
     def do_sc(self, line):
-        "Use pyobjc and Foundation libraries to take a screenshot, and save the image to the server"
+        "Use the python-mss module to take a screenshot, and save the image to the server. Not opsec safe"
 
         if self.mainMenu.modules.modules['python/collection/osx/native_screenshot']:
             module = self.mainMenu.modules.modules['python/collection/osx/native_screenshot']
