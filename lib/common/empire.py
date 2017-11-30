@@ -2709,23 +2709,23 @@ class PythonAgentMenu(SubMenu):
         else:
             print helpers.color("[!] python/collection/osx/screenshot module not loaded")
 
-    def do_ls(self, line):
+    def do_ls_m(self, line):
         "List directory contents at the specified path"
         #http://stackoverflow.com/questions/17809386/how-to-convert-a-stat-output-to-a-unix-permissions-string
-        if self.mainMenu.modules.modules['python/management/osx/ls']:
-            module = self.mainMenu.modules.modules['python/management/osx/ls']
+        if self.mainMenu.modules.modules['python/management/osx/ls_m']:
+            module = self.mainMenu.modules.modules['python/management/osx/ls_m']
             if line.strip() != '':
                 module.options['Path']['Value'] = line.strip()
 
             module.options['Agent']['Value'] = self.mainMenu.agents.get_agent_name_db(self.sessionID)
-            module_menu = ModuleMenu(self.mainMenu, 'python/management/osx/ls')
+            module_menu = ModuleMenu(self.mainMenu, 'python/management/osx/ls_m')
             msg = "[*] Tasked agent to list directory contents of: "+str(module.options['Path']['Value'])
             print helpers.color(msg,color="green")
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
             module_menu.do_execute("")
 
         else:
-            print helpers.color("[!] python/management/osx/ls module not loaded")
+            print helpers.color("[!] python/management/osx/ls_m module not loaded")
 
     def do_whoami(self, line):
         "Print the currently logged in user"
