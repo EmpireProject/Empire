@@ -2727,6 +2727,28 @@ class PythonAgentMenu(SubMenu):
         else:
             print helpers.color("[!] python/management/osx/ls_m module not loaded")
 
+    def do_cat(self, line):
+        "View the contents of a file"
+
+        if line != "":
+
+            cmd = """
+try:
+    output = ""
+    with open("%s","r") as f:
+        for line in f:
+            output += line
+    
+    print output
+except Exception as e:
+    print str(e)
+""" % (line)
+            # task the agent with this shell command
+            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", str(cmd))
+            # update the agent log
+            msg = "Tasked agent to cat file %s" % (line)
+            self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+
     def do_whoami(self, line):
         "Print the currently logged in user"
 
