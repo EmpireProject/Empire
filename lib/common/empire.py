@@ -2799,6 +2799,14 @@ except Exception as e:
             msg = "Tasked agent to cat file %s" % (line)
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
 
+    def do_pwd(self, line):
+        "Print working directory"
+
+        command = "cwd = os.getcwd(); print cwd"
+        self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", command)
+        msg = "Tasked agent to print current working directory"
+        self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+
     def do_whoami(self, line):
         "Print the currently logged in user"
 
