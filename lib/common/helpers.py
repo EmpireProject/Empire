@@ -557,16 +557,18 @@ def get_listener_options(listenerName):
     Returns the options for a specified listenername from the database outside
     of the normal menu execution.
     """
-    conn = sqlite3.connect('./data/empire.db', check_same_thread=False)
-    conn.isolation_level = None
-    conn.row_factory = dict_factory
-    cur = conn.cursor()
-    cur.execute("SELECT options FROM listeners WHERE name = ?", [listenerName] )
-    result = cur.fetchone()
-    cur.close()
-    conn.close()
-
-    return pickle.loads(result['options'])
+    try:
+        conn = sqlite3.connect('./data/empire.db', check_same_thread=False)
+        conn.isolation_level = None
+        conn.row_factory = dict_factory
+        cur = conn.cursor()
+        cur.execute("SELECT options FROM listeners WHERE name = ?", [listenerName] )
+        result = cur.fetchone()
+        cur.close()
+        conn.close()
+        return pickle.loads(result['options'])
+    except Exception:
+        return None
 
 
 def get_datetime():

@@ -90,7 +90,7 @@ class MainMenu(cmd.Cmd):
 
         dispatcher.connect(self.handle_event, sender=dispatcher.Any)
 
-        # Main, Agents, or Listeners
+        # Main, Agents, or 
         self.menu_state = 'Main'
 
         # parse/handle any passed command line arguments
@@ -102,8 +102,8 @@ class MainMenu(cmd.Cmd):
         self.modules = modules.Modules(self, args=args)
         self.listeners = listeners.Listeners(self, args=args)
         self.resourceQueue = []
-	#A hashtable of autruns based on agent language
-	self.autoRuns = {}
+        #A hashtable of autruns based on agent language
+        self.autoRuns = {}
 
         self.handle_args()
 

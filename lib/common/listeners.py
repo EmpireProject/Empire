@@ -228,6 +228,7 @@ class Listeners:
             moduleName = result['module']
             nameBase = listenerName
 
+
             i = 1
             while listenerName in self.activeListeners.keys():
                 listenerName = "%s%s" % (nameBase, i)
@@ -242,7 +243,10 @@ class Listeners:
                     listenerModule.options[option] = value
 
                 print helpers.color("[*] Starting listener '%s'" % (listenerName))
-                success = listenerModule.start(name=listenerName)
+                if moduleName == 'redirector':
+                    success = True
+                else:
+                    success = listenerModule.start(name=listenerName)
 
                 if success:
                     print helpers.color('[+] Listener successfully started!')
@@ -278,6 +282,15 @@ class Listeners:
                 return False
 
             # shut down the listener and remove it from the cache
+            if self.mainMenu.listeners.get_listener_module(listenerName) == 'redirector':
+                # remove the listener object from the internal cache
+                del self.activeListeners[listenerName]
+                self.conn.row_factory = None
+                cur = self.conn.cursor()
+                cur.execute("DELETE FROM listeners WHERE name=?", [listenerName])
+                cur.close()
+                continue
+                
             self.shutdown_listener(listenerName)
 
             # remove the listener from the database
@@ -306,6 +319,10 @@ class Listeners:
             # retrieve the listener module for this listener name
             activeListenerModuleName = self.activeListeners[listenerName]['moduleName']
             activeListenerModule = self.loadedListeners[activeListenerModuleName]
+
+            if activeListenerModuleName == 'redirector':
+                print helpers.color("[!] skipping redirector listener %s. Start/Stop actions can only initiated by the user." % (listenerName))
+                continue
 
             # signal the listener module to shut down the thread for this particular listener instance
             activeListenerModule.shutdown(name=listenerName)
