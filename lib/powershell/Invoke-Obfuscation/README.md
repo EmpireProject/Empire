@@ -1,4 +1,4 @@
-Invoke-Obfuscation v1.7
+Invoke-Obfuscation v1.8
 ===============
 
 ![Invoke-Obfuscation Screenshot](https://github.com/danielbohannon/danielbohannon.github.io/blob/master/Invoke-Obfuscation%20Screenshot.png)
@@ -70,20 +70,20 @@ Invoke-Obfuscation is released under the Apache 2.0 license.
 
 Release Notes
 -------------
-v1.0 - 2016-09-25 DerbyCon 6.0, Louisville: PUBLIC Release of Invoke-Obfuscation.
+v1.0 - 2016-09-25 DerbyCon 6.0 (Louisville, Kentucky USA): PUBLIC Release of Invoke-Obfuscation.
 
-v1.1 - 2016-10-09 SANS DFIR Summit, Prague: Added -f format operator re-ordering 
+v1.1 - 2016-10-09 SANS DFIR Summit (Prague, Czech Republic): Added -f format operator re-ordering 
 functionality to all applicable TOKEN obfuscation functions. Also added additional 
 syntax options for setting variable values.
 
-v1.2 - 2016-10-20 CODE BLUE, Tokyo: Added Type TOKEN obfuscation (direct type 
+v1.2 - 2016-10-20 CODE BLUE (Tokyo, Japan): Added Type TOKEN obfuscation (direct type 
 casting with string obfuscation options for type name).
 
-v1.3 - 2016-10-22 Hacktivity, Budapest: Added two new LAUNCHERs: CLIP+ and CLIP++. 
+v1.3 - 2016-10-22 Hacktivity (Budapest, Hungary): Added two new LAUNCHERs: CLIP+ and CLIP++. 
 Also added additional (and simpler) array char conversion syntax for all ENCODING 
 functions that does not require For-EachObject/%.
 
-v1.4 - 2016-10-28 BruCON, Ghent: Added new BXOR ENCODING function. Also enhanced 
+v1.4 - 2016-10-28 BruCON (Ghent, Belgium): Added new BXOR ENCODING function. Also enhanced 
 randomized case for all components of all ENCODING functions as well as for 
 PowerShell execution flags for all LAUNCHERs. Finally, added -EP shorthand option 
 for -ExecutionPolicy to all LAUNCHERs as well as the optional integer representation 
@@ -144,3 +144,6 @@ happen as this causes errors).
 v1.7 - 2017-03-03 nullcon (Goa, India):
 - Added 3 new LAUNCHERs: RUNDLL, RUNDLL++ and MSHTA++
 - Added additional ExecutionContext wildcard variable strings
+
+v1.8 - 2017-07-27 Black Hat (Las Vegas, Nevada USA):
+- Added 2 new ENCODING options: Special Characters and Whitespace

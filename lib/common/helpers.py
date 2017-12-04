@@ -807,7 +807,7 @@ def obfuscate(installPath, psScript, obfuscationCommand):
     toObfuscateFile.write(psScript)
     toObfuscateFile.close()
     # Obfuscate using Invoke-Obfuscation w/ PowerShell
-    subprocess.call("powershell -C '$ErrorActionPreference = \"SilentlyContinue\";Invoke-Obfuscation -ScriptPath %s -Command \"%s\" -Quiet | Out-File -Encoding ASCII %s'" % (toObfuscateFilename, convert_obfuscation_command(obfuscationCommand), obfuscatedFilename), shell=True)
+    subprocess.call("%s -C '$ErrorActionPreference = \"SilentlyContinue\";Invoke-Obfuscation -ScriptPath %s -Command \"%s\" -Quiet | Out-File -Encoding ASCII %s'" % (get_powershell_name(), toObfuscateFilename, convert_obfuscation_command(obfuscationCommand), obfuscatedFilename), shell=True)
     obfuscatedFile = open(obfuscatedFilename , 'r')
     # Obfuscation writes a newline character to the end of the file, ignoring that character
     psScript = obfuscatedFile.read()[0:-1]
@@ -845,11 +845,18 @@ def is_obfuscated(moduleSource):
     return os.path.isfile(obfuscatedSource)
 
 def is_powershell_installed():
+    return (get_powershell_name() != "")
+
+def get_powershell_name():
     try:
         powershell_location = subprocess.check_output("which powershell", shell=True)
     except subprocess.CalledProcessError as e:
-        return False
-    return True
+        try:
+            powershell_location = subprocess.check_output("which pwsh", shell=True)
+        except subprocess.CalledProcessError as e:
+            return ""
+        return "pwsh"
+    return "powershell"
 
 def convert_obfuscation_command(obfuscate_command):
     return "".join(obfuscate_command.split()).replace(",",",home,").replace("\\",",")

@@ -241,6 +241,7 @@ http://www.danielbohannon.com
 
             $ParameterValidationAttributesToTreatStringAsScriptblock += 'helpmessage'
             $ParameterValidationAttributesToTreatStringAsScriptblock += 'outputtype'
+            $ParameterValidationAttributesToTreatStringAsScriptblock += 'diagnostics.codeanalysis.suppressmessageattribute'
 
             Switch($ObfuscationLevel)
             {
@@ -513,9 +514,9 @@ http://www.danielbohannon.com
 	    # Gather substring preceding the current String token to see if we need to treat the obfuscated string as a scriptblock.
 	    $ParameterBindingName = $ScriptString.SubString(0,$Token.Start)
 	    $ParameterBindingName = $ParameterBindingName.SubString(0,$ParameterBindingName.LastIndexOf('('))
-	    $ParameterBindingName = $ParameterBindingName.SubString($ParameterBindingName.LastIndexOf('[')+1).Trim()
+        $ParameterBindingName = $ParameterBindingName.SubString($ParameterBindingName.LastIndexOf('[')+1).Trim()
 	    # Filter out values that are not Parameter Binding due to contain whitespace, some special characters, etc.
-	    If(!$ParameterBindingName.Contains(' ') -AND !$ParameterBindingName.Contains('.') -AND !$ParameterBindingName.Contains(']') -AND !($ParameterBindingName.Length -eq 0))
+	    If(!$ParameterBindingName.Contains(' ') -AND !$ParameterBindingName.Contains(']') -AND !($ParameterBindingName.Length -eq 0))
 	    {
 		    # If we have a match then set boolean to True so result will be encapsulated with curly braces at the end of this function.
 		    If($ParameterValidationAttributesToTreatStringAsScriptblock -Contains $ParameterBindingName.ToLower())
@@ -671,7 +672,7 @@ http://www.danielbohannon.com
             $EncapsulateAsScriptBlockInsteadOfParentheses = $TRUE
         }
 
-        If(($SubString.Contains('parametersetname') -OR $SubString.Contains('confirmimpact')) -AND !$SubString.Contains('defaultparametersetname') -AND $SubString.Contains('='))
+        If($SubString.Contains('parametersetname') -OR $SubString.Contains('confirmimpact') -AND !$SubString.Contains('defaultparametersetname') -AND $SubString.Contains('='))
         {
             # For strings in ParameterSetName parameter binding (but not DefaultParameterSetName) then we will only obfuscate with tick marks.
             # Otherwise we may get errors depending on the version of PowerShell being run.
@@ -690,6 +691,7 @@ http://www.danielbohannon.com
                 default {Write-Error "An invalid `$ObfuscationLevel value ($ObfuscationLevel) was passed to switch block for String Token Obfuscation."; Exit}
             }
         }
+
         # Evenly trim leading/trailing parentheses.
         While($ObfuscatedToken.StartsWith('(') -AND $ObfuscatedToken.EndsWith(')'))
         {
@@ -860,9 +862,7 @@ http://www.danielbohannon.com
         [Int]
         $ObfuscationLevel
     )
-    if($Token.Type -ne 'Command') {
-        $ScriptString
-    }
+
     # Set $Token.Content in a separate variable so it can be modified since Content is a ReadOnly property of $Token.
     $TokenContent = $Token.Content
 
@@ -1341,7 +1341,6 @@ http://www.danielbohannon.com
 
     # Function name declarations are CommandArgument tokens that cannot be obfuscated with concatenations.
     # For these we will obfuscated them with ticks because this changes the string from AMSI's perspective but not the final functionality.
-    # If($ScriptString.SubString(0,$Token.Start-1).Trim().ToLower().EndsWith('function'))
     If($ScriptString.SubString(0,$Token.Start-1).Trim().ToLower().EndsWith('function') -or $ScriptString.SubString(0,$Token.Start-1).Trim().ToLower().EndsWith('filter'))
     {
         $ScriptString = Out-ObfuscatedWithTicks $ScriptString $Token

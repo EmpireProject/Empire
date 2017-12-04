@@ -17,14 +17,14 @@
 
 
 
-Function Out-EncodedBinaryCommand
+Function Out-EncodedWhitespaceCommand
 {
 <#
 .SYNOPSIS
 
-Generates binary encoded payload for a PowerShell command or script. Optionally it adds command line output to final command.
+Generates Whitespace encoded payload for a PowerShell command or script. Optionally it adds command line output to final command.
 
-Invoke-Obfuscation Function: Out-EncodedBinaryCommand
+Invoke-Obfuscation Function: Out-EncodedWhitespaceCommand
 Author: Daniel Bohannon (@danielhbohannon)
 License: Apache License, Version 2.0
 Required Dependencies: None
@@ -32,7 +32,7 @@ Optional Dependencies: None
  
 .DESCRIPTION
 
-Out-EncodedBinaryCommand encodes an input PowerShell scriptblock or path as a binary payload. It randomly chooses between .Split/-Split/array syntax to store the encoded payload in the final output. The purpose is to highlight to the Blue Team that there are more novel ways to encode a PowerShell command other than the most common Base64 approach.
+Out-EncodedWhitespaceCommand encodes an input PowerShell scriptblock or path as a Whitespace-and-Tab encoded payload. The purpose is to highlight to the Blue Team that there are more novel ways to encode a PowerShell command other than the most common Base64 approach.
 
 .PARAMETER ScriptBlock
 
@@ -80,17 +80,17 @@ Outputs the option to set the default execution policy for the current session.
 
 .EXAMPLE
 
-C:\PS> Out-EncodedBinaryCommand -ScriptBlock {Write-Host 'Hello World!' -ForegroundColor Green; Write-Host 'Obfuscation Rocks!' -ForegroundColor Green} -NoProfile -NonInteractive
+C:\PS> Out-EncodedWhitespaceCommand -ScriptBlock {Write-Host 'Hello World!' -ForegroundColor Green; Write-Host 'Obfuscation Rocks!' -ForegroundColor Green} -NoProfile -NonInteractive
 
-powershell   -NonIn  -NoProf     "-Join ('1010111y1110010W1101001{1110100G1100101y101101;1001000T1101111@1110011G1110100y100000@100111y1001000@1100101d1101100<1101100b1101111d100000W1010111@1101111G1110010{1101100@1100100@100001<100111G100000y101101;1000110;1101111y1110010G1100101d1100111y1110010G1101111@1110101W1101110b1100100G1000011;1101111d1101100{1101111y1110010d100000<1000111<1110010T1100101W1100101@1101110d111011{100000T1010111{1110010{1101001{1110100y1100101b101101<1001000y1101111{1110011W1110100d100000d100111b1001111<1100010b1100110<1110101d1110011W1100011W1100001T1110100T1101001{1101111;1101110W100000T1010010b1101111<1100011W1101011;1110011;100001d100111@100000y101101<1000110T1101111G1110010{1100101W1100111{1110010G1101111d1110101W1101110@1100100@1000011{1101111d1101100y1101111T1110010{100000{1000111{1110010T1100101b1100101;1101110'-SplIt'b'-SpLit '@'-SPLIt '{' -SpLIT'<'-SPLIT'd' -SpLIT 'T'-SplIt ';' -SpLiT 'G' -SPLiT'y'-SpLiT'W' | ForEach-Object { ([Char]([Convert]::ToInt16(( $_.ToString() ) ,2) ))} )| IEX"
+powershell  -NoP  -NonInterac     "'         	        		  	  	     		  	 	      		  	  	       		  	 	  		     	      		        	   		  	  	  		  	  	      		  	  	       		    	   		    	          		        	   		  	 	  		  	 	         		  	 	         		  	  	  		    	   		         	        		  	  	  		  	  	     		  	 	         		  	 	 		    	    		    	          		    	   		     	      		        	 		  	  	  		  	  	     		  	 	  		  	 	    		  	  	     		  	  	  		  	  	        		  	  	 		  	 	 		       	        		  	  	  		  	 	         		  	  	  		  	  	     		    	   		        	  		  	  	     		  	 	  		  	 	  		  	  	 		      	          		    	   		         	        		  	  	     		  	 	      		  	  	       		  	 	  		     	      		        	   		  	  	  		  	  	      		  	  	       		    	   		    	          		        	          		          	         		  	 	   		  	  	        		  	  	      		          	          		          	        		  	  	       		  	 	      		  	  	  		  	  	 		    	   		         	   		  	  	  		          	          		  	 	        		  	  	      		    	    		    	          		    	   		     	      		        	 		  	  	  		  	  	     		  	 	  		  	 	    		  	  	     		  	  	  		  	  	        		  	  	 		  	 	 		       	        		  	  	  		  	 	         		  	  	  		  	  	     		    	   		        	  		  	  	     		  	 	  		  	 	  		  	  	 '|%{$uXOrcSp= $_ -CSplIt '		' | %{'	' ; $_ -CSplIt '	' |% { $_.lEngth- 1}} ; .( ([string]''.LAstINDEXOFANy)[92,95,96]-join'')( (($uXOrcSp[0..($uXOrcSp.lEngth-1)] -join'' ).TrIm( '	 ').SPLIT('	' ) |% {([chAr][iNt]$_) })-join '' ) }"
 
-C:\PS> Out-EncodedBinaryCommand -ScriptBlock {Write-Host 'Hello World!' -ForegroundColor Green; Write-Host 'Obfuscation Rocks!' -ForegroundColor Green} -NoProfile -NonInteractive -PassThru
+C:\PS> Out-EncodedWhitespaceCommand -ScriptBlock {Write-Host 'Hello World!' -ForegroundColor Green; Write-Host 'Obfuscation Rocks!' -ForegroundColor Green} -NoProfile -NonInteractive -PassThru
 
-IEX( -Join ('1010111<1110010>1101001a1110100>1100101r101101{1001000@1101111l1110011l1110100a100000<100111m1001000r1100101{1101100{1101100{1101111>100000{1010111>1101111>1110010m1101100O1100100a100001O100111&100000@101101&1000110<1101111a1110010&1100101&1100111O1110010r1101111r1110101<1101110O1100100m1000011{1101111>1101100m1101111{1110010m100000{1000111a1110010>1100101>1100101m1101110&111011O100000r1010111&1110010l1101001{1110100{1100101r101101@1001000&1101111>1110011<1110100&100000>100111a1001111{1100010a1100110@1110101{1110011&1100011r1100001@1110100l1101001>1101111a1101110a100000@1010010a1101111r1100011a1101011m1110011{100001<100111a100000{101101@1000110a1101111{1110010m1100101a1100111>1110010l1101111m1110101l1101110@1100100r1000011&1101111r1101100O1101111m1110010a100000@1000111@1110010O1100101@1100101@1101110'.Split( 'l@>{r<mOa&') | ForEach-Object{ ( [Convert]::ToInt16(( [String]$_ ) , 2 ) -As[Char]) } ))
+'									 								  		 		 					  		 	 						  		 		 							  		 	 		  					 						  								 			  		 		 		  		 		 						  		 		 							  				 			  				 										  								 			  		 	 		  		 	 									  		 	 									  		 		 		  				 			  									 								  		 		 		  		 		 					  		 	 									  		 	 	  				 				  				 										  				 			  					 						  								 	  		 		 		  		 		 					  		 	 		  		 	 				  		 		 					  		 		 		  		 		 								  		 		 	  		 	 	  							 								  		 		 		  		 	 									  		 		 		  		 		 					  				 			  								 		  		 		 					  		 	 		  		 	 		  		 		 	  						 										  				 			  									 								  		 		 					  		 	 						  		 		 							  		 	 		  					 						  								 			  		 		 		  		 		 						  		 		 							  				 			  				 										  								 										  										 									  		 	 			  		 		 								  		 		 						  										 										  										 								  		 		 							  		 	 						  		 		 		  		 		 	  				 			  									 			  		 		 		  										 										  		 	 								  		 		 						  				 				  				 										  				 			  					 						  								 	  		 		 		  		 		 					  		 	 		  		 	 				  		 		 					  		 		 		  		 		 								  		 		 	  		 	 	  							 								  		 		 		  		 	 									  		 		 		  		 		 					  				 			  								 		  		 		 					  		 	 		  		 	 		  		 		 	'| % {$gyPrfqv= $_ -csPLiT '  '|% { ' ';$_.SPlIT(' ') | %{$_.LEngth - 1 }}; [StRINg]::joIn( '',((-jOin ($gyPrfqv[0..($gyPrfqv.LEngth-1)])).triM( '  ' ).SPlIT(' ' )|% { ( [CHAr][iNt]$_)}))|&( $eNv:CoMSPEC[4,26,25]-jOiN'')}
 
 .NOTES
 
-Inspiration for this encoding technique came from: https://blogs.technet.microsoft.com/heyscriptingguy/2011/09/09/convert-hexadecimal-to-ascii-using-powershell/
+Inspiration for this encoding technique came from Casey Smith (@subTee) while at the 2017 BlueHat IL conference.
 This is a personal project developed by Daniel Bohannon while an employee at MANDIANT, A FireEye Company.
 
 .LINK
@@ -138,10 +138,7 @@ http://www.danielbohannon.com
         [Switch]
         $PassThru
     )
-
-    # Encoding base values: 16=Hex, 8=Octal, 2=Binary
-    $EncodingBase = 2
-
+    
     # Either convert ScriptBlock to a String or convert script at $Path to a String.
     If($PSBoundParameters['Path'])
     {
@@ -152,63 +149,67 @@ http://www.danielbohannon.com
     {
         $ScriptString = [String]$ScriptBlock
     }
-
-    # Create list of random delimiters $RandomDelimiters.
-    # Avoid using . * ' " [ ] ( ) etc. as delimiters as these will cause problems in the -Split command syntax.
-    $RandomDelimiters  = @('_','-',',','{','}','~','!','@','%','&','<','>',';',':')
-
-    # Add letters a-z with random case to $RandomDelimiters.
-    @('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z') | ForEach-Object {$UpperLowerChar = $_; If(((Get-Random -Input @(1..2))-1 -eq 0)) {$UpperLowerChar = $UpperLowerChar.ToUpper()} $RandomDelimiters += $UpperLowerChar}
     
-    # Only use a subset of current delimiters to randomize what you see in every iteration of this script's output.
-    $RandomDelimiters = (Get-Random -Input $RandomDelimiters -Count ($RandomDelimiters.Count/4))
+    # Convert $ScriptString to an ASCII-encoded array.
+    $AsciiArray = [Int[]][Char[]]$ScriptString
+    
+    # Encode ASCII array with defined EncodingChar and DelimiterChar (randomly-selected as whitespace and tab, [Char]9).
+    $RandomIndex  = Get-Random -Input @(0,1)
+    $EncodedArray = @()
+    $EncodingChar       = @(' ',[Char]9)[$RandomIndex]
+    $DigitDelimiterChar = @([Char]9,' ')[$RandomIndex]
+   
+    # Enumerate each ASCII value and (ultimately) store decoded ASCII values in $EncodedArray array.
+    ForEach($AsciiValue in $AsciiArray)
+    {
+        $EncodedAsciiValueArray = @()
+        # Enumerate each digit in current ASCII value and convert it to DelimiterChar*Digit.
+        ForEach($Digit in [Char[]][String]$AsciiValue)
+        {
+            $EncodedAsciiValueArray += [String]$EncodingChar*([Int][String]$Digit + 1)
+        }
+        $EncodedArray += ($EncodedAsciiValueArray -Join $DigitDelimiterChar)
+    }
 
-    # Convert $ScriptString to delimited Binary values in [Char] array separated by random delimiter from defined list $RandomDelimiters.
-    $DelimitedEncodedArray = ''
-    ([Char[]]$ScriptString) | ForEach-Object {$DelimitedEncodedArray += ([Convert]::ToString(([Int][Char]$_),$EncodingBase) + (Get-Random -Input $RandomDelimiters))}
+    # Set $IntDelimiterChar to be two instances of $DigitDelimiterChar.
+    # $IntDelimiterChar will essentially be like the comma in the original ASCII array.
+    $IntDelimiterChar = $DigitDelimiterChar + $DigitDelimiterChar
 
-    # Remove trailing delimiter from $DelimitedEncodedArray.
-    $DelimitedEncodedArray = $DelimitedEncodedArray.SubString(0,$DelimitedEncodedArray.Length-1)
-
-    # Create printable version of $RandomDelimiters in random order to be used by final command.
-    $RandomDelimitersToPrint = (Get-Random -Input $RandomDelimiters -Count $RandomDelimiters.Length) -Join ''
-
+    # Join together final $EncodedString with delimiter selected above.
+    $EncodedString = ($EncodedArray -Join $IntDelimiterChar)
+    
     # Generate random case versions for necessary operations.
     $ForEachObject = Get-Random -Input @('ForEach','ForEach-Object','%')
+    $SplitMethod   = Get-Random -Input @('-Split','-CSplit','-ISplit')
+    $Trim          = Get-Random -Input @('Trim','TrimStart')
     $StrJoin       = ([Char[]]'[String]::Join'      | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
     $StrStr        = ([Char[]]'[String]'            | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
     $Join          = ([Char[]]'-Join'               | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
     $CharStr       = ([Char[]]'Char'                | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
     $Int           = ([Char[]]'Int'                 | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
+    $Length        = ([Char[]]'Length'              | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
     $ForEachObject = ([Char[]]$ForEachObject        | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
-    $ToInt16       = ([Char[]]'[Convert]::ToInt16(' | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
+    $SplitMethod   = ([Char[]]$SplitMethod          | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
+    $SplitMethod2  = ([Char[]]'Split'               | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
+    $Trim          = ([Char[]]$Trim                 | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
+    $SplitOnDelim  = Get-Random -Input @(" $SplitMethod '$DigitDelimiterChar'",".$SplitMethod2('$DigitDelimiterChar')")
 
-    # Create printable version of $RandomDelimiters in random order to be used by final command specifically for -Split syntax.
-    $RandomDelimitersToPrintForDashSplit = ''
-    ForEach($RandomDelimiter in $RandomDelimiters)
-    {
-        # Random case 'split' string.
-        $Split = ([Char[]]'Split' | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
-
-        $RandomDelimitersToPrintForDashSplit += ('-' + $Split + ' '*(Get-Random -Input @(0,1)) + "'" + $RandomDelimiter + "'" + ' '*(Get-Random -Input @(0,1)))
-    }
-    $RandomDelimitersToPrintForDashSplit = $RandomDelimitersToPrintForDashSplit.Trim()
+    # Generate random variable name to store the script's intermediate state while being reassembled.
+    $RandomScriptVar = (Get-Random -Input @('a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z') -Count (Get-Random -Input @(5..8)) | ForEach-Object {$UpperLowerChar = $_; If(Get-Random -Input @(0..1)) {$UpperLowerChar = $UpperLowerChar.ToUpper()} $UpperLowerChar}) -Join ''
+    
+    # Build the first part of the decoding routine.
+    $ScriptStringPart1 = "'$EncodedString'" + ' '*(Get-Random -Input @(0,1)) + '|' + ' '*(Get-Random -Input @(0,1)) + $ForEachObject + ' '*(Get-Random -Input @(0,1)) + '{' + ' '*(Get-Random -Input @(0,1)) + "`$$RandomScriptVar" + ' '*(Get-Random -Input @(0,1)) + '=' + ' '*(Get-Random -Input @(0,1)) + "`$_ $SplitMethod '$IntDelimiterChar'" + ' '*(Get-Random -Input @(0,1)) + '|' + ' '*(Get-Random -Input @(0,1)) + $ForEachObject + ' '*(Get-Random -Input @(0,1)) + '{' + ' '*(Get-Random -Input @(0,1)) + "'$DigitDelimiterChar'" + ' '*(Get-Random -Input @(0,1)) + ';' + ' '*(Get-Random -Input @(0,1)) + "`$_$SplitOnDelim" + ' '*(Get-Random -Input @(0,1)) + '|' + ' '*(Get-Random -Input @(0,1)) + $ForEachObject + ' '*(Get-Random -Input @(0,1)) + '{' + ' '*(Get-Random -Input @(0,1)) + "`$_.$Length" + ' '*(Get-Random -Input @(0,1)) + '-' + ' '*(Get-Random -Input @(0,1)) + '1' + ' '*(Get-Random -Input @(0,1)) + '}' + ' '*(Get-Random -Input @(0,1)) + '}' + ' '*(Get-Random -Input @(0,1)) + ';'
     
     # Randomly select between various conversion syntax options.
     $RandomStringSyntax = ([Char[]](Get-Random -Input @('[String]$_','$_.ToString()')) | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
     $RandomConversionSyntax  = @()
-    $RandomConversionSyntax += "[$CharStr]" + ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + $ToInt16 + ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + $RandomStringSyntax + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + ',' + $EncodingBase + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + ')'
-    $RandomConversionSyntax += $ToInt16 + ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + $RandomStringSyntax + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + ',' + ' '*(Get-Random -Input @(0,1)) + $EncodingBase + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + (Get-Random -Input @('-as','-As','-aS','-AS')) + ' '*(Get-Random -Input @(0,1)) + "[$CharStr]"
+    $RandomConversionSyntax += "[$CharStr]" + ' '*(Get-Random -Input @(0,1)) + "[$Int]" + ' '*(Get-Random -Input @(0,1)) + "`$_"
+    $RandomConversionSyntax += "[$Int]" + ' '*(Get-Random -Input @(0,1)) + "`$_" + ' '*(Get-Random -Input @(0,1)) + (Get-Random -Input @('-as','-As','-aS','-AS')) + ' '*(Get-Random -Input @(0,1)) + "[$CharStr]"
     $RandomConversionSyntax = (Get-Random -Input $RandomConversionSyntax)
-
+    
     # Create array syntax for encoded $ScriptString as alternative to .Split/-Split syntax.
     $EncodedArray = ''
-    ([Char[]]$ScriptString) | ForEach-Object {
-        # Encapsulate current item with single quote if it contains a non-integer.
-        If([Convert]::ToString(([Int][Char]$_),$EncodingBase).Trim('0123456789').Length -gt 0) {$Quote = "'"}
-        Else {$Quote = ''}
-        $EncodedArray += ($Quote + [Convert]::ToString(([Int][Char]$_),$EncodingBase) + $Quote + ' '*(Get-Random -Input @(0,1)) + ',' + ' '*(Get-Random -Input @(0,1)))
-    }
+    ([Char[]]$ScriptString) | ForEach-Object {$EncodedArray += ([Convert]::ToString(([Int][Char]$_),$EncodingBase) + ' '*(Get-Random -Input @(0,1)) + ',' + ' '*(Get-Random -Input @(0,1)))}
 
     # Remove trailing comma from $EncodedArray.
     $EncodedArray = ('(' + ' '*(Get-Random -Input @(0,1)) + $EncodedArray.Trim().Trim(',') + ')')
@@ -230,23 +231,35 @@ http://www.danielbohannon.com
     # Randomize case of $SetOfsVar and $SetOfsVarBack.
     $SetOfsVar            = ([Char[]]$SetOfsVar     | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
     $SetOfsVarBack        = ([Char[]]$SetOfsVarBack | ForEach-Object {$Char = $_.ToString().ToLower(); If(Get-Random -Input @(0..1)) {$Char = $Char.ToUpper()} $Char}) -Join ''
-
-    # Generate the code that will decrypt and execute the payload and randomly select one.
-    $BaseScriptArray  = @()
-    $BaseScriptArray += '(' + ' '*(Get-Random -Input @(0,1)) + "'" + $DelimitedEncodedArray + "'." + $Split + "(" + ' '*(Get-Random -Input @(0,1)) + "'" + $RandomDelimitersToPrint + "'" + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + '|' + ' '*(Get-Random -Input @(0,1)) + $ForEachObject + ' '*(Get-Random -Input @(0,1)) + '{' + ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + $RandomConversionSyntax + ')' +  ' '*(Get-Random -Input @(0,1)) + '}' + ' '*(Get-Random -Input @(0,1)) + ')'
-    $BaseScriptArray += '(' + ' '*(Get-Random -Input @(0,1)) + "'" + $DelimitedEncodedArray + "'" + ' '*(Get-Random -Input @(0,1)) + $RandomDelimitersToPrintForDashSplit + ' '*(Get-Random -Input @(0,1)) + '|' + ' '*(Get-Random -Input @(0,1)) + $ForEachObject + ' '*(Get-Random -Input @(0,1)) + '{' + ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + $RandomConversionSyntax + ')' +  ' '*(Get-Random -Input @(0,1)) + '}' + ' '*(Get-Random -Input @(0,1)) + ')'
-    $BaseScriptArray += '(' + ' '*(Get-Random -Input @(0,1)) + $EncodedArray + ' '*(Get-Random -Input @(0,1)) + '|' + ' '*(Get-Random -Input @(0,1)) + $ForEachObject + ' '*(Get-Random -Input @(0,1)) + '{' + ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + $RandomConversionSyntax + ')' +  ' '*(Get-Random -Input @(0,1)) + '}' + ' '*(Get-Random -Input @(0,1)) + ')'
+    
+    # Generate the code that will iterate through each element of the array.
+    $BaseScriptArray1  = "`$$RandomScriptVar[0..(`$$RandomScriptVar.$Length-1)]"
     
     # Generate random JOIN syntax for all above options.
-    $NewScriptArray   = @()
-    $NewScriptArray  += (Get-Random -Input $BaseScriptArray) + ' '*(Get-Random -Input @(0,1)) + $Join + ' '*(Get-Random -Input @(0,1)) + "''"
-    $NewScriptArray  += $Join + ' '*(Get-Random -Input @(0,1)) + (Get-Random -Input $BaseScriptArray)
-    $NewScriptArray  += $StrJoin + '(' + ' '*(Get-Random -Input @(0,1)) + "''" + ' '*(Get-Random -Input @(0,1)) + ',' + ' '*(Get-Random -Input @(0,1)) + (Get-Random -Input $BaseScriptArray) + ' '*(Get-Random -Input @(0,1)) + ')'
-    $NewScriptArray  += '"' + ' '*(Get-Random -Input @(0,1)) + '$(' + ' '*(Get-Random -Input @(0,1)) + $SetOfsVar + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + '"' + ' '*(Get-Random -Input @(0,1)) + '+' + ' '*(Get-Random -Input @(0,1)) + $StrStr + (Get-Random -Input $BaseScriptArray) + ' '*(Get-Random -Input @(0,1)) + '+' + '"' + ' '*(Get-Random -Input @(0,1)) + '$(' + ' '*(Get-Random -Input @(0,1)) + $SetOfsVarBack + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + '"'
-
+    $NewScriptArray1   = @()
+    $NewScriptArray1  += $BaseScriptArray1 + ' '*(Get-Random -Input @(0,1)) + $Join + ' '*(Get-Random -Input @(0,1)) + "''"
+    $NewScriptArray1  += $Join + ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + $BaseScriptArray1 + ' '*(Get-Random -Input @(0,1)) + ')'
+    $NewScriptArray1  += $StrJoin + '(' + ' '*(Get-Random -Input @(0,1)) + "''" + ' '*(Get-Random -Input @(0,1)) + ',' + ' '*(Get-Random -Input @(0,1)) + $BaseScriptArray1 + ' '*(Get-Random -Input @(0,1)) + ')'
+    $NewScriptArray1  += '"' + ' '*(Get-Random -Input @(0,1)) + '$(' + ' '*(Get-Random -Input @(0,1)) + $SetOfsVar + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + '"' + ' '*(Get-Random -Input @(0,1)) + '+' + ' '*(Get-Random -Input @(0,1)) + $StrStr + $BaseScriptArray1 + ' '*(Get-Random -Input @(0,1)) + '+' + '"' + ' '*(Get-Random -Input @(0,1)) + '$(' + ' '*(Get-Random -Input @(0,1)) + $SetOfsVarBack + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + '"'
+    
     # Randomly select one of the above commands.
-    $NewScript = (Get-Random -Input $NewScriptArray)
-
+    $NewScript1 = (Get-Random -Input $NewScriptArray1)
+    
+    # Generate the code that will decrypt and execute the payload and randomly select one.
+    $BaseScriptArray2  = @()
+    $BaseScriptArray2 += '(' + ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + $NewScript1 + ' '*(Get-Random -Input @(0,1)) + ").$Trim(" + ' '*(Get-Random -Input @(0,1)) + "'$DigitDelimiterChar '" + ' '*(Get-Random -Input @(0,1)) + ").$SplitMethod2(" + ' '*(Get-Random -Input @(0,1)) + "'" + $DigitDelimiterChar + "'" + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1)) + '|' + ' '*(Get-Random -Input @(0,1)) + $ForEachObject + ' '*(Get-Random -Input @(0,1)) + '{' + ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + $RandomConversionSyntax + ')' +  ' '*(Get-Random -Input @(0,1)) + '}' + ' '*(Get-Random -Input @(0,1)) + ')'
+    $BaseScriptArray2 += "`[$CharStr[]]" + ' '*(Get-Random -Input @(0,1)) + "[$Int[]]" + ' '*(Get-Random -Input @(0,1)) + "(" + ' '*(Get-Random -Input @(0,1)) + $NewScript1 + ' '*(Get-Random -Input @(0,1)) + ").$Trim(" + ' '*(Get-Random -Input @(0,1)) + "'$DigitDelimiterChar '" + ' '*(Get-Random -Input @(0,1)) + ").$SplitMethod2(" + ' '*(Get-Random -Input @(0,1)) + "'$DigitDelimiterChar'" + ' '*(Get-Random -Input @(0,1)) + ')'
+    $BaseScriptArray2  = (Get-Random -Input $BaseScriptArray2)
+    
+    # Generate random JOIN syntax for all above options.
+    $NewScriptArray2   = @()
+    $NewScriptArray2  += $BaseScriptArray2 + ' '*(Get-Random -Input @(0,1)) + $Join + ' '*(Get-Random -Input @(0,1)) + "''"
+    $NewScriptArray2  += $Join + ' '*(Get-Random -Input @(0,1)) + '(' + $BaseScriptArray2 + ')'
+    $NewScriptArray2  += $StrJoin + '(' + ' '*(Get-Random -Input @(0,1)) + "''" + ' '*(Get-Random -Input @(0,1)) + ',' + ' '*(Get-Random -Input @(0,1)) + $BaseScriptArray2 + ' '*(Get-Random -Input @(0,1)) + ')'
+    
+    # Randomly select one of the above commands.
+    $NewScript = (Get-Random -Input $NewScriptArray2)
+    
     # Generate random invoke operation syntax.
     # Below code block is a copy from Out-ObfuscatedStringCommand.ps1. It is copied into this encoding function so that this will remain a standalone script without dependencies.
     $InvokeExpressionSyntax  = @()
@@ -260,7 +273,16 @@ http://www.danielbohannon.com
     $InvokeExpressionSyntax += $InvocationOperator + "( `$env:Public[13]+`$env:Public[5]+'x')"
     $InvokeExpressionSyntax += $InvocationOperator + "( `$env:ComSpec[4," + (Get-Random -Input @(15,24,26)) + ",25]-Join'')"
     $InvokeExpressionSyntax += $InvocationOperator + "((" + (Get-Random -Input @('Get-Variable','GV','Variable')) + " '*mdr*').Name[3,11,2]-Join'')"
-    $InvokeExpressionSyntax += $InvocationOperator + "( " + (Get-Random -Input @('$VerbosePreference.ToString()','([String]$VerbosePreference)')) + "[1,3]+'x'-Join'')"
+    $InvokeExpressionSyntax += $InvocationOperator + "( " + (Get-Random -Input @("([String]''.Insert)"         , "''.Insert.ToString()"))         + '[' + (Get-Random -Input @(3,7,14,23,33)) + ',' + (Get-Random -Input @(10,26,41)) + ",27]-Join''" + ")"
+    $InvokeExpressionSyntax += $InvocationOperator + "( " + (Get-Random -Input @("([String]''.Normalize)"      , "''.Normalize.ToString()"))      + '[' + (Get-Random -Input @(3,13,23,33,55,59,77)) + ',' + (Get-Random -Input @(15,35,41,45)) + ",46]-Join''" + ")"
+    $InvokeExpressionSyntax += $InvocationOperator + "( " + (Get-Random -Input @("([String]''.Chars)"          , "''.Chars.ToString()"))          + '[' + (Get-Random -Input @(11,15)) + ',' + (Get-Random -Input @(18,24)) + ",19]-Join''" + ")"
+    $InvokeExpressionSyntax += $InvocationOperator + "( " + (Get-Random -Input @("([String]''.SubString)"      , "''.SubString.ToString()"))      + '[' + (Get-Random -Input @(3,13,17,26,37,47,51,60,67)) + ',' + (Get-Random -Input @(29,63,72)) + ',' + (Get-Random -Input @(30,64)) + "]-Join''" + ")"
+    $InvokeExpressionSyntax += $InvocationOperator + "( " + (Get-Random -Input @("([String]''.Remove)"         , "''.Remove.ToString()"))         + '[' + (Get-Random -Input @(3,14,23,30,45,56,65)) + ',' + (Get-Random -Input @(8,12,26,50,54,68)) + ',' + (Get-Random -Input @(27,69)) + "]-Join''" + ")"
+    $InvokeExpressionSyntax += $InvocationOperator + "( " + (Get-Random -Input @("([String]''.LastIndexOfAny)" , "''.LastIndexOfAny.ToString()")) + '[' + (Get-Random -Input @(0,8,34,42,67,76,84,92,117,126,133)) + ',' + (Get-Random -Input @(11,45,79,95,129)) + ',' + (Get-Random -Input @(12,46,80,96,130)) + "]-Join''" + ")"
+    $InvokeExpressionSyntax += $InvocationOperator + "( " + (Get-Random -Input @("([String]''.LastIndexOf)"    , "''.LastIndexOf.ToString()"))    + '[' + (Get-Random -Input @(0,8,29,37,57,66,74,82,102,111,118,130,138,149,161,169,180,191,200,208,216,227,238,247,254,266,274,285,306,315,326,337,345,356,367,376,393,402,413,424,432,443,454,463,470,491,500,511)) + ',' + (Get-Random -Input @(11,25,40,54,69,85,99,114,141,157,172,188,203,219,235,250,277,293,300,333,348,364,379,387,420,435,451,466,485,518)) + ',' + (Get-Random -Input @(12,41,70,86,115,142,173,204,220,251,278,349,380,436,467)) + "]-Join''" + ")"
+    $InvokeExpressionSyntax += $InvocationOperator + "( " + (Get-Random -Input @("([String]''.IsNormalized)"   , "''.IsNormalized.ToString()"))   + '[' + (Get-Random -Input @(5,13,26,34,57,61,75,79)) + ',' + (Get-Random -Input @(15,36,43,47)) + ",48]-Join''" + ")"
+    $InvokeExpressionSyntax += $InvocationOperator + "( " + (Get-Random -Input @("([String]''.IndexOfAny)"     , "''.IndexOfAny.ToString()"))     + '[' + (Get-Random -Input @(0,4,30,34,59,68,76,80,105,114,121)) + ',' + (Get-Random -Input @(7,37,71,83,117)) + ',' + (Get-Random -Input @(8,38,72,84,118)) + "]-Join''" + ")"
+    $InvokeExpressionSyntax += $InvocationOperator + "( " + (Get-Random -Input @("([String]''.IndexOf)"        , "''.IndexOf.ToString()"))        + '[' + (Get-Random -Input @(0,4,25,29,49,58,66,70,90,99,106,118,122,133,145,149,160,171,180,188,192,203,214,223,230,242,246,257,278,287,298,309,313,324,335,344,361,370,381,392,396,407,418,427,434,455,464,475)) + ',' + (Get-Random -Input @(7,21,32,46,61,73,87,102,125,141,152,168,183,195,211,226,249,265,272,305,316,332,347,355,388,399,415,430,449,482)) + ',' + (Get-Random -Input @(8,33,62,74,103,126,153,184,196,227,250,317,348,400,431)) + "]-Join''" + ")"
 
     # Randomly choose from above invoke operation syntaxes.
     $InvokeExpression = (Get-Random -Input $InvokeExpressionSyntax)
@@ -272,9 +294,13 @@ http://www.danielbohannon.com
     $InvokeOptions  = @()
     $InvokeOptions += ' '*(Get-Random -Input @(0,1)) + $InvokeExpression + ' '*(Get-Random -Input @(0,1)) + '(' + ' '*(Get-Random -Input @(0,1)) + $NewScript + ' '*(Get-Random -Input @(0,1)) + ')' + ' '*(Get-Random -Input @(0,1))
     $InvokeOptions += ' '*(Get-Random -Input @(0,1)) + $NewScript + ' '*(Get-Random -Input @(0,1)) + '|' + ' '*(Get-Random -Input @(0,1)) + $InvokeExpression
-
+    
+    # Randomly choose from above invoke operation syntaxes.
     $NewScript = (Get-Random -Input $InvokeOptions)
-
+    
+    # Reassemble all components of the final command.
+    $NewScript = $ScriptStringPart1 + $NewScript + '}'
+    
     # If user did not include -PassThru flag then continue with adding execution flgs and powershell.exe to $NewScript.
     If(!$PSBoundParameters['PassThru'])
     {
@@ -378,7 +404,7 @@ http://www.danielbohannon.com
         $CmdMaxLength = 8190
         If($CommandLineOutput.Length -gt $CmdMaxLength)
         {
-            Write-Warning "This command exceeds the cmd.exe maximum allowed length of $CmdMaxLength characters! Its length is $($CmdLineOutput.Length) characters."
+                Write-Warning "This command exceeds the cmd.exe maximum allowed length of $CmdMaxLength characters! Its length is $($CmdLineOutput.Length) characters."
         }
         
         $NewScript = $CommandLineOutput
