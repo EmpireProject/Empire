@@ -5,6 +5,7 @@ empire.debug
 *.pyc
 downloads/*
 .vscode/*
+.idea/*
 *.txt
 LastTask*
 data/obfuscated_module_source/*.ps1
