@@ -34,6 +34,7 @@ if lsb_release -d | grep -q "Fedora"; then
 	pip install pyinstaller
 	pip install zlib_wrapper
 	pip install netifaces
+	pip install xlutils
 elif lsb_release -d | grep -q "Kali"; then
 	Release=Kali
     if ! grep "deb http://security.debian.org/debian-security wheezy/updates main" /etc/apt/sources.list; then
@@ -53,6 +54,7 @@ elif lsb_release -d | grep -q "Kali"; then
 	pip install pyinstaller
 	pip install zlib_wrapper
 	pip install netifaces
+	pip install xlutils
         if [ ! which powershell > /dev/null ] && [ ! which pwsh > /dev/null ]; then
             curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
             curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
@@ -80,6 +82,7 @@ elif lsb_release -d | grep -q "Ubuntu"; then
 	pip install pyinstaller
 	pip install zlib_wrapper
 	pip install netifaces
+	pip install xlutils
         if [ ! which powershell > /dev/null ] && [ ! which pwsh > /dev/null ]; then
             curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
             if lsb_release -r | grep -q "14.04"; then
@@ -112,6 +115,7 @@ else
 	 pip install zlib_wrapper
 	 pip install netifaces
 	 pip install M2Crypto
+	 pip install xlutils
          if [ ! which powershell > /dev/null ] && [ ! which pwsh > /dev/null ]; then
              curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
              curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
