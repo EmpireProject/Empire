@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import sqlite3, argparse, sys, argparse, logging, json, string
-import os, re, time, signal, copy, base64, pickle
+import os, re, time, signal, copy, base64, pickle, ast
 from flask import Flask, request, jsonify, make_response, abort, url_for
 from time import localtime, strftime, sleep
 import hashlib
@@ -641,7 +641,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         for activeListener in activeListenersRaw:
             [ID, name, module, listener_type, listener_category, options] = activeListener
-            listeners.append({'ID':ID, 'name':name, 'module':module, 'listener_type':listener_type, 'listener_category':listener_category, 'options':pickle.loads(activeListener[5]) })  
+            listeners.append({'ID':ID, 'name':name, 'module':module, 'listener_type':listener_type, 'listener_category':listener_category, 'options':pickle.loads(activeListener[5]) })
 
 
         return jsonify({'listeners' : listeners})
@@ -716,7 +716,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             returnVal = main.listeners.set_listener_option(listener_type, option, values)
             if not returnVal:
                  return make_response(jsonify({'error': 'error setting listener value %s with option %s' %(option, values)}), 400)
-        
+
         main.listeners.start_listener(listener_type, listenerObject)
 
         #check to see if the listener was created
@@ -849,15 +849,31 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             agentNameIDs = execute_db_query(conn, "SELECT name, session_id FROM agents WHERE name like '%' OR session_id like '%'")
         else:
             agentNameIDs = execute_db_query(conn, 'SELECT name, session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
-        
+
         for agentNameID in agentNameIDs:
             [agentName, agentSessionID] = agentNameID
 
             agentResults = execute_db_query(conn, "SELECT results FROM agents WHERE session_id=?", [agentSessionID])
+            taskIDs = execute_db_query(conn, "SELECT id from taskings where agent=?", [agentSessionID])
 
-            if agentResults and agentResults[0] and agentResults[0] != '':
-                agentTaskResults.append({"AgentName":agentSessionID, "AgentResults":agentResults[0]})
-              
+            if agentResults[0][0] and len(agentResults[0][0]) > 0:
+                try:
+                    agentResults = ast.literal_eval(agentResults[0][0])
+                except ValueError:
+                    break
+
+                results = []
+                if len(agentResults) > 0:
+                    job_outputs = [x.strip() for x in agentResults if not x.startswith('Job')]
+
+                    for taskID, result in zip(taskIDs, job_outputs):
+                        if not (len(result.split('\n')) == 1 and result.endswith('completed!')):
+                            results.append({'taskID': taskID[0], 'results': result})
+                        else:
+                            results.append({'taskID': taskID[0], 'results': ''})
+
+                    agentTaskResults.append({"AgentName": agentSessionID, "AgentResults": results})
+
         return jsonify({'results': agentTaskResults})
 
 
@@ -878,7 +894,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         for agentNameID in agentNameIDs:
             (agentName, agentSessionID) = agentNameID
 
-            
+
             execute_db_query(conn, 'UPDATE agents SET results=? WHERE session_id=?', ['', agentSessionID])
 
         return jsonify({'success': True})
@@ -1339,7 +1355,7 @@ if __name__ == '__main__':
          # start an Empire instance and RESTful API
         main = empire.MainMenu(args=args)
         def thread_api(empireMenu):
-            
+
             try:
                 start_restful_api(empireMenu=empireMenu, suppress=False, username=args.username, password=args.password, port=args.restport)
             except SystemExit as e:
@@ -1354,12 +1370,12 @@ if __name__ == '__main__':
     elif args.headless:
         # start an Empire instance and RESTful API and suppress output
         main = empire.MainMenu(args=args)
-        
+
         try:
             start_restful_api(empireMenu=main, suppress=True, username=args.username, password=args.password, port=args.restport)
         except SystemExit as e:
             pass
-                
+
     else:
         # normal execution
         main = empire.MainMenu(args=args)
