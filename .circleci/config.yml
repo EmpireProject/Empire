@@ -8,5 +8,14 @@ jobs:
      steps:
        - checkout
        - run:
+            name: update apt
+            command: 'sudo apt-get update'
+       - run:
+            name: Set staging key to random
+            command: 'export STAGING_KEY="RANDOM"'
+       - run:
             name: Run install.sh
             command: 'cd setup/ && sudo ./install.sh'
+       - run:
+            name: Start Empire
+            command: 'sudo ./empire'
