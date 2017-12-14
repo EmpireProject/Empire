@@ -12,10 +12,10 @@ jobs:
             command: 'sudo apt-get update'
        - run:
             name: Run install.sh
-            command: 'cd setup/ && sudo -E ./install.sh'
+            command: 'cd setup/ && sudo -E -H ./install.sh'
        - run:
             name: Start Empire
-            command: 'sudo ./empire'
+            command: 'sudo ./empire --headless &'
        - run:
             name: Stop Empire
-            command: "sudo kill $(ps -ef | grep '[p]ython ./empire' | awk '{print $2}')"
+            command: "sleep 60 && sudo kill $(ps -ef | grep '[p]ython ./empire --headless' | awk '{print $2}')"
