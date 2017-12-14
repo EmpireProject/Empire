@@ -2,9 +2,9 @@ version: 2
 jobs:
    build:
      docker:
-       - image: circleci/python:2.7
+       - image: circleci/python:2.7.13
      steps:
        - checkout
        - run:
             name: Run install.sh
-            command: 'cd setup/ && ./install.sh'
+            command: 'cd setup/ && sudo ./install.sh'
