@@ -13,5 +13,4 @@ jobs:
             command: 'cd setup/ && sudo -E -H ./install.sh'
        - run:
             name: Start Empire
-            command: 'sudo ./empire --headless'
-            timeout: 120
+            command: 'sudo ./empire --headless &'
