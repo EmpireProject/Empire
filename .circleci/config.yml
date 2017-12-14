@@ -12,7 +12,7 @@ jobs:
             command: 'sudo apt-get update'
        - run:
             name: Run install.sh
-            command: 'export STAGING_KEY="RANDOM" && cd setup/ && sudo ./install.sh'
+            command: 'cd setup/ && sudo -E ./install.sh'
        - run:
             name: Start Empire
             command: 'sudo ./empire'
