@@ -5,4 +5,6 @@ jobs:
        - image: circleci/python:2.7
      steps:
        - checkout
-       - run: echo "hello world"
+       - run:
+            name: Run install.sh
+            command: 'cd setup/ && ./install.sh'
