@@ -168,7 +168,7 @@ def get_permanent_token(conn):
 #         - Arguments: arguments can vary per action, per event.
 #   
 #   Event - agents
-#         - Action: VIEW, KILL, INTERACT
+#         - Action: VIEW, KILL, INTERACT, RETURN
 #         - Arguments: arguments can vary per action, per event.
 #
 #
@@ -361,6 +361,86 @@ def start_restful_api(empireMenu, user_handler, suppress=False, username=None, p
             send({"Result": stagers})
         else:
             send({"Result": "Failed"})
+
+    @socketio.on('agents')
+    def handle_agents_event(data):
+        """
+        Handles all client messages for 'agents' event
+        """
+
+        if users.is_authenticated(request.sid):
+            if data['Action'] and data['Action'] == 'VIEW':
+                activeAgentsRaw = execute_db_query(conn, 'SELECT id, session_id, listener, name, language, language_version, delay, jitter, external_ip, '+
+                    'internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, '+
+                    'lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results FROM agents')
+                agents = []
+
+                for activeAgent in activeAgentsRaw:
+                    [ID, session_id, listener, name, language, language_version, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results] = activeAgent
+
+                    agents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
+
+                send({"Result" : agents})
+            
+            elif data['Action'] and data['Action'] == 'VIEW' and data['Arguments']['Name']:
+                agent_name = data['Arguments']['Name']
+
+                activeAgentsRaw = execute_db_query(conn, 'SELECT id, session_id, listener, name, language, language_version, delay, jitter, external_ip, '+
+                    'internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, '+
+                    'lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results FROM agents ' +
+                    'WHERE name=? OR session_id=?', [agent_name, agent_name])
+                activeAgents = []
+
+                for activeAgent in activeAgentsRaw:
+                    [ID, session_id, listener, name, language, language_version, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results] = activeAgent
+                    activeAgents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
+
+                send({'Result' : activeAgents})
+
+            elif data['Action'] and data['Action'] == 'KILL' and data['Arguments']['Name']:
+                agent_name = data['Arguments']['Name']
+
+                if agent_name.lower() == "all":
+                # enumerate all target agent sessionIDs
+                    agentNameIDs = execute_db_query(conn, "SELECT name,session_id FROM agents WHERE name like '%' OR session_id like '%'")
+                else:
+                    agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+
+                if not agentNameIDs or len(agentNameIDs) == 0:
+                    send({'Result': 'agent name %s not found' %(agent_name)})
+
+                for agentNameID in agentNameIDs:
+                    (agentName, agentSessionID) = agentNameID
+
+                    # task the agent to exit
+                    msg = "tasked agent %s to exit" %(agentSessionID)
+                    main.agents.save_agent_log(agentSessionID, msg)
+                    main.agents.add_agent_task_db(agentSessionID, 'TASK_EXIT')
+
+                send({'Result': 'success'})
+
+            elif data['Action'] and data['Action'] == 'INTERACT' and data['Arguments']['Name']:
+                agent_name = data['Arguments']['Name']
+                agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+
+                if not agentNameIDs or len(agentNameIDs) == 0:
+                    send({'Result': 'agent name %s not found' %(agent_name)})
+
+                else:
+                    join_room(agentNameIDs)
+                    send({'Result': 'interacting with %s' % (agentNameIDs)})
+
+            elif data['Action'] and data['Action'] == 'RETURN' and data['Arguments']['Name']:
+                agent_name = data['Arguments']['Name']
+                agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+
+                if not agentNameIDs or len(agentNameIDs) == 0:
+                    send({'Result': 'agent name %s not found' %(agent_name)})
+
+                else:
+                    leave_room(agentNameIDs)
+                    send({'Result': 'Exited from interacting with agent %s' % (agentNameIDs)})
+
 
     @socketio.on('listeners')
     def handle_listener_event(data):
