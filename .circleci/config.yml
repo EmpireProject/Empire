@@ -16,6 +16,3 @@ jobs:
        - run:
             name: Start Empire
             command: 'sudo ./empire --headless &'
-       - run:
-            name: Stop Empire
-            command: "sleep 60 && sudo kill $(ps -ef | grep '[p]ython ./empire --headless' | awk '{print $2}')"
