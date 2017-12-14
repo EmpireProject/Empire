@@ -31,21 +31,11 @@ jobs:
 
       - run:
           name: install dependencies
-          command: |
+          command: 
            	cd setup/
-		./install.sh
-
-      - save_cache:
-          paths:
-            - ./venv
-          key: v1-dependencies-{{ checksum "requirements.txt" }}
+		        ./install.sh
         
       # run tests!
-      - run:
-          name: run tests
-          command: |
-            . venv/bin/activate
-            python manage.py test
 
       - store_artifacts:
           path: test-reports
