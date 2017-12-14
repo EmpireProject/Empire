@@ -16,3 +16,6 @@ jobs:
        - run:
             name: Start Empire
             command: 'sudo ./empire'
+       - run:
+            name: Stop Empire
+            command: "sudo kill $(ps -ef | grep '[p]ython ./empire' | awk '{print $2}')"
