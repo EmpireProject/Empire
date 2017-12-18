@@ -51,8 +51,8 @@ import iptools
 import threading
 import pickle
 import netifaces
+import random
 from time import localtime, strftime
-from Crypto.Random import random
 import subprocess
 import fnmatch
 import urllib, urllib2
