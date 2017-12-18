@@ -826,7 +826,7 @@ def send_message(packets=None):
                 launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='python', encode=False, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds)
                 return launcher
             else:
-                pass
+                return make_response(self.default_response(), 200)
         
         @app.before_request
         def check_ip():
