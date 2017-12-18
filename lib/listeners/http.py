@@ -14,6 +14,7 @@ from lib.common import agents
 from lib.common import encryption
 from lib.common import packets
 from lib.common import messages
+from lib.common import templating
 
 
 class Listener:
@@ -519,29 +520,23 @@ class Listener:
                 return randomizedStager
 
         elif language.lower() == 'python':
-            # read in the stager base
-            f = open("%s/data/agent/stagers/http.py" % (self.mainMenu.installPath))
-            stager = f.read()
-            f.close()
+            template_path = os.path.join(self.mainMenu.installPath, 'data/agent/stagers')
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template('http.py')
 
-            stager = helpers.strip_python_comments(stager)
+            template_options = {
+                    'working_hours': workingHours,
+                    'kill_date': killDate,
+                    'staging_key': stagingKey,
+                    'profile': profile,
+                    'stage_1': stage1,
+                    'stage_2': stage2
+                    }
 
-            if host.endswith("/"):
-                host = host[0:-1]
+            stager = template.render(template_options)
+            # TODO compress, minify, etc. with https://liftoff.github.io/pyminifier/
 
-            if workingHours != "":
-                stager = stager.replace('SET_WORKINGHOURS', workingHours)
-
-            if killDate != "":
-                stager = stager.replace('SET_KILLDATE', killDate)
-
-            # # patch the server and key information
-            stager = stager.replace("REPLACE_STAGING_KEY", stagingKey)
-            stager = stager.replace("REPLACE_PROFILE", profile)
-            stager = stager.replace("index.jsp", stage1)
-            stager = stager.replace("index.php", stage2)
-
-            # # base64 encode the stager and return it
+            # base64 encode the stager and return it
             if encode:
                 return base64.b64encode(stager)
             if encrypt:

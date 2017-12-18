@@ -1,6 +1,5 @@
 urllib3
 setuptools
-pycrypto
 iptools
 pydispatcher
 flask
@@ -11,3 +10,5 @@ pyinstaller
 zlib_wrapper
 netifaces
 M2Crypto
+jinja2
+cryptography

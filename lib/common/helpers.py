@@ -168,10 +168,13 @@ def chunks(l, n):
 
 def strip_python_comments(data):
     """
+    *** DECEMBER 2017 - DEPRECATED, PLEASE DO NOT USE ***
+
     Strip block comments, line comments, empty lines, verbose statements,
     and debug statements from a Python source file.
     """
     # TODO: implement pyminifier functionality
+    print color("[!] strip_python_comments is deprecated and should not be used")
     lines = data.split("\n")
     strippedLines = [line for line in lines if ((not line.strip().startswith("#")) and (line.strip() != ''))]
     return "\n".join(strippedLines)
@@ -812,9 +815,9 @@ def obfuscate(installPath, psScript, obfuscationCommand):
     # Obfuscation writes a newline character to the end of the file, ignoring that character
     psScript = obfuscatedFile.read()[0:-1]
     obfuscatedFile.close()
-    
+
     return psScript
-    
+
 def obfuscate_module(moduleSource, obfuscationCommand="", forceReobfuscation=False):
     if is_obfuscated(moduleSource) and not forceReobfuscation:
         return
@@ -839,7 +842,7 @@ def obfuscate_module(moduleSource, obfuscationCommand="", forceReobfuscation=Fal
         return ""
     f.write(obfuscatedCode)
     f.close()
-    
+
 def is_obfuscated(moduleSource):
     obfuscatedSource = moduleSource.replace("module_source", "obfuscated_module_source")
     return os.path.isfile(obfuscatedSource)
