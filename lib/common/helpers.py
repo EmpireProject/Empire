@@ -547,6 +547,13 @@ def get_config(fields):
     conn.isolation_level = None
 
     cur = conn.cursor()
+    
+    # Check if there is a new field not in the database
+    columns = [i[1] for i in cur.execute('PRAGMA table_info(config)')]
+    for field in fields.split(','):
+        if field.strip() not in columns:
+            cur.execute("ALTER TABLE config ADD COLUMN %s BLOB" % (field))
+
     cur.execute("SELECT %s FROM config" % (fields))
     results = cur.fetchone()
     cur.close()
