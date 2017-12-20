@@ -54,7 +54,7 @@ RUN apt-get -qy clean \
 RUN git clone -b docker-dev https://github.com/EmpireProject/Empire.git /opt/Empire && \
     cd /opt/Empire/setup/ && \
     ./install.sh && \
-    rm /opt/Empire/data/empire*
+    rm -rf /opt/Empire/data/empire*
 
 WORKDIR "/opt/Empire"
 ENTRYPOINT ["./empire"]
