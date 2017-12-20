@@ -19,7 +19,6 @@ serverExitCommand = 'restart'
 # Database interaction methods for the RESTful API
 #
 #####################################################
-
 def database_check_docker():
     """
     Check for docker and setup database if nessary.

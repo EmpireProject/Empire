@@ -44,7 +44,7 @@ RUN apt-get update && apt-get install -qy \
     sudo \
     apt-utils \
     lsb-core \
-    python2.7 
+    python2.7
 
 # cleanup image
 RUN apt-get -qy clean \
@@ -54,7 +54,7 @@ RUN apt-get -qy clean \
 RUN git clone -b docker-dev https://github.com/EmpireProject/Empire.git /opt/Empire && \
     cd /opt/Empire/setup/ && \
     ./install.sh && \
-    rm -rf /opt/Empire/data/empire*
+    rm /opt/Empire/data/empire*
 
 WORKDIR "/opt/Empire"
 ENTRYPOINT ["./empire"]
