@@ -45,7 +45,6 @@ RUN apt-get update && apt-get install -qy \
     apt-utils \
     lsb-core \
     python2.7 \
-    python-pip
 
 # cleanup image
 RUN apt-get -qy clean \

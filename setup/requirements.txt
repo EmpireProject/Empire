@@ -12,4 +12,3 @@ netifaces
 M2Crypto
 jinja2
 cryptography
-pycrypto
