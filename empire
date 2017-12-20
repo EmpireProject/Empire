@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import sqlite3, argparse, sys, argparse, logging, json, string
+import sqlite3, argparse, sys, argparse, logging, json, string, subprocess
 import os, re, time, signal, copy, base64, pickle, random
 from flask import Flask, request, jsonify, make_response, abort, url_for
 from time import localtime, strftime, sleep
@@ -640,7 +640,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         for activeListener in activeListenersRaw:
             [ID, name, module, listener_type, listener_category, options] = activeListener
-            listeners.append({'ID':ID, 'name':name, 'module':module, 'listener_type':listener_type, 'listener_category':listener_category, 'options':pickle.loads(activeListener[5]) })  
+            listeners.append({'ID':ID, 'name':name, 'module':module, 'listener_type':listener_type, 'listener_category':listener_category, 'options':pickle.loads(activeListener[5]) })
 
 
         return jsonify({'listeners' : listeners})
@@ -715,7 +715,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             returnVal = main.listeners.set_listener_option(listener_type, option, values)
             if not returnVal:
                  return make_response(jsonify({'error': 'error setting listener value %s with option %s' %(option, values)}), 400)
-        
+
         main.listeners.start_listener(listener_type, listenerObject)
 
         #check to see if the listener was created
@@ -848,7 +848,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             agentNameIDs = execute_db_query(conn, "SELECT name, session_id FROM agents WHERE name like '%' OR session_id like '%'")
         else:
             agentNameIDs = execute_db_query(conn, 'SELECT name, session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
-        
+
         for agentNameID in agentNameIDs:
             [agentName, agentSessionID] = agentNameID
 
@@ -856,7 +856,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
             if agentResults and agentResults[0] and agentResults[0] != '':
                 agentTaskResults.append({"AgentName":agentSessionID, "AgentResults":agentResults[0]})
-              
+
         return jsonify({'results': agentTaskResults})
 
 
@@ -877,7 +877,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         for agentNameID in agentNameIDs:
             (agentName, agentSessionID) = agentNameID
 
-            
+
             execute_db_query(conn, 'UPDATE agents SET results=? WHERE session_id=?', ['', agentSessionID])
 
         return jsonify({'success': True})
@@ -1326,6 +1326,11 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    if os.path.exists('/.dockerenv')
+        if not os.path.exists('data/empire.db')
+            print '[*] Fresh start in docker, running reset.sh for you'
+            subprocess.call(['./setup/reset.sh']
+
     if not args.restport:
         args.restport = '1337'
     else:
@@ -1338,7 +1343,7 @@ if __name__ == '__main__':
          # start an Empire instance and RESTful API
         main = empire.MainMenu(args=args)
         def thread_api(empireMenu):
-            
+
             try:
                 start_restful_api(empireMenu=empireMenu, suppress=False, username=args.username, password=args.password, port=args.restport)
             except SystemExit as e:
@@ -1353,12 +1358,12 @@ if __name__ == '__main__':
     elif args.headless:
         # start an Empire instance and RESTful API and suppress output
         main = empire.MainMenu(args=args)
-        
+
         try:
             start_restful_api(empireMenu=main, suppress=True, username=args.username, password=args.password, port=args.restport)
         except SystemExit as e:
             pass
-                
+
     else:
         # normal execution
         main = empire.MainMenu(args=args)

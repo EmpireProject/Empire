@@ -21,40 +21,42 @@
 # image base
 FROM ubuntu:16.04
 
-# author
-MAINTAINER Killswitch-GUI
+# pull from BUILD
+ARG empirversion
 
 # extra metadata
-LABEL version="1.0"
+LABEL maintainer="EmpireProject"
 LABEL description="Dockerfile base for Empire server."
+LABEL version=${empirversion}
 
-# expose ports for Empire C2 listerners
-# EXPOSE 80,443
+# env setup
+ENV STAGING_KEY=RANDOM
+ENV DEBIAN_FRONTEND=noninteractive
 
-# update repo sources
-RUN apt-get clean
-RUN apt-get update
+# set the def shell for ENV
+SHELL ["/bin/bash", "-c"]
 
-# build depends
-RUN apt-get install -qy apt-utils
-RUN apt-get install -qy git
-RUN apt-get install -qy wget
-RUN apt-get install -qy curl
-RUN apt-get install -qy sudo
-RUN apt-get install -qy lsb-core
-RUN apt-get install -qy python2.7
-RUN apt-get install -qy python-pip
+# install basic build items
+RUN apt-get update && apt-get install -qy \
+    wget \
+    curl \
+    git \
+    sudo \
+    apt-utils \
+    lsb-core \
+    python2.7 \
+    python-pip
 
 # cleanup image
-RUN apt-get -qy autoremove
+RUN apt-get -qy clean \
+    autoremove
 
-# build empire
-RUN git clone https://github.com/EmpireProject/Empire.git /opt/Empire
-ENV STAGING_KEY=RANDOM
-RUN cd /opt/Empire/setup/ && ./install.sh
+# build empire from source
+RUN git clone https://github.com/EmpireProject/Empire.git /opt/Empire && \
+    cd /opt/Empire/setup/ && \
+    ./install.sh && \
+    rm -rf /opt/Empire/data/empire*
 
+WORKDIR "/opt/Empire"
+ENTRYPOINT ["./empire"]
 # -----END OF BUILD-----
-
-
-
-
