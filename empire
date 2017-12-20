@@ -29,7 +29,6 @@ def database_check_docker():
             print '[*] Fresh start in docker, running reset.sh for you'
             subprocess.call(['./setup/reset.sh']
 
-
 def database_connect():
     """
     Connect with the backend ./empire.db sqlite database and return the
