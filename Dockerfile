@@ -44,7 +44,7 @@ RUN apt-get update && apt-get install -qy \
     sudo \
     apt-utils \
     lsb-core \
-    python2.7 \
+    python2.7 
 
 # cleanup image
 RUN apt-get -qy clean \
