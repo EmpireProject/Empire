@@ -52,11 +52,12 @@ RUN apt-get -qy clean \
     autoremove
 
 # build empire from source
-RUN git clone https://github.com/EmpireProject/Empire.git /opt/Empire && \
+RUN git clone -b docker-dev https://github.com/EmpireProject/Empire.git /opt/Empire && \
     cd /opt/Empire/setup/ && \
     ./install.sh && \
     rm -rf /opt/Empire/data/empire*
 
 WORKDIR "/opt/Empire"
 ENTRYPOINT ["./empire"]
+
 # -----END OF BUILD-----

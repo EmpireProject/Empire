@@ -1326,8 +1326,8 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    if os.path.exists('/.dockerenv')
-        if not os.path.exists('data/empire.db')
+    if os.path.exists('/.dockerenv'):
+        if not os.path.exists('data/empire.db'):
             print '[*] Fresh start in docker, running reset.sh for you'
             subprocess.call(['./setup/reset.sh']
 
