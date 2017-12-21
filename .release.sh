@@ -24,7 +24,7 @@ git push origin "dev" --tags
 git checkout master
 git merge "dev"
 git push
-hub release create dev -m  "Empire $VERSION Release"
+hub release create $VERSION -m  "Empire $VERSION Release"
 
 # ALERT VERSION
 echo "Building Version: $VERSION"
