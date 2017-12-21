@@ -14,12 +14,6 @@ docker run --rm -v "$PWD":/app treeder/bump patch
 VERSION=`cat VERSION`
 echo "version: $VERSION"
 
-# ALERT VERSION
-echo "Building Version: $VERSION"
-
-# START BUILD
-./.build.sh
-
 # TAF, PULL, MERGE DEV
 git checkout -b "dev"
 git add --all
@@ -31,6 +25,12 @@ git checkout master
 git merge "dev"
 git push
 hub release create dev -m  "Empire $VERSION Release"
+
+# ALERT VERSION
+echo "Building Version: $VERSION"
+
+# START BUILD
+./.build.sh
 
 # DOCKER TAG/VERSIONING
 docker tag $USERNAME/$IMAGE:latest $USERNAME/$IMAGE:$VERSION
