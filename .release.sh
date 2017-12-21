@@ -9,11 +9,28 @@ VERSION="$(curl -s https://raw.githubusercontent.com/EmpireProject/Empire/master
 # UPDATE THE SOURCE CODE
 git pull
 
+# bump version
+docker run --rm -v "$PWD":/app treeder/bump patch
+VERSION=`cat VERSION`
+echo "version: $VERSION"
+
 # ALERT VERSION
 echo "Building Version: $VERSION"
 
 # START BUILD
 ./.build.sh
+
+# TAF, PULL, MERGE DEV
+git checkout -b "dev"
+git add --all
+git commit -m "Empire $VERSION Release"
+git tag -a "$VERSION" -m "Empire $VERSION Release"
+git push origin "dev"
+git push origin "dev" --tags
+git checkout master
+git merge "dev"
+git push
+hub release create dev -m  "Empire $VERSION Release"
 
 # DOCKER TAG/VERSIONING
 docker tag $USERNAME/$IMAGE:latest $USERNAME/$IMAGE:$VERSION
