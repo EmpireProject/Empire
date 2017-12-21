@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -ex
-
+# Requires the following packages: git, hub, docker
 # SET THE FOLLOWING VARIABLES
 USERNAME=empireproject
 IMAGE=empire
