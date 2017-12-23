@@ -4,39 +4,65 @@ set -ex
 # SET THE FOLLOWING VARIABLES
 USERNAME=empireproject
 IMAGE=empire
-VERSION="$(curl -s https://raw.githubusercontent.com/EmpireProject/Empire/master/lib/common/empire.py | grep "VERSION =" | cut -d '"' -f2)"
+VERSION="$(cat VERSION)"
 
 # UPDATE THE SOURCE CODE
 git pull
 
 # bump version
-docker run --rm -v "$PWD":/app treeder/bump patch
+read -p "[!] Do you want to BUMP the version? [Y/N] " -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    # do dangerous stuff
+    # TODO: CHECK IF WE WANT TO BUMP PATCH or MINOR or MAJOR
+    docker run --rm -v "$PWD":/app treeder/bump minor
+fi
 VERSION=`cat VERSION`
-echo "version: $VERSION"
+echo "[*] Current version: $VERSION"
 
 # TAF, PULL, MERGE DEV
-git checkout -b "dev"
-git add --all
-git commit -m "Empire $VERSION Release"
-git tag -a "$VERSION" -m "Empire $VERSION Release"
-git push origin "dev"
-git push origin "dev" --tags
-git checkout master
-git merge "dev"
-git push
-hub release create $VERSION -m  "Empire $VERSION Release"
+read -p "[!] Do you want to create a new Github Release? [Y/N] " -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    # do dangerous stuff
+    git checkout -b "Version-$VERSION"
+    git add --all
+    git commit -m "Empire $VERSION Release"
+    # NO NEED TO TAG IF WE RELEASE
+    # git tag -a "$VERSION" -m "Empire $VERSION Release"
+    git push origin "Version-$VERSION"
+    # git push origin "dev" --tags
+    git checkout master
+    git merge "Version-$VERSION"
+    git push
+    hub release create $VERSION -m  "Empire $VERSION Release"
+fi
 
-# ALERT VERSION
-echo "Building Version: $VERSION"
 
-# START BUILD
-./.build.sh
+read -p "[!] Do you want to BUILD Docker image? [Y/N] " -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    # do dangerous stuff
+    # ALERT VERSION
+    echo "[*] Building Version: $VERSION"
+    # START BUILD
+    ./.build.sh
+fi
 
 # DOCKER TAG/VERSIONING
 docker tag $USERNAME/$IMAGE:latest $USERNAME/$IMAGE:$VERSION
 
-# PUSH TO DOCKER HUB
-docker push $USERNAME/$IMAGE:latest
-echo "Docker image pushed: $USERNAME/$IMAGE:latest"
-docker push $USERNAME/$IMAGE:$VERSION
-echo "Docker image pushed: $USERNAME/$IMAGE:$VERSION"
+read -p "[!] Do you want to PUSH to Docker Hub? [Y/N] " -n 1 -r
+echo    # (optional) move to a new line
+if [[ $REPLY =~ ^[Yy]$ ]]
+then
+    # do dangerous stuff
+    # PUSH TO DOCKER HUB
+    docker push $USERNAME/$IMAGE:latest
+    echo "Docker image pushed: $USERNAME/$IMAGE:latest"
+    docker push $USERNAME/$IMAGE:$VERSION
+    echo "Docker image pushed: $USERNAME/$IMAGE:$VERSION"
+fi
