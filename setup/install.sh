@@ -4,7 +4,7 @@
 # functions
 
 # Install Powershell on Linux
-function install_powershell {
+function install_powershell() {
 	if uname | grep -q "Darwin"; then
 		brew install openssl
 		brew install curl --with-openssl 
@@ -12,11 +12,16 @@ function install_powershell {
 		brew cask install powershell
 	else
 		if [ ! which powershell > /dev/null ] && [ ! which pwsh > /dev/null ]; then
-            curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
-            curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
-            apt-get update
+			# TODO: Support multiple powershell releases
+            		# Import the public repository GPG keys
+			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+			# Register the Microsoft Ubuntu repository
+			curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
+			# Update the list of products
+			apt-get update
+			# Install PowerShell
+			apt-get install -y powershell
         fi
-        apt-get install -y powershell
         if ls /opt/microsoft/powershell/*/DELETE_ME_TO_DISABLE_CONSOLEHOST_TELEMETRY; then
             rm /opt/microsoft/powershell/*/DELETE_ME_TO_DISABLE_CONSOLEHOST_TELEMETRY
         fi
@@ -40,6 +45,7 @@ fi
 if ! which pip > /dev/null; then
 	wget https://bootstrap.pypa.io/get-pip.py
 	python get-pip.py
+	pip install --upgrade pip
 fi
 
 if uname | grep -q "Darwin"; then
@@ -56,20 +62,24 @@ else
 	if lsb_release -d | grep -q "Fedora"; then
 		Release=Fedora
 		sudo dnf install -y make g++ python-devel m2crypto python-m2ext swig python-iptools python3-iptools libxml2-devel default-jdk openssl-devel libssl1.0.0 libssl-dev
+		pip install --upgrade pip
 		sudo pip install -r requirements.txt 
 	elif lsb_release -d | grep -q "Kali"; then
 		Release=Kali
 		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libssl1.0.0 libssl-dev
+		pip install --upgrade pip
 		sudo pip install -r requirements.txt 
 		install_powershell
 	elif lsb_release -d | grep -q "Ubuntu"; then
 		Release=Ubuntu
 		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libssl1.0.0 libssl-dev
+		pip install --upgrade pip
 		sudo pip install -r requirements.txt 
 		install_powershell
 	else
 		echo "Unknown distro - Debian/Ubuntu Fallback"
 		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libffi-dev libssl1.0.0 libssl-dev
+		pip install --upgrade pip
 		sudo pip install -r requirements.txt 
 		install_powershell
 	fi
@@ -81,16 +91,15 @@ tar -xvf ../data/misc/xar-1.5.2.tar.gz
 (cd xar-1.5.2 && make)
 (cd xar-1.5.2 && sudo make install)
 
-# Installing bomutils
-git clone https://github.com/hogliux/bomutils.git
-(cd bomutils && make)
+# Installing bomutils into non-empty dir
+(cd bomutils && git init . && git remote add -t \* -f origin https://github.com/hogliux/bomutils.git && git checkout master)
+# Normal install: git clone https://github.com/hogliux/bomutils.git
 
 # NIT: This fails on OSX. Leaving it only on Linux instances. 
 if uname | grep -q "Linux"; then
 	(cd bomutils && make install)
 fi
 chmod 755 bomutils/build/bin/mkbom && sudo cp bomutils/build/bin/mkbom /usr/local/bin/.
-
 
 # set up the database schema
 ./setup_database.py
