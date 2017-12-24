@@ -41,6 +41,9 @@ function install_powershell() {
 		fi
 		#Ubuntu 14.x
 		if cat /etc/lsb-release | grep 'DISTRIB_RELEASE=14'; then
+			# Install system components
+			sudo apt-get update
+			sudo apt-get install -y apt-transport-https curl 
 			# Import the public repository GPG keys
 			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
 			# Register the Microsoft Ubuntu repository
@@ -52,6 +55,9 @@ function install_powershell() {
 		fi
 		#Ubuntu 16.x
 		if cat /etc/lsb-release | grep 'DISTRIB_RELEASE=16'; then
+			# Install system components
+			sudo apt-get update
+			sudo apt-get install -y apt-transport-https curl 
 			# Import the public repository GPG keys
 			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
 			# Register the Microsoft Ubuntu repository
@@ -63,6 +69,9 @@ function install_powershell() {
 		fi
 		#Ubuntu 17.x
 		if  cat /etc/lsb-release | grep 'DISTRIB_RELEASE=17'; then
+			# Install system components
+			sudo apt-get update
+			sudo apt-get install -y apt-transport-https curl 
 			# Import the public repository GPG keys
 			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
 			# Register the Microsoft Ubuntu repository
