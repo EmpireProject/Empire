@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-import sqlite3, os, string, hashlib
-from Crypto.Random import random
+import sqlite3, os, string, hashlib, random
 
 
 ###################################################

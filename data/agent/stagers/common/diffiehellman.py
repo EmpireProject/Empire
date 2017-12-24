@@ -1,58 +1,8 @@
-"""
+""" Implements Diffie-Hellman as a Jinja2 partial for use in stagers
+DH code from: https://github.com/lowazo/pyDHE """
 
-Empire encryption functions.
-
-Includes:
-
-    pad()                       -   performs PKCS#7 padding
-    depad()                     -   Performs PKCS#7 depadding
-    rsa_xml_to_key()            -   parses a PowerShell RSA xml import and builds a M2Crypto object
-    rsa_encrypt()               -   encrypts data using the M2Crypto crypto object
-    aes_encrypt()               -   encrypts data using a Cryptography AES object
-    aes_encrypt_then_hmac()     -   encrypts and SHA256 HMACs data using a Cryptography AES object
-    aes_decrypt()               -   decrypts data using a Cryptography AES object
-    verify_hmac()               -   verifies a SHA256 HMAC for a data blob
-    aes_decrypt_and_verify()    -   AES decrypts data if the HMAC is validated
-    generate_aes_key()          -   generates a ranodm AES key using the OS' Random functionality
-    rc4()                       -   encrypt/decrypt a data blob using an RC4 key
-    DiffieHellman()             -   Mark Loiseau's DiffieHellman implementation, see ./data/licenses/ for license info
-
-"""
-
-import base64
+import os
 import hashlib
-import hmac
-import os
-import string
-import M2Crypto
-import os
-import random
-
-from xml.dom.minidom import parseString
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
-from cryptography.hazmat.backends import default_backend
-from binascii import hexlify
-
-
-def to_bufferable(binary):
-    return binary
-
-def _get_byte(c):
-    return ord(c)
-
-# Python 3 compatibility stuffz
-try:
-    xrange
-except Exception:
-    xrange = range
-
-    def to_bufferable(binary):
-        if isinstance(binary, bytes):
-            return binary
-        return bytes(ord(b) for b in binary)
-
-    def _get_byte(c):
-        return c
 
 # If a secure random number generator is unavailable, exit with an error.
 try:
@@ -63,169 +13,12 @@ except:
     random_function = os.urandom
     random_provider = "os.urandom"
 
-def pad(data):
-    """
-    Performs PKCS#7 padding for 128 bit block size.
-    """
-
-    pad = 16 - (len(data) % 16)
-    return data + to_bufferable(chr(pad) * pad)
-
-    # return str(s) + chr(16 - len(str(s)) % 16) * (16 - len(str(s)) % 16)
-
-
-def depad(data):
-    """
-    Performs PKCS#7 depadding for 128 bit block size.
-    """
-    if len(data) % 16 != 0:
-        raise ValueError("invalid length")
-
-    pad = _get_byte(data[-1])
-    return data[:-pad]
-
-    # return s[:-(ord(s[-1]))]
-
-
-def rsa_xml_to_key(xml):
-    """
-    Parse powershell RSA.ToXmlString() public key string and
-    return a M2Crypto key object.
-
-    Used during PowerShell RSA-EKE key exchange in agents.py.
-
-    Reference- http://stackoverflow.com/questions/10367072/m2crypto-import-keys-from-non-standard-file
-    """
-    try:
-        # parse the xml DOM and extract the exponent/modulus
-        dom = parseString(xml)
-        e = base64.b64decode(dom.getElementsByTagName('Exponent')[0].childNodes[0].data)
-        n = base64.b64decode(dom.getElementsByTagName('Modulus')[0].childNodes[0].data)
-
-        # build the new key
-        key = M2Crypto.RSA.new_pub_key((
-            M2Crypto.m2.bn_to_mpi(M2Crypto.m2.hex_to_bn(hexlify(e))),
-            M2Crypto.m2.bn_to_mpi(M2Crypto.m2.hex_to_bn(hexlify(n))),
-            ))
-
-        return key
-    # if there's an XML parsing error, return None
-    except:
-        return None
-
-
-def rsa_encrypt(key, data):
-    """
-    Take a M2Crypto key object and use it to encrypt the passed data.
-    """
-    return key.public_encrypt(data, M2Crypto.RSA.pkcs1_padding)
-
-
-def aes_encrypt(key, data):
-    """
-    Generate a random IV and new AES cipher object with the given
-    key, and return IV + encryptedData.
-    """
-    backend = default_backend()
-    IV = os.urandom(16)
-    cipher = Cipher(algorithms.AES(key), modes.CBC(IV), backend=backend)
-    encryptor = cipher.encryptor()
-    ct = encryptor.update(pad(data))+encryptor.finalize()
-    return IV + ct
-
-
-def aes_encrypt_then_hmac(key, data):
-    """
-    Encrypt the data then calculate HMAC over the ciphertext.
-    """
-    data = aes_encrypt(key, data)
-    mac = hmac.new(str(key), data, hashlib.sha256).digest()
-    return data + mac[0:10]
-
-
-def aes_decrypt(key, data):
-    """
-    Generate an AES cipher object, pull out the IV from the data
-    and return the unencrypted data.
-    """
-    if len(data) > 16:
-        backend = default_backend()
-        IV = data[0:16]
-        cipher = Cipher(algorithms.AES(key), modes.CBC(IV), backend=backend)
-        decryptor = cipher.decryptor()
-        pt = depad(decryptor.update(data[16:])+decryptor.finalize())
-        return pt
-
-
-def verify_hmac(key, data):
-    """
-    Verify the HMAC supplied in the data with the given key.
-    """
-    if len(data) > 20:
-        mac = data[-10:]
-        data = data[:-10]
-        expected = hmac.new(key, data, hashlib.sha256).digest()[0:10]
-        # Double HMAC to prevent timing attacks. hmac.compare_digest() is
-        # preferable, but only available since Python 2.7.7.
-        return hmac.new(str(key), expected).digest() == hmac.new(str(key), mac).digest()
-    else:
-        return False
-
-
-def aes_decrypt_and_verify(key, data):
-    """
-    Decrypt the data, but only if it has a valid MAC.
-    """
-    if len(data) > 32 and verify_hmac(key, data):
-        return aes_decrypt(key, data[:-10])
-    raise Exception("Invalid ciphertext received.")
-
-
-def generate_aes_key():
-    """
-    Generate a random new 128-bit AES key using OS' secure Random functions.
-    """
-    punctuation = '!#$%&()*+,-./:;<=>?@[\]^_`{|}~'
-    return ''.join(random.sample(string.ascii_letters + string.digits + '!#$%&()*+,-./:;<=>?@[\]^_`{|}~', 32))
-
-
-def rc4(key, data):
-    """
-    RC4 encrypt/decrypt the given data input with the specified key.
-
-    From: http://stackoverflow.com/questions/29607753/how-to-decrypt-a-file-that-encrypted-with-rc4-using-python
-    """
-
-    S, j, out = range(256), 0, []
-
-    # KSA Phase
-    for i in range(256):
-        j = (j + S[i] + ord(key[i % len(key)])) % 256
-        S[i], S[j] = S[j], S[i]
-
-    # PRGA Phase
-    i = j = 0
-    for char in data:
-        i = (i + 1) % 256
-        j = (j + S[i]) % 256
-        S[i], S[j] = S[j], S[i]
-        out.append(chr(ord(char) ^ S[(S[i] + S[j]) % 256]))
-
-    return ''.join(out)
-
-
 class DiffieHellman(object):
     """
     A reference implementation of the Diffie-Hellman protocol.
     By default, this class uses the 6144-bit MODP Group (Group 17) from RFC 3526.
     This prime is sufficient to generate an AES 256 key when used with
     a 540+ bit exponent.
-
-    Authored by Mark Loiseau's implementation at https://github.com/lowazo/pyDHE
-        version 3.0 of the GNU General Public License
-        see ./data/licenses/pyDHE_license.txt for license info
-
-    Also used in ./data/agent/stager.py for the Python key-negotiation stager
     """
 
     def __init__(self, generator=2, group=17, keyLength=540):
@@ -286,11 +79,10 @@ class DiffieHellman(object):
         _bytes = bits // 8 + 8
 
         while(len(bin(_rand))-2 < bits):
+
             try:
-                # Python 3
                 _rand = int.from_bytes(random_function(_bytes), byteorder='big')
             except:
-                # Python 2
                 _rand = int(random_function(_bytes).encode('hex'), 16)
 
         return _rand
@@ -351,4 +143,3 @@ class DiffieHellman(object):
         Return the shared secret key
         """
         return self.key
-

