@@ -51,7 +51,8 @@ RUN apt-get -qy clean \
     autoremove
 
 # build empire from source
-RUN git clone -b docker-dev https://github.com/EmpireProject/Empire.git /opt/Empire && \
+# TODO: When we merge to master set branch to master
+RUN git clone -b dev https://github.com/EmpireProject/Empire.git /opt/Empire && \
     cd /opt/Empire/setup/ && \
     ./install.sh && \
     rm -rf /opt/Empire/data/empire*
