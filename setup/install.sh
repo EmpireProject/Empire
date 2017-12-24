@@ -7,15 +7,15 @@
 function install_powershell() {
 	if uname | grep -q "Darwin"; then
 		brew install openssl
-		brew install curl --with-openssl 
+		brew install curl --with-openssl
 		brew tap caskroom/cask
 		brew cask install powershell
-	else	
+	else
 		# Deb 9.x
-		if [ cat /etc/debian_version | grep 9.* ]; then
+		if cat /etc/debian_version | grep 9.* ; then
 			# Install system components
 			sudo apt-get update
-			sudo apt-get install curl apt-transport-https
+			sudo apt-get install -y apt-transport-https curl
 			# Import the public repository GPG keys
 			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
 			# Register the Microsoft Product feed
@@ -24,11 +24,12 @@ function install_powershell() {
 			sudo apt-get update
 			# Install PowerShell
 			sudo apt-get install -y powershell
+		fi
 		# Deb 8.x
-		if [ cat /etc/debian_version | grep 8.* ]; then
+		if cat /etc/debian_version | grep 8.* ; then
 			# Install system components
 			sudo apt-get update
-			sudo apt-get install curl gnupg apt-transport-https
+			sudo apt-get install -y apt-transport-https curl gnupg
 			# Import the public repository GPG keys
 			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
 			# Register the Microsoft Product feed
@@ -37,8 +38,9 @@ function install_powershell() {
 			sudo apt-get update
 			# Install PowerShell
 			sudo apt-get install -y powershell
+		fi
 		#Ubuntu 14.x
-		if [ cat /etc/lsb-release | grep 'DISTRIB_RELEASE=14' ]; then
+		if cat /etc/lsb-release | grep 'DISTRIB_RELEASE=14'; then
 			# Import the public repository GPG keys
 			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
 			# Register the Microsoft Ubuntu repository
@@ -47,8 +49,9 @@ function install_powershell() {
 			sudo apt-get update
 			# Install PowerShell
 			sudo apt-get install -y powershell
+		fi
 		#Ubuntu 16.x
-		if [ cat /etc/lsb-release | grep 'DISTRIB_RELEASE=16' ]; then
+		if cat /etc/lsb-release | grep 'DISTRIB_RELEASE=16'; then
 			# Import the public repository GPG keys
 			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
 			# Register the Microsoft Ubuntu repository
@@ -57,8 +60,9 @@ function install_powershell() {
 			sudo apt-get update
 			# Install PowerShell
 			sudo apt-get install -y powershell
+		fi
 		#Ubuntu 17.x
-		if [ cat /etc/lsb-release | grep 'DISTRIB_RELEASE=17' ]; then
+		if  cat /etc/lsb-release | grep 'DISTRIB_RELEASE=17'; then
 			# Import the public repository GPG keys
 			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
 			# Register the Microsoft Ubuntu repository
@@ -67,25 +71,26 @@ function install_powershell() {
 			sudo apt-get update
 			# Install PowerShell
 			sudo apt-get install -y powershell
-		#Kali Linux 
-		if [ cat /etc/lsb-release | grep -i 'Kali' ]; then
+		fi
+		#Kali Linux
+		if cat /etc/lsb-release | grep -i 'Kali'; then
 			# Install prerequisites
 			apt-get install libunwind8 libicu55
 			wget http://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
 			dpkg -i libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
 			# Install PowerShell
 			dpkg -i powershell_6.0.0-rc.2-1.ubuntu.16.04_amd64.deb
-        fi
+       		fi
+	 fi
         if ls /opt/microsoft/powershell/*/DELETE_ME_TO_DISABLE_CONSOLEHOST_TELEMETRY; then
             rm /opt/microsoft/powershell/*/DELETE_ME_TO_DISABLE_CONSOLEHOST_TELEMETRY
         fi
-	fi
 	mkdir -p /usr/local/share/powershell/Modules
 	cp -r ../lib/powershell/Invoke-Obfuscation /usr/local/share/powershell/Modules
 }
 
 
-# Ask for the administrator password upfront so sudo is no longer required at Installation. 
+# Ask for the administrator password upfront so sudo is no longer required at Installation.
 sudo -v
 
 IFS='/' read -a array <<< pwd
