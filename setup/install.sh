@@ -24,7 +24,6 @@ function install_powershell() {
 			sudo apt-get update
 			# Install PowerShell
 			sudo apt-get install -y powershell
-		fi
 		# Deb 8.x
 		if [ cat /etc/debian_version | grep 8.* ]; then
 			# Install system components
@@ -38,7 +37,6 @@ function install_powershell() {
 			sudo apt-get update
 			# Install PowerShell
 			sudo apt-get install -y powershell
-		fi
 		#Ubuntu 14.x
 		if [ cat /etc/lsb-release | grep 'DISTRIB_RELEASE=14' ]; then
 			# Import the public repository GPG keys
@@ -49,7 +47,6 @@ function install_powershell() {
 			sudo apt-get update
 			# Install PowerShell
 			sudo apt-get install -y powershell
-		fi
 		#Ubuntu 16.x
 		if [ cat /etc/lsb-release | grep 'DISTRIB_RELEASE=16' ]; then
 			# Import the public repository GPG keys
@@ -60,7 +57,6 @@ function install_powershell() {
 			sudo apt-get update
 			# Install PowerShell
 			sudo apt-get install -y powershell
-		fi
 		#Ubuntu 17.x
 		if [ cat /etc/lsb-release | grep 'DISTRIB_RELEASE=17' ]; then
 			# Import the public repository GPG keys
@@ -71,7 +67,6 @@ function install_powershell() {
 			sudo apt-get update
 			# Install PowerShell
 			sudo apt-get install -y powershell
-		fi
 		#Kali Linux 
 		if [ cat /etc/lsb-release | grep -i 'Kali' ]; then
 			# Install prerequisites
@@ -80,7 +75,6 @@ function install_powershell() {
 			dpkg -i libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
 			# Install PowerShell
 			dpkg -i powershell_6.0.0-rc.2-1.ubuntu.16.04_amd64.deb
-		fi
         fi
         if ls /opt/microsoft/powershell/*/DELETE_ME_TO_DISABLE_CONSOLEHOST_TELEMETRY; then
             rm /opt/microsoft/powershell/*/DELETE_ME_TO_DISABLE_CONSOLEHOST_TELEMETRY
