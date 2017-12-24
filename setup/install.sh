@@ -10,17 +10,77 @@ function install_powershell() {
 		brew install curl --with-openssl 
 		brew tap caskroom/cask
 		brew cask install powershell
-	else
-		if [ ! which powershell > /dev/null ] && [ ! which pwsh > /dev/null ]; then
-			# TODO: Support multiple powershell releases
-            		# Import the public repository GPG keys
+	else	
+		# Deb 9.x
+		if [ cat /etc/debian_version | grep 9.* ]; then
+			# Install system components
+			sudo apt-get update
+			sudo apt-get install curl apt-transport-https
+			# Import the public repository GPG keys
+			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+			# Register the Microsoft Product feed
+			sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-jessie-prod jessie main" > /etc/apt/sources.list.d/microsoft.list'
+			# Update the list of products
+			sudo apt-get update
+			# Install PowerShell
+			sudo apt-get install -y powershell
+		fi
+		# Deb 8.x
+		if [ cat /etc/debian_version | grep 8.* ]; then
+			# Install system components
+			sudo apt-get update
+			sudo apt-get install curl gnupg apt-transport-https
+			# Import the public repository GPG keys
+			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+			# Register the Microsoft Product feed
+			sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-stretch-prod stretch main" > /etc/apt/sources.list.d/microsoft.list'
+			# Update the list of products
+			sudo apt-get update
+			# Install PowerShell
+			sudo apt-get install -y powershell
+		fi
+		#Ubuntu 14.x
+		if [ cat /etc/lsb-release | grep 'DISTRIB_RELEASE=14' ]; then
+			# Import the public repository GPG keys
+			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+			# Register the Microsoft Ubuntu repository
+			curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
+			# Update the list of products
+			sudo apt-get update
+			# Install PowerShell
+			sudo apt-get install -y powershell
+		fi
+		#Ubuntu 16.x
+		if [ cat /etc/lsb-release | grep 'DISTRIB_RELEASE=16' ]; then
+			# Import the public repository GPG keys
 			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
 			# Register the Microsoft Ubuntu repository
 			curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
 			# Update the list of products
-			apt-get update
+			sudo apt-get update
 			# Install PowerShell
-			apt-get install -y powershell
+			sudo apt-get install -y powershell
+		fi
+		#Ubuntu 17.x
+		if [ cat /etc/lsb-release | grep 'DISTRIB_RELEASE=17' ]; then
+			# Import the public repository GPG keys
+			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+			# Register the Microsoft Ubuntu repository
+			curl https://packages.microsoft.com/config/ubuntu/17.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
+			# Update the list of products
+			sudo apt-get update
+			# Install PowerShell
+			sudo apt-get install -y powershell
+		fi
+		#Kali Linux 
+		if [ cat /etc/lsb-release | grep -i 'Kali' ]; then
+			# Install prerequisites
+			apt-get install libunwind8 libicu55
+			wget http://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
+			dpkg -i libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
+			# Install PowerShell
+			dpkg -i powershell_6.0.0-rc.2-1.ubuntu.16.04_amd64.deb
+		fi
         fi
         if ls /opt/microsoft/powershell/*/DELETE_ME_TO_DISABLE_CONSOLEHOST_TELEMETRY; then
             rm /opt/microsoft/powershell/*/DELETE_ME_TO_DISABLE_CONSOLEHOST_TELEMETRY
@@ -45,7 +105,6 @@ fi
 if ! which pip > /dev/null; then
 	wget https://bootstrap.pypa.io/get-pip.py
 	python get-pip.py
-	pip install --upgrade pip
 fi
 
 if uname | grep -q "Darwin"; then
@@ -61,24 +120,24 @@ else
 	version=$( lsb_release -r | grep -oP "[0-9]+" | head -1 )
 	if lsb_release -d | grep -q "Fedora"; then
 		Release=Fedora
-		sudo dnf install -y make g++ python-devel m2crypto python-m2ext swig python-iptools python3-iptools libxml2-devel default-jdk openssl-devel libssl1.0.0 libssl-dev
+		sudo dnf install -y make g++ python-devel m2crypto python-m2ext swig python-iptools python3-iptools libxml2-devel default-jdk openssl-devel libssl1.0.0 libssl-dev build-essential
 		pip install --upgrade pip
 		sudo pip install -r requirements.txt 
 	elif lsb_release -d | grep -q "Kali"; then
 		Release=Kali
-		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libssl1.0.0 libssl-dev
+		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libssl1.0.0 libssl-dev build-essential
 		pip install --upgrade pip
 		sudo pip install -r requirements.txt 
 		install_powershell
 	elif lsb_release -d | grep -q "Ubuntu"; then
 		Release=Ubuntu
-		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libssl1.0.0 libssl-dev
+		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libssl1.0.0 libssl-dev build-essential
 		pip install --upgrade pip
 		sudo pip install -r requirements.txt 
 		install_powershell
 	else
 		echo "Unknown distro - Debian/Ubuntu Fallback"
-		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libffi-dev libssl1.0.0 libssl-dev
+		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libffi-dev libssl1.0.0 libssl-dev build-essential
 		pip install --upgrade pip
 		sudo pip install -r requirements.txt 
 		install_powershell
