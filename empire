@@ -168,8 +168,13 @@ def get_permanent_token(conn):
 #         - Arguments: arguments can vary per action, per event.
 #   
 #   Event - agents
-#         - Action: VIEW, KILL, INTERACT, RESULTS, RETURN
-#         - Arguments: arguments can vary per action, per event.
+#         - Action: VIEW, KILL, INTERACT, EXECUTE, RETURN
+#         - Arguments ______________
+#           - VIEW   --- Name
+#           - KILL   --- Name*
+#           - INTERACT --- Name*
+#           - EXECUTE --- Name*,Command*
+#           - RETURN --- Name*
 #
 #
 #   Event - stagers
@@ -469,7 +474,7 @@ def start_restful_api(empireMenu, user_handler, suppress=False, username=None, p
 
                 send({'Result': 'success'})
 
-            elif data['Action'] and data['Action'] == 'EXEC' and data['Arguments']['Name']:
+            elif data['Action'] and data['Action'] == 'EXECUTE' and data['Arguments']['Name']:
                 agent_name = data['Arguments']['Name']
 
                 if agent_name.lower() == "all":
