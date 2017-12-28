@@ -94,8 +94,8 @@ class MainMenu(cmd.Cmd):
         self.modules = modules.Modules(self, args=args)
         self.listeners = listeners.Listeners(self, args=args)
         self.resourceQueue = []
-	#A hashtable of autruns based on agent language
-	self.autoRuns = {}
+        #A hashtable of autruns based on agent language
+        self.autoRuns = {}
 
         self.handle_args()
 

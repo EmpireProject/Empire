@@ -24,6 +24,7 @@ class Users():
         """
         lastlogon = datetime.datetime.utcnow()
         self.users[sid] = {"username": username, "lastlogon": lastlogon, "authenticated": True, "active": True}
+        dispatcher.send("%s connected" % (username), sender="Users")
 
 
     def authenticate_user(self, sid, username, password):
@@ -34,6 +35,7 @@ class Users():
             if password == self.args.password:
                 self.update_lastlogon(sid)
                 self.users[sid]['active'] = True
+                dispatcher.send("%s connected" % (username), sender="Users")
                 return True
         
         else:
@@ -47,8 +49,7 @@ class Users():
         """
 
         if sid in self.users:
-            if self.users[sid]['authenticated']:
-                return True
+            return self.users[sid]['authenticated']
 
     def deauthenticate_user(self, sid):
         """
@@ -56,6 +57,8 @@ class Users():
         """
         if sid in self.users:
             self.users[sid]['authenticated'] = False
+            username = self.get_user_from_sid(sid)
+            dispatcher.send("%s disconnected" % (username), sender="Users")
             return True
 
     
@@ -64,7 +67,7 @@ class Users():
         Update the last logon timestamp for a user
         """
         lastlogon = datetime.datetime.utcnow()
-        self.users[sid][1] = lastlogon
+        self.users[sid]["lastlogon"] = lastlogon
 
     def get_sid_from_user(self, username):
         """
