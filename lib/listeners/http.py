@@ -572,7 +572,7 @@ class Listener:
 
         if language == 'powershell':
 
-            f = open(self.mainMenu.installPath + "./data/agent/agent.ps1")
+            f = open(self.mainMenu.installPath + "/data/agent/agent.ps1")
             code = f.read()
             f.close()
 
@@ -598,7 +598,7 @@ class Listener:
             return code
 
         elif language == 'python':
-            f = open(self.mainMenu.installPath + "./data/agent/agent.py")
+            f = open(self.mainMenu.installPath + "/data/agent/agent.py")
             code = f.read()
             f.close()
 
