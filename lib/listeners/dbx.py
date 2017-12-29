@@ -15,6 +15,7 @@ from lib.common import encryption
 from lib.common import packets
 from lib.common import messages
 from lib.common import templating
+from lib.common import obfuscation
 
 
 class Listener:
@@ -443,7 +444,7 @@ class Listener:
                     }
 
             stager = template.render(template_options)
-            # TODO compress, minify, etc. with https://liftoff.github.io/pyminifier/
+            stager = obfuscation.py_minify(stager)
 
             if encode:
                 return base64.b64encode(stager)

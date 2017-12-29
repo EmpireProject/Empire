@@ -173,7 +173,6 @@ def strip_python_comments(data):
     Strip block comments, line comments, empty lines, verbose statements,
     and debug statements from a Python source file.
     """
-    # TODO: implement pyminifier functionality
     print color("[!] strip_python_comments is deprecated and should not be used")
     lines = data.split("\n")
     strippedLines = [line for line in lines if ((not line.strip().startswith("#")) and (line.strip() != ''))]
@@ -547,7 +546,7 @@ def get_config(fields):
     conn.isolation_level = None
 
     cur = conn.cursor()
-    
+
     # Check if there is a new field not in the database
     columns = [i[1] for i in cur.execute('PRAGMA table_info(config)')]
     for field in fields.split(','):
