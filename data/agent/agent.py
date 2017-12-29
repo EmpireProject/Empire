@@ -133,7 +133,7 @@ def build_response_packet(taskingID, packetData, resultID=0):
     resultID = struct.pack('=H', resultID)
     
     if packetData:
-        packetData = base64.b64encode(packetData.decode('utf-8').encode('utf-8',errors='ignore'))
+        packetData = base64.b64encode(packetData.decode('utf-8').encode('utf-8','ignore'))
         if len(packetData) % 4:
             packetData += '=' * (4 - len(packetData) % 4)
             
