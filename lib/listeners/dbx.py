@@ -15,6 +15,7 @@ from lib.common import encryption
 from lib.common import packets
 from lib.common import messages
 from lib.common import templating
+from lib.common import obfuscation
 
 
 class Listener:
@@ -430,7 +431,7 @@ class Listener:
 
 
         elif language.lower() == 'python':
-            template_path = os.path.join(self.mainMenu.installPath, 'data/agent/stagers')
+            template_path = os.path.join(self.mainMenu.installPath, '/data/agent/stagers')
             eng = templating.TemplateEngine(template_path)
             template = eng.get_template('dropbox.py')
 
@@ -443,7 +444,7 @@ class Listener:
                     }
 
             stager = template.render(template_options)
-            # TODO compress, minify, etc. with https://liftoff.github.io/pyminifier/
+            stager = obfuscation.py_minify(stager)
 
             if encode:
                 return base64.b64encode(stager)
@@ -478,7 +479,7 @@ class Listener:
         b64DefaultResponse = base64.b64encode(self.default_response())
 
         if language == 'powershell':
-            f = open(self.mainMenu.installPath + "./data/agent/agent.ps1")
+            f = open(self.mainMenu.installPath + "/data/agent/agent.ps1")
             code = f.read()
             f.close()
 
@@ -502,7 +503,7 @@ class Listener:
 
             return code
         elif language == 'python':
-            f = open(self.mainMenu.installPath + "./data/agent/agent.py")
+            f = open(self.mainMenu.installPath + "/data/agent/agent.py")
             code = f.read()
             f.close()
 

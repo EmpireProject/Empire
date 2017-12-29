@@ -15,6 +15,7 @@ from lib.common import encryption
 from lib.common import packets
 from lib.common import messages
 from lib.common import templating
+from lib.common import obfuscation
 
 
 class Listener:
@@ -534,7 +535,7 @@ class Listener:
                     }
 
             stager = template.render(template_options)
-            # TODO compress, minify, etc. with https://liftoff.github.io/pyminifier/
+            stager = obfuscation.py_minify(stager)
 
             # base64 encode the stager and return it
             if encode:
@@ -571,7 +572,7 @@ class Listener:
 
         if language == 'powershell':
 
-            f = open(self.mainMenu.installPath + "./data/agent/agent.ps1")
+            f = open(self.mainMenu.installPath + "/data/agent/agent.ps1")
             code = f.read()
             f.close()
 
@@ -597,7 +598,7 @@ class Listener:
             return code
 
         elif language == 'python':
-            f = open(self.mainMenu.installPath + "./data/agent/agent.py")
+            f = open(self.mainMenu.installPath + "/data/agent/agent.py")
             code = f.read()
             f.close()
 
@@ -827,7 +828,7 @@ def send_message(packets=None):
                 return launcher
             else:
                 return make_response(self.default_response(), 200)
-        
+
         @app.before_request
         def check_ip():
             """
