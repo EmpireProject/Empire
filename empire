@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
-import sqlite3, argparse, sys, argparse, logging, json, string
-import os, re, time, signal, copy, base64, pickle, ast
+import sqlite3, argparse, sys, argparse, logging, json, string, subprocess
+import os, re, time, signal, copy, base64, pickle, random
 from flask import Flask, request, jsonify, make_response, abort, url_for
 from time import localtime, strftime, sleep
 import hashlib
 from OpenSSL import SSL
-from Crypto.Random import random
 import ssl
 
 # Empire imports
@@ -20,6 +19,17 @@ serverExitCommand = 'restart'
 # Database interaction methods for the RESTful API
 #
 #####################################################
+
+
+def database_check_docker():
+    """
+    Check for docker and setup database if nessary.
+    """
+    if os.path.exists('/.dockerenv'):
+        if not os.path.exists('data/empire.db'):
+            print '[*] Fresh start in docker, running reset.sh for you'
+            subprocess.call(['./setup/reset.sh'])
+
 
 def database_connect():
     """
@@ -428,10 +438,10 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
                 if not main.agents.is_agent_present(sessionID):
                     return make_response(jsonify({'error': 'invalid agent name'}), 400)
 
-                modulePSVersion = int(module.info['MinLanguageVersion'])
-                agentPSVersion = int(main.agents.get_language_version_db(sessionID))
+                moduleVersion = float(module.info['MinLanguageVersion'])
+                agentVersion = float(main.agents.get_language_version_db(sessionID))
                 # check if the agent/module PowerShell versions are compatible
-                if modulePSVersion > agentPSVersion:
+                if moduleVersion > agentVersion:
                     return make_response(jsonify({'error': "module requires PS version "+str(modulePSVersion)+" but agent running PS version "+str(agentPSVersion)}), 400)
 
         except Exception as e:
@@ -874,6 +884,12 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
                     agentTaskResults.append({"AgentName": agentSessionID, "AgentResults": results})
 
+<<<<<<< HEAD
+=======
+            if agentResults and agentResults[0] and agentResults[0] != '':
+                agentTaskResults.append({"AgentName":agentSessionID, "AgentResults":agentResults[0]})
+
+>>>>>>> dev
         return jsonify({'results': agentTaskResults})
 
 
@@ -1342,6 +1358,7 @@ if __name__ == '__main__':
     restGroup.add_argument('--password', nargs=1, help='Start the RESTful API with the specified password instead of pulling from empire.db')
 
     args = parser.parse_args()
+    database_check_docker()
 
     if not args.restport:
         args.restport = '1337'

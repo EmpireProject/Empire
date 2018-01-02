@@ -5,7 +5,7 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Get-NetForest',
+            'Name': 'Get-Forest',
 
             'Author': ['@harmj0y'],
 

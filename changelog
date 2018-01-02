@@ -1,3 +1,10 @@
+Running
+------------
+- Added Kevin Robertson's Invoke-SMBExec.ps1
+- Update Invoke-DCOM
+- Added Dockerfile, Docker Hub images, Build/Release scripts
+- Updated README for cleaner install instructions with new options
+
 10/29/2017
 ------------
 - Version 2.3 Master Release

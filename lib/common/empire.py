@@ -33,6 +33,7 @@ import listeners
 import modules
 import stagers
 import credentials
+import plugins
 from zlib_wrapper import compress
 from zlib_wrapper import decompress
 
@@ -71,6 +72,10 @@ class MainMenu(cmd.Cmd):
         # globalOptions[optionName] = (value, required, description)
         self.globalOptions = {}
 
+        # currently active plugins:
+        # {'pluginName': classObject}
+        self.loadedPlugins = {}
+
         # empty database object
         self.conn = self.database_connect()
         time.sleep(1)
@@ -85,7 +90,7 @@ class MainMenu(cmd.Cmd):
 
         dispatcher.connect(self.handle_event, sender=dispatcher.Any)
 
-        # Main, Agents, or Listeners
+        # Main, Agents, or 
         self.menu_state = 'Main'
 
         # parse/handle any passed command line arguments
@@ -97,8 +102,8 @@ class MainMenu(cmd.Cmd):
         self.modules = modules.Modules(self, args=args)
         self.listeners = listeners.Listeners(self, args=args)
         self.resourceQueue = []
-	#A hashtable of autruns based on agent language
-	self.autoRuns = {}
+        #A hashtable of autruns based on agent language
+        self.autoRuns = {}
 
         self.handle_args()
 
@@ -383,6 +388,51 @@ class MainMenu(cmd.Cmd):
     ###################################################
     # CMD methods
     ###################################################
+
+    def do_plugins(self, args):
+        "List all available and active plugins."
+        pluginPath = os.path.abspath("plugins")
+        print(helpers.color("[*] Searching for plugins at {}".format(pluginPath)))
+        # From walk_packages: "Note that this function must import all packages
+        # (not all modules!) on the given path, in order to access the __path__
+        # attribute to find submodules."
+        pluginNames = [name for _, name, _ in pkgutil.walk_packages([pluginPath])]
+        numFound = len(pluginNames)
+
+        # say how many we found, handling the 1 case
+        if numFound == 1:
+            print(helpers.color("[*] {} plugin found".format(numFound)))
+        else:
+            print(helpers.color("[*] {} plugins found".format(numFound)))
+
+        # if we found any, list them
+        if numFound > 0:
+            print("\tName\tActive")
+            print("\t----\t------")
+            activePlugins = self.loadedPlugins.keys()
+            for name in pluginNames:
+                active = ""
+                if name in activePlugins:
+                    active = "******"
+                print("\t" + name + "\t" + active)
+
+        print("")
+        print(helpers.color("[*] Use \"plugin <plugin name>\" to load a plugin."))
+
+    def do_plugin(self, pluginName):
+        "Load a plugin file to extend Empire."
+        pluginPath = os.path.abspath("plugins")
+        print(helpers.color("[*] Searching for plugins at {}".format(pluginPath)))
+        # From walk_packages: "Note that this function must import all packages
+        # (not all modules!) on the given path, in order to access the __path__
+        # attribute to find submodules."
+        pluginNames = [name for _, name, _ in pkgutil.walk_packages([pluginPath])]
+        if pluginName in pluginNames:
+            print(helpers.color("[*] Plugin {} found.".format(pluginName)))
+            # 'self' is the mainMenu object
+            plugins.load_plugin(self, pluginName)
+        else:
+            raise Exception("[!] Error: the plugin specified does not exist in {}.".format(pluginPath))
 
     def postcmd(self, stop, line):
 	if len(self.resourceQueue) > 0:
@@ -788,7 +838,7 @@ class MainMenu(cmd.Cmd):
             if obfuscate_all:
                 files = [file for file in helpers.get_module_source_files()]
             else:
-                files = [self.installPath + 'data/module_source/' + module]
+                files = ['data/module_source/' + module]
             for file in files:
                 file = self.installPath + file
                 if reobfuscate or not helpers.is_obfuscated(file):
@@ -2789,6 +2839,24 @@ except Exception as e:
         else:
             print helpers.color("[!] Please provide a valid zipfile path", color="red")
 
+    def do_shellb(self, line):
+        """Execute a shell command as a background job"""
+        cmd = line.strip()
+        if self.mainMenu.modules.modules['python/management/osx/shellb']:
+            module = self.mainMenu.modules.modules['python/management/osx/shellb']
+            if line.strip() != '':
+                module.options['Command']['Value'] = line.strip()
+
+            module.options['Agent']['Value'] = self.mainMenu.agents.get_agent_name_db(self.sessionID)
+            module_menu = ModuleMenu(self.mainMenu, 'python/management/osx/shellb')
+            msg = "[*] Tasked agent to execute %s in the background" % (str(module.options['Path']['Value']))
+            print helpers.color(msg,color="green")
+            self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+            module_menu.do_execute("")
+
+        else:
+            print helpers.color("[!] python/management/osx/shellb module not loaded")
+            
     def do_viewrepo(self, line):
         "View the contents of a repo. if none is specified, all files will be returned"
         repoName = line.strip()

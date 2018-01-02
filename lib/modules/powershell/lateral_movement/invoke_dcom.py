@@ -46,7 +46,7 @@ class Module:
                 'Value'         :   ''
             },
             'Method' : {
-                'Description'   :   'COM method to use.',
+                'Description'   :   'COM method to use. MMC20.Application,ShellWindows,ShellBrowserWindow,ExcelDDE',
                 'Required'      :   True,
                 'Value'         :   'ShellWindows'
             },

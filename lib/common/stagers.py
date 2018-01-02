@@ -19,6 +19,7 @@ import imp
 import helpers
 import errno
 import os
+import errno
 import macholib.MachO
 import shutil
 import zipfile
