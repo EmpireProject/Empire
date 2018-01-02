@@ -158,9 +158,10 @@ tar -xvf ../data/misc/xar-1.5.2.tar.gz
 (cd xar-1.5.2 && make)
 (cd xar-1.5.2 && sudo make install)
 
-# Installing bomutils into non-empty dir
-(cd bomutils && git init . && git remote add -t \* -f origin https://github.com/hogliux/bomutils.git && git checkout master)
-# Normal install: git clone https://github.com/hogliux/bomutils.git
+#Installing bomutils
+git clone https://github.com/hogliux/bomutils.git
+(cd bomutils && make)
+(cd bomutils && make install)
 
 # NIT: This fails on OSX. Leaving it only on Linux instances. 
 if uname | grep -q "Linux"; then
