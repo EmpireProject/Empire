@@ -750,7 +750,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         for activeAgent in activeAgentsRaw:
             [ID, session_id, listener, name, language, language_version, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results] = activeAgent
 
-            agents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
+            agents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key.decode('latin-1').encode("utf-8"), "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
 
         return jsonify({'agents' : agents})
 
@@ -864,10 +864,32 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             [agentName, agentSessionID] = agentNameID
 
             agentResults = execute_db_query(conn, "SELECT results FROM agents WHERE session_id=?", [agentSessionID])
+            taskIDs = execute_db_query(conn, "SELECT id from taskings where agent=?", [agentSessionID])
 
+            if agentResults[0][0] and len(agentResults[0][0]) > 0:
+                try:
+                    agentResults = ast.literal_eval(agentResults[0][0])
+                except ValueError:
+                    break
+
+                results = []
+                if len(agentResults) > 0:
+                    job_outputs = [x.strip() for x in agentResults if not x.startswith('Job')]
+
+                    for taskID, result in zip(taskIDs, job_outputs):
+                        if not (len(result.split('\n')) == 1 and result.endswith('completed!')):
+                            results.append({'taskID': taskID[0], 'results': result})
+                        else:
+                            results.append({'taskID': taskID[0], 'results': ''})
+
+                    agentTaskResults.append({"AgentName": agentSessionID, "AgentResults": results})
+
+<<<<<<< HEAD
+=======
             if agentResults and agentResults[0] and agentResults[0] != '':
                 agentTaskResults.append({"AgentName":agentSessionID, "AgentResults":agentResults[0]})
 
+>>>>>>> dev
         return jsonify({'results': agentTaskResults})
 
 

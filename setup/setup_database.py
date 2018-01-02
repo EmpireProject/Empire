@@ -59,7 +59,7 @@ OBFUSCATE_COMMAND = r'Token\All\1'
 #
 ###################################################
 
-conn = sqlite3.connect('../data/empire.db')
+conn = sqlite3.connect('%s/data/empire.db'%INSTALL_PATH)
 
 c = conn.cursor()
 

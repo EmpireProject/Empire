@@ -17,6 +17,7 @@ The Stagers() class in instantiated in ./empire.py by the main menu and includes
 import fnmatch
 import imp
 import helpers
+import errno
 import os
 import errno
 import macholib.MachO
@@ -452,8 +453,8 @@ class Stagers:
                 raise
             else:
                 pass
-
-        file = open(self.mainMenu.installPath+'data/misc/classes/com/installer/apple/Run.java','w')
+        
+        file = open(jarpath+'Run.java','w')
         file.write(javacode)
         file.close()
         currdir = os.getcwd()

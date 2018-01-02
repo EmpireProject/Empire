@@ -2,9 +2,7 @@ version: 2
 jobs:
    build:
      docker:
-       - image: circleci/python:2.7.13
-     environment:
-       - STAGING_KEY: "RANDOM"
+       - image: circleci/python:2.7
      steps:
        - checkout
        - run:

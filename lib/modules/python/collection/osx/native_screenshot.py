@@ -29,7 +29,7 @@ class Module:
             'NeedsAdmin': False,
 
             # True if the method doesn't touch disk/is reasonably opsec safe
-            'OpsecSafe': True,
+            'OpsecSafe': False,
 
             # the module language
             'Language' : 'python',
