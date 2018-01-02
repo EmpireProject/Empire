@@ -90,7 +90,7 @@ class MainMenu(cmd.Cmd):
 
         dispatcher.connect(self.handle_event, sender=dispatcher.Any)
 
-        # Main, Agents, or 
+        # Main, Agents, or
         self.menu_state = 'Main'
 
         # parse/handle any passed command line arguments
@@ -799,16 +799,16 @@ class MainMenu(cmd.Cmd):
 
     def do_preobfuscate(self, line):
         "Preobfuscate PowerShell module_source files"
-        
+
         if not helpers.is_powershell_installed():
             print helpers.color("[!] PowerShell is not installed and is required to use obfuscation, please install it first.")
             return
-        
+
         module = line.strip()
         obfuscate_all = False
         obfuscate_confirmation = False
         reobfuscate = False
-        
+
         # Preobfuscate ALL module_source files
         if module == "" or module == "all":
             choice = raw_input(helpers.color("[>] Preobfuscate all PowerShell module_source files using obfuscation command: \"" + self.obfuscateCommand + "\"?\nThis may take a substantial amount of time. [y/N] ", "red"))
@@ -1875,7 +1875,7 @@ class PowerShellAgentMenu(SubMenu):
         "Task an agent to download a file."
 
         line = line.strip()
-        
+
         if line != "":
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_DOWNLOAD", line)
             # update the agent log
@@ -1901,7 +1901,7 @@ class PowerShellAgentMenu(SubMenu):
 
             if parts[0] != "" and os.path.exists(parts[0]):
                 # Check the file size against the upload limit of 1 mb
-                
+
                 # read in the file and base64 encode it for transport
                 open_file = open(parts[0], 'r')
                 file_data = open_file.read()
@@ -2788,7 +2788,7 @@ try:
     with open("%s","r") as f:
         for line in f:
             output += line
-    
+
     print output
 except Exception as e:
     print str(e)
@@ -2856,7 +2856,7 @@ except Exception as e:
 
         else:
             print helpers.color("[!] python/management/osx/shellb module not loaded")
-            
+
     def do_viewrepo(self, line):
         "View the contents of a repo. if none is specified, all files will be returned"
         repoName = line.strip()
@@ -2994,7 +2994,7 @@ class ListenersMenu(SubMenu):
 
     def do_launcher(self, line):
         "Generate an initial launcher for a listener."
-        
+
         parts = line.strip().split()
         if len(parts) != 2:
             print helpers.color("[!] Please enter 'launcher <language> <listenerName>'")
@@ -3389,7 +3389,7 @@ class ModuleMenu(SubMenu):
             _agent = ''
             if 'Agent' in self.module.options:
                 _agent = self.module.options['Agent']['Value']
-	    
+
 	        line = line.strip("*")
             module_menu = ModuleMenu(self.mainMenu, line, agent=_agent)
             module_menu.cmdloop()

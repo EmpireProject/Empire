@@ -69,6 +69,7 @@ import encryption
 import helpers
 import packets
 import messages
+import events
 
 
 class Agents:
@@ -106,7 +107,7 @@ class Agents:
 
     def get_db_connection(self):
         """
-        Returns the 
+        Returns the
         """
         self.lock.acquire()
         self.mainMenu.conn.row_factory = None
@@ -119,7 +120,7 @@ class Agents:
     # Misc agent methods
     #
     ###############################################################
-    
+
     def is_agent_present(self, sessionID):
         """
         Checks if a given sessionID corresponds to an active agent.
@@ -129,7 +130,7 @@ class Agents:
         nameid = self.get_agent_id_db(sessionID)
         if nameid:
             sessionID = nameid
-        
+
         return sessionID in self.agents
 
 
@@ -154,9 +155,10 @@ class Agents:
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            # add the agent and report the initial checkin in the reporting database
+            # add the agent
             cur.execute("INSERT INTO agents (name, session_id, delay, jitter, external_ip, session_key, nonce, checkin_time, lastseen_time, profile, kill_date, working_hours, lost_limit, listener, language) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (sessionID, sessionID, delay, jitter, externalIP, sessionKey, nonce, checkinTime, lastSeenTime, profile, killDate, workingHours, lostLimit, listener, language))
-            cur.execute("INSERT INTO reporting (name, event_type, message, time_stamp) VALUES (?,?,?,?)", (sessionID, "checkin", checkinTime, helpers.get_datetime()))
+            # report the initial checkin in the reporting database
+            events.agent_checkin(sessionID, checkinTime)
             cur.close()
 
             # initialize the tasking/result buffers along with the client session key
@@ -252,7 +254,7 @@ class Agents:
             else:
                 # otherwise append
                 f = open("%s/%s" % (save_path, filename), 'ab')
-                
+
             if "python" in lang:
                 print helpers.color("\n[*] Compressed size of %s download: %s" %(filename, helpers.get_file_size(data)), color="green")
                 d = decompress.decompress()
@@ -368,7 +370,7 @@ class Agents:
         nameid = self.get_agent_id_db(sessionID)
         if nameid:
             sessionID = nameid
-        
+
         conn = self.get_db_connection()
         try:
             self.lock.acquire()
@@ -923,7 +925,7 @@ class Agents:
                 # rename the agent in the database
                 cur = conn.cursor()
                 cur.execute("UPDATE agents SET name=? WHERE name=?", [newname, oldname])
-                cur.execute("INSERT INTO reporting (name,event_type,message,time_stamp) VALUES (?,?,?,?)", (oldname, "rename", newname, helpers.get_datetime()))
+                events.agent_rename(oldname, newname)
                 cur.close()
 
                 retVal = True
@@ -1036,7 +1038,7 @@ class Agents:
                         agent_tasks = json.loads(agent_tasks[0])
                     else:
                         agent_tasks = []
-                    
+
                     pk = cur.execute("SELECT max(id) from taskings where agent=?", [sessionID]).fetchone()[0]
                     if pk is None:
                         pk = 0
@@ -1048,7 +1050,7 @@ class Agents:
                     cur.execute("UPDATE agents SET taskings=? WHERE session_id=?", [json.dumps(agent_tasks), sessionID])
 
                     # report the agent tasking in the reporting database
-                    cur.execute("INSERT INTO reporting (name,event_type,message,time_stamp,taskID) VALUES (?,?,?,?,?)", (sessionID, "task", taskName + " - " + task[0:50], helpers.get_datetime(), pk))
+                    events.agent_task(sessionID, taskName, pk, task)
 
                     cur.close()
 
@@ -1057,7 +1059,7 @@ class Agents:
                         f = open('%s/LastTask' % (self.installPath), 'w')
                         f.write(task)
                         f.close()
-                    
+
                     return pk
 
                 finally:
@@ -1322,16 +1324,16 @@ class Agents:
             self.mainMenu.agents.update_agent_sysinfo_db(sessionID, listener=listenerName, internal_ip=internal_ip, username=username, hostname=hostname, os_details=os_details, high_integrity=high_integrity, process_name=process_name, process_id=process_id, language_version=language_version, language=language)
 
             # signal to Slack that this agent is now active
-            
+
             slackToken = listenerOptions['SlackToken']['Value']
             slackChannel = listenerOptions['SlackChannel']['Value']
             if slackToken != "":
                 slackText = ":biohazard: NEW AGENT :biohazard:\r\n```Machine Name: %s\r\nInternal IP: %s\r\nExternal IP: %s\r\nUser: %s\r\nOS Version: %s\r\nAgent ID: %s```" % (hostname,internal_ip,external_ip,username,os_details,sessionID)
                 helpers.slackMessage(slackToken,slackChannel,slackText)
-            
+
 	        # signal everyone that this agent is now active
             dispatcher.send("[+] Initial agent %s from %s now active (Slack)" % (sessionID, clientIP), sender='Agents')
-	    
+
             # save the initial sysinfo information in the agent log
             agent = self.mainMenu.agents.get_agent_db(sessionID)
             output = messages.display_agent(agent, returnAsString=True)
@@ -1479,7 +1481,7 @@ class Agents:
                 results = True
 
             conn = self.get_db_connection()
-            cur = conn.cursor()      
+            cur = conn.cursor()
             data = cur.execute("SELECT data FROM taskings WHERE agent=? AND id=?", [sessionID,taskID]).fetchone()[0]
             cur.close()
             theSender="Agents"
@@ -1521,7 +1523,7 @@ class Agents:
             self.lock.acquire()
             # report the agent result in the reporting database
             cur = conn.cursor()
-            cur.execute("INSERT INTO reporting (name, event_type, message, time_stamp, taskID) VALUES (?,?,?,?,?)", (agentSessionID, "result", responseName, helpers.get_datetime(), taskID))
+            events.agent_result(agentSessionID, responseName, taskID)
 
             # insert task results into the database, if it's not a file
             if taskID != 0 and responseName not in ["TASK_DOWNLOAD", "TASK_CMD_JOB_SAVE", "TASK_CMD_WAIT_SAVE"] and data != None:
@@ -1803,7 +1805,7 @@ class Agents:
             self.save_agent_log(sessionID, data)
 
         elif responseName == "TASK_SCRIPT_COMMAND":
-            
+
             self.update_agent_results_db(sessionID, data)
             # update the agent log
             self.save_agent_log(sessionID, data)
