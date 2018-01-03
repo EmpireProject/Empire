@@ -16,4 +16,4 @@ jobs:
             command: 'sudo ./empire --headless &'
        - run:
             name: REST API test
-            command: 'python test.py'
+            command: 'cd .circleci/ && python test.py'
