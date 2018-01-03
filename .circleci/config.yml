@@ -15,5 +15,8 @@ jobs:
             name: Start Empire
             command: 'sudo ./empire --headless &'
        - run:
+            name: modify kernel behavior for TIME_WAIT connections
+            command: 'sudo sysctl net.ipv4.tcp_tw_recycle=1'
+       - run:
             name: REST API test
             command: 'cd .circleci/ && python test.py'
