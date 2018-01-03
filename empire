@@ -884,12 +884,6 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
                     agentTaskResults.append({"AgentName": agentSessionID, "AgentResults": results})
 
-<<<<<<< HEAD
-=======
-            if agentResults and agentResults[0] and agentResults[0] != '':
-                agentTaskResults.append({"AgentName":agentSessionID, "AgentResults":agentResults[0]})
-
->>>>>>> dev
         return jsonify({'results': agentTaskResults})
 
 
