@@ -7,6 +7,7 @@ from time import localtime, strftime, sleep
 import hashlib
 from OpenSSL import SSL
 import ssl
+import ast
 
 # Empire imports
 from lib.common import empire, helpers
