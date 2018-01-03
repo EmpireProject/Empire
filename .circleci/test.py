@@ -5,7 +5,7 @@ from time import sleep
 
 print "Starting test....."
 sleep(12) # Wait for the Rest API to become available
-baseurl = "https://localhost:1337"
+baseurl = "https://127.0.0.1:1337"
 endpoint = "/api/admin/login"
 headers = {"Content-Type":"application/json"}
 
