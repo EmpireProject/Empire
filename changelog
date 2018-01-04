@@ -1,9 +1,28 @@
-Running
+01/04/2018
 ------------
-- Added Kevin Robertson's Invoke-SMBExec.ps1
-- Update Invoke-DCOM
-- Added Dockerfile, Docker Hub images, Build/Release scripts
-- Updated README for cleaner install instructions with new options
+- Version 2.4 Master Release
+	- Added Kevin Robertson's Invoke-SMBExec.ps1
+	- Update Invoke-DCOM
+	- Added Dockerfile, Docker Hub images, Build/Release scripts (@killswitch-gui)
+	- Updated README for cleaner install instructions with new options
+	- Support for plugins (@DakotaNelson)
+	- Fixed module output bug #792 (@clr2of8)
+	- Added MSBuild XML Launcher (@p3nt4)
+	- Added module to extract private keys (@mlinton)
+	- Added cross-platform macro (@malcomvetter)
+	- Proxy settings fix #788 (@m7x)
+	- Updated mimikatz binary in Invoke-Mimikatz to version 2.1.1 20171106
+	- Updated install.sh
+	- Updated PowerView.ps1 source and all related modules 
+	- powershell install fix, Invoke-obfuscation updates, Improve ScriptBlockLogging bypass (@cobbr)
+	- Custom header support for http_com listener (@leeloobeek)
+	- Updating the Port option in listener settings no longer updates the port shown in the Host setting. 
+	- Added pwd and cat aliases for the python agent (@xorrior)
+	- Added redirector listener, formerly known as the redirector module (@xorrior)
+	- Added exception handling for wmi call in powershell stager #827
+	- Get Agent Results REST API call returns taskID #854 (@byt3bl33d3r)
+	- Added templating engine (@DakotaNelson)
+	- Removed pyCrypto dependencies (@elitest)
 
 10/29/2017
 ------------
