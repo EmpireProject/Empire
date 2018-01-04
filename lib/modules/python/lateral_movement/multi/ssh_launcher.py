@@ -121,7 +121,7 @@ def wall(host, pw):
     while True:
         try:
             data = os.read(fd, 1024)
-            if data == "Password:":
+            if data[:8] == "Password" and data[-1:] == ":":
                 os.write(fd, pw + '\\n')
 
         except OSError:
