@@ -16,13 +16,15 @@
 	- Updated PowerView.ps1 source and all related modules 
 	- powershell install fix, Invoke-obfuscation updates, Improve ScriptBlockLogging bypass (@cobbr)
 	- Custom header support for http_com listener (@leeloobeek)
-	- Updating the Port option in listener settings no longer updates the port shown in the Host setting. 
+	- Allow for distinct values between the Host and Port options (@jetsecurity) 
 	- Added pwd and cat aliases for the python agent (@xorrior)
 	- Added redirector listener, formerly known as the redirector module (@xorrior)
 	- Added exception handling for wmi call in powershell stager #827
 	- Get Agent Results REST API call returns taskID #854 (@byt3bl33d3r)
 	- Added templating engine (@DakotaNelson)
 	- Removed pyCrypto dependencies (@elitest)
+	- http listener update: Updated defaults response logic and default page to match IIS 7.5 #890 (@s0lst1c3)
+	- Added module for nix aws ec2 metadata (@TweekFawkes)
 
 10/29/2017
 ------------
