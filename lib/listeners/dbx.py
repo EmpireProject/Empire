@@ -431,7 +431,9 @@ class Listener:
 
 
         elif language.lower() == 'python':
-            template_path = os.path.join(self.mainMenu.installPath, '/data/agent/stagers')
+            template_path = [
+                os.path.join(self.mainMenu.installPath, '/data/agent/stagers'),
+                os.path.join(self.mainMenu.installPath, './data/agent/stagers')]
             eng = templating.TemplateEngine(template_path)
             template = eng.get_template('dropbox.py')
 
