@@ -995,7 +995,7 @@ def send_message(packets=None):
                                     print helpers.color("[*] Orphaned agent from %s, signaling restaging" % (clientIP))
                                     return make_response(self.default_response(), 401)
                                 else:
-                                    return make_response(self.default_response(), 404)
+                                    return make_response(self.default_response(), 200)
 
                             else:
                                 # actual taskings
@@ -1003,9 +1003,9 @@ def send_message(packets=None):
                                 return make_response(results, 200)
                         else:
                             # dispatcher.send("[!] Results are None...", sender='listeners/http')
-                            return make_response(self.default_response(), 404)
+                            return make_response(self.default_response(), 200)
                 else:
-                    return make_response(self.default_response(), 404)
+                    return make_response(self.default_response(), 200)
 
             else:
                 dispatcher.send("[!] %s requested by %s with no routing packet." % (request_uri, clientIP), sender='listeners/http')
