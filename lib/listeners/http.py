@@ -1009,7 +1009,7 @@ def send_message(packets=None):
 
             else:
                 dispatcher.send("[!] %s requested by %s with no routing packet." % (request_uri, clientIP), sender='listeners/http')
-                return make_response(self.default_response(), 404)
+                return make_response(self.default_response(), 200)
 
         @app.route('/<path:request_uri>', methods=['POST'])
         def handle_post(request_uri):
