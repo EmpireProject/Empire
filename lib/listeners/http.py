@@ -459,7 +459,7 @@ class Listener:
                     if proxy.lower() == "default":
                         launcherBase += "proxy = urllib2.ProxyHandler();\n"
                     else:
-                        proto = proxy.Split(':')[0]
+                        proto = proxy.split(':')[0]
                         launcherBase += "proxy = urllib2.ProxyHandler({'"+proto+"':'"+proxy+"'});\n"
 
                     if proxyCreds != "none":
