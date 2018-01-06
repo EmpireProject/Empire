@@ -3012,6 +3012,7 @@ class ListenersMenu(SubMenu):
                 stager.options['Language']['Value'] = language
                 stager.options['Base64']['Value'] = "True"
                 stager.options['Proxy']['Value'] = listenerOptions['options']['Proxy']['Value']
+                stager.options['ProxyCreds']['Value'] = listenerOptions['options']['ProxyCreds']['Value']
                 if self.mainMenu.obfuscate:
                     stager.options['Obfuscate']['Value'] = "True"
                 else:
