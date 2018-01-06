@@ -3006,10 +3006,12 @@ class ListenersMenu(SubMenu):
         if listenerName:
             try:
                 # set the listener value for the launcher
+                listenerOptions = self.mainMenu.listeners.activeListeners[listenerName]
                 stager = self.mainMenu.stagers.stagers['multi/launcher']
                 stager.options['Listener']['Value'] = listenerName
                 stager.options['Language']['Value'] = language
                 stager.options['Base64']['Value'] = "True"
+                stager.options['Proxy']['Value'] = listenerOptions['options']['Proxy']['Value']
                 if self.mainMenu.obfuscate:
                     stager.options['Obfuscate']['Value'] = "True"
                 else:
