@@ -3006,6 +3006,7 @@ class ListenersMenu(SubMenu):
         if listenerName:
             try:
                 # set the listener value for the launcher
+                listenerOptions = self.mainMenu.listeners.activeListeners[listenerName]
                 stager = self.mainMenu.stagers.stagers['multi/launcher']
                 stager.options['Listener']['Value'] = listenerName
                 stager.options['Language']['Value'] = language
