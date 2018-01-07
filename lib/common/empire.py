@@ -3121,8 +3121,8 @@ class ListenerMenu(SubMenu):
             # set the listener value for the launcher
             listenerOptions = self.mainMenu.listeners.activeListeners[self.listenerName]
             stager = self.mainMenu.stagers.stagers['multi/launcher']
-            stager.options['Listener']['Value'] = listenerName
-            stager.options['Language']['Value'] = language
+            stager.options['Listener']['Value'] = self.listenerName
+            stager.options['Language']['Value'] = parts[0]
             stager.options['Base64']['Value'] = "True"
             stager.options['Proxy']['Value'] = listenerOptions['options']['Proxy']['Value']
             stager.options['ProxyCreds']['Value'] = listenerOptions['options']['ProxyCreds']['Value']
