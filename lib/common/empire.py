@@ -3119,7 +3119,7 @@ class ListenerMenu(SubMenu):
 
         try:
             # set the listener value for the launcher
-            listenerOptions = self.mainMenu.listeners.activeListeners[listenerName]
+            listenerOptions = self.mainMenu.listeners.activeListeners[self.listenerName]
             stager = self.mainMenu.stagers.stagers['multi/launcher']
             stager.options['Listener']['Value'] = listenerName
             stager.options['Language']['Value'] = language
