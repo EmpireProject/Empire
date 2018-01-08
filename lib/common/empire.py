@@ -3011,8 +3011,11 @@ class ListenersMenu(SubMenu):
                 stager.options['Listener']['Value'] = listenerName
                 stager.options['Language']['Value'] = language
                 stager.options['Base64']['Value'] = "True"
-                stager.options['Proxy']['Value'] = listenerOptions['options']['Proxy']['Value']
-                stager.options['ProxyCreds']['Value'] = listenerOptions['options']['ProxyCreds']['Value']
+                try:
+                    stager.options['Proxy']['Value'] = listenerOptions['options']['Proxy']['Value']
+                    stager.options['ProxyCreds']['Value'] = listenerOptions['options']['ProxyCreds']['Value']
+                except:
+                    pass
                 if self.mainMenu.obfuscate:
                     stager.options['Obfuscate']['Value'] = "True"
                 else:
@@ -3124,8 +3127,11 @@ class ListenerMenu(SubMenu):
             stager.options['Listener']['Value'] = self.listenerName
             stager.options['Language']['Value'] = parts[0]
             stager.options['Base64']['Value'] = "True"
-            stager.options['Proxy']['Value'] = listenerOptions['options']['Proxy']['Value']
-            stager.options['ProxyCreds']['Value'] = listenerOptions['options']['ProxyCreds']['Value']
+            try:
+                stager.options['Proxy']['Value'] = listenerOptions['options']['Proxy']['Value']
+                stager.options['ProxyCreds']['Value'] = listenerOptions['options']['ProxyCreds']['Value']
+            except:
+                pass
             print stager.generate()
         except Exception as e:
             print helpers.color("[!] Error generating launcher: %s" % (e))
