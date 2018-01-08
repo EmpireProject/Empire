@@ -593,7 +593,9 @@ class Listener:
                 return randomizedStager
 
         elif language.lower() == 'python':
-            template_path = os.path.join(self.mainMenu.installPath, 'data/agent/stagers')
+            template_path = [
+                os.path.join(self.mainMenu.installPath, '/data/agent/stagers'),
+                os.path.join(self.mainMenu.installPath, './data/agent/stagers')]
             eng = templating.TemplateEngine(template_path)
             template = eng.get_template('http.py')
 
@@ -900,7 +902,7 @@ def send_message(packets=None):
                 return launcher
             else:
                 return make_response(self.default_response(), 404)
-        
+
         @app.before_request
         def check_ip():
             """
@@ -932,7 +934,7 @@ def send_message(packets=None):
             """
             Return default server web page if user navigates to index.
             """
-            
+
             static_dir = self.mainMenu.installPath + "data/misc/"
             return make_response(self.index_page(), 200)
 
