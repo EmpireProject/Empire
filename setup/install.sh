@@ -89,7 +89,7 @@ function install_powershell() {
 			dpkg -i libssl1.0.0_1.0.1t-1+deb8u7_amd64.deb
 			# Install PowerShell
 			wget https://github.com/PowerShell/PowerShell/releases/download/v6.0.0/powershell_6.0.0-1.ubuntu.16.04_amd64.deb
-			dpkg -i powershell_6.0.0-rc.2-1.ubuntu.16.04_amd64.deb
+			dpkg -i powershell_6.0.0-1.ubuntu.16.04_amd64.deb
        		fi
 	 fi
         if ls /opt/microsoft/powershell/*/DELETE_ME_TO_DISABLE_CONSOLEHOST_TELEMETRY; then
