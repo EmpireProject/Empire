@@ -14,7 +14,6 @@ from lib.common import db
 
 def handle_event(signal, sender):
     """ Puts all dispatched events into the DB """
-    # TODO get db cursor, insert events for all
     cur = db.cursor()
     event_data = json.dumps({'signal': signal, 'sender': sender})
     log_event(cur, 'user', 'dispatched_event', event_data, helpers.get_datetime())
