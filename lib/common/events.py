@@ -22,7 +22,9 @@ def handle_event(signal, sender):
 # Record all dispatched events
 dispatcher.connect(handle_event, sender=dispatcher.Any)
 
+################################################################################
 # Helper functions for logging common events
+################################################################################
 
 def agent_checkin(session_id, checkin_time):
     """
@@ -59,7 +61,7 @@ def agent_task(session_id, task_name, task_id, task):
     session_id - of an agent
     task_name  - a string (e.g. "TASK_EXIT", "TASK_CMD_WAIT", "TASK_SHELL") that
                  an agent is able to interpret as a command
-    task_id    - a unique ID for this task (usually an integer 0<id<65535)
+    task_id    - a unique ID for this task (usually an integer 0<=id<=65535)
     task       - the actual task definition string (e.g. for "TASK_SHELL" this
                  is the shell command to run)
     """
@@ -81,6 +83,29 @@ def agent_result(cur, session_id, response_name, task_id):
     response_data = json.dumps({'task_type': response_name})
     log_event(cur, session_id, "agent_result", response_data, helpers.get_datetime(), task_id)
     cur.close()
+
+def agent_delete(session_id):
+    """
+    Helper function for reporting an agent's deletion.
+
+    session_id - the agent's ID
+    """
+    cur = db.cursor()
+    data = json.dumps({})
+    log_event(cur, session_id, "agent_deleted", data, helpers.get_datetime())
+    cur.close()
+
+def agent_clear_tasks(session_id):
+    """
+    Helper function for reporting an agent's tasks have been cleared.
+
+    session_id - the agent's ID
+    """
+    cur = db.cursor()
+    data = json.dumps({})
+    log_event(cur, session_id, "agent_tasks_cleared", data, helpers.get_datetime())
+    cur.close()
+
 
 def log_event(cur, name, event_type, message, timestamp, task_id=None):
     """

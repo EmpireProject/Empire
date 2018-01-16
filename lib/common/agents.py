@@ -157,9 +157,10 @@ class Agents:
             cur = conn.cursor()
             # add the agent
             cur.execute("INSERT INTO agents (name, session_id, delay, jitter, external_ip, session_key, nonce, checkin_time, lastseen_time, profile, kill_date, working_hours, lost_limit, listener, language) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (sessionID, sessionID, delay, jitter, externalIP, sessionKey, nonce, checkinTime, lastSeenTime, profile, killDate, workingHours, lostLimit, listener, language))
+            cur.close()
+
             # report the initial checkin in the reporting database
             events.agent_checkin(sessionID, checkinTime)
-            cur.close()
 
             # initialize the tasking/result buffers along with the client session key
             self.agents[sessionID] = {'sessionKey': sessionKey, 'functions': []}
@@ -193,6 +194,9 @@ class Agents:
             cur = conn.cursor()
             cur.execute("DELETE FROM agents WHERE session_id LIKE ?", [sessionID])
             cur.close()
+
+            # log an "agent deleted" event
+            events.agent_delete(sessionID)
         finally:
             self.lock.release()
 
@@ -1153,6 +1157,10 @@ class Agents:
             cur.close()
         finally:
             self.lock.release()
+
+        if sessionID == '%':
+            sessionID = 'all'
+        events.agent_clear_tasks(sessionID)
 
 
     ###############################################################
