@@ -224,6 +224,11 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             if (token != apiToken) and (token != permanentApiToken):
                 return make_response('', 401)
 
+    @app.after_request
+    def add_cors(response):
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response
+
 
     @app.errorhandler(Exception)
     def exception_handler(error):
