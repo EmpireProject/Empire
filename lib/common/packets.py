@@ -13,11 +13,11 @@ HMACc = first 10 bytes of a SHA256 HMAC using the client's session key
 
     Routing Packet:
     +---------+-------------------+--------------------------+
-    | RC4 IV  | RC4s(RoutingData) | AESc(client packet data) | ... 
+    | RC4 IV  | RC4s(RoutingData) | AESc(client packet data) | ...
     +---------+-------------------+--------------------------+
     |    4    |         16        |        RC4 length        |
     +---------+-------------------+--------------------------+
-    
+
     RC4s(RoutingData):
     +-----------+------+------+-------+--------+
     | SessionID | Lang | Meta | Extra | Length |
@@ -44,12 +44,12 @@ HMACc = first 10 bytes of a SHA256 HMAC using the client's session key
     +------+--------+--------------------+--------------------+-----------+
     |  2   |   4    |         2          |    2     |    2    | <Length>  |
     +------+--------+--------------------+----------+---------+-----------+
-    
+
     type = packet type
     total # of packets = number of total packets in the transmission
     Packet # = where the packet fits in the transmission
     Task ID = links the tasking to results for deconflict on server side
-    
+
 
     Client *_SAVE packets have the sub format:
 
@@ -64,6 +64,7 @@ import base64
 import os
 import hashlib
 import hmac
+import json
 from pydispatch import dispatcher
 
 # Empire imports
@@ -204,7 +205,13 @@ def parse_result_packet(packet, offset=0):
         remainingData = packet[12+offset+length:]
         return (PACKET_IDS[responseID], totalPacket, packetNum, taskID, length, data, remainingData)
     except Exception as e:
-        dispatcher.send("[*] parse_result_packet(): exception: %s" % (e), sender='Packets')
+        message = "[!] parse_result_packet(): exception: {}".format(e)
+        signal = json.dumps({
+            'print': True,
+            'message': message
+        })
+        dispatcher.send(signal, sender="empire")
+
         return (None, None, None, None, None, None, None)
 
 
@@ -244,11 +251,11 @@ def parse_routing_packet(stagingKey, data):
     Routing packet format:
 
         +---------+-------------------+--------------------------+
-        | RC4 IV  | RC4s(RoutingData) | AESc(client packet data) | ... 
+        | RC4 IV  | RC4s(RoutingData) | AESc(client packet data) | ...
         +---------+-------------------+--------------------------+
         |    4    |         16        |        RC4 length        |
         +---------+-------------------+--------------------------+
-        
+
         RC4s(RoutingData):
         +-----------+------+------+-------+--------+
         | SessionID | Lang | Meta | Extra | Length |
@@ -278,7 +285,12 @@ def parse_routing_packet(stagingKey, data):
                 # B == 1 byte unsigned char, H == 2 byte unsigned short, L == 4 byte unsigned long
                 (language, meta, additional, length) = struct.unpack("=BBHL", routingPacket[8:])
                 if length < 0:
-                    dispatcher.send('[*] parse_agent_data(): length in decoded rc4 packet is < 0', sender='Packets')
+                    message = "[*] parse_agent_data(): length in decoded rc4 packet is < 0"
+                    signal = json.dumps({
+                        'print': True,
+                        'message': message
+                    })
+                    dispatcher.send(signal, sender="empire")
                     encData = None
                 else:
                     encData = data[(20+offset):(20+offset+length)]
@@ -295,11 +307,21 @@ def parse_routing_packet(stagingKey, data):
             return results
 
         else:
-            dispatcher.send("[*] parse_agent_data() data length incorrect: %s" % (len(data)), sender='Packets')
+            message = "[*] parse_agent_data() data length incorrect: {}".format(len(data))
+            signal = json.dumps({
+                'print': True,
+                'message': message
+            })
+            dispatcher.send(signal, sender="empire")
             return None
 
     else:
-        dispatcher.send("[*] parse_agent_data() data is None", sender='Packets')
+        message = "[*] parse_agent_data() data is None"
+        signal = json.dumps({
+            'print': True,
+            'message': message
+        })
+        dispatcher.send(signal, sender="empire")
         return None
 
 
@@ -312,11 +334,11 @@ def build_routing_packet(stagingKey, sessionID, language, meta="NONE", additiona
 
         Routing Packet:
         +---------+-------------------+--------------------------+
-        | RC4 IV  | RC4s(RoutingData) | AESc(client packet data) | ... 
+        | RC4 IV  | RC4s(RoutingData) | AESc(client packet data) | ...
         +---------+-------------------+--------------------------+
         |    4    |         16        |        RC4 length        |
         +---------+-------------------+--------------------------+
-        
+
         RC4s(RoutingData):
         +-----------+------+------+-------+--------+
         | SessionID | Lang | Meta | Extra | Length |

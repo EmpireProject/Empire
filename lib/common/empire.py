@@ -24,6 +24,7 @@ import shlex
 import pkgutil
 import importlib
 import base64
+import json
 
 # Empire imports
 import helpers
@@ -107,7 +108,12 @@ class MainMenu(cmd.Cmd):
 
         self.handle_args()
 
-        dispatcher.send('[*] Empire starting up...', sender="Empire")
+        message = "[*] Empire starting up..."
+        signal = json.dumps({
+            'print': True,
+            'message': message
+        })
+        dispatcher.send(signal, sender="empire")
 
         # print the loading menu
         messages.loading()
@@ -215,9 +221,14 @@ class MainMenu(cmd.Cmd):
         """
         Perform any shutdown actions.
         """
-
         print "\n" + helpers.color("[!] Shutting down...")
-        dispatcher.send("[*] Empire shutting down...", sender="Empire")
+
+        message = "[*] Empire shutting down..."
+        signal = json.dumps({
+            'print': True,
+            'message': message
+        })
+        dispatcher.send(signal, sender="empire")
 
         # enumerate all active servers/listeners and shut them down
         self.listeners.shutdown_listener('all')
@@ -339,19 +350,13 @@ class MainMenu(cmd.Cmd):
 
     def handle_event(self, signal, sender):
         """
-        Default event handler.
-
-        Signal Senders:
-            Empire          -   the main Empire controller (this file)
-            Agents          -   the Agents handler
-            Listeners       -   the Listeners handler
-            HttpHandler     -   the HTTP handler
-            EmpireServer    -   the Empire HTTP server
+        Whenver an event is received from the dispatcher, decide whether it
+        should be printed, and if so, print it. If self.args.debug, log all
+        events to a file.
         """
 
         # if --debug X is passed, log out all dispatcher signals
         if self.args.debug:
-
             debug_file = open('empire.debug', 'a')
             debug_file.write("%s %s : %s\n" % (helpers.get_datetime(), sender, signal))
             debug_file.close()
@@ -359,30 +364,19 @@ class MainMenu(cmd.Cmd):
             if self.args.debug == '2':
                 # if --debug 2, also print the output to the screen
                 print " %s : %s" % (sender, signal)
+        # note: kinda feels like this should be in lib/common/events.py but
+        # we don't have access to self.args there
 
-        # display specific signals from the agents.
-        if sender == "Agents":
-            if "[+] Initial agent" in signal:
-                print helpers.color(signal)
+        # load up the signal so we can look into it
+        try:
+            signal_data = json.loads(signal)
+        except ValueError:
+            print(helpers.color("[!] Error: bad signal recieved {} from sender {}".format(signal, sender)))
+            return
 
-            if ("[+] Listener for" in signal) and ("updated to" in signal):
-                print helpers.color(signal)
-
-            elif "[!] Agent" in signal and "exiting" in signal:
-                print helpers.color(signal)
-
-            elif "WARNING" in signal or "attempted overwrite" in signal:
-                print helpers.color(signal)
-
-            elif "on the blacklist" in signal:
-                print helpers.color(signal)
-
-        elif sender == "EmpireServer":
-            if "[!] Error starting listener" in signal:
-                print helpers.color(signal)
-
-        elif sender == "Listeners":
-            print helpers.color(signal)
+        # print any signal that indicates we should
+        if('print' in signal_data and signal_data['print']):
+            print(helpers.color(signal_data['message']))
 
 
     ###################################################
@@ -980,6 +974,25 @@ class SubMenu(cmd.Cmd):
     def __init__(self, mainMenu):
         cmd.Cmd.__init__(self)
         self.mainMenu = mainMenu
+
+    def handle_agent_event(self, signal, sender):
+        """
+        Handle agent event signals.
+        """
+        name = self.mainMenu.agents.get_agent_name_db(self.sessionID)
+        if(sender.startswith("agents/{}".format(name))):
+            # display any results returned by this agent that are returned
+            # while we are interacting with it
+            try:
+                signal_data = json.loads(signal)
+            except ValueError:
+                print(helpers.color("[!] Error: bad signal recieved {} from sender {}".format(signal, sender)))
+                return
+
+            if('cprint' in signal_data and signal_data['cprint']):
+                results = self.mainMenu.agents.get_agent_results_db(self.sessionID)
+                if results:
+                    print "\n" + results
 
     def cmdloop(self):
 	if len(self.mainMenu.resourceQueue) > 0:
@@ -1603,30 +1616,11 @@ class PowerShellAgentMenu(SubMenu):
             print "\n" + results.rstrip('\r\n')
 
         # listen for messages from this specific agent
-        dispatcher.connect(self.handle_agent_event, sender=dispatcher.Any)
+        dispatcher.connect(SubMenu.handle_agent_event, sender=dispatcher.Any)
 
     # def preloop(self):
     #     traceback.print_stack()
 
-    def handle_agent_event(self, signal, sender):
-        """
-        Handle agent event signals.
-        """
-
-        if '[!] Agent' in signal and 'exiting' in signal:
-            pass
-
-        name = self.mainMenu.agents.get_agent_name_db(self.sessionID)
-        if (str(self.sessionID) + " returned results" in signal) or (str(name) + " returned results" in signal):
-            # display any results returned by this agent that are returned
-            # while we are interacting with it, unless they are from the powershell keylogger
-            results = self.mainMenu.agents.get_agent_results_db(self.sessionID)
-            if results and not sender == "AgentsPsKeyLogger":
-                print "\n" + results
-
-        elif "[+] Part of file" in signal and "saved" in signal:
-            if (str(self.sessionID) in signal) or (str(name) in signal):
-                print helpers.color(signal)
 
     def default(self, line):
         "Default handler"
@@ -2367,32 +2361,13 @@ class PythonAgentMenu(SubMenu):
         self.prompt = '(Empire: ' + helpers.color(name, 'red') + ') > '
 
         # listen for messages from this specific agent
-        dispatcher.connect(self.handle_agent_event, sender=dispatcher.Any)
+        dispatcher.connect(SubMenu.handle_agent_event, sender=dispatcher.Any)
 
         # display any results from the database that were stored
         # while we weren't interacting with the agent
         results = self.mainMenu.agents.get_agent_results_db(self.sessionID)
         if results:
             print "\n" + results.rstrip('\r\n')
-
-    def handle_agent_event(self, signal, sender):
-        """
-        Handle agent event signals.
-        """
-        if "[!] Agent" in signal and "exiting" in signal: pass
-
-        name = self.mainMenu.agents.get_agent_name_db(self.sessionID)
-
-        if (str(self.sessionID) + ' returned results' in signal) or (str(name) + ' returned results' in signal):
-            # display any results returned by this agent that are returned
-            # while we are interacting with it
-            results = self.mainMenu.agents.get_agent_results_db(self.sessionID)
-            if results:
-                print "\n" + results
-
-        elif "[+] Part of file" in signal and "saved" in signal:
-            if (str(self.sessionID) in signal) or (str(name) in signal):
-                print helpers.color(signal)
 
     def default(self, line):
         "Default handler"
@@ -3403,16 +3378,16 @@ class ModuleMenu(SubMenu):
     def do_execute(self, line):
         "Execute the given Empire module."
 
-	prompt = True
-	if line == "noprompt":
-	    prompt = False
+        prompt = True
+        if line == "noprompt":
+            prompt = False
 
         if not self.validate_options(prompt):
             return
 
         if self.moduleName.lower().startswith('external/'):
-            # externa/* modules don't include an agent specification, and only have
-            #   an execute() method'
+            # external/* modules don't include an agent specification, and only have
+            #   an execute() method
             self.module.execute()
         else:
             agentName = self.module.options['Agent']['Value']
@@ -3420,7 +3395,12 @@ class ModuleMenu(SubMenu):
 
             if not moduleData or moduleData == "":
                 print helpers.color("[!] Error: module produced an empty script")
-                dispatcher.send("[!] Error: module produced an empty script", sender="Empire")
+                message = "[!] Error: module produced an empty script"
+                signal = json.dumps({
+                    'print': True,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="agents/{}/{}".format(agentName, self.moduleName))
                 return
 
             try:
@@ -3465,8 +3445,12 @@ class ModuleMenu(SubMenu):
                     if choice.lower() != "" and choice.lower()[0] == "y":
 
                         # signal everyone with what we're doing
-                        print helpers.color("[*] Tasking all agents to run " + self.moduleName)
-                        dispatcher.send("[*] Tasking all agents to run " + self.moduleName, sender="Empire")
+                        message = "[*] Tasking all agents to run {}".format(self.moduleName)
+                        signal = json.dumps({
+                            'print': True,
+                            'message': message
+                        })
+                        dispatcher.send(signal, sender="agents/all/{}".format(self.moduleName))
 
                         # actually task the agents
                         for agent in self.mainMenu.agents.get_agents_db():
@@ -3478,8 +3462,13 @@ class ModuleMenu(SubMenu):
 
                             # update the agent log
                             # dispatcher.send("[*] Tasked agent "+sessionID+" to run module " + self.moduleName, sender="Empire")
-                            dispatcher.send("[*] Tasked agent %s to run module %s" % (sessionID, self.moduleName), sender="Empire")
-                            msg = "Tasked agent to run module %s" % (self.moduleName)
+                            message = "[*] Tasked agent {} to run module {}".format(sessionID, self.moduleName)
+                            signal = json.dumps({
+                                'print': True,
+                                'message': message
+                            })
+                            dispatcher.send(signal, sender="agents/{}/{}".format(sessionID, self.moduleName))
+                            msg = "Tasked agent to run module {}".format(self.moduleName)
                             self.mainMenu.agents.save_agent_log(sessionID, msg)
 
                 except KeyboardInterrupt:
@@ -3489,7 +3478,12 @@ class ModuleMenu(SubMenu):
             elif agentName.lower() == "autorun":
 
                 self.mainMenu.agents.set_autoruns_db(taskCommand, moduleData)
-                dispatcher.send("[*] Set module %s to be global script autorun." % (self.moduleName), sender="Empire")
+                message = "[*] Set module {} to be global script autorun.".format(self.moduleName)
+                signal = json.dumps({
+                    'print': True,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="agents")
 
             else:
                 if not self.mainMenu.agents.is_agent_present(agentName):
@@ -3499,7 +3493,12 @@ class ModuleMenu(SubMenu):
                     self.mainMenu.agents.add_agent_task_db(agentName, taskCommand, moduleData)
 
                     # update the agent log
-                    dispatcher.send("[*] Tasked agent %s to run module %s" % (agentName, self.moduleName), sender="Empire")
+                    message = "[*] Tasked agent {} to run module {}".format(agentName, self.moduleName)
+                    signal = json.dumps({
+                        'print': True,
+                        'message': message
+                    })
+                    dispatcher.send(signal, sender="agents/{}/{}".format(agentName, self.moduleName))
                     msg = "Tasked agent to run module %s" % (self.moduleName)
                     self.mainMenu.agents.save_agent_log(agentName, msg)
 

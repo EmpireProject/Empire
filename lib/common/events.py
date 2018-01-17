@@ -15,7 +15,12 @@ from lib.common import db
 def handle_event(signal, sender):
     """ Puts all dispatched events into the DB """
     cur = db.cursor()
-    event_data = json.dumps({'signal': signal, 'sender': sender})
+    try:
+        signal_data = json.loads(signal)
+    except ValueError:
+        print(helpers.color("[!] Error: bad signal recieved {} from sender {}".format(signal, sender)))
+        return
+    event_data = json.dumps({'signal': signal_data, 'sender': sender})
     log_event(cur, 'user', 'dispatched_event', event_data, helpers.get_datetime())
     cur.close()
 

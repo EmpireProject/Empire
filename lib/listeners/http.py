@@ -6,6 +6,7 @@ import os
 import ssl
 import time
 import copy
+import json
 import sys
 from pydispatch import dispatcher
 from flask import Flask, request, make_response, send_from_directory
@@ -909,7 +910,13 @@ def send_message(packets=None):
             Before every request, check if the IP address is allowed.
             """
             if not self.mainMenu.agents.is_ip_allowed(request.remote_addr):
-                dispatcher.send("[!] %s on the blacklist/not on the whitelist requested resource" % (request.remote_addr), sender="listeners/http")
+                listenerName = self.options['Name']['Value']
+                message = "[!] {} on the blacklist/not on the whitelist requested resource".format(request.remote_addr)
+                signal = json.dumps({
+                    'print': True,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
                 return make_response(self.default_response(), 404)
 
 
@@ -956,9 +963,16 @@ def send_message(packets=None):
             This is used during the first step of the staging process,
             and when the agent requests taskings.
             """
-
             clientIP = request.remote_addr
-            dispatcher.send("[*] GET request for %s/%s from %s" % (request.host, request_uri, clientIP), sender='listeners/http')
+
+            listenerName = self.options['Name']['Value']
+            message = "[*] GET request for {}/{} from {}".format(request.host, request_uri, clientIP)
+            signal = json.dumps({
+                'print': True,
+                'message': message
+            })
+            dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+
             routingPacket = None
             cookie = request.headers.get('Cookie')
             if cookie and cookie != '':
@@ -966,7 +980,13 @@ def send_message(packets=None):
                     # see if we can extract the 'routing packet' from the specified cookie location
                     # NOTE: this can be easily moved to a paramter, another cookie value, etc.
                     if 'session' in cookie:
-                        dispatcher.send("[*] GET cookie value from %s : %s" % (clientIP, cookie), sender='listeners/http')
+                        listenerName = self.options['Name']['Value']
+                        message = "[*] GET cookie value from {} : {}".format(clientIP, cookie)
+                        signal = json.dumps({
+                            'print': True,
+                            'message': message
+                        })
+                        dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
                         cookieParts = cookie.split(';')
                         for part in cookieParts:
                             if part.startswith('session'):
@@ -987,12 +1007,24 @@ def send_message(packets=None):
                                 # handle_agent_data() signals that the listener should return the stager.ps1 code
 
                                 # step 2 of negotiation -> return stager.ps1 (stage 1)
-                                dispatcher.send("[*] Sending %s stager (stage 1) to %s" % (language, clientIP), sender='listeners/http')
+                                listenerName = self.options['Name']['Value']
+                                message = "[*] Sending {} stager (stage 1) to {}".format(language, clientIP)
+                                signal = json.dumps({
+                                    'print': True,
+                                    'message': message
+                                })
+                                dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
                                 stage = self.generate_stager(language=language, listenerOptions=listenerOptions, obfuscate=self.mainMenu.obfuscate, obfuscationCommand=self.mainMenu.obfuscateCommand)
                                 return make_response(stage, 200)
 
                             elif results.startswith('ERROR:'):
-                                dispatcher.send("[!] Error from agents.handle_agent_data() for %s from %s: %s" % (request_uri, clientIP, results), sender='listeners/http')
+                                listenerName = self.options['Name']['Value']
+                                message = "[!] Error from agents.handle_agent_data() for {} from {}: {}".format(request_uri, clientIP, results)
+                                signal = json.dumps({
+                                    'print': True,
+                                    'message': message
+                                })
+                                dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
 
                                 if 'not in cache' in results:
                                     # signal the client to restage
@@ -1003,7 +1035,13 @@ def send_message(packets=None):
 
                             else:
                                 # actual taskings
-                                dispatcher.send("[*] Agent from %s retrieved taskings" % (clientIP), sender='listeners/http')
+                                listenerName = self.options['Name']['Value']
+                                message = "[*] Agent from %s retrieved taskings".format(clientIP)
+                                signal = json.dumps({
+                                    'print': True,
+                                    'message': message
+                                })
+                                dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
                                 return make_response(results, 200)
                         else:
                             # dispatcher.send("[!] Results are None...", sender='listeners/http')
@@ -1012,7 +1050,13 @@ def send_message(packets=None):
                     return make_response(self.default_response(), 200)
 
             else:
-                dispatcher.send("[!] %s requested by %s with no routing packet." % (request_uri, clientIP), sender='listeners/http')
+                listenerName = self.options['Name']['Value']
+                message = "[!] {} requested by {} with no routing packet.".format(request_uri, clientIP)
+                signal = json.dumps({
+                    'print': True,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
                 return make_response(self.default_response(), 200)
 
         @app.route('/<path:request_uri>', methods=['POST'])
@@ -1025,7 +1069,14 @@ def send_message(packets=None):
             clientIP = request.remote_addr
 
             requestData = request.get_data()
-            dispatcher.send("[*] POST request data length from %s : %s" % (clientIP, len(requestData)), sender='listeners/http')
+
+            listenerName = self.options['Name']['Value']
+            message = "[*] POST request data length from {} : {}".format(clientIP, len(requestData))
+            signal = json.dumps({
+                'print': True,
+                'message': message
+            })
+            dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
 
             # the routing packet should be at the front of the binary request.data
             #   NOTE: this can also go into a cookie/etc.
@@ -1039,7 +1090,14 @@ def send_message(packets=None):
                                 clientIP = '[' + str(clientIP) + ']'
                             sessionID = results.split(' ')[1].strip()
                             sessionKey = self.mainMenu.agents.agents[sessionID]['sessionKey']
-                            dispatcher.send("[*] Sending agent (stage 2) to %s at %s" % (sessionID, clientIP), sender='listeners/http')
+
+                            listenerName = self.options['Name']['Value']
+                            message = "[*] Sending agent (stage 2) to {} at {}".format(sessionID, clientIP)
+                            signal = json.dumps({
+                                'print': True,
+                                'message': message
+                            })
+                            dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
 
                             hopListenerName = request.headers.get('Hop-Name')
                             try:
@@ -1057,10 +1115,22 @@ def send_message(packets=None):
                             return make_response(encryptedAgent, 200)
 
                         elif results[:10].lower().startswith('error') or results[:10].lower().startswith('exception'):
-                            dispatcher.send("[!] Error returned for results by %s : %s" %(clientIP, results), sender='listeners/http')
+                            listenerName = self.options['Name']['Value']
+                            message = "[!] Error returned for results by {} : {}".format(clientIP, results)
+                            signal = json.dumps({
+                                'print': True,
+                                'message': message
+                            })
+                            dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
                             return make_response(self.default_response(), 404)
                         elif results == 'VALID':
-                            dispatcher.send("[*] Valid results return by %s" % (clientIP), sender='listeners/http')
+                            listenerName = self.options['Name']['Value']
+                            message = "[*] Valid results return by {}".format(clientIP)
+                            signal = json.dumps({
+                                'print': True,
+                                'message': message
+                            })
+                            dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
                             return make_response(self.default_response(), 404)
                         else:
                             return make_response(results, 200)
@@ -1093,7 +1163,13 @@ def send_message(packets=None):
 
         except Exception as e:
             print helpers.color("[!] Listener startup on port %s failed: %s " % (port, e))
-            dispatcher.send("[!] Listener startup on port %s failed: %s " % (port, e), sender='listeners/http')
+            listenerName = self.options['Name']['Value']
+            message = "[!] Listener startup on port {} failed: {}".format(port, e)
+            signal = json.dumps({
+                'print': True,
+                'message': message
+            })
+            dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
 
     def start(self, name=''):
         """
