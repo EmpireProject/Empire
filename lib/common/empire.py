@@ -975,25 +975,6 @@ class SubMenu(cmd.Cmd):
         cmd.Cmd.__init__(self)
         self.mainMenu = mainMenu
 
-    def handle_agent_event(self, signal, sender):
-        """
-        Handle agent event signals.
-        """
-        name = self.mainMenu.agents.get_agent_name_db(self.sessionID)
-        if(sender.startswith("agents/{}".format(name))):
-            # display any results returned by this agent that are returned
-            # while we are interacting with it
-            try:
-                signal_data = json.loads(signal)
-            except ValueError:
-                print(helpers.color("[!] Error: bad signal recieved {} from sender {}".format(signal, sender)))
-                return
-
-            if('cprint' in signal_data and signal_data['cprint']):
-                results = self.mainMenu.agents.get_agent_results_db(self.sessionID)
-                if results:
-                    print "\n" + results
-
     def cmdloop(self):
 	if len(self.mainMenu.resourceQueue) > 0:
 	    self.cmdqueue.append(self.mainMenu.resourceQueue.pop(0))
@@ -1004,18 +985,18 @@ class SubMenu(cmd.Cmd):
 
 
     def postcmd(self, stop, line):
-	if line == "back":
-	    return True
-	if len(self.mainMenu.resourceQueue) > 0:
-	    nextcmd = self.mainMenu.resourceQueue.pop(0)
-	    if nextcmd == "lastautoruncmd":
-	        raise Exception("endautorun")
-	    self.cmdqueue.append(nextcmd)
+        if line == "back":
+            return True
+        if len(self.mainMenu.resourceQueue) > 0:
+            nextcmd = self.mainMenu.resourceQueue.pop(0)
+            if nextcmd == "lastautoruncmd":
+                raise Exception("endautorun")
+            self.cmdqueue.append(nextcmd)
 
 
     def do_back(self, line):
-	"Go back a menu."
-	return True
+        "Go back a menu."
+        return True
 
     def do_listeners(self, line):
         "Jump to the listeners menu."
@@ -1614,9 +1595,6 @@ class PowerShellAgentMenu(SubMenu):
         results = self.mainMenu.agents.get_agent_results_db(self.sessionID)
         if results:
             print "\n" + results.rstrip('\r\n')
-
-        # listen for messages from this specific agent
-        dispatcher.connect(SubMenu.handle_agent_event, sender=dispatcher.Any)
 
     # def preloop(self):
     #     traceback.print_stack()
@@ -2359,9 +2337,6 @@ class PythonAgentMenu(SubMenu):
 
         # set the text prompt
         self.prompt = '(Empire: ' + helpers.color(name, 'red') + ') > '
-
-        # listen for messages from this specific agent
-        dispatcher.connect(SubMenu.handle_agent_event, sender=dispatcher.Any)
 
         # display any results from the database that were stored
         # while we weren't interacting with the agent
@@ -3465,7 +3440,8 @@ class ModuleMenu(SubMenu):
                             message = "[*] Tasked agent {} to run module {}".format(sessionID, self.moduleName)
                             signal = json.dumps({
                                 'print': True,
-                                'message': message
+                                'message': message,
+                                'options': self.module.options
                             })
                             dispatcher.send(signal, sender="agents/{}/{}".format(sessionID, self.moduleName))
                             msg = "Tasked agent to run module {}".format(self.moduleName)
@@ -3496,7 +3472,8 @@ class ModuleMenu(SubMenu):
                     message = "[*] Tasked agent {} to run module {}".format(agentName, self.moduleName)
                     signal = json.dumps({
                         'print': True,
-                        'message': message
+                        'message': message,
+                        'options': self.module.options
                     })
                     dispatcher.send(signal, sender="agents/{}/{}".format(agentName, self.moduleName))
                     msg = "Tasked agent to run module %s" % (self.moduleName)
