@@ -868,7 +868,7 @@ def send_message(packets=None):
             listenerName = self.options['Name']['Value']
             message = "[*] Dropbox folder '{}' already exists".format(stagingFolder)
             signal = json.dumps({
-                'print': True,
+                'print': False,
                 'message': message
             })
             dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
@@ -878,7 +878,7 @@ def send_message(packets=None):
             listenerName = self.options['Name']['Value']
             message = "[*] Dropbox folder '{}' already exists".format(taskingsFolder)
             signal = json.dumps({
-                'print': True,
+                'print': False,
                 'message': message
             })
             dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
@@ -888,7 +888,7 @@ def send_message(packets=None):
             listenerName = self.options['Name']['Value']
             message = "[*] Dropbox folder '{}' already exists".format(resultsFolder)
             signal = json.dumps({
-                'print': True,
+                'print': False,
                 'message': message
             })
             dispatcher.send(signal, sender="listeners/dropbox/{}".format(listenerName))
