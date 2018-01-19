@@ -423,6 +423,14 @@ class MainMenu(cmd.Cmd):
         pluginNames = [name for _, name, _ in pkgutil.walk_packages([pluginPath])]
         if pluginName in pluginNames:
             print(helpers.color("[*] Plugin {} found.".format(pluginName)))
+
+            message = "[*] Loading plugin {}".format(pluginName)
+            signal = json.dumps({
+                'print': True,
+                'message': message
+            })
+            dispatcher.send(signal, sender="empire")
+
             # 'self' is the mainMenu object
             plugins.load_plugin(self, pluginName)
         else:
@@ -665,10 +673,24 @@ class MainMenu(cmd.Cmd):
                         print helpers.color("[!] PowerShell is not installed and is required to use obfuscation, please install it first.")
                     else:
                         self.obfuscate = True
-                        print helpers.color("[*] Obfuscating all future powershell commands run on all agents.")
+
+                        message = "[*] Obfuscating all future powershell commands run on all agents."
+                        signal = json.dumps({
+                            'print': True,
+                            'message': message
+                        })
+                        dispatcher.send(signal, sender="empire")
+
                 elif parts[1].lower() == "false":
-                    print helpers.color("[*] Future powershell command run on all agents will not be obfuscated.")
                     self.obfuscate = False
+
+                    message = "[*] Future powershell commands run on all agents will not be obfuscated."
+                    signal = json.dumps({
+                        'print': True,
+                        'message': message
+                    })
+                    dispatcher.send(signal, sender="empire")
+
                 else:
                     print helpers.color("[!] Valid options for obfuscate are 'true' or 'false'")
             elif parts[0].lower() == "obfuscate_command":
@@ -836,7 +858,13 @@ class MainMenu(cmd.Cmd):
             for file in files:
                 file = self.installPath + file
                 if reobfuscate or not helpers.is_obfuscated(file):
-                    print helpers.color("[*] Obfuscating " + os.path.basename(file) + "...")
+                    message = "[*] Obfuscating {}...".format(os.path.basename(file))
+                    signal = json.dumps({
+                        'print': True,
+                        'message': message,
+                        'obfuscated_file': os.path.basename(file)
+                    })
+                    dispatcher.send(signal, sender="empire")
                 else:
                     print helpers.color("[*] " + os.path.basename(file) + " was already obfuscated. Not reobfuscating.")
                 helpers.obfuscate_module(file, self.obfuscateCommand, reobfuscate)
@@ -1200,6 +1228,15 @@ class AgentsMenu(SubMenu):
                 self.mainMenu.agents.set_agent_field_db('jitter', jitter, sessionID)
                 # task the agent
                 self.mainMenu.agents.add_agent_task_db(sessionID, 'TASK_SHELL', 'Set-Delay ' + str(delay) + ' ' + str(jitter))
+
+                # dispatch this event
+                message = "[*] Tasked agent to delay sleep/jitter {}/{}".format(delay, jitter)
+                signal = json.dumps({
+                    'print': True,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="agents/{}".format(sessionID))
+
                 # update the agent log
                 msg = "Tasked agent to delay sleep/jitter %s/%s" % (delay, jitter)
                 self.mainMenu.agents.save_agent_log(sessionID, msg)
@@ -1219,6 +1256,15 @@ class AgentsMenu(SubMenu):
                 self.mainMenu.agents.set_agent_field_db('jitter', jitter, sessionID)
 
                 self.mainMenu.agents.add_agent_task_db(sessionID, 'TASK_SHELL', 'Set-Delay ' + str(delay) + ' ' + str(jitter))
+
+                # dispatch this event
+                message = "[*] Tasked agent to delay sleep/jitter {}/{}".format(delay, jitter)
+                signal = json.dumps({
+                    'print': True,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="agents/{}".format(sessionID))
+
                 # update the agent log
                 msg = "Tasked agent to delay sleep/jitter %s/%s" % (delay, jitter)
                 self.mainMenu.agents.save_agent_log(sessionID, msg)
@@ -1245,6 +1291,15 @@ class AgentsMenu(SubMenu):
                 self.mainMenu.agents.set_agent_field_db('lost_limit', lostLimit, sessionID)
                 # task the agent
                 self.mainMenu.agents.add_agent_task_db(sessionID, 'TASK_SHELL', 'Set-LostLimit ' + str(lostLimit))
+
+                # dispatch this event
+                message = "[*] Tasked agent to change lost limit {}".format(lostLimit)
+                signal = json.dumps({
+                    'print': True,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="agents/{}".format(sessionID))
+
                 # update the agent log
                 msg = "Tasked agent to change lost limit %s" % (lostLimit)
                 self.mainMenu.agents.save_agent_log(sessionID, msg)
@@ -1259,6 +1314,15 @@ class AgentsMenu(SubMenu):
                 self.mainMenu.agents.set_agent_field_db('lost_limit', lostLimit, sessionID)
 
                 self.mainMenu.agents.add_agent_task_db(sessionID, 'TASK_SHELL', 'Set-LostLimit ' + str(lostLimit))
+
+                # dispatch this event
+                message = "[*] Tasked agent to change lost limit {}".format(lostLimit)
+                signal = json.dumps({
+                    'print': True,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="agents/{}".format(sessionID))
+
                 # update the agent log
                 msg = "Tasked agent to change lost limit %s" % (lostLimit)
                 self.mainMenu.agents.save_agent_log(sessionID, msg)
@@ -1286,6 +1350,16 @@ class AgentsMenu(SubMenu):
                 self.mainMenu.agents.set_agent_field_db('kill_date', date, sessionID)
                 # task the agent
                 self.mainMenu.agents.add_agent_task_db(sessionID, 'TASK_SHELL', "Set-KillDate " + str(date))
+
+                # dispatch this event
+                message = "[*] Tasked agent to set killdate to {}".format(date)
+                signal = json.dumps({
+                    'print': True,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="agents/{}".format(sessionID))
+
+                # update the agent log
                 msg = "Tasked agent to set killdate to " + str(date)
                 self.mainMenu.agents.save_agent_log(sessionID, msg)
 
@@ -1299,6 +1373,15 @@ class AgentsMenu(SubMenu):
                 self.mainMenu.agents.set_agent_field_db('kill_date', date, sessionID)
                 # task the agent
                 self.mainMenu.agents.add_agent_task_db(sessionID, 'TASK_SHELL', "Set-KillDate " + str(date))
+
+                # dispatch this event
+                message = "[*] Tasked agent to set killdate to {}".format(date)
+                signal = json.dumps({
+                    'print': True,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="agents/{}".format(sessionID))
+
                 # update the agent log
                 msg = "Tasked agent to set killdate to " + str(date)
                 self.mainMenu.agents.save_agent_log(sessionID, msg)
@@ -1327,6 +1410,16 @@ class AgentsMenu(SubMenu):
                 self.mainMenu.agents.set_agent_field_db('working_hours', hours, sessionID)
                 # task the agent
                 self.mainMenu.agents.add_agent_task_db(sessionID, 'TASK_SHELL', "Set-WorkingHours " + str(hours))
+
+                # dispatch this event
+                message = "[*] Tasked agent to set working hours to {}".format(hours)
+                signal = json.dumps({
+                    'print': True,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="agents/{}".format(sessionID))
+
+                # update the agent log
                 msg = "Tasked agent to set working hours to %s" % (hours)
                 self.mainMenu.agents.save_agent_log(sessionID, msg)
 
@@ -1342,6 +1435,14 @@ class AgentsMenu(SubMenu):
                 self.mainMenu.agents.set_agent_field_db('working_hours', hours, sessionID)
                 # task the agent
                 self.mainMenu.agents.add_agent_task_db(sessionID, 'TASK_SHELL', "Set-WorkingHours " + str(hours))
+
+                # dispatch this event
+                message = "[*] Tasked agent to set working hours to {}".format(hours)
+                signal = json.dumps({
+                    'print': True,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="agents/{}".format(sessionID))
 
                 # update the agent log
                 msg = "Tasked agent to set working hours to %s" % (hours)
@@ -1612,6 +1713,16 @@ class PowerShellAgentMenu(SubMenu):
                 shellcmd = ' '.join(parts)
                 # task the agent with this shell command
                 self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", shellcmd)
+
+                # dispatch this event
+                message = "[*] Tasked agent to run command {}".format(line)
+                signal = json.dumps({
+                    'print': False,
+                    'message': message,
+                    'command': line
+                })
+                dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
                 # update the agent log
                 msg = "Tasked agent to run command " + line
                 self.mainMenu.agents.save_agent_log(self.sessionID, msg)
@@ -1668,6 +1779,15 @@ class PowerShellAgentMenu(SubMenu):
             if choice.lower() == "y":
 
                 self.mainMenu.agents.add_agent_task_db(self.sessionID, 'TASK_EXIT')
+
+                # dispatch this event
+                message = "[*] Tasked agent to exit"
+                signal = json.dumps({
+                    'print': False,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
                 # update the agent log
                 self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to exit")
                 return True
@@ -1689,6 +1809,15 @@ class PowerShellAgentMenu(SubMenu):
         if len(parts) == 1:
             if parts[0] == '':
                 self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_GETJOBS")
+
+                # dispatch this event
+                message = "[*] Tasked agent to get running jobs"
+                signal = json.dumps({
+                    'print': False,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
                 # update the agent log
                 self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to get running jobs")
             else:
@@ -1696,6 +1825,15 @@ class PowerShellAgentMenu(SubMenu):
         elif len(parts) == 2:
             jobID = parts[1].strip()
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_STOPJOB", jobID)
+
+            # dispatch this event
+            message = "[*] Tasked agent to stop job {}".format(jobID)
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             # update the agent log
             self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to stop job " + str(jobID))
 
@@ -1707,6 +1845,15 @@ class PowerShellAgentMenu(SubMenu):
         if len(parts) == 1:
             if parts[0] == '':
                 self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_GETDOWNLOADS")
+
+                # dispatch this event
+                message = "[*] Tasked agent to get downloads"
+                signal = json.dumps({
+                    'print': False,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
                 #update the agent log
                 self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to get downloads")
             else:
@@ -1714,6 +1861,15 @@ class PowerShellAgentMenu(SubMenu):
         elif len(parts) == 2:
             jobID = parts[1].strip()
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_STOPDOWNLOAD", jobID)
+
+            # dispatch this event
+            message = "[*] Tasked agent to stop download {}".format(jobID)
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             #update the agent log
             self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to stop download " + str(jobID))
 
@@ -1733,6 +1889,15 @@ class PowerShellAgentMenu(SubMenu):
             self.mainMenu.agents.set_agent_field_db("jitter", jitter, self.sessionID)
 
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", "Set-Delay " + str(delay) + ' ' + str(jitter))
+
+            # dispatch this event
+            message = "[*] Tasked agent to delay sleep/jitter {}/{}".format(delay, jitter)
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             # update the agent log
             msg = "Tasked agent to delay sleep/jitter " + str(delay) + "/" + str(jitter)
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
@@ -1748,6 +1913,15 @@ class PowerShellAgentMenu(SubMenu):
         # update this agent's information in the database
         self.mainMenu.agents.set_agent_field_db("lost_limit", lostLimit, self.sessionID)
         self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", "Set-LostLimit " + str(lostLimit))
+
+        # dispatch this event
+        message = "[*] Tasked agent to change lost limit {}".format(lostLimit)
+        signal = json.dumps({
+            'print': False,
+            'message': message
+        })
+        dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
         # update the agent log
         msg = "Tasked agent to change lost limit " + str(lostLimit)
         self.mainMenu.agents.save_agent_log(self.sessionID, msg)
@@ -1772,6 +1946,14 @@ class PowerShellAgentMenu(SubMenu):
 
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", command)
 
+            # dispatch this event
+            message = "[*] Tasked agent to kill process {}".format(process)
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             msg = "Tasked agent to kill process: " + str(process)
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
 
@@ -1784,6 +1966,15 @@ class PowerShellAgentMenu(SubMenu):
 
         if date == "":
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", "Get-KillDate")
+
+            # dispatch this event
+            message = "[*] Tasked agent to get KillDate"
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to get KillDate")
 
         else:
@@ -1792,6 +1983,14 @@ class PowerShellAgentMenu(SubMenu):
 
             # task the agent
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", "Set-KillDate " + str(date))
+
+            # dispatch this event
+            message = "[*] Tasked agent to set KillDate to {}".format(date)
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
 
             # update the agent log
             msg = "Tasked agent to set killdate to " + str(date)
@@ -1806,6 +2005,15 @@ class PowerShellAgentMenu(SubMenu):
 
         if hours == "":
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", "Get-WorkingHours")
+
+            # dispatch this event
+            message = "[*] Tasked agent to get working hours"
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to get working hours")
 
         else:
@@ -1815,6 +2023,14 @@ class PowerShellAgentMenu(SubMenu):
 
             # task the agent
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", "Set-WorkingHours " + str(hours))
+
+            # dispatch this event
+            message = "[*] Tasked agent to set working hours to {}".format(hours)
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
 
             # update the agent log
             msg = "Tasked agent to set working hours to " + str(hours)
@@ -1829,6 +2045,15 @@ class PowerShellAgentMenu(SubMenu):
         if line != "":
             # task the agent with this shell command
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", "shell " + str(line))
+
+            # dispatch this event
+            message = "[*] Tasked agent to run shell command {}".format(line)
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             # update the agent log
             msg = "Tasked agent to run shell command " + line
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
@@ -1839,6 +2064,15 @@ class PowerShellAgentMenu(SubMenu):
 
         # task the agent with this shell command
         self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SYSINFO")
+
+        # dispatch this event
+        message = "[*] Tasked agent to get system information"
+        signal = json.dumps({
+            'print': False,
+            'message': message
+        })
+        dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
         # update the agent log
         self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to get system information")
 
@@ -1850,6 +2084,15 @@ class PowerShellAgentMenu(SubMenu):
 
         if line != "":
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_DOWNLOAD", line)
+
+            # dispatch this event
+            message = "[*] Tasked agent to get system information"
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             # update the agent log
             msg = "Tasked agent to download " + line
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
@@ -1883,8 +2126,18 @@ class PowerShellAgentMenu(SubMenu):
                 if size > 1048576:
                     print helpers.color("[!] File size is too large. Upload limit is 1MB.")
                 else:
-                    # update the agent log with the filename and MD5
-                    print helpers.color("[*] Size of %s for upload: %s" %(uploadname, helpers.get_file_size(file_data)), color="green")
+                    # dispatch this event
+                    message = "[*] Tasked agent to upload {}, {}".format(uploadname, helpers.get_file_size(file_data))
+                    signal = json.dumps({
+                        'print': True,
+                        'message': message,
+                        'file_name': uploadname,
+                        'file_md5': hashlib.md5(file_data).hexdigest(),
+                        'file_size': helpers.get_file_size(file_data)
+                    })
+                    dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
+                    # update the agent log
                     msg = "Tasked agent to upload %s : %s" % (parts[0], hashlib.md5(file_data).hexdigest())
                     self.mainMenu.agents.save_agent_log(self.sessionID, msg)
 
@@ -1912,6 +2165,16 @@ class PowerShellAgentMenu(SubMenu):
             # task the agent to important the script
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SCRIPT_IMPORT", script_data)
 
+            # dispatch this event
+            message = "[*] Tasked agent to import {}: {}".format(path, hashlib.md5(script_data).hexdigest())
+            signal = json.dumps({
+                'print': False,
+                'message': message,
+                'import_path': path,
+                'import_md5': hashlib.md5(script_data).hexdigest()
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             # update the agent log with the filename and MD5
             msg = "Tasked agent to import %s : %s" % (path, hashlib.md5(script_data).hexdigest())
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
@@ -1933,6 +2196,15 @@ class PowerShellAgentMenu(SubMenu):
 
         if command != "":
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SCRIPT_COMMAND", command)
+
+            # dispatch this event
+            message = "[*] Tasked agent {} to run {}".format(self.sessionID, command)
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             msg = "[*] Tasked agent %s to run %s" % (self.sessionID, command)
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
 
@@ -1987,6 +2259,14 @@ class PowerShellAgentMenu(SubMenu):
 
                 # task the agent to update their profile
                 self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", updatecmd)
+
+                # dispatch this event
+                message = "[*] Tasked agent to update profile {}".format(profile)
+                signal = json.dumps({
+                    'print': False,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
 
                 # update the agent log
                 msg = "Tasked agent to update profile " + profile
@@ -2396,6 +2676,15 @@ class PythonAgentMenu(SubMenu):
             if choice.lower() == "y":
 
                 self.mainMenu.agents.add_agent_task_db(self.sessionID, 'TASK_EXIT')
+
+                # dispatch this event
+                message = "[*] Tasked agent to exit"
+                signal = json.dumps({
+                    'print': False,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
                 # update the agent log
                 self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to exit")
                 return True
@@ -2422,6 +2711,15 @@ class PythonAgentMenu(SubMenu):
                 self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", 'import os; os.chdir(os.pardir); print "Directory stepped down: %s"' % (line))
             else:
                 self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", 'import os; os.chdir("%s"); print "Directory changed to: %s"' % (line, line))
+
+            # dispatch this event
+            message = "[*] Tasked agent to change active directory to {}".format(line)
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             # update the agent log
             msg = "Tasked agent to change active directory to: %s" % (line)
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
@@ -2435,6 +2733,15 @@ class PythonAgentMenu(SubMenu):
         if len(parts) == 1:
             if parts[0] == '':
                 self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_GETJOBS")
+
+                # dispatch this event
+                message = "[*] Tasked agent to get running jobs"
+                signal = json.dumps({
+                    'print': False,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
                 # update the agent log
                 self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to get running jobs")
             else:
@@ -2442,6 +2749,15 @@ class PythonAgentMenu(SubMenu):
         elif len(parts) == 2:
             jobID = parts[1].strip()
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_STOPJOB", jobID)
+
+            # dispatch this event
+            message = "[*] Tasked agent to get stop job {}".format(jobID)
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             # update the agent log
             self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to stop job " + str(jobID))
 
@@ -2470,6 +2786,15 @@ class PythonAgentMenu(SubMenu):
         if delay == "":
             # task the agent to display the delay/jitter
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", "global delay; global jitter; print 'delay/jitter = ' + str(delay)+'/'+str(jitter)")
+
+            # dispatch this event
+            message = "[*] Tasked agent to display delay/jitter"
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to display delay/jitter")
 
         elif len(parts) > 0 and parts[0] != "":
@@ -2483,6 +2808,14 @@ class PythonAgentMenu(SubMenu):
             self.mainMenu.agents.set_agent_field_db("jitter", jitter, self.sessionID)
 
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", "global delay; global jitter; delay=%s; jitter=%s; print 'delay/jitter set to %s/%s'" % (delay, jitter, delay, jitter))
+
+            # dispatch this event
+            message = "[*] Tasked agent to delay sleep/jitter {}/{}".format(delay, jitter)
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
 
             # update the agent log
             msg = "Tasked agent to delay sleep/jitter " + str(delay) + "/" + str(jitter)
@@ -2498,6 +2831,15 @@ class PythonAgentMenu(SubMenu):
         if lostLimit == "":
             # task the agent to display the lostLimit
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", "global lostLimit; print 'lostLimit = ' + str(lostLimit)")
+
+            # dispatch this event
+            message = "[*] Tasked agent to display lost limit"
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to display lost limit")
         else:
             # update this agent's information in the database
@@ -2505,6 +2847,14 @@ class PythonAgentMenu(SubMenu):
 
             # task the agent with the new lostLimit
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", "global lostLimit; lostLimit=%s; print 'lostLimit set to %s'"%(lostLimit, lostLimit))
+
+            # dispatch this event
+            message = "[*] Tasked agent to change lost limit {}".format(lostLimit)
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
 
             # update the agent log
             msg = "Tasked agent to change lost limit " + str(lostLimit)
@@ -2521,6 +2871,15 @@ class PythonAgentMenu(SubMenu):
 
             # task the agent to display the killdate
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", "global killDate; print 'killDate = ' + str(killDate)")
+
+            # dispatch this event
+            message = "[*] Tasked agent to display killDate"
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to display killDate")
         else:
             # update this agent's information in the database
@@ -2528,6 +2887,14 @@ class PythonAgentMenu(SubMenu):
 
             # task the agent with the new killDate
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", "global killDate; killDate='%s'; print 'killDate set to %s'" % (killDate, killDate))
+
+            # dispatch this event
+            message = "[*] Tasked agent to set killDate to {}".format(killDate)
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
 
             # update the agent log
             msg = "Tasked agent to set killdate to %s" %(killDate)
@@ -2542,6 +2909,15 @@ class PythonAgentMenu(SubMenu):
 
         if hours == "":
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", "global workingHours; print 'workingHours = ' + str(workingHours)")
+
+            # dispatch this event
+            message = "[*] Tasked agent to get working hours"
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to get working hours")
 
         else:
@@ -2550,6 +2926,14 @@ class PythonAgentMenu(SubMenu):
 
             # task the agent with the new working hours
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", "global workingHours; workingHours= '%s'"%(hours))
+
+            # dispatch this event
+            message = "[*] Tasked agent to set working hours to {}".format(hours)
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
 
             # update the agent log
             msg = "Tasked agent to set working hours to: %s" % (hours)
@@ -2564,6 +2948,16 @@ class PythonAgentMenu(SubMenu):
         if line != "":
             # task the agent with this shell command
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", str(line))
+
+            # dispatch this event
+            message = "[*] Tasked agent to run shell command: {}".format(line)
+            signal = json.dumps({
+                'print': False,
+                'message': message,
+                'command': line
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             # update the agent log
             msg = "Tasked agent to run shell command: %s" % (line)
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
@@ -2577,8 +2971,18 @@ class PythonAgentMenu(SubMenu):
         if line != "":
             # task the agent with this shell command
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", str(line))
+
+            # dispatch this event
+            message = "[*] Tasked agent to run Python command: {}".format(line)
+            signal = json.dumps({
+                'print': False,
+                'message': message,
+                'command': line
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             # update the agent log
-            msg = "Tasked agent to run Python command %s" % (line)
+            msg = "Tasked agent to run Python command: %s" % (line)
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
 
     def do_pythonscript(self, line):
@@ -2593,10 +2997,21 @@ class PythonAgentMenu(SubMenu):
             script = script.replace('\r\n', '\n')
             script = script.replace('\r', '\n')
             encScript = base64.b64encode(script)
-            msg = "[*] Tasked agent to execute python script: "+filename
-            print helpers.color(msg, color="green")
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SCRIPT_COMMAND", encScript)
+
+            # dispatch this event
+            message = "[*] Tasked agent to execute Python script: {}".format(filename)
+            signal = json.dumps({
+                'print': True,
+                'message': message,
+                'script_name': filename,
+                # note md5 is after replacements done on \r and \r\n above
+                'script_md5': hashlib.md5(script).hexdigest()
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             #update the agent log
+            msg = "[*] Tasked agent to execute python script: "+filename
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
         else:
             print helpers.color("[!] Please provide a valid path", color="red")
@@ -2607,6 +3022,15 @@ class PythonAgentMenu(SubMenu):
 
         # task the agent with this shell command
         self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SYSINFO")
+
+        # dispatch this event
+        message = "[*] Tasked agent to get system information"
+        signal = json.dumps({
+            'print': False,
+            'message': message
+        })
+        dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
         # update the agent log
         self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to get system information")
 
@@ -2618,6 +3042,16 @@ class PythonAgentMenu(SubMenu):
 
         if line != "":
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_DOWNLOAD", line)
+
+            # dispatch this event
+            message = "[*] Tasked agent to download: {}".format(line)
+            signal = json.dumps({
+                'print': False,
+                'message': message,
+                'download_filename': line
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             # update the agent log
             msg = "Tasked agent to download: %s" % (line)
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
@@ -2651,20 +3085,34 @@ class PythonAgentMenu(SubMenu):
                 if size > 1048576:
                     print helpers.color("[!] File size is too large. Upload limit is 1MB.")
                 else:
-                    print helpers.color("[*] Starting size of %s for upload: %s" %(uploadname, helpers.get_file_size(fileData)), color="green")
-                    msg = "Tasked agent to upload " + parts[0] + " : " + hashlib.md5(fileData).hexdigest()
+                    print helpers.color("[*] Original tasked size of %s for upload: %s" %(uploadname, helpers.get_file_size(fileData)), color="green")
+
+                    original_md5 = hashlib.md5(fileData).hexdigest()
                     # update the agent log with the filename and MD5
+                    msg = "Tasked agent to upload " + parts[0] + " : " + original_md5
                     self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+
                     # compress data before we base64
                     c = compress.compress()
                     start_crc32 = c.crc32_data(fileData)
                     comp_data = c.comp_data(fileData, 9)
                     fileData = c.build_header(comp_data, start_crc32)
                     # get final file size
-                    print helpers.color("[*] Final tasked size of %s for upload: %s" %(uploadname, helpers.get_file_size(fileData)), color="green")
                     fileData = helpers.encode_base64(fileData)
                     # upload packets -> "filename | script data"
                     data = uploadname + "|" + fileData
+
+                    # dispatch this event
+                    message = "[*] Starting upload of {}, final size {}".format(uploadname, helpers.get_file_size(fileData))
+                    signal = json.dumps({
+                        'print': True,
+                        'message': message,
+                        'upload_name': uploadname,
+                        'upload_md5': original_md5,
+                        'upload_size': helpers.get_file_size(fileData)
+                    })
+                    dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
                     self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_UPLOAD", data)
             else:
                 print helpers.color("[!] Please enter a valid file path to upload")
@@ -2705,6 +3153,15 @@ class PythonAgentMenu(SubMenu):
             module_menu = ModuleMenu(self.mainMenu, 'python/collection/osx/native_screenshot')
             print helpers.color(msg, color="green")
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+
+            # dispatch this event
+            message = "[*] Tasked agent to take a screenshot"
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             module_menu.do_execute("")
         else:
             print helpers.color("[!] python/collection/osx/screenshot module not loaded")
@@ -2722,6 +3179,15 @@ class PythonAgentMenu(SubMenu):
             msg = "[*] Tasked agent to list directory contents of: "+str(module.options['Path']['Value'])
             print helpers.color(msg,color="green")
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+
+            # dispatch this event
+            message = "[*] Tasked agent to list directory contents of: {}".format(module.options['Path']['Value'])
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             module_menu.do_execute("")
 
         else:
@@ -2745,6 +3211,16 @@ except Exception as e:
 """ % (line)
             # task the agent with this shell command
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", str(cmd))
+
+            # dispatch this event
+            message = "[*] Tasked agent to cat file: {}".format(line)
+            signal = json.dumps({
+                'print': False,
+                'message': message,
+                'file_name': line
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             # update the agent log
             msg = "Tasked agent to cat file %s" % (line)
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
@@ -2754,6 +3230,16 @@ except Exception as e:
 
         command = "cwd = os.getcwd(); print cwd"
         self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", command)
+
+        # dispatch this event
+        message = "[*] Tasked agent to print current working directory"
+        signal = json.dumps({
+            'print': False,
+            'message': message,
+            'file_name': line
+        })
+        dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
         msg = "Tasked agent to print current working directory"
         self.mainMenu.agents.save_agent_log(self.sessionID, msg)
 
@@ -2762,6 +3248,16 @@ except Exception as e:
 
         command = "from AppKit import NSUserName; print str(NSUserName())"
         self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", command)
+
+        # dispatch this event
+        message = "[*] Tasked agent to print currently logged on user"
+        signal = json.dumps({
+            'print': False,
+            'message': message,
+            'file_name': line
+        })
+        dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
         msg = "Tasked agent to print currently logged on user"
         self.mainMenu.agents.save_agent_log(self.sessionID, msg)
 
@@ -2776,9 +3272,20 @@ except Exception as e:
             open_file = open(path, 'rb')
             module_data = open_file.read()
             open_file.close()
+
+            # dispatch this event
+            message = "[*] Tasked agent to import {}, md5: {}".format(path, hashlib.md5(module_data).hexdigest())
+            signal = json.dumps({
+                'print': True,
+                'message': message,
+                'import_path': path,
+                'import_md5': hashlib.md5(module_data).hexdigest()
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
             msg = "Tasked agent to import "+path+" : "+hashlib.md5(module_data).hexdigest()
-            print helpers.color("[*] "+msg, color="green")
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+
             c = compress.compress()
             start_crc32 = c.crc32_data(module_data)
             comp_data = c.comp_data(module_data, 9)
@@ -2799,8 +3306,18 @@ except Exception as e:
 
             module.options['Agent']['Value'] = self.mainMenu.agents.get_agent_name_db(self.sessionID)
             module_menu = ModuleMenu(self.mainMenu, 'python/management/osx/shellb')
-            msg = "[*] Tasked agent to execute %s in the background" % (str(module.options['Path']['Value']))
-            print helpers.color(msg,color="green")
+
+            # dispatch this event
+            message = "[*] Tasked agent to execute {} in the background".format(module.options['Path']['Value'])
+            signal = json.dumps({
+                'print': True,
+                'message': message,
+                'options': module.options
+            })
+            dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
+            # update the agent log
+            msg = "Tasked agent to execute {} in the background".format(module.options['Path']['Value'])
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
             module_menu.do_execute("")
 
@@ -2810,14 +3327,35 @@ except Exception as e:
     def do_viewrepo(self, line):
         "View the contents of a repo. if none is specified, all files will be returned"
         repoName = line.strip()
+
+        # dispatch this event
+        message = "[*] Tasked agent to view repo contents: {}".format(repoName)
+        signal = json.dumps({
+            'print': True,
+            'message': message,
+            'repo_name': repoName
+        })
+        dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
+        # update the agent log
         msg = "[*] Tasked agent to view repo contents: " + repoName
-        print helpers.color(msg, color="green")
         self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+
         self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_VIEW_MODULE", repoName)
 
     def do_removerepo(self, line):
         "Remove a repo"
         repoName = line.strip()
+
+        # dispatch this event
+        message = "[*] Tasked agent to remove repo: {}".format(repoName)
+        signal = json.dumps({
+            'print': True,
+            'message': message,
+            'repo_name': repoName
+        })
+        dispatcher.send(signal, sender="agents/{}".format(self.sessionID))
+
         msg = "[*] Tasked agent to remove repo: "+repoName
         print helpers.color(msg, color="green")
         self.mainMenu.agents.save_agent_log(self.sessionID, msg)
@@ -2970,6 +3508,16 @@ class ListenersMenu(SubMenu):
                     stager.options['Obfuscate']['Value'] = "True"
                 else:
                     stager.options['Obfuscate']['Value'] = "False"
+
+                # dispatch this event
+                message = "[*] Generated launcher"
+                signal = json.dumps({
+                    'print': False,
+                    'message': message,
+                    'options': stager.options
+                })
+                dispatcher.send(signal, sender="empire")
+
                 print stager.generate()
             except Exception as e:
                 print helpers.color("[!] Error generating launcher: %s" % (e))
@@ -3082,6 +3630,16 @@ class ListenerMenu(SubMenu):
                 stager.options['ProxyCreds']['Value'] = listenerOptions['options']['ProxyCreds']['Value']
             except:
                 pass
+
+            # dispatch this event
+            message = "[*] Generated launcher"
+            signal = json.dumps({
+                'print': False,
+                'message': message,
+                'options': stager.options
+            })
+            dispatcher.send(signal, sender="empire")
+
             print stager.generate()
         except Exception as e:
             print helpers.color("[!] Error generating launcher: %s" % (e))
@@ -3370,14 +3928,6 @@ class ModuleMenu(SubMenu):
 
             if not moduleData or moduleData == "":
                 print helpers.color("[!] Error: module produced an empty script")
-                message = "[!] Error: module produced an empty script"
-                signal = json.dumps({
-                    'print': True,
-                    'message': message
-                })
-                dispatcher.send(signal, sender="agents/{}/{}".format(agentName, self.moduleName))
-                return
-
             try:
                 moduleData.decode('ascii')
             except UnicodeDecodeError:
@@ -3707,6 +4257,14 @@ class StagerMenu(SubMenu):
                 os.chmod(savePath, 777)
 
             print "\n" + helpers.color("[*] Stager output written out to: %s\n" % (savePath))
+            # dispatch this event
+            message = "[*] Generated stager"
+            signal = json.dumps({
+                'print': False,
+                'message': message,
+                'options': stager.options
+            })
+            dispatcher.send(signal, sender="empire")
         else:
             print stagerOutput
 
