@@ -155,7 +155,9 @@ class MainMenu(cmd.Cmd):
             # if we're displaying listeners/stagers or generating a stager
             if self.args.listener:
                 if self.args.listener == 'list':
-                    messages.display_active_listeners(self.listeners.activeListeners)
+                    messages.display_listeners(self.listeners.activeListeners)
+                    messages.display_listeners(self.listeners.get_inactive_listeners(), "Inactive")
+
                 else:
                     activeListeners = self.listeners.activeListeners
                     targetListener = [l for l in activeListeners if self.args.listener in l[1]]
@@ -783,7 +785,8 @@ class MainMenu(cmd.Cmd):
 
 
         elif parts[0].lower() == 'listeners':
-            messages.display_active_listeners(self.listeners.activeListeners)
+            messages.display_listeners(self.listeners.activeListeners)
+            messages.display_listeners(self.listeners.get_inactive_listeners(), "Inactive")
 
 
     def do_interact(self, line):
@@ -2912,7 +2915,8 @@ class ListenersMenu(SubMenu):
         self.prompt = '(Empire: ' + helpers.color('listeners', color='blue') + ') > '
 
         # display all active listeners on menu startup
-        messages.display_active_listeners(self.mainMenu.listeners.activeListeners)
+        messages.display_listeners(self.mainMenu.listeners.activeListeners)
+        messages.display_listeners(self.mainMenu.listeners.get_inactive_listeners(), "Inactive")
 
     def do_back(self, line):
         "Go back to the main menu."
@@ -3027,6 +3031,48 @@ class ListenersMenu(SubMenu):
         else:
             print helpers.color("[!] Please enter a valid listenerName")
 
+    def do_enable(self, line):
+        "Enables and starts one or all listners."
+
+        listenerID = line.strip()
+
+        if listenerID == '':
+            print helpers.color("[!] Please provide a listener name")
+        elif listenerID.lower() == 'all':
+            try:
+                choice = raw_input(helpers.color('[>] Start all listeners? [y/N] ', 'red'))
+                if choice.lower() != '' and choice.lower()[0] == 'y':
+                    self.mainMenu.listeners.enable_listener('all')
+            except KeyboardInterrupt:
+                print ''
+
+        else:
+            self.mainMenu.listeners.enable_listener(listenerID)
+
+    def do_disable(self, line):
+        "Disables (stops) one or all listeners. The listener(s) will not start automatically with Empire"
+
+        listenerID = line.strip()
+
+        if listenerID.lower() == 'all':
+            try:
+                choice = raw_input(helpers.color('[>] Stop all listeners? [y/N] ', 'red'))
+                if choice.lower() != '' and choice.lower()[0] == 'y':
+                    self.mainMenu.listeners.shutdown_listener('all')
+            except KeyboardInterrupt:
+                print ''
+
+        else:
+            self.mainMenu.listeners.disable_listener(listenerID)
+
+    def do_edit(self,line):
+        "Change a listener option, will not take effect until the listener is restarted"
+
+        arguments = line.strip().split(" ")
+        if len(arguments) < 3:
+            print helpers.color("[!] edit <listener name> <option name> <option value>")
+            return
+        self.mainMenu.listeners.update_listener_options(arguments[0], arguments[1], arguments[2])
 
     def complete_usestager(self, text, line, begidx, endidx):
         "Tab-complete an Empire stager module path."
