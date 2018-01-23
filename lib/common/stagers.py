@@ -99,7 +99,7 @@ class Stagers:
         activeListener = self.mainMenu.listeners.activeListeners[listenerName]
 
         launcherCode = self.mainMenu.listeners.loadedListeners[activeListener['moduleName']].generate_launcher(encode=encode, obfuscate=obfuscate, obfuscationCommand=obfuscationCommand, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds, stagerRetries=stagerRetries, language=language, listenerName=listenerName, safeChecks=safeChecks)
-        
+
         if launcherCode:
             return launcherCode
 
@@ -231,9 +231,6 @@ class Stagers:
         """
         Generates an application. The embedded executable is a macho binary with the python interpreter.
         """
-
-        
-
         MH_EXECUTE = 2
 
         if Arch == 'x64':
@@ -365,8 +362,8 @@ class Stagers:
             f.close()
             os.remove("/tmp/launcher.zip")
             return zipbundle
-        
-            
+
+
         else:
             print helpers.color("[!] Unable to patch application")
 
@@ -453,7 +450,7 @@ class Stagers:
                 raise
             else:
                 pass
-        
+
         file = open(jarpath+'Run.java','w')
         file.write(javacode)
         file.close()
@@ -469,7 +466,7 @@ class Stagers:
         jarfile.close()
         os.remove('Run.jar')
 
-        return jar 
+        return jar
 
 
     def generate_upload(self, file, path):

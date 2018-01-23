@@ -13,6 +13,8 @@ import pickle
 import hashlib
 import copy
 
+from pydispatch import dispatcher
+
 class Listeners:
     """
     Listener handling class.
@@ -185,7 +187,7 @@ class Listeners:
         i = 1
         while name in self.activeListeners.keys():
             name = "%s%s" % (nameBase, i)
-        
+
         listenerObject.options['Name']['Value'] = name
 
         try:
@@ -193,13 +195,21 @@ class Listeners:
             success = listenerObject.start(name=name)
 
             if success:
-                print helpers.color('[+] Listener successfully started!')
                 listenerOptions = copy.deepcopy(listenerObject.options)
                 self.activeListeners[name] = {'moduleName': moduleName, 'options':listenerOptions}
                 pickledOptions = pickle.dumps(listenerObject.options)
                 cur = self.conn.cursor()
                 cur.execute("INSERT INTO listeners (name, module, listener_category, options) VALUES (?,?,?,?)", [name, moduleName, category, pickledOptions])
                 cur.close()
+
+                # dispatch this event
+                message = "[+] Listener successfully started!"
+                signal = json.dumps({
+                    'print': True,
+                    'message': message,
+                    'listener_options': listenerOptions
+                })
+                dispatcher.send(signal, sender="listeners/{}/{}".format(moduleName, name))
             else:
                 print helpers.color('[!] Listener failed to start!')
 
@@ -246,9 +256,16 @@ class Listeners:
                     success = listenerModule.start(name=listenerName)
 
                 if success:
-                    print helpers.color('[+] Listener successfully started!')
                     listenerOptions = copy.deepcopy(listenerModule.options)
                     self.activeListeners[listenerName] = {'moduleName': moduleName, 'options':listenerOptions}
+                    # dispatch this event
+                    message = "[+] Listener successfully started!"
+                    signal = json.dumps({
+                        'print': True,
+                        'message': message,
+                        'listener_options': listenerOptions
+                    })
+                    dispatcher.send(signal, sender="listeners/{}/{}".format(moduleName, listenerName))
                 else:
                     print helpers.color('[!] Listener failed to start!')
 
@@ -267,7 +284,7 @@ class Listeners:
 
         To kill all listeners, use listenerName == 'all'
         """
- 
+
         if listenerName.lower() == 'all':
             listenerNames = self.activeListeners.keys()
         else:
@@ -287,7 +304,7 @@ class Listeners:
                 cur.execute("DELETE FROM listeners WHERE name=?", [listenerName])
                 cur.close()
                 continue
-                
+
             self.shutdown_listener(listenerName)
 
             # remove the listener from the database
@@ -326,6 +343,14 @@ class Listeners:
 
             # remove the listener object from the internal cache
             del self.activeListeners[listenerName]
+
+            # dispatch this event
+            message = "[*] Listener {} killed".format(listenerName)
+            signal = json.dumps({
+                'print': True,
+                'message': message
+            })
+            dispatcher.send(signal, sender="listeners/{}/{}".format(activeListenerModuleName, listenerName))
 
 
     def is_listener_valid(self, name):

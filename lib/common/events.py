@@ -20,6 +20,12 @@ def handle_event(signal, sender):
     except ValueError:
         print(helpers.color("[!] Error: bad signal recieved {} from sender {}".format(signal, sender)))
         return
+
+    # this should probably be set in the event itselfd but we can check
+    # here (and for most the time difference won't matter so it's fine)
+    if 'timestamp' not in signal_data:
+        signal_data['timestamp'] = helpers.get_datetime()
+
     event_data = json.dumps({'signal': signal_data, 'sender': sender})
     log_event(cur, 'user', 'dispatched_event', event_data, helpers.get_datetime())
     cur.close()

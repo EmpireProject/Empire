@@ -159,8 +159,14 @@ class Agents:
             cur.execute("INSERT INTO agents (name, session_id, delay, jitter, external_ip, session_key, nonce, checkin_time, lastseen_time, profile, kill_date, working_hours, lost_limit, listener, language) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (sessionID, sessionID, delay, jitter, externalIP, sessionKey, nonce, checkinTime, lastSeenTime, profile, killDate, workingHours, lostLimit, listener, language))
             cur.close()
 
-            # report the initial checkin in the reporting database
-            events.agent_checkin(sessionID, checkinTime)
+            # dispatch this event
+            message = "[*] New agent {} checked in".format(sessionID)
+            signal = json.dumps({
+                'print': True,
+                'message': message,
+                'timestamp': checkinTime
+            })
+            dispatcher.send(signal, sender="agents/{}".format(sessionID))
 
             # initialize the tasking/result buffers along with the client session key
             self.agents[sessionID] = {'sessionKey': sessionKey, 'functions': []}
@@ -195,8 +201,13 @@ class Agents:
             cur.execute("DELETE FROM agents WHERE session_id LIKE ?", [sessionID])
             cur.close()
 
-            # log an "agent deleted" event
-            events.agent_delete(sessionID)
+            # dispatch this event
+            message = "[*] Agent {} deleted".format(sessionID)
+            signal = json.dumps({
+                'print': True,
+                'message': message
+            })
+            dispatcher.send(signal, sender="agents/{}".format(sessionID))
         finally:
             self.lock.release()
 
@@ -1082,8 +1093,16 @@ class Agents:
                     agent_tasks.append([taskName, task, pk])
                     cur.execute("UPDATE agents SET taskings=? WHERE session_id=?", [json.dumps(agent_tasks), sessionID])
 
-                    # report the agent tasking in the reporting database
-                    events.agent_task(sessionID, taskName, pk, task)
+                    # dispatch this event
+                    message = "[*] Agent {} tasked with task ID {}".format(sessionID, pk)
+                    signal = json.dumps({
+                        'print': True,
+                        'message': message,
+                        'task_name': taskName,
+                        'task_id': pk,
+                        'task': task
+                    })
+                    dispatcher.send(signal, sender="agents/{}".format(sessionID))
 
                     cur.close()
 
@@ -1189,7 +1208,13 @@ class Agents:
 
         if sessionID == '%':
             sessionID = 'all'
-        events.agent_clear_tasks(sessionID)
+
+        message = "[*] Tasked {} to clear tasks".format(sessionID)
+        signal = json.dumps({
+            'print': True,
+            'message': message
+        })
+        dispatcher.send(signal, sender="agents/{}".format(sessionID))
 
 
     ###############################################################
@@ -1683,7 +1708,14 @@ class Agents:
             self.lock.acquire()
             # report the agent result in the reporting database
             cur = conn.cursor()
-            events.agent_result(agentSessionID, responseName, taskID)
+            message = "[*] Agent {} got results".format(sessionID)
+            signal = json.dumps({
+                'print': False,
+                'message': message,
+                'response_name': responseName,
+                'task_id': taskID
+            })
+            dispatcher.send(signal, sender="agents/{}".format(sessionID))
 
             # insert task results into the database, if it's not a file
             if taskID != 0 and responseName not in ["TASK_DOWNLOAD", "TASK_CMD_JOB_SAVE", "TASK_CMD_WAIT_SAVE"] and data != None:
