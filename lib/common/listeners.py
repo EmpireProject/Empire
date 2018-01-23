@@ -12,6 +12,7 @@ import os
 import pickle
 import hashlib
 import copy
+import json
 
 from pydispatch import dispatcher
 

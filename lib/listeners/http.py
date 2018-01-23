@@ -968,7 +968,7 @@ def send_message(packets=None):
             listenerName = self.options['Name']['Value']
             message = "[*] GET request for {}/{} from {}".format(request.host, request_uri, clientIP)
             signal = json.dumps({
-                'print': True,
+                'print': False,
                 'message': message
             })
             dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
@@ -983,7 +983,7 @@ def send_message(packets=None):
                         listenerName = self.options['Name']['Value']
                         message = "[*] GET cookie value from {} : {}".format(clientIP, cookie)
                         signal = json.dumps({
-                            'print': True,
+                            'print': False,
                             'message': message
                         })
                         dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
@@ -1036,9 +1036,9 @@ def send_message(packets=None):
                             else:
                                 # actual taskings
                                 listenerName = self.options['Name']['Value']
-                                message = "[*] Agent from %s retrieved taskings".format(clientIP)
+                                message = "[*] Agent from {} retrieved taskings".format(clientIP)
                                 signal = json.dumps({
-                                    'print': True,
+                                    'print': False,
                                     'message': message
                                 })
                                 dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
@@ -1073,7 +1073,7 @@ def send_message(packets=None):
             listenerName = self.options['Name']['Value']
             message = "[*] POST request data length from {} : {}".format(clientIP, len(requestData))
             signal = json.dumps({
-                'print': True,
+                'print': False,
                 'message': message
             })
             dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
@@ -1125,7 +1125,7 @@ def send_message(packets=None):
                             return make_response(self.default_response(), 404)
                         elif results == 'VALID':
                             listenerName = self.options['Name']['Value']
-                            message = "[*] Valid results return by {}".format(clientIP)
+                            message = "[*] Valid results returned by {}".format(clientIP)
                             signal = json.dumps({
                                 'print': True,
                                 'message': message

@@ -26,8 +26,12 @@ def handle_event(signal, sender):
     if 'timestamp' not in signal_data:
         signal_data['timestamp'] = helpers.get_datetime()
 
+    task_id = None
+    if 'task_id' in signal_data:
+        task_id = signal_data['task_id']
+
     event_data = json.dumps({'signal': signal_data, 'sender': sender})
-    log_event(cur, 'user', 'dispatched_event', event_data, helpers.get_datetime())
+    log_event(cur, sender, 'dispatched_event', json.dumps(signal_data), signal_data['timestamp'], task_id=task_id)
     cur.close()
 
 # Record all dispatched events
@@ -36,18 +40,6 @@ dispatcher.connect(handle_event, sender=dispatcher.Any)
 ################################################################################
 # Helper functions for logging common events
 ################################################################################
-
-def agent_checkin(session_id, checkin_time):
-    """
-    Helper function for reporting agent checkins.
-
-    session_id   - of an agent
-    checkin_time - when that agent was first seen
-    """
-    cur = db.cursor()
-    checkin_data = json.dumps({'checkin_time': checkin_time})
-    log_event(cur, session_id, 'agent_checkin', checkin_data, helpers.get_datetime())
-    cur.close()
 
 def agent_rename(old_name, new_name):
     """
@@ -58,65 +50,27 @@ def agent_rename(old_name, new_name):
     """
     # make sure to include new_name in there so it will persist if the agent
     # is renamed again - that way we can still trace the trail back if needed
-    cur = db.cursor()
-    name_data = json.dumps({'old_name': old_name, 'new_name': new_name})
-    log_event(cur, new_name, 'agent_rename', name_data, helpers.get_datetime())
-    # rename all events left over using agent's old name
-    cur.execute("UPDATE reporting SET name=? WHERE name=?", [new_name, old_name])
-    cur.close()
+    message = "[*] Agent {} has been renamed to {}".format(old_name, new_name)
+    signal = json.dumps({
+        'print': False,
+        'message': message,
+        'old_name': old_name,
+        'new_name': new_name
+    })
+    # signal twice, once for each name (that way, if you search by sender,
+    # the last thing in the old agent and the first thing in the new is that
+    # it has been renamed)
+    dispatcher.send(signal, sender="agents/{}".format(old_name))
+    dispatcher.send(signal, sender="agents/{}".format(new_name))
 
-def agent_task(session_id, task_name, task_id, task):
-    """
-    Helper function for reporting agent taskings.
+    # TODO rename all events left over using agent's old name?
+    # in order to handle "agents/<name>" as well as "agents/<name>/stuff"
+    # we'll need to query, iterate the list to build replacements, then send
+    # a bunch of updates... kind of a pain
 
-    session_id - of an agent
-    task_name  - a string (e.g. "TASK_EXIT", "TASK_CMD_WAIT", "TASK_SHELL") that
-                 an agent is able to interpret as a command
-    task_id    - a unique ID for this task (usually an integer 0<=id<=65535)
-    task       - the actual task definition string (e.g. for "TASK_SHELL" this
-                 is the shell command to run)
-    """
-
-    cur = db.cursor()
-    task_data = json.dumps({'task_name': task_name, 'task': task})
-    log_event(cur, session_id, "agent_task", task_data, helpers.get_datetime(), task_id)
-    cur.close()
-
-def agent_result(cur, session_id, response_name, task_id):
-    """
-    Helper function for reporting agent task results.
-
-    Note that this doesn't store the actual result data; since it comes in
-    many forms (some large, and/or files, and so on) this event merely provides
-    all of the details you need to fetch the actual result from the database.
-    """
-
-    response_data = json.dumps({'task_type': response_name})
-    log_event(cur, session_id, "agent_result", response_data, helpers.get_datetime(), task_id)
-    cur.close()
-
-def agent_delete(session_id):
-    """
-    Helper function for reporting an agent's deletion.
-
-    session_id - the agent's ID
-    """
-    cur = db.cursor()
-    data = json.dumps({})
-    log_event(cur, session_id, "agent_deleted", data, helpers.get_datetime())
-    cur.close()
-
-def agent_clear_tasks(session_id):
-    """
-    Helper function for reporting an agent's tasks have been cleared.
-
-    session_id - the agent's ID
-    """
-    cur = db.cursor()
-    data = json.dumps({})
-    log_event(cur, session_id, "agent_tasks_cleared", data, helpers.get_datetime())
-    cur.close()
-
+    #cur = db.cursor()
+    #cur.execute("UPDATE reporting SET name=? WHERE name REGEXP ?", [new_name, old_sender])
+    #cur.close()
 
 def log_event(cur, name, event_type, message, timestamp, task_id=None):
     """
@@ -124,8 +78,7 @@ def log_event(cur, name, event_type, message, timestamp, task_id=None):
 
     cur        - a database connection object (such as that returned from
                  `get_db_connection()`)
-    name       - some sort of identifier for the object the event pertains to
-                 (e.g. an agent or listener name)
+    name       - the sender string from the dispatched event
     event_type - the category of the event - agent_result, agent_task,
                  agent_rename, etc. Ideally a succinct description of what the
                  event actually is.

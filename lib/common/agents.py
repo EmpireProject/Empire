@@ -1411,7 +1411,7 @@ class Agents:
 
                 message = "[!] Nonce verified: agent {} posted valid sysinfo checkin format: {}".format(sessionID, message)
                 signal = json.dumps({
-                    'print': True,
+                    'print': False,
                     'message': message
                 })
                 dispatcher.send(signal, sender="agents/{}".format(sessionID))
@@ -1512,7 +1512,7 @@ class Agents:
         if len(routingPacket) < 20:
             message = "[!] handle_agent_data(): routingPacket wrong length: {}".format(routingPacket)
             signal = json.dumps({
-                'print': True,
+                'print': False,
                 'message': message
             })
             dispatcher.send(signal, sender="empire")
@@ -1531,7 +1531,7 @@ class Agents:
             if meta == 'STAGE0' or meta == 'STAGE1' or meta == 'STAGE2':
                 message = "[*] handle_agent_data(): sessionID {} issued a {} request".format(sessionID, meta)
                 signal = json.dumps({
-                    'print': True,
+                    'print': False,
                     'message': message
                 })
                 dispatcher.send(signal, sender="agents/{}".format(sessionID))
@@ -1540,7 +1540,7 @@ class Agents:
             elif sessionID not in self.agents:
                 message = "[!] handle_agent_data(): sessionID {} not present".format(sessionID)
                 signal = json.dumps({
-                    'print': True,
+                    'print': False,
                     'message': message
                 })
                 dispatcher.send(signal, sender="agents/{}".format(sessionID))
@@ -1549,16 +1549,16 @@ class Agents:
             elif meta == 'TASKING_REQUEST':
                 message = "[*] handle_agent_data(): sessionID {} issued a TASKING_REQUEST".format(sessionID)
                 signal = json.dumps({
-                    'print': True,
+                    'print': False,
                     'message': message
                 })
                 dispatcher.send(signal, sender="agents/{}".format(sessionID))
                 dataToReturn.append((language, self.handle_agent_request(sessionID, language, stagingKey)))
 
             elif meta == 'RESULT_POST':
-                message = "[*] handle_agent_data(): sessionID %s issued a RESULT_POST".format(sessionID)
+                message = "[*] handle_agent_data(): sessionID {} issued a RESULT_POST".format(sessionID)
                 signal = json.dumps({
-                    'print': True,
+                    'print': False,
                     'message': message
                 })
                 dispatcher.send(signal, sender="agents/{}".format(sessionID))
