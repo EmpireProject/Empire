@@ -340,6 +340,36 @@ class Listeners:
             cur.execute("DELETE FROM listeners WHERE name=?", [listenerName])
             cur.close()
 
+    def delete_listener(self, listener_name):
+        """
+        Delete listener(s) from database.
+        """
+
+        try:
+            old_factory = self.conn.row_factory
+            self.conn.row_factory = helpers.dict_factory
+            cur = self.conn.cursor()
+            cur.execute("SELECT name FROM listeners")
+            db_names = map(lambda x: x['name'], cur.fetchall())
+            if listener_name.lower() == "all":
+                names = db_names
+            else:
+                names = [listener_name]
+
+            for name in names:
+                if not name in db_names:
+                    print helpers.color("[!] Listener '%s' does not exist!" % name)
+                    return False
+
+                if name in self.activeListeners.keys():
+                    self.shutdown_listener(name)
+                cur.execute("DELETE FROM listeners WHERE name=?", [name])
+
+        except Exception, e:
+            print helpers.color("[!] Error deleting listener '%s'" % name)
+
+        cur.close()
+        self.conn.row_factory = old_factory
 
     def shutdown_listener(self, listenerName):
         """
@@ -379,7 +409,6 @@ class Listeners:
             cur.execute("UPDATE listeners SET enabled=? WHERE NOT module=?", [False, "redirector"])
         else:
             cur.execute("UPDATE listeners SET enabled=? WHERE name=? AND NOT module=?", [False, listenerName.lower(), "redirector"])
-        cur.close()
         cur.close()
         self.shutdown_listener(listenerName)
 
@@ -491,8 +520,6 @@ class Listeners:
             options[option_name]['Value'] = option_value
             pickled_options = pickle.dumps(options)
             cur.execute('UPDATE listeners SET options=? WHERE id=?', [pickled_options, listener_id])
-            if listener_name in self.activeListeners.keys():
-                print helpers.color("[*] This change will not take effect until the listener is restarted")
         except ValueError:
             print helpers.color("[!] Listener %s not found" % listenerName)
         cur.close()

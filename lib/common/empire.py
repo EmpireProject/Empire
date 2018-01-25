@@ -2949,6 +2949,21 @@ class ListenersMenu(SubMenu):
         else:
             self.mainMenu.listeners.kill_listener(listenerID)
 
+    def do_delete(self, line):
+        "Delete listener(s) from the database"
+
+        listener_id = line.strip()
+
+        if listener_id.lower() == "all":
+            try:
+                choice = raw_input(helpers.color("[>] Delete all listeners? [y/N] ", "red"))
+                if choice.lower() != '' and choice.lower()[0] == 'y':
+                    self.mainMenu.listeners.delete_listener("all")
+            except KeyboardInterrupt:
+                print ''
+
+        else:
+            self.mainMenu.listeners.delete_listener(listener_id)
 
     def do_usestager(self, line):
         "Use an Empire stager."
@@ -3069,10 +3084,14 @@ class ListenersMenu(SubMenu):
         "Change a listener option, will not take effect until the listener is restarted"
 
         arguments = line.strip().split(" ")
-        if len(arguments) < 3:
-            print helpers.color("[!] edit <listener name> <option name> <option value>")
+        if len(arguments) < 2:
+            print helpers.color("[!] edit <listener name> <option name> <option value> (leave value blank to unset)")
             return
+        if len(arguments) == 2:
+            arguments.append(" ")
         self.mainMenu.listeners.update_listener_options(arguments[0], arguments[1], arguments[2])
+        if arguments[0] in self.activeListeners.keys():
+            print helpers.color("[*] This change will not take effect until the listener is restarted")
 
     def complete_usestager(self, text, line, begidx, endidx):
         "Tab-complete an Empire stager module path."
