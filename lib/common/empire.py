@@ -3088,7 +3088,7 @@ class ListenersMenu(SubMenu):
             print helpers.color("[!] edit <listener name> <option name> <option value> (leave value blank to unset)")
             return
         if len(arguments) == 2:
-            arguments.append(" ")
+            arguments.append("")
         self.mainMenu.listeners.update_listener_options(arguments[0], arguments[1], arguments[2])
         if arguments[0] in self.activeListeners.keys():
             print helpers.color("[*] This change will not take effect until the listener is restarted")
