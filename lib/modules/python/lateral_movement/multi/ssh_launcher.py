@@ -14,7 +14,7 @@ class Module:
             'Description': 'This module will send an launcher via ssh.',
 
             # True if the module needs to run in the background
-            'Background' : False,
+            'Background' : True,
 
             # File extension to save the file as
             'OutputExtension' : "",
