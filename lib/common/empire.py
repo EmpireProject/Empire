@@ -3107,6 +3107,30 @@ class ListenersMenu(SubMenu):
         offs = len(mline) - len(text)
         return [s[offs:] for s in names if s.startswith(mline)]
 
+    def complete_enable(self, text, line, begidx, endidx):
+        # tab complete for inactive listener names
+
+        inactive = self.mainMenu.listeners.get_inactive_listeners()
+        names = inactive.keys()
+        mline = line.partition(' ')[2]
+        offs = len(mline) - len(text)
+        return [s[offs:] for s in names if s.startswith(mline)]
+
+    def complete_disable(self, text, line, begidx, endidx):
+        # tab complete for listener names
+        # get all the listener names
+        names = self.mainMenu.listeners.activeListeners.keys() + ["all"]
+        mline = line.partition(' ')[2]
+        offs = len(mline) - len(text)
+        return [s[offs:] for s in names if s.startswith(mline)]
+
+    def complete_delete(self, text, line, begidx, endidx):
+        # tab complete for listener names
+        # get all the listener names
+        names = self.mainMenu.listeners.activeListeners.keys() + ["all"]
+        mline = line.partition(' ')[2]
+        offs = len(mline) - len(text)
+        return [s[offs:] for s in names if s.startswith(mline)]
 
     def complete_launcher(self, text, line, begidx, endidx):
         "Tab-complete language types and listener names/IDs"
