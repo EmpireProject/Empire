@@ -850,10 +850,10 @@ class MainMenu(cmd.Cmd):
     def do_report(self, line):
         "Produce report CSV and log files: sessions.csv, credentials.csv, master.log"
 
-        conn = sqlite3.connect("data/empire.db")
+        self.conn = sqlite3.connect("data/empire.db")
 
         # Agents CSV
-        cur = conn.cursor()
+        cur = self.conn.cursor()
         cur.execute('select session_id, hostname, username, checkin_time from agents')
 
         rows = cur.fetchall()
