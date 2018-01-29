@@ -35,6 +35,7 @@ import modules
 import stagers
 import credentials
 import plugins
+from events import log_event
 from zlib_wrapper import compress
 from zlib_wrapper import decompress
 
@@ -70,6 +71,9 @@ class MainMenu(cmd.Cmd):
 
         cmd.Cmd.__init__(self)
 
+        # set up the event handling system
+        dispatcher.connect(self.handle_event, sender=dispatcher.Any)
+
         # globalOptions[optionName] = (value, required, description)
         self.globalOptions = {}
 
@@ -88,8 +92,6 @@ class MainMenu(cmd.Cmd):
         self.prompt = '(Empire) > '
         self.do_help.__func__.__doc__ = '''Displays the help menu.'''
         self.doc_header = 'Commands'
-
-        dispatcher.connect(self.handle_event, sender=dispatcher.Any)
 
         # Main, Agents, or
         self.menu_state = 'Main'
@@ -117,6 +119,52 @@ class MainMenu(cmd.Cmd):
 
         # print the loading menu
         messages.loading()
+
+
+    def handle_event(self, signal, sender):
+        """
+        Whenver an event is received from the dispatcher, log it to the DB,
+        decide whether it should be printed, and if so, print it.
+        If self.args.debug, also log all events to a file.
+        """
+        # load up the signal so we can inspect it
+        try:
+            signal_data = json.loads(signal)
+        except ValueError:
+            print(helpers.color("[!] Error: bad signal recieved {} from sender {}".format(signal, sender)))
+            return
+
+        # this should probably be set in the event itself but we can check
+        # here (and for most the time difference won't matter so it's fine)
+        if 'timestamp' not in signal_data:
+            signal_data['timestamp'] = helpers.get_datetime()
+
+        # if this is related to a task, set task_id; this is its own column in
+        # the DB (else the column will be set to None/null)
+        task_id = None
+        if 'task_id' in signal_data:
+            task_id = signal_data['task_id']
+
+        event_data = json.dumps({'signal': signal_data, 'sender': sender})
+
+        # print any signal that indicates we should
+        if('print' in signal_data and signal_data['print']):
+            print(helpers.color(signal_data['message']))
+
+        # get a db cursor, log this event to the DB, then close the cursor
+        cur = self.conn.cursor()
+        # TODO instead of "dispatched_event" put something useful in the "event_type" column
+        log_event(cur, sender, 'dispatched_event', json.dumps(signal_data), signal_data['timestamp'], task_id=task_id)
+        cur.close()
+
+        # if --debug X is passed, log out all dispatcher signals
+        if self.args.debug:
+            with open('empire.debug', 'a') as debug_file:
+                debug_file.write("%s %s : %s\n" % (helpers.get_datetime(), sender, signal))
+
+            if self.args.debug == '2':
+                # if --debug 2, also print the output to the screen
+                print " %s : %s" % (sender, signal)
 
 
     def check_root(self):
@@ -346,38 +394,6 @@ class MainMenu(cmd.Cmd):
         If any empty line is entered, do nothing.
         """
         pass
-
-
-    def handle_event(self, signal, sender):
-        """
-        Whenver an event is received from the dispatcher, decide whether it
-        should be printed, and if so, print it. If self.args.debug, log all
-        events to a file.
-        """
-
-        # if --debug X is passed, log out all dispatcher signals
-        if self.args.debug:
-            debug_file = open('empire.debug', 'a')
-            debug_file.write("%s %s : %s\n" % (helpers.get_datetime(), sender, signal))
-            debug_file.close()
-
-            if self.args.debug == '2':
-                # if --debug 2, also print the output to the screen
-                print " %s : %s" % (sender, signal)
-        # note: kinda feels like this should be in lib/common/events.py but
-        # we don't have access to self.args there
-
-        # load up the signal so we can look into it
-        try:
-            signal_data = json.loads(signal)
-        except ValueError:
-            print(helpers.color("[!] Error: bad signal recieved {} from sender {}".format(signal, sender)))
-            return
-
-        # print any signal that indicates we should
-        if('print' in signal_data and signal_data['print']):
-            print(helpers.color(signal_data['message']))
-
 
     ###################################################
     # CMD methods

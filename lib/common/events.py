@@ -9,33 +9,7 @@ import json
 
 from pydispatch import dispatcher
 
-import helpers
-from lib.common import db
-
-def handle_event(signal, sender):
-    """ Puts all dispatched events into the DB """
-    cur = db.cursor()
-    try:
-        signal_data = json.loads(signal)
-    except ValueError:
-        print(helpers.color("[!] Error: bad signal recieved {} from sender {}".format(signal, sender)))
-        return
-
-    # this should probably be set in the event itselfd but we can check
-    # here (and for most the time difference won't matter so it's fine)
-    if 'timestamp' not in signal_data:
-        signal_data['timestamp'] = helpers.get_datetime()
-
-    task_id = None
-    if 'task_id' in signal_data:
-        task_id = signal_data['task_id']
-
-    event_data = json.dumps({'signal': signal_data, 'sender': sender})
-    log_event(cur, sender, 'dispatched_event', json.dumps(signal_data), signal_data['timestamp'], task_id=task_id)
-    cur.close()
-
-# Record all dispatched events
-dispatcher.connect(handle_event, sender=dispatcher.Any)
+#from lib.common import db # used in the disabled TODO below
 
 ################################################################################
 # Helper functions for logging common events
