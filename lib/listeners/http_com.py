@@ -7,7 +7,7 @@ import time
 import copy
 import sys
 from pydispatch import dispatcher
-from flask import Flask, request, make_response
+from flask import Flask, request, make_response, send_from_directory
 
 # Empire imports
 from lib.common import helpers
@@ -137,17 +137,86 @@ class Listener:
         # set the default staging key to the controller db default
         self.options['StagingKey']['Value'] = str(helpers.get_config('staging_key')[0])
 
+        # randomize the length of the default_response and index_page headers to evade signature based scans
+        self.header_offset = random.randint(0,64)
 
     def default_response(self):
+         """
+         Returns an IIS 7.5 404 not found page.
+         """
+    
+         return '\n'.join([
+             '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
+             '<html xmlns="http://www.w3.org/1999/xhtml">',
+             '<head>',
+             '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>',
+             '<title>404 - File or directory not found.</title>',
+             '<style type="text/css">',
+             '<!--',
+             'body{margin:0;font-size:.7em;font-family:Verdana, Arial, Helvetica, sans-serif;background:#EEEEEE;}',
+             'fieldset{padding:0 15px 10px 15px;}',
+             'h1{font-size:2.4em;margin:0;color:#FFF;}',
+             'h2{font-size:1.7em;margin:0;color:#CC0000;}',
+             'h3{font-size:1.2em;margin:10px 0 0 0;color:#000000;}',
+             '#header{width:96%;margin:0 0 0 0;padding:6px 2% 6px 2%;font-family:"trebuchet MS", Verdana, sans-serif;color:#FFF;',
+             'background-color:#555555;}',
+             '#content{margin:0 0 0 2%;position:relative;}',
+             '.content-container{background:#FFF;width:96%;margin-top:8px;padding:10px;position:relative;}',
+             '-->',
+             '</style>',
+             '</head>',
+             '<body>',
+             '<div id="header"><h1>Server Error</h1></div>',
+             '<div id="content">',
+             ' <div class="content-container"><fieldset>',
+             '  <h2>404 - File or directory not found.</h2>',
+             '  <h3>The resource you are looking for might have been removed, had its name changed, or is temporarily unavailable.</h3>',
+             ' </fieldset></div>',
+             '</div>',
+             '</body>',
+             '</html>',
+             ' ' * self.header_offset,  # randomize the length of the header to evade signature based detection
+         ]) 
+
+    def index_page(self):
         """
         Returns a default HTTP server page.
         """
-        page = "<html><body><h1>It works!</h1>"
-        page += "<p>This is the default web page for this server.</p>"
-        page += "<p>The web server software is running but no content has been added, yet.</p>"
-        page += "</body></html>"
-        return page
 
+        return '\n'.join([
+            '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
+            '<html xmlns="http://www.w3.org/1999/xhtml">',
+            '<head>',
+            '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />',
+            '<title>IIS7</title>',
+            '<style type="text/css">',
+            '<!--',
+            'body {',
+            '    color:#000000;',
+            '    background-color:#B3B3B3;',
+            '    margin:0;',
+            '}',
+            '',
+            '#container {',
+            '    margin-left:auto;',
+            '    margin-right:auto;',
+            '    text-align:center;',
+            '    }',
+            '',
+            'a img {',
+            '    border:none;',
+            '}',
+            '',
+            '-->',
+            '</style>',
+            '</head>',
+            '<body>',
+            '<div id="container">',
+            '<a href="http://go.microsoft.com/fwlink/?linkid=66138&amp;clcid=0x409"><img src="welcome.png" alt="IIS7" width="571" height="411" /></a>',
+            '</div>',
+            '</body>',
+            '</html>',
+        ])
 
     def validate_options(self):
         """
@@ -563,7 +632,7 @@ class Listener:
             """
             if not self.mainMenu.agents.is_ip_allowed(request.remote_addr):
                 dispatcher.send("[!] %s on the blacklist/not on the whitelist requested resource" % (request.remote_addr), sender="listeners/http_com")
-                return make_response(self.default_response(), 200)
+                return make_response(self.default_response(), 404)
 
 
         @app.after_request
@@ -581,6 +650,24 @@ class Listener:
             response.headers['Expires'] = "0"
             return response
 
+        @app.route('/')
+        @app.route('/index.html')
+        def serve_index():
+            """
+            Return default server web page if user navigates to index.
+            """
+            
+            static_dir = self.mainMenu.installPath + "data/misc/"
+            return make_response(self.index_page(), 200)
+
+        @app.route('/welcome.png')
+        def serve_index_helper():
+            """
+            Serves image loaded by index page.
+            """
+
+            static_dir = self.mainMenu.installPath + "data/misc/"
+            return send_from_directory(static_dir, 'welcome.png')
 
         @app.route('/<path:request_uri>', methods=['GET'])
         def handle_get(request_uri):
@@ -624,7 +711,7 @@ class Listener:
                                     print helpers.color("[*] Orphaned agent from %s, signaling retaging" % (clientIP))
                                     return make_response(self.default_response(), 401)
                                 else:
-                                    return make_response(self.default_response(), 200)
+                                    return make_response(self.default_response(), 404)
 
                             else:
                                 # actual taskings
@@ -632,13 +719,13 @@ class Listener:
                                 return make_response(base64.b64encode(results), 200)
                         else:
                             # dispatcher.send("[!] Results are None...", sender='listeners/http_com')
-                            return make_response(self.default_response(), 200)
+                            return make_response(self.default_response(), 404)
                 else:
-                    return make_response(self.default_response(), 200)
+                    return make_response(self.default_response(), 404)
 
             else:
                 dispatcher.send("[!] %s requested by %s with no routing packet." % (request_uri, clientIP), sender='listeners/http_com')
-                return make_response(self.default_response(), 200)
+                return make_response(self.default_response(), 404)
 
 
         @app.route('/<path:request_uri>', methods=['POST'])
@@ -676,16 +763,16 @@ class Listener:
 
                         elif results[:10].lower().startswith('error') or results[:10].lower().startswith('exception'):
                             dispatcher.send("[!] Error returned for results by %s : %s" %(clientIP, results), sender='listeners/http_com')
-                            return make_response(self.default_response(), 200)
+                            return make_response(self.default_response(), 404)
                         elif results == 'VALID':
                             dispatcher.send("[*] Valid results return by %s" % (clientIP), sender='listeners/http_com')
-                            return make_response(self.default_response(), 200)
+                            return make_response(self.default_response(), 404)
                         else:
                             return make_response(base64.b64encode(results), 200)
                     else:
-                        return make_response(self.default_response(), 200)
+                        return make_response(self.default_response(), 404)
             else:
-                return make_response(self.default_response(), 200)
+                return make_response(self.default_response(), 404)
 
         try:
             certPath = listenerOptions['CertPath']['Value']
