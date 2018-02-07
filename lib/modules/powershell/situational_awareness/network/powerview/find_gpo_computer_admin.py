@@ -5,7 +5,7 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Find-GPOComputerAdmin',
+            'Name': 'Get-DomainGPOComputerLocalGroupMapping',
 
             'Author': ['@harmj0y'],
 
@@ -37,13 +37,13 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'ComputerName' : {
-                'Description'   :   'The computer to determine local administrative access to.',
+            'ComputerIdentity' : {
+                'Description'   :   'A SamAccountName, DistinguishedName, SID, GUID, or a dns host name for the computer to identify GPO local group mappings for.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'OUName' : {
-                'Description'   :   'OU name to determine who has local adminisrtative acess to computers within it.',
+            'LocalGroup' : {
+                'Description'   :   'The local group to check access against.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -52,18 +52,33 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'DomainController' : {
-                'Description'   :   'Domain controller to reflect LDAP queries through.',
+            'SearchBase' : {
+                'Description'   :   'The LDAP source to search through, e.g. "LDAP://OU=secret,DC=testlab,DC=local" Useful for OU queries.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'Recurse' : {
-                'Description'   :   'Switch. If a returned member is a group, recurse and get all members.',
+            'Server' : {
+                'Description'   :   'Specifies an active directory server (domain controller) to bind to',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'LocalGroup' : {
-                'Description'   :   'The local group to check access against, "Administrators", "RDP/Remote Desktop Users", or a custom SID. Defaults to "Administrators".',
+            'SearchScope' : {
+                'Description'   :   'Specifies the scope to search under, Base/OneLevel/Subtree (default of Subtree)',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'ResultPageSize' : {
+                'Description'   :   'Specifies the PageSize to set for the LDAP searcher object.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'ServerTimeLimit' : {
+                'Description'   :   'Specifies the maximum amount of time the server spends searching. Default of 120 seconds.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'Tombstone' : {
+                'Description'   :   'Switch. Specifies that the search should also return deleted/tombstoned objects.',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -97,9 +112,9 @@ class Module:
         f.close()
 
         # get just the code needed for the specified function
-        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
+        script = helpers.strip_powershell_comments(moduleCode)
 
-        script += moduleName + " "
+        script += "\n" + moduleName + " "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
@@ -112,5 +127,5 @@ class Module:
 
         script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
         return script

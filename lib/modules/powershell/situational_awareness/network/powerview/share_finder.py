@@ -5,7 +5,7 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-ShareFinder',
+            'Name': 'Find-DomainShare',
 
             'Author': ['@harmj0y'],
 
@@ -42,8 +42,28 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'ComputerFilter' : {
+            'ComputerLDAPFilter' : {
                 'Description'   :   'Host filter name to query AD for, wildcards accepted.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'ComputerSearchBase' : {
+                'Description'   :   'Specifies the LDAP source to search through for computers',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'ComputerOperatingSystem' : {
+                'Description'   :   'Return computers with a specific operating system, wildcards accepted.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'ComputerServicePack' : {
+                'Description'   :   'Return computers with the specified service pack, wildcards accepted.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'ComputerSiteName' : {
+                'Description'   :   'Return computers in the specific AD Site name, wildcards accepted.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -52,8 +72,28 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'NoPing' : {
-                'Description'   :   "Don't ping each host to ensure it's up before enumerating.",
+            'Server' : {
+                'Description'   :   'Specifies an active directory server (domain controller) to bind to',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'SearchScope' : {
+                'Description'   :   'Specifies the scope to search under, Base/OneLevel/Subtree (default of Subtree)',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'ResultPageSize' : {
+                'Description'   :   'Specifies the PageSize to set for the LDAP searcher object.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'ServerTimeLimit' : {
+                'Description'   :   'Specifies the maximum amount of time the server spends searching. Default of 120 seconds.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'Tombstone' : {
+                'Description'   :   'Switch. Specifies that the search should also return deleted/tombstoned objects.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -62,13 +102,8 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'Domain' : {
-                'Description'   :   'The domain to use for the query, defaults to the current domain.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'DomainController' : {
-                'Description'   :   'Domain controller to reflect LDAP queries through.',
+            'Jitter' : {
+                'Description'   :   'Specifies the jitter (0-1.0) to apply to any specified -Delay, defaults to +/- 0.3.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -107,9 +142,9 @@ class Module:
         f.close()
 
         # get just the code needed for the specified function
-        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
+        script = helpers.strip_powershell_comments(moduleCode)
 
-        script += moduleName + " "
+        script += "\n" + moduleName + " "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
@@ -122,5 +157,5 @@ class Module:
 
         script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
         return script

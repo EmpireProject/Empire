@@ -14,7 +14,7 @@ class Module:
             'Description': 'This module will send an launcher via ssh.',
 
             # True if the module needs to run in the background
-            'Background' : False,
+            'Background' : True,
 
             # File extension to save the file as
             'OutputExtension' : "",
@@ -89,7 +89,7 @@ class Module:
                 if option in self.options:
                     self.options[option]['Value'] = value
 
-    def generate(self):
+    def generate(self, obfuscate=False, obfuscationCommand=""):
         login = self.options['Login']['Value']
         password = self.options['Password']['Value']
         listenerName = self.options['Listener']['Value']
@@ -121,7 +121,7 @@ def wall(host, pw):
     while True:
         try:
             data = os.read(fd, 1024)
-            if data == "Password:":
+            if data[:8] == "Password" and data[-1:] == ":":
                 os.write(fd, pw + '\\n')
 
         except OSError:

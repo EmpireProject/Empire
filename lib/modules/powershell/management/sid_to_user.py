@@ -57,5 +57,5 @@ class Module:
         
         script = "(New-Object System.Security.Principal.SecurityIdentifier(\"%s\")).Translate( [System.Security.Principal.NTAccount]).Value" %(self.options['SID']['Value'])
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
         return script

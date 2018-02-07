@@ -17,7 +17,9 @@ The Stagers() class in instantiated in ./empire.py by the main menu and includes
 import fnmatch
 import imp
 import helpers
+import errno
 import os
+import errno
 import macholib.MachO
 import shutil
 import zipfile
@@ -443,7 +445,16 @@ class Stagers:
         javacode = file.read()
         file.close()
         javacode = javacode.replace("LAUNCHER",launcherCode)
-        file = open(self.mainMenu.installPath+'data/misc/classes/com/installer/apple/Run.java','w')
+        jarpath = self.mainMenu.installPath+'data/misc/classes/com/installer/apple/'
+        try:
+            os.makedirs(jarpath)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+            else:
+                pass
+        
+        file = open(jarpath+'Run.java','w')
         file.write(javacode)
         file.close()
         currdir = os.getcwd()
@@ -459,3 +470,19 @@ class Stagers:
         os.remove('Run.jar')
 
         return jar 
+
+
+    def generate_upload(self, file, path):
+        script = """
+$b64 = "BASE64_BLOB_GOES_HERE"
+$filename = "FILE_UPLOAD_FULL_PATH_GOES_HERE"
+[IO.FILE]::WriteAllBytes($filename, [Convert]::FromBase64String($b64))
+
+"""
+
+        file_encoded = base64.b64encode(file)
+
+        script = script.replace("BASE64_BLOB_GOES_HERE", file_encoded)
+        script = script.replace("FILE_UPLOAD_FULL_PATH_GOES_HERE", path)
+
+        return script

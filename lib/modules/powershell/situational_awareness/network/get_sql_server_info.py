@@ -79,6 +79,7 @@ class Module:
             print helpers.color("[!] Could not read module source path at: " + str(moduleSource))
             return ""
         
+        scriptEnd = ""
         if check_all:
             auxModuleSource = self.mainMenu.installPath + "data/module_source/situational_awareness/network/Get-SQLInstanceDomain.ps1"
             if obfuscate:
@@ -96,6 +97,7 @@ class Module:
             if password != "":
                 scriptEnd += " -Password "+password
             scriptEnd += " | "
+
         scriptEnd += " Get-SQLServerInfo"
         if username != "":
             scriptEnd += " -Username "+username
@@ -104,6 +106,6 @@ class Module:
         if instance != "" and not check_all:
             scriptEnd += " -Instance "+instance
         if obfuscate:
-            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
+            scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd
         return script

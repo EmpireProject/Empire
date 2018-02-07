@@ -74,7 +74,8 @@ class Module:
         instance = self.options['Instance']['Value']
         no_defaults = self.options['NoDefaults']['Value']
         check_all = self.options['CheckAll']['Value']
-
+        scriptEnd = ""
+        
         # read in the common module source code
         moduleSource = self.mainMenu.installPath + "data/module_source/collection/Get-SQLColumnSampleData.ps1"
         script = ""
@@ -114,6 +115,6 @@ class Module:
         if no_defaults:
             scriptEnd += " -NoDefaults "
         if obfuscate:
-            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
+            scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd
         return script

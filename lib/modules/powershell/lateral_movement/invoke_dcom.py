@@ -46,7 +46,7 @@ class Module:
                 'Value'         :   ''
             },
             'Method' : {
-                'Description'   :   'COM method to use.',
+                'Description'   :   'COM method to use. MMC20.Application,ShellWindows,ShellBrowserWindow,ExcelDDE',
                 'Required'      :   True,
                 'Value'         :   'ShellWindows'
             },
@@ -131,6 +131,6 @@ class Module:
 
         scriptEnd += "| Out-String | %{$_ + \"`n\"};"
         if obfuscate:
-            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
+            scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd
         return script

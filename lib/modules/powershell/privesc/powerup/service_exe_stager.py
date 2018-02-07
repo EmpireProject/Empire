@@ -128,6 +128,6 @@ class Module:
         else:
             scriptEnd += "\nInstall-ServiceBinary -ServiceName \""+str(serviceName)+"\" -Command \"C:\\Windows\\System32\\cmd.exe /C $tempLoc\""    
         if obfuscate:
-            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
+            scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd
         return script

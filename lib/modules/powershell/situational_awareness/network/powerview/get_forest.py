@@ -5,7 +5,7 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Get-NetForest',
+            'Name': 'Get-Forest',
 
             'Author': ['@harmj0y'],
 
@@ -72,9 +72,9 @@ class Module:
         f.close()
 
         # get just the code needed for the specified function
-        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
+        script = helpers.strip_powershell_comments(moduleCode)
 
-        script += moduleName + " "
+        script += "\n" + moduleName + " "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
@@ -87,5 +87,5 @@ class Module:
 
         script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
         return script
