@@ -87,7 +87,7 @@ class Module:
         f.close()
 
         # get just the code needed for the specified function
-        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
+        script = helpers.strip_powershell_comments(moduleCode)
 
         pscript = ""
         expand = False
@@ -107,7 +107,7 @@ class Module:
         if expand: 
             script += "(" + moduleName + " " + pscript + ")." + "'" + value_to_expand + "'" + ' | fl | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
         else:
-            script += moduleName + " " + pscript + ' | fl | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed! Use ExpandObject option to expand one of the objects above such as \'System Access\'"'
+            script += "\n" + moduleName + " " + pscript + ' | fl | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed! Use ExpandObject option to expand one of the objects above such as \'System Access\'"'
         if obfuscate:
             script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
         return script

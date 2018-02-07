@@ -120,12 +120,12 @@ class Module:
             'Tombstone' : {
                 'Description'   :   'Switch. Specifies that the search should also return deleted/tombstoned objects.',
                 'Required'      :   False,
-                'Value'         :   'False'
+                'Value'         :   ''
             },
             'FindOne' : {
                 'Description'   :   'Only return one result object.',
                 'Required'      :   False,
-                'Value'         :   'False'
+                'Value'         :   ''
             }
         }
 
@@ -157,9 +157,9 @@ class Module:
         f.close()
 
         # get just the code needed for the specified function
-        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
+        script = helpers.strip_powershell_comments(moduleCode)
 
-        script += moduleName + " "
+        script += "\n" + moduleName + " "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
