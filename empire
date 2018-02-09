@@ -929,9 +929,9 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
             msg = "Tasked agent to download %s" % (fileName)
             main.agents.save_agent_log(agentSessionID, msg)
-            main.agents.add_agent_task_db(agentSessionID, 'TASK_DOWNLOAD', fileName)
+            taskID = main.agents.add_agent_task_db(agentSessionID, 'TASK_DOWNLOAD', fileName)
 
-        return jsonify({'success': True})
+        return jsonify({'success': True, 'taskID': taskID})
 
     @app.route('/api/agents/<string:agent_name>/upload', methods=['POST'])
     def task_agent_upload(agent_name):
@@ -968,9 +968,9 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             msg = "Tasked agent to upload %s : %s" % (fileName, hashlib.md5(rawBytes).hexdigest())
             main.agents.save_agent_log(agentSessionID, msg)
             data = fileName + "|" + fileData
-            main.agents.add_agent_task_db(agentSessionID, 'TASK_UPLOAD', data)
+            taskID = main.agents.add_agent_task_db(agentSessionID, 'TASK_UPLOAD', data)
 
-        return jsonify({'success': True})
+        return jsonify({'success': True, 'taskID': taskID})
 
     @app.route('/api/agents/<string:agent_name>/shell', methods=['POST'])
     def task_agent_shell(agent_name):
