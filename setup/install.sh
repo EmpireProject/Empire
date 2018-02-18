@@ -133,7 +133,7 @@ else
 		sudo pip install -r requirements.txt 
 	elif lsb_release -d | grep -q "Kali"; then
 		Release=Kali
-		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libssl1.0.0 libssl-dev build-essential
+		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libssl1.0.0 libssl-dev build-essential libssl1.0-dev libxml2-dev zlib1g-dev
 		pip install --upgrade pip
 		sudo pip install -r requirements.txt 
 		install_powershell
