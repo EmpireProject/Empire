@@ -24,6 +24,7 @@ import shlex
 import pkgutil
 import importlib
 import base64
+import threading
 
 # Empire imports
 import helpers
@@ -80,6 +81,7 @@ class MainMenu(cmd.Cmd):
         self.conn = self.database_connect()
         time.sleep(1)
 
+        self.lock = threading.Lock()
         # pull out some common configuration information
         (self.isroot, self.installPath, self.ipWhiteList, self.ipBlackList, self.obfuscate, self.obfuscateCommand) = helpers.get_config('rootuser, install_path,ip_whitelist,ip_blacklist,obfuscate,obfuscate_command')
 
@@ -111,6 +113,15 @@ class MainMenu(cmd.Cmd):
 
         # print the loading menu
         messages.loading()
+    
+    def get_db_connection(self):
+        """
+        Returns the 
+        """
+        self.lock.acquire()
+        self.conn.row_factory = None
+        self.lock.release()
+        return self.conn
 
 
     def check_root(self):
@@ -850,6 +861,77 @@ class MainMenu(cmd.Cmd):
                     print helpers.color("[*] " + os.path.basename(file) + " was already obfuscated. Not reobfuscating.")
                 helpers.obfuscate_module(file, self.obfuscateCommand, reobfuscate)
 
+    def do_report(self, line):
+        "Produce report CSV and log files: sessions.csv, credentials.csv, master.log"
+        conn = self.get_db_connection()
+        try:
+            self.lock.acquire()
+
+            # Agents CSV
+            cur = conn.cursor()
+            cur.execute('select session_id, hostname, username, checkin_time from agents')
+
+            rows = cur.fetchall()
+            print helpers.color("[*] Writing data/sessions.csv")
+            f = open('data/sessions.csv','w')
+            f.write("SessionID, Hostname, User Name, First Check-in\n")
+            for row in rows:
+                f.write(row[0]+ ','+ row[1]+ ','+ row[2]+ ','+ row[3]+'\n')
+            f.close()
+
+            # Credentials CSV
+            cur.execute("""
+            SELECT
+                domain
+                ,username
+                ,host
+                ,credtype
+                ,password
+            FROM
+                credentials
+            ORDER BY
+                domain
+                ,credtype
+                ,host
+            """)
+
+            rows = cur.fetchall()
+            print helpers.color("[*] Writing data/credentials.csv")
+            f = open('data/credentials.csv','w')
+            f.write('Domain, Username, Host, Cred Type, Password\n')
+            for row in rows:
+                f.write(row[0]+ ','+ row[1]+ ','+ row[2]+ ','+ row[3]+ ','+ row[4]+'\n')
+            f.close()
+
+            # Empire Log
+            cur.execute("""
+            SELECT
+                reporting.time_stamp
+                ,reporting.event_type
+                ,reporting.name as "AGENT_ID"
+                ,a.hostname
+                ,reporting.taskID
+                ,t.data AS "Task"
+                ,r.data AS "Results"
+            FROM
+                reporting
+                JOIN agents a on reporting.name = a.session_id
+                LEFT OUTER JOIN taskings t on (reporting.taskID = t.id) AND (reporting.name = t.agent)
+                LEFT OUTER JOIN results r on (reporting.taskID = r.id) AND (reporting.name = r.agent)
+            WHERE
+                reporting.event_type == 'task' OR reporting.event_type == 'checkin'
+            """)
+            rows = cur.fetchall()
+            print helpers.color("[*] Writing data/master.log")
+            f = open('data/master.log', 'w')
+            f.write('Empire Master Taskings & Results Log by timestamp\n')
+            f.write('='*50 + '\n\n')
+            for row in rows:
+                f.write('\n' + row[0] + ' - ' + row[3] + ' (' + row[2] + ')> ' + unicode(row[5]) + '\n' + unicode(row[6]) + '\n')
+            f.close()
+            cur.close()
+        finally:
+            self.lock.release()
 
     def complete_usemodule(self, text, line, begidx, endidx, language=None):
         "Tab-complete an Empire module path."
@@ -1701,7 +1783,7 @@ class PowerShellAgentMenu(SubMenu):
                 self.mainMenu.agents.add_agent_task_db(self.sessionID, 'TASK_EXIT')
                 # update the agent log
                 self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to exit")
-                return True
+                raise NavAgents
 
         except KeyboardInterrupt:
             print ""
@@ -1729,24 +1811,6 @@ class PowerShellAgentMenu(SubMenu):
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_STOPJOB", jobID)
             # update the agent log
             self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to stop job " + str(jobID))
-
-    def do_downloads(self, line):
-        "Return downloads or kill a download job"
-
-        parts = line.split(' ')
-
-        if len(parts) == 1:
-            if parts[0] == '':
-                self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_GETDOWNLOADS")
-                #update the agent log
-                self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to get downloads")
-            else:
-                print helpers.color("[!] Please use for m 'downloads kill DOWNLOAD_ID'")
-        elif len(parts) == 2:
-            jobID = parts[1].strip()
-            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_STOPDOWNLOAD", jobID)
-            #update the agent log
-            self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to stop download " + str(jobID))
 
     def do_sleep(self, line):
         "Task an agent to 'sleep interval [jitter]'"
@@ -2451,7 +2515,7 @@ class PythonAgentMenu(SubMenu):
                 self.mainMenu.agents.add_agent_task_db(self.sessionID, 'TASK_EXIT')
                 # update the agent log
                 self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to exit")
-                return True
+                raise NavAgents
 
         except KeyboardInterrupt as e:
             print ""
