@@ -33,7 +33,9 @@ class Module:
             'MinLanguageVersion' : '2.6',
 
             # list of any references/other comments
-            'Comments': []
+            'Comments': [https://digitasecurity.com/blog/2018/01/23/crossrat/
+            https://specifications.freedesktop.org/desktop-entry-spec/latest/ar01s07.html, 	
+            https://neverbenever.wordpress.com/2015/02/11/how-to-autostart-a-program-in-raspberry-pi-or-linux/]
         }
 
         # any options needed by the module, settable during runtime
