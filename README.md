@@ -14,6 +14,10 @@ To install, run `sudo ./setup/install.sh` script or use the corresponding docker
 
 There's also a [quickstart here](http://www.powershellempire.com/?page_id=110) and full [documentation here](http://www.powershellempire.com/?page_id=83).
 
+## Quickstart
+
+Check out the [Empire wiki](https://github.com/EmpireProject/Empire/wiki/Quickstart) for instructions on getting started with Empire.
+
 ## Contribution Rules
 
 Contributions are more than welcome! The more people who contribute to the project the better Empire will be for everyone. Below are a few guidelines for submitting contributions.
