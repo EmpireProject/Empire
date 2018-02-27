@@ -9,10 +9,10 @@ class Module:
             'Name': 'DesktopFile',
 
             # list of one or more authors for the module
-            'Author': ['@jarrodcoulter'],
+            'Author': '@jarrodcoulter',
 
             # more verbose multi-line description of the module
-            'Description': ('Installs an Empire launcher script in ~/.config/autostart on Linux versions with GUI.'),
+            'Description': 'Installs an Empire launcher script in ~/.config/autostart on Linux versions with GUI.',
 
             # True if the module needs to run in the background
             'Background' : False,
@@ -33,9 +33,7 @@ class Module:
             'MinLanguageVersion' : '2.6',
 
             # list of any references/other comments
-            'Comments': [https://digitasecurity.com/blog/2018/01/23/crossrat/
-            https://specifications.freedesktop.org/desktop-entry-spec/latest/ar01s07.html, 	
-            https://neverbenever.wordpress.com/2015/02/11/how-to-autostart-a-program-in-raspberry-pi-or-linux/]
+            'Comments': 'https://digitasecurity.com/blog/2018/01/23/crossrat/, https://specifications.freedesktop.org/desktop-entry-spec/latest/ar01s07.html, https://neverbenever.wordpress.com/2015/02/11/how-to-autostart-a-program-in-raspberry-pi-or-linux/'
         }
 
         # any options needed by the module, settable during runtime
