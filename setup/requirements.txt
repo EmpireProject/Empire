@@ -13,3 +13,4 @@ M2Crypto
 jinja2
 cryptography
 pyminifier==2.1
+pycrypto
