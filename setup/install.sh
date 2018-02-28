@@ -170,7 +170,7 @@ fi
 chmod 755 bomutils/build/bin/mkbom && sudo cp bomutils/build/bin/mkbom /usr/local/bin/.
 
 # set up the database schema
-./setup_database.py
+python ./setup_database.py
 
 # generate a cert
 ./cert.sh
