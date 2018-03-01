@@ -222,7 +222,7 @@ try:
             HistoryResult = myfile.readlines()
         HistoryCount = HistoryCount * -1
         print "[*] Enumerating User Bash History"
-        print " - Hisotry count size: " + str(len(HistoryResult))
+        print " - History count size: " + str(len(HistoryResult))
         for item in HistoryResult[HistoryCount:]:
             print "    * " + str(item.strip())
         print "[*] SSH commands in History: "
@@ -235,16 +235,20 @@ try:
         pass
         
     # Enum Wireless Connectivity Info
-
-    process = subprocess.Popen("/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport", "-I", stdout=subprocess.PIPE, shell=True)
-    wireless = process.communicate()
-    wireless = wireless[0].split('\\n')
-    print "[*] Wireless Connectivity Info:"
-    for x in wireless:
-        if x:
-            print " - " + str(x.strip())
-        else:
-            print
+    try:
+        process = subprocess.Popen(executable="/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport", args="-I", stdout=subprocess.PIPE, shell=True)
+        wireless = process.communicate()
+        wireless = wireless[0].split('\\n')
+        print "[*] Wireless Connectivity Info:"
+        for x in wireless:
+            if x:
+                print " - " + str(x.strip())
+            else:
+                print
+    except Exception as e:
+        if Debug:
+            print "[!] Error enumerating user Wireless Connectivity Info: " + str(e)
+        pass         
 
     # Enum AV / Protection Software
 
