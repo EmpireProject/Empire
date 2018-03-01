@@ -76,11 +76,7 @@ class Stager:
         language = self.options['Language']['Value']
         listenerName = self.options['Listener']['Value']
         userAgent = self.options['UserAgent']['Value']
-        proxy = self.options['Proxy']['Value']
-        proxyCreds = self.options['ProxyCreds']['Value']
-        stagerRetries = self.options['StagerRetries']['Value']
         safeChecks = self.options['SafeChecks']['Value']
-        pixelTrackURL = self.options['PixelTrackURL']['Value']
 
         # generate the python launcher code
         pylauncher = self.mainMenu.stagers.generate_launcher(listenerName, language="python", encode=True, userAgent=userAgent, safeChecks=safeChecks)
