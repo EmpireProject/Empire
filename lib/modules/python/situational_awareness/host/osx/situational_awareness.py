@@ -235,7 +235,7 @@ try:
         
     # Enum Wireless Connectivity Info
     try:
-        process = subprocess.Popen("/System/Library/PrivateFrameworks/Apple802.11.framework/Versions/Current/Resources/airport", stdout=subprocess.PIPE, shell=True)
+        process = subprocess.Popen("/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I", stdout=subprocess.PIPE, shell=True)
         wireless = process.communicate()
         wireless = wireless[0].split('\\n')
         print "[*] Wireless Connectivity Info:"
