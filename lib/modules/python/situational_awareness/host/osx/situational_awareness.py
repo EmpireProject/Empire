@@ -235,23 +235,18 @@ try:
         pass
         
     # Enum Wireless Connectivity Info
-    try:
-        process = subprocess.Popen("/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I", stdout=subprocess.PIPE, shell=True)
-        time.sleep(5)
-        wireless = process.communicate()
-        print wireless
-        wireless = wireless[0].split('\\n')
-        print "[*] Wireless Connectivity Info:"
-        for x in wireless:
-            if x:
-                print " - " + str(x.strip())
-            else:
-                print
-    except Exception as e:
-        if Debug:
-            print "[!] Error Enumerating Wireless Connectivity Info: " + str(e)
-        pass
-        
+
+    process = subprocess.Popen("/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I", stdout=subprocess.PIPE, shell=True)
+    wireless = process.communicate()
+    print wireless
+    wireless = wireless[0].split('\\n')
+    print "[*] Wireless Connectivity Info:"
+    for x in wireless:
+        if x:
+            print " - " + str(x.strip())
+        else:
+            print
+
     # Enum AV / Protection Software
 
 except Exception as e:
