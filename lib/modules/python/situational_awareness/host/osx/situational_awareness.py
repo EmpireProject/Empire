@@ -89,6 +89,7 @@ try:
     import subprocess
     import sys
     import os
+    import time
     from os.path import expanduser
     # Get Home User
     home = str(expanduser("~"))
@@ -236,6 +237,7 @@ try:
     # Enum Wireless Connectivity Info
     try:
         process = subprocess.Popen("/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I", stdout=subprocess.PIPE, shell=True)
+        time.sleep(5)
         wireless = process.communicate()
         print wireless
         wireless = wireless[0].split('\\n')
