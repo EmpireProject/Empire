@@ -237,13 +237,14 @@ try:
     try:
         process = subprocess.Popen("/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I", stdout=subprocess.PIPE, shell=True)
         wireless = process.communicate()
-        wireless = wireless[0].split("\\n")
+        print wireless
+        wireless = wireless[0].split('\\n')
+        print "[*] Wireless Connectivity Info:"
         for x in wireless:
             if x:
-                if x:
-                    print " - " + str(x.strip())
-                else:
-                    print
+                print " - " + str(x.strip())
+            else:
+                print
     except Exception as e:
         if Debug:
             print "[!] Error Enumerating Wireless Connectivity Info: " + str(e)
