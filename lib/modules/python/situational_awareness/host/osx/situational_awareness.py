@@ -236,9 +236,14 @@ try:
     # Enum Wireless Connectivity Info
     try:
         process = subprocess.Popen("/System/Library/PrivateFrameworks/Apple802.11.framework/Versions/Current/Resources/airport", stdout=subprocess.PIPE, shell=True)
-        hosts = process.communicate()
-        hosts = hosts[0].split('\\n')
+        wireless = process.communicate()
+        wireless = wireless[0].split('\\n')
         print "[*] Wireless Connectivity Info:"
+        for x in wireless:
+            if x:
+                print " - " + str(x.strip())
+            else:
+                print
     except Exception as e:
         if Debug:
             print "[!] Error Enumerating Wireless Connectivity Info: " + str(e)
