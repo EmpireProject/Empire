@@ -10,9 +10,13 @@ Feel free to join us on Slack! http://adaptiveempire.slack.com/
 
 ## Install
 
-To install, run the `./setup/install.sh` script or use the corresponding docker image `docker pull empireproject/empire`.
+To install, run `sudo ./setup/install.sh` script or use the corresponding docker image `docker pull empireproject/empire`.
 
 There's also a [quickstart here](http://www.powershellempire.com/?page_id=110) and full [documentation here](http://www.powershellempire.com/?page_id=83).
+
+## Quickstart
+
+Check out the [Empire wiki](https://github.com/EmpireProject/Empire/wiki/Quickstart) for instructions on getting started with Empire.
 
 ## Contribution Rules
 
