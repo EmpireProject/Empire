@@ -487,6 +487,10 @@ Defaults to 'John'.
 A [Management.Automation.PSCredential] object of alternate credentials
 for connection to the remote domain using Invoke-UserImpersonation.
 
+.PARAMETER Sleep
+
+Specifies the sleep in seconds between ticket requests.
+
 .EXAMPLE
 
 Get-DomainSPNTicket -SPN "HTTP/web.testlab.local"
@@ -542,6 +546,10 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
         [Alias('Format')]
         [String]
         $OutputFormat = 'John',
+		
+        [ValidateRange(0,10000)]
+	    [Int]
+	    $Sleep = 0,
 
         [Management.Automation.PSCredential]
         [Management.Automation.CredentialAttribute()]
@@ -641,6 +649,8 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
                 $Out.PSObject.TypeNames.Insert(0, 'PowerView.SPNTicket')
                 Write-Output $Out
             }
+			
+			Start-Sleep($Sleep)
         }
     }
 
@@ -1021,6 +1031,8 @@ Specifies the scope to search under, Base/OneLevel/Subtree (default of Subtree).
 Specifies the PageSize to set for the LDAP searcher object.
 .PARAMETER ServerTimeLimit
 Specifies the maximum amount of time the server spends searching. Default of 120 seconds.
+.PARAMETER Sleep
+Specifies the sleep in seconds between ticket requests.
 .PARAMETER Tombstone
 Switch. Specifies that the searcher should also return deleted/tombstoned objects.
 .PARAMETER OutputFormat
@@ -1078,6 +1090,10 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
         [String]
         $SearchScope = 'Subtree',
 
+	    [ValidateRange(0,10000)]
+	    [Int]
+	    $Sleep = 0,
+		
         [ValidateRange(1, 10000)]
         [Int]
         $ResultPageSize = 200,
@@ -1121,7 +1137,7 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
 
     PROCESS {
         if ($PSBoundParameters['Identity']) { $UserSearcherArguments['Identity'] = $Identity }
-        Get-DomainUser @UserSearcherArguments | Where-Object {$_.samaccountname -ne 'krbtgt'} | Get-DomainSPNTicket -OutputFormat $OutputFormat
+        Get-DomainUser @UserSearcherArguments | Where-Object {$_.samaccountname -ne 'krbtgt'} | Get-DomainSPNTicket -Sleep $Sleep -OutputFormat $OutputFormat
     }
 
     END {
