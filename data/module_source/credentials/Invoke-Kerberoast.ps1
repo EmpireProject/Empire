@@ -548,8 +548,8 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
         $OutputFormat = 'John',
 		
         [ValidateRange(0,10000)]
-	    [Int]
-	    $Sleep = 0,
+        [Int]
+        $Sleep = 0,
 
         [Management.Automation.PSCredential]
         [Management.Automation.CredentialAttribute()]
@@ -649,8 +649,7 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
                 $Out.PSObject.TypeNames.Insert(0, 'PowerView.SPNTicket')
                 Write-Output $Out
             }
-			
-			Start-Sleep($Sleep)
+            Start-Sleep($Sleep)
         }
     }
 
@@ -1090,9 +1089,9 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
         [String]
         $SearchScope = 'Subtree',
 
-	    [ValidateRange(0,10000)]
-	    [Int]
-	    $Sleep = 0,
+        [ValidateRange(0,10000)]
+        [Int]
+        $Sleep = 0,
 		
         [ValidateRange(1, 10000)]
         [Int]
