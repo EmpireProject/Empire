@@ -5,7 +5,7 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Get-NetSite',
+            'Name': 'Get-DomainSite',
 
             'Author': ['@harmj0y'],
 
@@ -37,13 +37,13 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'SiteName' : {
-                'Description'   :   'Site filter string, wildcards accepted.',
+            'Identity' : {
+                'Description'   :   'A SamAccountName, DistinguishedName, SID, GUID, or a dns host name, wildcards accepted.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'GUID' : {
-                'Description'   :   'Only return site with the specified GUID in their gplink property.',
+            'GPLink' : {
+                'Description'   :   'Only return OUs with the specified GUID in their gplink property.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
@@ -52,18 +52,48 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'DomainController' : {
-                'Description'   :   'Domain controller to reflect LDAP queries through.',
+            'LDAPFilter' : {
+                'Description'   :   'Specifies an LDAP query string that is used to filter Active Directory objects.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'ADSpath' : {
-                'Description'   :   'The LDAP source to search through.',
+            'Properties' : {
+                'Description'   :   'Specifies the properties of the output object to retrieve from the server.',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'FullData' : {
-                'Description'   :   'Switch. Return full site objects instead of just object names (the default).',
+            'SearchBase' : {
+                'Description'   :   'The LDAP source to search through, e.g. "LDAP://OU=secret,DC=testlab,DC=local" Useful for OU queries.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'Server' : {
+                'Description'   :   'Specifies an active directory server (domain controller) to bind to',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'SearchScope' : {
+                'Description'   :   'Specifies the scope to search under, Base/OneLevel/Subtree (default of Subtree)',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'ResultPageSize' : {
+                'Description'   :   'Specifies the PageSize to set for the LDAP searcher object.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'ServerTimeLimit' : {
+                'Description'   :   'Specifies the maximum amount of time the server spends searching. Default of 120 seconds.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'SecurityMasks' : {
+                'Description'   :   'Specifies an option for examining security information of a directory object. One of "Dacl", "Group", "None", "Owner", "Sacl".',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'Tombstone' : {
+                'Description'   :   'Switch. Specifies that the search should also return deleted/tombstoned objects.',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -97,9 +127,9 @@ class Module:
         f.close()
 
         # get just the code needed for the specified function
-        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
+        script = helpers.strip_powershell_comments(moduleCode)
 
-        script += moduleName + " "
+        script += "\n" + moduleName + " "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":

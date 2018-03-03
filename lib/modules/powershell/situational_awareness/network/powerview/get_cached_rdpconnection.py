@@ -5,7 +5,7 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Get-CachedRDPConnection',
+            'Name': 'Get-WMIRegCachedRDPConnection',
 
             'Author': ['@harmj0y'],
 
@@ -42,16 +42,6 @@ class Module:
                 'Description'   :   'The hostname or IP to query for local group users.',
                 'Required'      :   False,
                 'Value'         :   'localhost'
-            },
-            'RemoteUserName' : {
-                'Description'   :   'The "domain\username" to use for the WMI call on the remote system.',
-                'Required'      :   False,
-                'Value'         :   ''
-            },
-            'RemotePassword' : {
-                'Description'   :   'The password to use for the WMI call on a remote system.',
-                'Required'      :   False,
-                'Value'         :   ''
             }
         }
 
@@ -83,9 +73,9 @@ class Module:
         f.close()
 
         # get just the code needed for the specified function
-        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
+        script = helpers.strip_powershell_comments(moduleCode)
 
-        script += moduleName + " "
+        script += "\n" + moduleName + " "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":

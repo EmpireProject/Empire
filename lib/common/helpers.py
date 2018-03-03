@@ -51,8 +51,8 @@ import iptools
 import threading
 import pickle
 import netifaces
+import random
 from time import localtime, strftime
-from Crypto.Random import random
 import subprocess
 import fnmatch
 import urllib, urllib2
@@ -168,10 +168,12 @@ def chunks(l, n):
 
 def strip_python_comments(data):
     """
+    *** DECEMBER 2017 - DEPRECATED, PLEASE DO NOT USE ***
+
     Strip block comments, line comments, empty lines, verbose statements,
     and debug statements from a Python source file.
     """
-    # TODO: implement pyminifier functionality
+    print color("[!] strip_python_comments is deprecated and should not be used")
     lines = data.split("\n")
     strippedLines = [line for line in lines if ((not line.strip().startswith("#")) and (line.strip() != ''))]
     return "\n".join(strippedLines)
@@ -544,6 +546,13 @@ def get_config(fields):
     conn.isolation_level = None
 
     cur = conn.cursor()
+
+    # Check if there is a new field not in the database
+    columns = [i[1] for i in cur.execute('PRAGMA table_info(config)')]
+    for field in fields.split(','):
+        if field.strip() not in columns:
+            cur.execute("ALTER TABLE config ADD COLUMN %s BLOB" % (field))
+
     cur.execute("SELECT %s FROM config" % (fields))
     results = cur.fetchone()
     cur.close()
@@ -557,16 +566,18 @@ def get_listener_options(listenerName):
     Returns the options for a specified listenername from the database outside
     of the normal menu execution.
     """
-    conn = sqlite3.connect('./data/empire.db', check_same_thread=False)
-    conn.isolation_level = None
-    conn.row_factory = dict_factory
-    cur = conn.cursor()
-    cur.execute("SELECT options FROM listeners WHERE name = ?", [listenerName] )
-    result = cur.fetchone()
-    cur.close()
-    conn.close()
-
-    return pickle.loads(result['options'])
+    try:
+        conn = sqlite3.connect('./data/empire.db', check_same_thread=False)
+        conn.isolation_level = None
+        conn.row_factory = dict_factory
+        cur = conn.cursor()
+        cur.execute("SELECT options FROM listeners WHERE name = ?", [listenerName] )
+        result = cur.fetchone()
+        cur.close()
+        conn.close()
+        return pickle.loads(result['options'])
+    except Exception:
+        return None
 
 
 def get_datetime():
@@ -805,14 +816,14 @@ def obfuscate(installPath, psScript, obfuscationCommand):
     toObfuscateFile.write(psScript)
     toObfuscateFile.close()
     # Obfuscate using Invoke-Obfuscation w/ PowerShell
-    subprocess.call("powershell -C '$ErrorActionPreference = \"SilentlyContinue\";Invoke-Obfuscation -ScriptPath %s -Command \"%s\" -Quiet | Out-File -Encoding ASCII %s'" % (toObfuscateFilename, convert_obfuscation_command(obfuscationCommand), obfuscatedFilename), shell=True)
+    subprocess.call("%s -C '$ErrorActionPreference = \"SilentlyContinue\";Invoke-Obfuscation -ScriptPath %s -Command \"%s\" -Quiet | Out-File -Encoding ASCII %s'" % (get_powershell_name(), toObfuscateFilename, convert_obfuscation_command(obfuscationCommand), obfuscatedFilename), shell=True)
     obfuscatedFile = open(obfuscatedFilename , 'r')
     # Obfuscation writes a newline character to the end of the file, ignoring that character
     psScript = obfuscatedFile.read()[0:-1]
     obfuscatedFile.close()
-    
+
     return psScript
-    
+
 def obfuscate_module(moduleSource, obfuscationCommand="", forceReobfuscation=False):
     if is_obfuscated(moduleSource) and not forceReobfuscation:
         return
@@ -837,17 +848,24 @@ def obfuscate_module(moduleSource, obfuscationCommand="", forceReobfuscation=Fal
         return ""
     f.write(obfuscatedCode)
     f.close()
-    
+
 def is_obfuscated(moduleSource):
     obfuscatedSource = moduleSource.replace("module_source", "obfuscated_module_source")
     return os.path.isfile(obfuscatedSource)
 
 def is_powershell_installed():
+    return (get_powershell_name() != "")
+
+def get_powershell_name():
     try:
         powershell_location = subprocess.check_output("which powershell", shell=True)
     except subprocess.CalledProcessError as e:
-        return False
-    return True
+        try:
+            powershell_location = subprocess.check_output("which pwsh", shell=True)
+        except subprocess.CalledProcessError as e:
+            return ""
+        return "pwsh"
+    return "powershell"
 
 def convert_obfuscation_command(obfuscate_command):
     return "".join(obfuscate_command.split()).replace(",",",home,").replace("\\",",")

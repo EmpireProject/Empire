@@ -9,13 +9,13 @@ class Module:
 
             'Author': ['@mattifestation'],
 
-            'Description': ('Generates a full-memory minidump of a process.'),
+            'Description': ('Generates a full-memory dump of a process. Note: To dump another user\'s process, you must be running from an elevated prompt (e.g to dump lsass)'),
 
             'Background' : True,
 
             'OutputExtension' : None,
             
-            'NeedsAdmin' : True,
+            'NeedsAdmin' : False,
 
             'OpsecSafe' : False,
 
@@ -89,9 +89,9 @@ class Module:
             if option.lower() != "agent":
                 if values['Value'] and values['Value'] != '':
                     if option == "ProcessName":
-                        scriptEnd += "Get-Process " + values['Value'] + " | Out-Minidump"
+                        scriptEnd = "Get-Process " + values['Value'] + " | Out-Minidump"
                     elif option == "ProcessId":
-                        scriptEnd += "Get-Process -Id " + values['Value'] + " | Out-Minidump"
+                        scriptEnd = "Get-Process -Id " + values['Value'] + " | Out-Minidump"
         
         for option,values in self.options.iteritems():
             if values['Value'] and values['Value'] != '':

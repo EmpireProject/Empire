@@ -1343,19 +1343,19 @@ class Agents:
             if autorun and autorun[0] != '' and autorun[1] != '':
                 self.add_agent_task_db(sessionID, autorun[0], autorun[1])
 
-	    if self.mainMenu.autoRuns.has_key(language.lower()) and len(self.mainMenu.autoRuns[language.lower()]) > 0:
-		autorunCmds = ["interact %s" % sessionID]
-		autorunCmds.extend(self.mainMenu.autoRuns[language.lower()])
-		autorunCmds.extend(["lastautoruncmd"])
-		self.mainMenu.resourceQueue.extend(autorunCmds)
-		try:
-		    #this will cause the cmdloop() to start processing the autoruns
-		    self.mainMenu.do_agents("kickit")
-		except Exception as e:
-		    if e.message == "endautorun":
-			pass
-		    else:
-		        raise e
+            if self.mainMenu.autoRuns.has_key(language.lower()) and len(self.mainMenu.autoRuns[language.lower()]) > 0:
+                autorunCmds = ["interact %s" % sessionID]
+                autorunCmds.extend(self.mainMenu.autoRuns[language.lower()])
+                autorunCmds.extend(["lastautoruncmd"])
+                self.mainMenu.resourceQueue.extend(autorunCmds)
+                try:
+                    #this will cause the cmdloop() to start processing the autoruns
+                    self.mainMenu.do_agents("kickit")
+                except Exception as e:
+                    if e.message == "endautorun":
+                        pass
+                    else:
+                        raise e
 
             return "STAGE2: %s" % (sessionID)
 
@@ -1509,7 +1509,7 @@ class Agents:
         """
 
         agentSessionID = sessionID
-	keyLogTaskID = None
+        keyLogTaskID = None
 
         # see if we were passed a name instead of an ID
         nameid = self.get_agent_id_db(sessionID)
@@ -1603,7 +1603,7 @@ class Agents:
 
         elif responseName == "TASK_EXIT":
             # exit command response
-	    data = "[!] Agent %s exiting" % (sessionID)
+            data = "[!] Agent %s exiting" % (sessionID)
             # let everyone know this agent exited
             dispatcher.send(data, sender='Agents')
 
@@ -1724,20 +1724,21 @@ class Agents:
         elif responseName == "TASK_CMD_JOB":
 	    #check if this is the powershell keylogging task, if so, write output to file instead of screen
             if keyLogTaskID and keyLogTaskID == taskID:
-            	safePath = os.path.abspath("%sdownloads/" % self.mainMenu.installPath)
-		savePath = "%sdownloads/%s/keystrokes.txt" % (self.mainMenu.installPath,sessionID)
-		if not os.path.abspath(savePath).startswith(safePath):
+                safePath = os.path.abspath("%sdownloads/" % self.mainMenu.installPath)
+                savePath = "%sdownloads/%s/keystrokes.txt" % (self.mainMenu.installPath,sessionID)
+                if not os.path.abspath(savePath).startswith(safePath):
                     dispatcher.send("[!] WARNING: agent %s attempted skywalker exploit!" % (self.sessionID), sender='Agents')
                     return
-		with open(savePath,"a+") as f:
-		    new_results = data.replace("\r\n","").replace("[SpaceBar]", "").replace('\b', '').replace("[Shift]", "").replace("[Enter]\r","\r\n")
-		    f.write(new_results)
-	    else:
+
+                with open(savePath,"a+") as f:
+                    new_results = data.replace("\r\n","").replace("[SpaceBar]", "").replace('\b', '').replace("[Shift]", "").replace("[Enter]\r","\r\n")
+                    f.write(new_results)
+            else:
                 # dynamic script output -> non-blocking
                 self.update_agent_results_db(sessionID, data)
 
-            # update the agent log
-            self.save_agent_log(sessionID, data)
+                # update the agent log
+                self.save_agent_log(sessionID, data)
 
             # TODO: redo this regex for really large AD dumps
             #   so a ton of data isn't kept in memory...?
@@ -1802,6 +1803,7 @@ class Agents:
             self.save_agent_log(sessionID, data)
 
         elif responseName == "TASK_SCRIPT_COMMAND":
+            
             self.update_agent_results_db(sessionID, data)
             # update the agent log
             self.save_agent_log(sessionID, data)

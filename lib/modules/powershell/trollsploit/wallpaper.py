@@ -70,7 +70,7 @@ Function Set-WallPaper
 
     Set-Content -value $([System.Convert]::FromBase64String($WallpaperData)) -encoding byte -path $SavePath
 
-add-type @"
+Add-Type @"
 using System;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;

