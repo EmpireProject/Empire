@@ -558,7 +558,7 @@ class Listener:
                 """ % (listenerOptions['RequestHeader']['Value'])
 
                 sendMessage = """
-                    $script:SendMessage {
+                    $script:SendMessage = {
                         param($Packets)
 
                         if($Packets) {
