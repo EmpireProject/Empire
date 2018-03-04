@@ -2158,7 +2158,7 @@ class PowerShellAgentMenu(SubMenu):
         if line:
             if self.mainMenu.modules.modules['powershell/management/shinject']:
                 module = self.mainMenu.modules.modules['powershell/management/shinject']
-                listenerID = line.split(' ')[0].strip()
+                listenerID = line.split(' ')[0]
                 arch = line.split(' ')[-1]
                 module.options['Listener']['Value'] = listenerID
                 module.options['Arch']['Value'] = arch

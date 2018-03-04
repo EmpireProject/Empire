@@ -159,7 +159,7 @@ class Stagers:
                 flags = 0
                 flags |= 0x1
                 
-                sc = ConvertToShellcode(dllPatched, flags=flags)
+                sc = ConvertToShellcode(dllPatched)
 
                 return sc 
         
