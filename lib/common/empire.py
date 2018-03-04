@@ -21,6 +21,7 @@ import hashlib
 import time
 import fnmatch
 import shlex
+import marshal
 import pkgutil
 import importlib
 import base64
@@ -2090,6 +2091,30 @@ class PowerShellAgentMenu(SubMenu):
         else:
             print helpers.color("[*] Profile format is \"TaskURI1,TaskURI2,...|UserAgent|OptionalHeader2:Val1|OptionalHeader2:Val2...\"")
 
+    def do_updatecomms(self, line):
+        "Dynamically update the agent comms to another listener"
+
+        # generate comms for the listener selected
+        if line:
+            listenerID = line.strip()
+            if not self.mainMenu.listeners.is_listener_valid(listenerID):
+                print helpers.color("[!] Please enter a valid listenername.")
+            else:
+                activeListener = self.mainMenu.listeners.activeListeners[listenerID]
+                if activeListener['moduleName'] != 'meterpreter' or activeListener['moduleName'] != 'http_mapi':
+                    listenerOptions = activeListener['options']
+                    listenerComms = self.mainMenu.listeners.loadedListeners[activeListener['moduleName']].generate_comms(listenerOptions, language="powershell")
+
+                    self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_UPDATE_LISTENERNAME", listenerOptions['Name']['Value'])
+                    self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SWITCH_LISTENER", listenerComms)
+                    
+                    msg = "Tasked agent to update comms to %s listener" % listenerID
+                    self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+                else:
+                    print helpers.color("[!] Ineligible listener for updatecomms command: %s" % activeListener['moduleName'])
+
+        else:
+            print helpers.color("[!] Please enter a valid listenername.")
 
     def do_psinject(self, line):
         "Inject a launcher into a remote process. Ex. psinject <listener> <pid/process_name>"
@@ -2377,6 +2402,10 @@ class PowerShellAgentMenu(SubMenu):
         "Display/return credentials from the database."
         self.mainMenu.do_creds(line)
 
+    def complete_updatecomms(self, text, line, begidx, endidx):
+        "Tab-complete updatecomms option values"
+
+        return self.complete_psinject(text, line, begidx, endidx)
 
     def complete_shinject(self, text, line, begidx, endidx):
         "Tab-complete psinject option values."
@@ -2720,7 +2749,6 @@ class PythonAgentMenu(SubMenu):
             # update the agent log
             msg = "Tasked agent to run shell command: %s" % (line)
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
-
 
     def do_python(self, line):
         "Task an agent to run a Python command."

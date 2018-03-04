@@ -16,6 +16,7 @@ import BaseHTTPServer
 import zipfile
 import io
 import imp
+import marshal
 from os.path import expanduser
 from StringIO import StringIO
 from threading import Thread
@@ -40,6 +41,8 @@ jitter = 0.0
 lostLimit = 60
 missedCheckins = 0
 jobMessageBuffer = ''
+currentListenerName = ""
+sendMsgFuncCode = ""
 
 # killDate form -> "MO/DAY/YEAR"
 killDate = 'REPLACE_KILLDATE'

@@ -1484,7 +1484,7 @@ class Agents:
             cur.close()
             theSender="Agents"
             if data.startswith("function Get-Keystrokes"):
-		        theSender += "PsKeyLogger"
+                theSender += "PsKeyLogger"
             if results:
                 # signal that this agent returned results
                 dispatcher.send("[*] Agent %s returned results." % (sessionID), sender=theSender)
@@ -1811,7 +1811,16 @@ class Agents:
         elif responseName == "TASK_SWITCH_LISTENER":
             # update the agent listener
             self.update_agent_listener_db(sessionID, data)
-            dispatcher.send("[+] Listener for '%s' updated to '%s'" % (sessionID, data), sender='Agents')
+            self.update_agent_results_db(sessionID, data)
+            # update the agent log
+            self.save_agent_log(sessionID, data)
+            dispatcher.send("[+] Updated comms for %s to %s" % (sessionID, data), sender="Agents")
+
+        elif responseName == "TASK_UPDATE_LISTENERNAME":
+            # The agent listener name variable has been updated agent side
+            self.update_agent_results_db(sessionID, data)
+            # update the agent log
+            self.save_agent_log(sessionID, data)
 
         else:
             print helpers.color("[!] Unknown response %s from %s" % (responseName, sessionID))

