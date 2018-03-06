@@ -863,12 +863,11 @@ class Agents:
             self.lock.release()
 
 
-    def update_agent_lastseen_db(self, sessionID):
+    def update_agent_lastseen_db(self, sessionID, current_time=helpers.get_datetime()):
         """
         Update the agent's last seen timestamp in the database.
         """
 
-        current_time = helpers.get_datetime()
         conn = self.get_db_connection()
         try:
             self.lock.acquire()
@@ -1363,7 +1362,7 @@ class Agents:
             dispatcher.send("[!] Invalid staging request packet from %s at %s : %s" % (sessionID, clientIP, meta), sender='Agents')
 
 
-    def handle_agent_data(self, stagingKey, routingPacket, listenerOptions, clientIP='0.0.0.0'):
+    def handle_agent_data(self, stagingKey, routingPacket, listenerOptions, clientIP='0.0.0.0', update_lastseen=False):
         """
         Take the routing packet w/ raw encrypted data from an agent and
         process as appropriately.
@@ -1399,7 +1398,7 @@ class Agents:
 
             elif meta == 'RESULT_POST':
                 dispatcher.send("[*] handle_agent_data(): sessionID %s issued a RESULT_POST" % (sessionID), sender='Agents')
-                dataToReturn.append((language, self.handle_agent_response(sessionID, encData)))
+                dataToReturn.append((language, self.handle_agent_response(sessionID, encData, update_lastseen)))
 
             else:
                 dispatcher.send("[!] handle_agent_data(): sessionID %s gave unhandled meta tag in routing packet: %s" % (sessionID, meta), sender='Agents')
@@ -1407,7 +1406,7 @@ class Agents:
         return dataToReturn
 
 
-    def handle_agent_request(self, sessionID, language, stagingKey):
+    def handle_agent_request(self, sessionID, language, stagingKey, update_lastseen=True):
         """
         Update the agent's last seen time and return any encrypted taskings.
 
@@ -1418,7 +1417,8 @@ class Agents:
             return None
 
         # update the client's last seen time
-        self.update_agent_lastseen_db(sessionID)
+        if update_lastseen:
+            self.update_agent_lastseen_db(sessionID)
 
         # retrieve all agent taskings from the cache
         taskings = self.get_agent_tasks_db(sessionID)
@@ -1446,7 +1446,7 @@ class Agents:
             return None
 
 
-    def handle_agent_response(self, sessionID, encData):
+    def handle_agent_response(self, sessionID, encData, update_lastseen=False):
         """
         Takes a sessionID and posted encrypted data response, decrypt
         everything and handle results as appropriate.
@@ -1462,7 +1462,8 @@ class Agents:
         sessionKey = self.agents[sessionID]['sessionKey']
 
         # update the client's last seen time
-        self.update_agent_lastseen_db(sessionID)
+        if update_lastseen:
+            self.update_agent_lastseen_db(sessionID)
 
         try:
             # verify, decrypt and depad the packet
