@@ -22,9 +22,9 @@ class Listener:
         self.info = {
                 'Name': 'Onedrive',
                 'Author': ['@mr64bit'],
-                'Description': ('Starts a Onedrive listener.'),
+                'Description': ('Starts a Onedrive listener. Setup instructions here:        gist.github.com/mr64bit/3fd8f321717c9a6423f7949d494b6cd9'),
                 'Category': ('third_party'),
-                'Comments': []
+                'Comments': ["Note that deleting STAGE0-PS.txt from the staging folder will break existing launchers"]
                 }
 
         self.options = {
