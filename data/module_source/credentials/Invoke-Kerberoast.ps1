@@ -659,10 +659,9 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
                 $Out | Add-Member Noteproperty 'ServicePrincipalName' $Ticket.ServicePrincipalName
                 $Out.PSObject.TypeNames.Insert(0, 'PowerView.SPNTicket')
                 Write-Output $Out
-	    
-            	# sleep for our semi-randomized interval
-            	Start-Sleep -Seconds $RandNo.Next((1-$Jitter)*$Delay, (1+$Jitter)*$Delay)
             }
+            # sleep for our semi-randomized interval
+            Start-Sleep -Seconds $RandNo.Next((1-$Jitter)*$Delay, (1+$Jitter)*$Delay)
         }
     }
 
