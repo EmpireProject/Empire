@@ -2501,6 +2501,9 @@ class PythonAgentMenu(SubMenu):
         # listen for messages from this specific agent
         dispatcher.connect(self.handle_agent_event, sender=dispatcher.Any)
 
+        # agent commands that have opsec-safe alises in the agent code
+        self.agentCommands = ['ls', 'rm', 'pwd', 'mkdir', 'whoami', 'getuid', 'hostname']
+
         # display any results from the database that were stored
         # while we weren't interacting with the agent
         results = self.mainMenu.agents.get_agent_results_db(self.sessionID)
@@ -2528,7 +2531,21 @@ class PythonAgentMenu(SubMenu):
 
     def default(self, line):
         "Default handler"
-        print helpers.color("[!] Command not recognized, use 'help' to see available commands")
+        line = line.strip()
+        parts = line.split(' ')
+
+        if len(parts) > 0:
+            # check if we got an agent command
+            if parts[0] in self.agentCommands:
+                shellcmd = ' '.join(parts)
+                # task the agent with this shell command
+                self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_SHELL", shellcmd)
+                # update the agent log
+                msg = "Tasked agent to run command " + line
+                self.mainMenu.agents.save_agent_log(self.sessionID, msg)
+            else:
+                print helpers.color("[!] Command not recognized.")
+                print helpers.color("[*] Use 'help' or 'help agentcmds' to see available commands.")
 
     def do_help(self, *args):
         "Displays the help menu or syntax for particular commands."
@@ -2875,7 +2892,7 @@ class PythonAgentMenu(SubMenu):
         else:
             self.mainMenu.modules.search_modules(searchTerm)
 
-    def do_sc(self, line):
+    def do_osx_screenshot(self, line):
         "Use the python-mss module to take a screenshot, and save the image to the server. Not opsec safe"
 
         if self.mainMenu.modules.modules['python/collection/osx/native_screenshot']:
@@ -2889,24 +2906,6 @@ class PythonAgentMenu(SubMenu):
             module_menu.do_execute("")
         else:
             print helpers.color("[!] python/collection/osx/screenshot module not loaded")
-
-    def do_ls_m(self, line):
-        "List directory contents at the specified path"
-        #http://stackoverflow.com/questions/17809386/how-to-convert-a-stat-output-to-a-unix-permissions-string
-        if self.mainMenu.modules.modules['python/management/osx/ls_m']:
-            module = self.mainMenu.modules.modules['python/management/osx/ls_m']
-            if line.strip() != '':
-                module.options['Path']['Value'] = line.strip()
-
-            module.options['Agent']['Value'] = self.mainMenu.agents.get_agent_name_db(self.sessionID)
-            module_menu = ModuleMenu(self.mainMenu, 'python/management/osx/ls_m')
-            msg = "[*] Tasked agent to list directory contents of: "+str(module.options['Path']['Value'])
-            print helpers.color(msg,color="green")
-            self.mainMenu.agents.save_agent_log(self.sessionID, msg)
-            module_menu.do_execute("")
-
-        else:
-            print helpers.color("[!] python/management/osx/ls_m module not loaded")
 
     def do_cat(self, line):
         "View the contents of a file"
@@ -2929,22 +2928,6 @@ except Exception as e:
             # update the agent log
             msg = "Tasked agent to cat file %s" % (line)
             self.mainMenu.agents.save_agent_log(self.sessionID, msg)
-
-    def do_pwd(self, line):
-        "Print working directory"
-
-        command = "cwd = os.getcwd(); print cwd"
-        self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", command)
-        msg = "Tasked agent to print current working directory"
-        self.mainMenu.agents.save_agent_log(self.sessionID, msg)
-
-    def do_whoami(self, line):
-        "Print the currently logged in user"
-
-        command = "from AppKit import NSUserName; print str(NSUserName())"
-        self.mainMenu.agents.add_agent_task_db(self.sessionID, "TASK_CMD_WAIT", command)
-        msg = "Tasked agent to print currently logged on user"
-        self.mainMenu.agents.save_agent_log(self.sessionID, msg)
 
     def do_loadpymodule(self, line):
         "Import zip file containing a .py module or package with an __init__.py"
