@@ -2953,23 +2953,6 @@ except Exception as e:
         else:
             print helpers.color("[!] Please provide a valid zipfile path", color="red")
 
-    def do_shellb(self, line):
-        """Execute a shell command as a background job"""
-        cmd = line.strip()
-        if self.mainMenu.modules.modules['python/management/osx/shellb']:
-            module = self.mainMenu.modules.modules['python/management/osx/shellb']
-            if line.strip() != '':
-                module.options['Command']['Value'] = line.strip()
-
-            module.options['Agent']['Value'] = self.mainMenu.agents.get_agent_name_db(self.sessionID)
-            module_menu = ModuleMenu(self.mainMenu, 'python/management/osx/shellb')
-            msg = "[*] Tasked agent to execute %s in the background" % (str(module.options['Path']['Value']))
-            print helpers.color(msg,color="green")
-            self.mainMenu.agents.save_agent_log(self.sessionID, msg)
-            module_menu.do_execute("")
-
-        else:
-            print helpers.color("[!] python/management/osx/shellb module not loaded")
             
     def do_viewrepo(self, line):
         "View the contents of a repo. if none is specified, all files will be returned"
