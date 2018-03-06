@@ -954,6 +954,13 @@ def run_command(command, cmdargs=None):
     elif re.compile("hostname").match(command):
         return str(socket.gethostname())
 
+    else:
+        if cmdargs != None:
+            command = "{} {}".format(command,cmdargs)
+        
+        p = subprocess.Popen(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+        return p.communicate()[0].strip()
+
 def get_file_part(filePath, offset=0, chunkSize=512000, base64=True):
 
     if not os.path.exists(filePath):
