@@ -88,5 +88,4 @@ for account in accounts:
     print("Secret: " + account[3])
 
 """
-        print script
         return script
