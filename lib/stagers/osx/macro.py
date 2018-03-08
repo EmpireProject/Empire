@@ -83,7 +83,7 @@ class Stager:
         userAgent = self.options['UserAgent']['Value']
         safeChecks = self.options['SafeChecks']['Value']
         version = self.options['Version']['Value']
-
+        
         try:
             version = str(version).lower()
         except TypeError:
