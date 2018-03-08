@@ -13,7 +13,7 @@ class Module:
             # more verbose multi-line description of the module
             'Description': ("Uses Apple Security utility to dump the contents of the keychain. "
                             "WARNING: Will prompt user for access to each key."
-                            "On High Sierra, this will also ask the user for their password for each key."),
+                            "On Newer versions of Sierra and High Sierra, this will also ask the user for their password for each key."),
 
             # True if the module needs to run in the background
             'Background' : False,

