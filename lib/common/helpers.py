@@ -142,7 +142,7 @@ def random_string(length=-1, charset=string.ascii_letters):
     random_string = ''.join(random.choice(charset) for x in range(length))
     return random_string
 
-def split_up_ps_strings(data):
+def split_up_strings(data):
 
     min_num_of_loop = random.randint(1,len(data))
     max_num_of_loop = random.randint(min_num_of_loop,len(data))
