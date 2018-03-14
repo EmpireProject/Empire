@@ -18,7 +18,7 @@ then
 	rm ../data/empire.db
 fi
 
-./setup_database.py
+python ./setup_database.py
 cd ..
 
 # remove the debug file if it exists
