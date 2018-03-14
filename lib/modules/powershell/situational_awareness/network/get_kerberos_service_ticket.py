@@ -54,12 +54,12 @@ class Module:
                 'Description':   'UserName to find, must be in the format of username@domain.local',
                 'Required'   :   False,
                 'Value'      :   ''
-            }
+            },
             'MaxEvents': {
                 'Description':   'Maximum events to return',
                 'Required'   :   False,
                 'Value'      :   '1000'
-            }
+            },
             'ExcludeComputers': {
                 'Description':   'Exclude computers from the results',
                 'Required'   :   False,
