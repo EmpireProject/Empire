@@ -221,7 +221,7 @@ try:
             HistoryResult = myfile.readlines()
         HistoryCount = HistoryCount * -1
         print "[*] Enumerating User Bash History"
-        print " - Hisotry count size: " + str(len(HistoryResult))
+        print " - History count size: " + str(len(HistoryResult))
         for item in HistoryResult[HistoryCount:]:
             print "    * " + str(item.strip())
         print "[*] SSH commands in History: "
