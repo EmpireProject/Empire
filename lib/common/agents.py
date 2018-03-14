@@ -1362,7 +1362,7 @@ class Agents:
             dispatcher.send("[!] Invalid staging request packet from %s at %s : %s" % (sessionID, clientIP, meta), sender='Agents')
 
 
-    def handle_agent_data(self, stagingKey, routingPacket, listenerOptions, clientIP='0.0.0.0', update_lastseen=False):
+    def handle_agent_data(self, stagingKey, routingPacket, listenerOptions, clientIP='0.0.0.0', update_lastseen=True):
         """
         Take the routing packet w/ raw encrypted data from an agent and
         process as appropriately.
