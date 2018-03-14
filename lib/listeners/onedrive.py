@@ -289,7 +289,7 @@ class Listener:
         staging_folder = listenerOptions['StagingFolder']['Value']
         working_hours = listenerOptions['WorkingHours']['Value']
         profile = listenerOptions['DefaultProfile']['Value']
-        poll_interval = listenerOptions['PollInterval']['Value']
+        agent_delay = listenerOptions['DefaultDelay']['Value']
 
         if language.lower() == 'powershell':
             f = open("%s/data/agent/stagers/onedrive.ps1" % self.mainMenu.installPath)
@@ -299,7 +299,7 @@ class Listener:
             stager = stager.replace("REPLACE_STAGING_FOLDER", "%s/%s" % (base_folder, staging_folder))
             stager = stager.replace('REPLACE_STAGING_KEY', staging_key)
             stager = stager.replace("REPLACE_TOKEN", token)
-            stager = stager.replace("REPLACE_POLLING_INTERVAL", poll_interval)
+            stager = stager.replace("REPLACE_POLLING_INTERVAL", str(agent_delay))
 
             if working_hours != "":
                 stager = stager.replace("REPLACE_WORKING_HOURS", working_hours)
