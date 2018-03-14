@@ -1163,7 +1163,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         for reportingEvent in reportingRaw:
             [ID, name, event_type, message, time_stamp, taskID] = reportingEvent
-            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":message, "timestamp":time_stamp, "taskID":taskID})
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":json.loads(message), "timestamp":time_stamp, "taskID":taskID})
 
         return jsonify({'reporting' : reportingEvents})
 
@@ -1187,7 +1187,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         for reportingEvent in reportingRaw:
             [ID, name, event_type, message, time_stamp, taskID] = reportingEvent
-            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":message, "timestamp":time_stamp, "taskID":taskID})
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":json.loads(message), "timestamp":time_stamp, "taskID":taskID})
 
         return jsonify({'reporting' : reportingEvents})
 
@@ -1203,7 +1203,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         for reportingEvent in reportingRaw:
             [ID, name, event_type, message, time_stamp, taskID] = reportingEvent
-            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":message, "timestamp":time_stamp, "taskID":taskID})
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":json.loads(message), "timestamp":time_stamp, "taskID":taskID})
 
         return jsonify({'reporting' : reportingEvents})
 
@@ -1219,7 +1219,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         for reportingEvent in reportingRaw:
             [ID, name, event_type, message, time_stamp, taskID] = reportingEvent
-            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":message, "timestamp":time_stamp, "taskID":taskID})
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":json.loads(message), "timestamp":time_stamp, "taskID":taskID})
 
         return jsonify({'reporting' : reportingEvents})
 
