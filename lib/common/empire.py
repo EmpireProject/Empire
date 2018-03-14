@@ -1783,6 +1783,7 @@ class PowerShellAgentMenu(SubMenu):
 
         self.sessionID = sessionID
         self.doc_header = 'Agent Commands'
+        dispatcher.connect(self.handle_agent_event, sender=dispatcher.Any)
 
         # try to resolve the sessionID to a name
         name = self.mainMenu.agents.get_agent_name_db(sessionID)
@@ -1801,6 +1802,22 @@ class PowerShellAgentMenu(SubMenu):
 
     # def preloop(self):
     #     traceback.print_stack()
+
+    def handle_agent_event(self, signal, sender):
+        """
+        Handle agent event signals
+        """
+        # load up the signal so we can inspect it
+        try:
+            signal_data = json.loads(signal)
+        except ValueError:
+            print(helpers.color("[!] Error: bad signal recieved {} from sender {}".format(signal, sender)))
+            return
+
+        if '{} returned results'.format(self.sessionID) in signal:
+            results = self.mainMenu.agents.get_agent_results_db(self.sessionID)
+            if results:
+                print(helpers.color(results))
 
 
     def default(self, line):
@@ -2742,6 +2759,8 @@ class PythonAgentMenu(SubMenu):
 
         self.doc_header = 'Agent Commands'
 
+        dispatcher.connect(self.handle_agent_event, sender=dispatcher.Any)
+
         # try to resolve the sessionID to a name
         name = self.mainMenu.agents.get_agent_name_db(sessionID)
 
@@ -2759,6 +2778,22 @@ class PythonAgentMenu(SubMenu):
         results = self.mainMenu.agents.get_agent_results_db(self.sessionID)
         if results:
             print "\n" + results.rstrip('\r\n')
+
+    def handle_agent_event(self, signal, sender):
+        """
+        Handle agent event signals
+        """
+        # load up the signal so we can inspect it
+        try:
+            signal_data = json.loads(signal)
+        except ValueError:
+            print(helpers.color("[!] Error: bad signal recieved {} from sender {}".format(signal, sender)))
+            return
+
+        if '{} returned results'.format(self.sessionID) in signal:
+            results = self.mainMenu.agents.get_agent_results_db(self.sessionID)
+            if results:
+                print(helpers.color(results))
 
     def default(self, line):
         "Default handler"
