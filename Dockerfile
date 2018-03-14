@@ -49,7 +49,11 @@ RUN apt-get update && apt-get install -qy \
 
 # build empire from source
 # TODO: When we merge to master set branch to master
+<<<<<<< HEAD
 RUN git clone -b master https://github.com/EmpireProject/Empire.git /opt/Empire && \
+=======
+RUN git clone --depth=1 -b dev https://github.com/EmpireProject/Empire.git /opt/Empire && \
+>>>>>>> cda4927a8567add6801a72c83fb156b54397865e
     cd /opt/Empire/setup/ && \
     ./install.sh && \
     rm -rf /opt/Empire/data/empire*
