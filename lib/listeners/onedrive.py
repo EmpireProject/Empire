@@ -299,10 +299,10 @@ class Listener:
             stager = stager.replace("REPLACE_STAGING_FOLDER", "%s/%s" % (base_folder, staging_folder))
             stager = stager.replace('REPLACE_STAGING_KEY', staging_key)
             stager = stager.replace("REPLACE_TOKEN", token)
-            stager = stager.replace("REPLACE_POLLING_INTERVAL", agent_delay)
+            stager = stager.replace("REPLACE_POLLING_INTERVAL", str(agent_delay))
 
             if working_hours != "":
-                stager = stager.replace("REPLACE_WORKING_HOURS")
+                stager = stager.replace("REPLACE_WORKING_HOURS", working_hours)
 
             randomized_stager = ''
 
