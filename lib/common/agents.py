@@ -905,11 +905,13 @@ class Agents:
             self.lock.release()
 
 
-    def update_agent_lastseen_db(self, sessionID, current_time=helpers.get_datetime()):
+    def update_agent_lastseen_db(self, sessionID, current_time=None):
         """
         Update the agent's last seen timestamp in the database.
         """
 
+        if not current_time:
+            current_time = helpers.get_datetime()
         conn = self.get_db_connection()
         try:
             self.lock.acquire()
