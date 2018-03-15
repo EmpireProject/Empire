@@ -3679,7 +3679,7 @@ class ListenersMenu(SubMenu):
         if len(arguments) == 2:
             arguments.append("")
         self.mainMenu.listeners.update_listener_options(arguments[0], arguments[1], arguments[2])
-        if arguments[0] in self.activeListeners.keys():
+        if arguments[0] in self.mainMenu.listeners.activeListeners.keys():
             print helpers.color("[*] This change will not take effect until the listener is restarted")
 
     def complete_usestager(self, text, line, begidx, endidx):
