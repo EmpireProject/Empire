@@ -89,6 +89,7 @@ try:
     import subprocess
     import sys
     import os
+    import time
     from os.path import expanduser
     # Get Home User
     home = str(expanduser("~"))
@@ -232,6 +233,24 @@ try:
         if Debug:
             print "[!] Error enumerating user bash_history: " + str(e)
         pass
+        
+    # Enum Wireless Connectivity Info
+    try:
+        process = subprocess.Popen(executable="/System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport", args="-I", stdout=subprocess.PIPE, shell=True)
+        wireless = process.communicate()
+        if wireless[0] != '':
+            wireless = wireless[0].split('\\n')
+            print "[*] Wireless Connectivity Info:"
+            for x in wireless:
+                if x:
+                    print " - " + str(x.strip())
+                else:
+                    print
+    except Exception as e:
+        if Debug:
+            print "[!] Error enumerating user Wireless Connectivity Info: " + str(e)
+        pass         
+
     # Enum AV / Protection Software
 
 except Exception as e:

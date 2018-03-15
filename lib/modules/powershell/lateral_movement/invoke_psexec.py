@@ -120,8 +120,12 @@ class Module:
         scriptEnd = ""
         if command != "":
             # executing a custom command on the remote machine
-            return ""
-            # if 
+            customCmd = '%COMSPEC% /C start /b ' + command.replace('"','\\"')
+            scriptEnd += "Invoke-PsExec -ComputerName %s -ServiceName \"%s\" -Command \"%s\"" % (computerName, serviceName, customCmd)
+            
+            if resultFile != "":
+                # Store the result in a file
+                scriptEnd += " -ResultFile \"%s\"" % (resultFile)
 
         else:
 

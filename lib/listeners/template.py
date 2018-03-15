@@ -236,14 +236,14 @@ class Listener:
                 """ % (listenerOptions['Host']['Value'])
                 
                 getTask = """
-                    function script:Get-Task {
+                    $script:GetTask = {
 
 
                     }
                 """
 
                 sendMessage = """
-                    function script:Send-Message {
+                    $script:SendMessage = {
                         param($Packets)
 
                         if($Packets) {
