@@ -1,3 +1,38 @@
+
+03/15/2018
+------------
+- Version 2.5 Master Release
+	- Patched launcher generation bug 
+	- Added OSX Mic record module #893 (@s0lst1c3)
+	- More robust password handling in ssh_command and ssh_launcher modules (@retro-engineer)
+	- Updated server responses for http listener (@xorrior) 
+	- Template search bug fix (@DakotaNelson)
+	- bug fix to properly assign taskIDs (@shakagoolu)
+	- Kali & powershell install fix (@SadProcessor)
+	- Overhaul events system to provide more descriptive messages and accurate logging of events (@DakotaNelson)
+	- Added macro that backdoors lnk files (@G0ldenGunSec)
+	- Bug fix for invoke_psexec module when using custom commands (@ThePirateWhoSmellsOfSunflowers)
+	- Added capability to generate a vs studio project file to compile a csharp executable/launcher (@elitest)
+	- Added capability to enable/disable/delete listeners (@mr64bit)
+	- Added report generation (@bneg)
+	- Updated http_com listener to server IIS7 default page and added response headers to evade nessus scans (@s0lst1c3)
+	- Fixed script generation bug for all powerview modules (@xorrior)
+	- Modify the minidump module to allow for non-admin users to dump memory (@ThePirateWhoSmellsOfSunflowers)
+	- Removed background downloads feature for powershell agent 
+	- Added linux persistence module via the ~/.config/autostart directory (@jarrodcoulter)
+	- Added download command to REST API (@shakagoolu)
+	- Added support for '&&' and ';' characters in shell commands for python agent (@cleb-sfdcsec)
+	- Added wireless network information to the osx/situational_awareness/host module. (@import-au)
+	- Added keychain dump module that uses the security utility (@import-au)
+	- Added shellcode stagers and the 'shinject' module (@xorrior, @monoxgas)
+	- Added a sleep and jitter parameter to the Invoke-Kerberoast module (@Retrospected)
+	- Added capability to update agent comms dynamically (@xorrior)
+	- Added onedrive listener for powershell agent (@mr64bit)
+	- Added opsec-safe aliases for ls, pwd, rm, mkdir, whoami, and getuid in the python agent 
+	- Updated office macro stager for python agent (@import-au)
+	
+
+
 01/04/2018
 ------------
 - Version 2.4 Master Release

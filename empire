@@ -87,11 +87,12 @@ def get_permanent_token(conn):
     """
 
     permanentToken = execute_db_query(conn, "SELECT api_permanent_token FROM config")[0]
-    if not permanentToken[0]:
+    permanentToken = permanentToken[0]
+    if not permanentToken:
         permanentToken = ''.join(random.choice(string.ascii_lowercase + string.digits) for x in range(40))
         execute_db_query(conn, "UPDATE config SET api_permanent_token=?", [permanentToken])
 
-    return permanentToken[0]
+    return permanentToken
 
 
 ####################################################################
@@ -223,6 +224,11 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
                 return make_response('', 401)
             if (token != apiToken) and (token != permanentApiToken):
                 return make_response('', 401)
+
+    @app.after_request
+    def add_cors(response):
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response
 
 
     @app.errorhandler(Exception)
@@ -721,6 +727,8 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         listenerObject = main.listeners.loadedListeners[listener_type]
         # set all passed options
         for option, values in request.json.iteritems():
+            if type(values) == unicode:
+                values = values.encode('utf8')
             if option == "Name":
                 listenerName = values
 
@@ -899,6 +907,33 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             execute_db_query(conn, 'UPDATE agents SET results=? WHERE session_id=?', ['', agentSessionID])
 
         return jsonify({'success': True})
+    @app.route('/api/agents/<string:agent_name>/download', methods=['POST'])
+    def task_agent_download(agent_name):
+        """
+        Tasks the specified agent to download a file
+        """
+
+        if agent_name.lower() == "all":
+            # enumerate all target agent sessionIDs
+            agentNameIDs = execute_db_query(conn, "SELECT name,session_id FROM agents WHERE name like '%' OR session_id like '%'")
+        else:
+            agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+
+        if not agentNameIDs or len(agentNameIDs) == 0:
+            return make_response(jsonify({'error': 'agent name %s not found' %(agent_name)}), 404)
+
+        if not request.json['filename']:
+            return make_response(jsonify({'error':'file name not provided'}), 404)
+
+        fileName = request.json['filename']
+        for agentNameID in agentNameIDs:
+            (agentName, agentSessionID) = agentNameID
+
+            msg = "Tasked agent to download %s" % (fileName)
+            main.agents.save_agent_log(agentSessionID, msg)
+            taskID = main.agents.add_agent_task_db(agentSessionID, 'TASK_DOWNLOAD', fileName)
+
+        return jsonify({'success': True, 'taskID': taskID})
 
     @app.route('/api/agents/<string:agent_name>/upload', methods=['POST'])
     def task_agent_upload(agent_name):
@@ -935,9 +970,9 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             msg = "Tasked agent to upload %s : %s" % (fileName, hashlib.md5(rawBytes).hexdigest())
             main.agents.save_agent_log(agentSessionID, msg)
             data = fileName + "|" + fileData
-            main.agents.add_agent_task_db(agentSessionID, 'TASK_UPLOAD', data)
+            taskID = main.agents.add_agent_task_db(agentSessionID, 'TASK_UPLOAD', data)
 
-        return jsonify({'success': True})
+        return jsonify({'success': True, 'taskID': taskID})
 
     @app.route('/api/agents/<string:agent_name>/shell', methods=['POST'])
     def task_agent_shell(agent_name):
@@ -1128,7 +1163,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         for reportingEvent in reportingRaw:
             [ID, name, event_type, message, time_stamp, taskID] = reportingEvent
-            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":message, "timestamp":time_stamp, "taskID":taskID})
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":json.loads(message), "timestamp":time_stamp, "taskID":taskID})
 
         return jsonify({'reporting' : reportingEvents})
 
@@ -1152,7 +1187,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         for reportingEvent in reportingRaw:
             [ID, name, event_type, message, time_stamp, taskID] = reportingEvent
-            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":message, "timestamp":time_stamp, "taskID":taskID})
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":json.loads(message), "timestamp":time_stamp, "taskID":taskID})
 
         return jsonify({'reporting' : reportingEvents})
 
@@ -1168,7 +1203,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         for reportingEvent in reportingRaw:
             [ID, name, event_type, message, time_stamp, taskID] = reportingEvent
-            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":message, "timestamp":time_stamp, "taskID":taskID})
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":json.loads(message), "timestamp":time_stamp, "taskID":taskID})
 
         return jsonify({'reporting' : reportingEvents})
 
@@ -1184,7 +1219,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
         for reportingEvent in reportingRaw:
             [ID, name, event_type, message, time_stamp, taskID] = reportingEvent
-            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":message, "timestamp":time_stamp, "taskID":taskID})
+            reportingEvents.append({"ID":ID, "agentname":name, "event_type":event_type, "message":json.loads(message), "timestamp":time_stamp, "taskID":taskID})
 
         return jsonify({'reporting' : reportingEvents})
 

