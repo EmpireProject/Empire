@@ -164,7 +164,8 @@ class Agents:
             signal = json.dumps({
                 'print': True,
                 'message': message,
-                'timestamp': checkinTime
+                'timestamp': checkinTime,
+                'event_type': 'checkin'
             })
             dispatcher.send(signal, sender="agents/{}".format(sessionID))
 
@@ -1101,7 +1102,8 @@ class Agents:
                         'message': message,
                         'task_name': taskName,
                         'task_id': pk,
-                        'task': task
+                        'task': task,
+                        'event_type': 'task'
                     })
                     dispatcher.send(signal, sender="agents/{}".format(sessionID))
 
@@ -1716,7 +1718,8 @@ class Agents:
                 'print': False,
                 'message': message,
                 'response_name': responseName,
-                'task_id': taskID
+                'task_id': taskID,
+                'event_type': 'result'
             })
             dispatcher.send(signal, sender="agents/{}".format(sessionID))
 
