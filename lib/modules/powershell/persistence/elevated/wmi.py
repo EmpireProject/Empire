@@ -53,6 +53,11 @@ class Module:
                 'Required'      :   False,
                 'Value'         :   'True'
             },
+            'FailedLogon': {
+                'Description': 'Trigger script with a failed logon attempt from a specified user',
+                'Required': False,
+                'Value': ''
+            },
             'SubName' : {
                 'Description'   :   'Name to use for the event subscription.',
                 'Required'      :   True,
@@ -104,6 +109,7 @@ class Module:
         dailyTime = self.options['DailyTime']['Value']
         atStartup = self.options['AtStartup']['Value']
         subName = self.options['SubName']['Value']
+        failedLogon = self.options['FailedLogon']['Value']
 
         # management options
         extFile = self.options['ExtFile']['Value']
@@ -168,8 +174,17 @@ class Module:
 
         # built the command that will be triggered
         triggerCmd = "$($Env:SystemRoot)\\System32\\WindowsPowerShell\\v1.0\\powershell.exe -NonI -W hidden -enc " + encScript
-        
-        if dailyTime != '':
+
+        if failedLogon != '' :
+
+            # Enable failed logon auditing
+            script = "auditpol /set /subcategory:Logon /failure:enable;"
+
+            # create WMI event filter for failed logon
+            script += "$Filter=Set-WmiInstance -Class __EventFilter -Namespace \"root\\subscription\" -Arguments @{name='"+subName+"';EventNameSpace='root\CimV2';QueryLanguage=\"WQL\";Query=\"SELECT * FROM __InstanceCreationEvent WITHIN 60 WHERE TargetInstance ISA 'Win32_NTLogEvent' AND TargetInstance.EventCode=\"4625\" AND TargetInstance.Message LIKE \"\%"+failedLogon+"\%\";"
+            statusMsg += "WMI subscription will trigger upon failed logon by " + failedLogon
+
+        elif dailyTime != '':
             
             parts = dailyTime.split(":")
             
