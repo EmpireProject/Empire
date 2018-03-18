@@ -4442,7 +4442,7 @@ class StagerMenu(SubMenu):
             signal = json.dumps({
                 'print': False,
                 'message': message,
-                'options': stager.options
+                'options': self.stager.options
             })
             dispatcher.send(signal, sender="empire")
         else:
