@@ -1243,7 +1243,7 @@ class Agents:
             # step 3 of negotiation -> client posts public key
             message = "[*] Agent {} from {} posted public key".format(sessionID, clientIP)
             signal = json.dumps({
-                'print': True,
+                'print': False,
                 'message': message
             })
             dispatcher.send(signal, sender="agents/{}".format(sessionID))
@@ -1282,7 +1282,7 @@ class Agents:
                     if rsaKey:
                         message = "[*] Agent {} from {} posted valid PowerShell RSA key".format(sessionID, clientIP)
                         signal = json.dumps({
-                            'print': True,
+                            'print': False,
                             'message': message
                         })
                         dispatcher.send(signal, sender="agents/{}".format(sessionID))
