@@ -295,7 +295,7 @@ class Agents:
             self.lock.release()
 
         # notify everyone that the file was downloaded
-        message = "[+] Part of file %s from %s saved".format(filename, sessionID)
+        message = "[+] Part of file {} from {} saved".format(filename, sessionID)
         signal = json.dumps({
             'print': True,
             'message': message
