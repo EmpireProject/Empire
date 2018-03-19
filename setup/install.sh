@@ -84,17 +84,16 @@ function install_powershell() {
 		#Kali Linux
 		if cat /etc/lsb-release | grep -i 'Kali'; then
 			# Install prerequisites
-                          # Install system components
-                          apt-get update
-                          apt-get install -y curl gnupg apt-transport-https
-                          # Import the public repository GPG keys
-                          curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
-                          # Register the Microsoft Product feed
-                          sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-stretch-prod stretch main" > /etc/apt/sources.list.d/microsoft.list'
-                          # Update the list of products
-                          apt-get update
-                          # Install PowerShell
-                          apt-get install -y powershell
+                        apt-get update
+                        apt-get install -y curl gnupg apt-transport-https
+                        # Import the public repository GPG keys
+                        curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+                        # Register the Microsoft Product feed
+                        sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-stretch-prod stretch main" > /etc/apt/sources.list.d/microsoft.list'
+                        # Update the list of products
+                        apt-get update
+                        # Install PowerShell
+                        apt-get install -y powershell
                 fi
 	 fi
         if ls /opt/microsoft/powershell/*/DELETE_ME_TO_DISABLE_CONSOLEHOST_TELEMETRY; then
