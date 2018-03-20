@@ -315,7 +315,6 @@ def start_restful_api(empireMenu, user_handler, suppress=False, username=None, p
         """
         Authenticate clients. Should be called before anything else, after connecting
         """
-	print data
 	if data['username'] and data['password']:
             if users.authenticate_user(request.sid, data['username'], data['password']):
 		emit('user_login', {"Result":"Logon success"})
