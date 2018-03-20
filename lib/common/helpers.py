@@ -56,6 +56,18 @@ from time import localtime, strftime
 import subprocess
 import fnmatch
 import urllib, urllib2
+import hashlib
+import datetime
+import uuid
+
+
+###############################################################
+#
+# Global Variables
+#
+################################################################
+
+globentropy=random.randint(1,datetime.datetime.today().day)
 
 ###############################################################
 #
@@ -142,15 +154,23 @@ def random_string(length=-1, charset=string.ascii_letters):
     random_string = ''.join(random.choice(charset) for x in range(length))
     return random_string
 
+"""
+Take in a powershell string or stringable object and split it un with plus chars
+"""
 def split_up_strings(data):
-
     min_num_of_loop = random.randint(1,len(data))
     max_num_of_loop = random.randint(min_num_of_loop,len(data))
-
     for i in range(min_num_of_loop,max_num_of_loop):
         if data[i] == re.sub('[^a-zZA-Z]') and data[i-1] == re.sub('[^a-zZA-Z]') and data[i+1] == re.sub('[^a-zZA-Z]'):
             data=data[:i] +'+'+data[i:]
     return data
+
+"""
+Randomize the name of variables in any script and have them return the same value repeatably
+"""
+def generate_random_script_var_name(orig_vari_name):
+    variname_refined=hashlib.sha1(orig_vari_name+globentropy)
+    return variname_refined[:-datetime.datetime.today().day]
 
 def randomize_capitalization(data):
     """
@@ -162,7 +182,6 @@ def randomize_capitalization(data):
 def chunks(l, n):
     """
     Generator to split a string l into chunks of size n.
-
     Used by macro modules.
     """
     for i in xrange(0, len(l), n):
@@ -233,6 +252,11 @@ def strip_powershell_comments(data):
 
     return strippedCode
 
+def replace_double_to_single_quotes(data):
+    """
+    Replaces the standard ps launchers double quotes to single quotes. Mostly for use in js launcher code.
+    """
+    return data.replace("\"","'")
 
 ####################################################################################
 #
