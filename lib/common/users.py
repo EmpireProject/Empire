@@ -32,14 +32,14 @@ class Users():
         Authenticate a user given their username and password
         """
         if sid in self.users:
-            if password == self.args.password:
+            if password == self.args.password[0]:
                 self.update_lastlogon(sid)
                 self.users[sid]['active'] = True
                 dispatcher.send("%s connected" % (username), sender="Users")
                 return True
         
         else:
-            if password == self.args.password:
+            if password == self.args.password[0]:
                 self.add_new_user(sid, username)
                 return True
 
