@@ -70,7 +70,7 @@ Function Set-WallPaper
 
     Set-Content -value $([System.Convert]::FromBase64String($WallpaperData)) -encoding byte -path $SavePath
 
-add-type @"
+Add-Type @"
 using System;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
@@ -143,5 +143,5 @@ namespace Wallpaper
         
         script += "; 'Set-Wallpaper executed'"
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
         return script

@@ -14,7 +14,7 @@ class Module:
             'Author': ['@n00py'],
 
             # more verbose multi-line description of the module
-            'Description': ('Spawns a new EmPyre agent using an existing sudo session.  This works up until El Capitan.'),
+            'Description': ('Spawns a new Empire agent using an existing sudo session.  This works up until El Capitan.'),
 
             # True if the module needs to run in the background
             'Background' : False,

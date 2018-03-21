@@ -155,7 +155,7 @@ class Module:
             script += "schtasks /Delete /F /TN "+taskName+";"
             script += "'Schtasks persistence removed.'"
             if obfuscate:
-                script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
+                script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
             return script
 
         if extFile != '':
@@ -234,5 +234,5 @@ class Module:
 
         script += "'Schtasks persistence established "+statusMsg+"'"
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
         return script

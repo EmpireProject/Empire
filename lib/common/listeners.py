@@ -4,7 +4,7 @@
 Listener handling functionality for Empire.
 
 """
-
+import sys
 import fnmatch
 import imp
 import helpers
@@ -12,6 +12,9 @@ import os
 import pickle
 import hashlib
 import copy
+import json
+
+from pydispatch import dispatcher
 
 class Listeners:
     """
@@ -102,14 +105,16 @@ class Listeners:
                     if len(parts) != 1 and parts[-1].isdigit():
                         # if a port is specified with http://host:port
                         listenerObject.options['Host']['Value'] = "%s://%s" % (protocol, value)
-                        listenerObject.options['Port']['Value'] = parts[-1]
+                        if listenerObject.options['Port']['Value'] == '':
+                            listenerObject.options['Port']['Value'] = parts[-1]
                     elif listenerObject.options['Port']['Value'] != '':
                         # otherwise, check if the port value was manually set
                         listenerObject.options['Host']['Value'] = "%s://%s:%s" % (protocol, value, listenerObject.options['Port']['Value'])
                     else:
                         # otherwise use default port
                         listenerObject.options['Host']['Value'] = "%s://%s" % (protocol, value)
-                        listenerObject.options['Port']['Value'] = defaultPort
+                        if listenerObject.options['Port']['Value'] == '':
+                            listenerObject.options['Port']['Value'] = defaultPort
 
                     return True
 
@@ -123,11 +128,6 @@ class Listeners:
 
                 if option == 'Port':
                     listenerObject.options[option]['Value'] = value
-                    # set the port in the Host configuration as well
-                    host = listenerObject.options['Host']['Value']
-                    parts = host.split(':')
-                    if len(parts) == 2 or len(parts) == 3:
-                        listenerObject.options['Host']['Value'] = "%s:%s:%s" % (parts[0], parts[1], str(value))
                     return True
 
                 elif option == 'StagingKey':
@@ -188,7 +188,7 @@ class Listeners:
         i = 1
         while name in self.activeListeners.keys():
             name = "%s%s" % (nameBase, i)
-        
+
         listenerObject.options['Name']['Value'] = name
 
         try:
@@ -196,13 +196,21 @@ class Listeners:
             success = listenerObject.start(name=name)
 
             if success:
-                print helpers.color('[+] Listener successfully started!')
                 listenerOptions = copy.deepcopy(listenerObject.options)
                 self.activeListeners[name] = {'moduleName': moduleName, 'options':listenerOptions}
                 pickledOptions = pickle.dumps(listenerObject.options)
                 cur = self.conn.cursor()
-                cur.execute("INSERT INTO listeners (name, module, listener_category, options) VALUES (?,?,?,?)", [name, moduleName, category, pickledOptions])
+                cur.execute("INSERT INTO listeners (name, module, listener_category, enabled, options) VALUES (?,?,?,?,?)", [name, moduleName, category, True, pickledOptions])
                 cur.close()
+
+                # dispatch this event
+                message = "[+] Listener successfully started!"
+                signal = json.dumps({
+                    'print': True,
+                    'message': message,
+                    'listener_options': listenerOptions
+                })
+                dispatcher.send(signal, sender="listeners/{}/{}".format(moduleName, name))
             else:
                 print helpers.color('[!] Listener failed to start!')
 
@@ -219,7 +227,7 @@ class Listeners:
         oldFactory = self.conn.row_factory
         self.conn.row_factory = helpers.dict_factory
         cur = self.conn.cursor()
-        cur.execute("SELECT id,name,module,listener_type,listener_category,options FROM listeners")
+        cur.execute("SELECT id,name,module,listener_type,listener_category,options FROM listeners WHERE enabled=?", [True])
         results = cur.fetchall()
         cur.close()
 
@@ -227,6 +235,7 @@ class Listeners:
             listenerName = result['name']
             moduleName = result['module']
             nameBase = listenerName
+
 
             i = 1
             while listenerName in self.activeListeners.keys():
@@ -242,12 +251,22 @@ class Listeners:
                     listenerModule.options[option] = value
 
                 print helpers.color("[*] Starting listener '%s'" % (listenerName))
-                success = listenerModule.start(name=listenerName)
+                if moduleName == 'redirector':
+                    success = True
+                else:
+                    success = listenerModule.start(name=listenerName)
 
                 if success:
-                    print helpers.color('[+] Listener successfully started!')
                     listenerOptions = copy.deepcopy(listenerModule.options)
                     self.activeListeners[listenerName] = {'moduleName': moduleName, 'options':listenerOptions}
+                    # dispatch this event
+                    message = "[+] Listener successfully started!"
+                    signal = json.dumps({
+                        'print': True,
+                        'message': message,
+                        'listener_options': listenerOptions
+                    })
+                    dispatcher.send(signal, sender="listeners/{}/{}".format(moduleName, listenerName))
                 else:
                     print helpers.color('[!] Listener failed to start!')
 
@@ -258,6 +277,50 @@ class Listeners:
 
         self.conn.row_factory = oldFactory
 
+    def enable_listener(self, listenerName):
+        "Starts an existing listener and sets it to enabled"
+        if listenerName in self.activeListeners.keys():
+            print helpers.color("[!] Listener already running!")
+            return False
+
+        oldFactory = self.conn.row_factory
+        self.conn.row_factory = helpers.dict_factory
+        cur = self.conn.cursor()
+        cur.execute("SELECT id,name,module,listener_type,listener_category,options FROM listeners WHERE name=?", [listenerName])
+        result = cur.fetchone()
+        if not result:
+            print helpers.color("[!] Listener %s doesn't exist!" % listenerName)
+            return False
+        moduleName = result['module']
+        options = pickle.loads(result['options'])
+        try:
+            listenerModule = self.loadedListeners[moduleName]
+
+            for option, value in options.iteritems():
+                listenerModule.options[option] = value
+
+            print helpers.color("[*] Starting listener '%s'" % (listenerName))
+            if moduleName == 'redirector':
+                success = True
+            else:
+                success = listenerModule.start(name=listenerName)
+
+            if success:
+                print helpers.color('[+] Listener successfully started!')
+                listenerOptions = copy.deepcopy(listenerModule.options)
+                self.activeListeners[listenerName] = {'moduleName': moduleName, 'options': listenerOptions}
+                cur.execute("UPDATE listeners SET enabled=? WHERE name=? AND NOT module=?", [True, listenerName, 'redirector'])
+            else:
+                print helpers.color('[!] Listener failed to start!')
+        except Exception as e:
+            traceback.print_exc()
+            if listenerName in self.activeListeners:
+                del self.activeListeners[listenerName]
+            print helpers.color("[!] Error starting listener: %s" % (e))
+
+        cur.close()
+        self.conn.row_factory = oldFactory
+
 
     def kill_listener(self, listenerName):
         """
@@ -266,7 +329,7 @@ class Listeners:
 
         To kill all listeners, use listenerName == 'all'
         """
- 
+
         if listenerName.lower() == 'all':
             listenerNames = self.activeListeners.keys()
         else:
@@ -278,6 +341,15 @@ class Listeners:
                 return False
 
             # shut down the listener and remove it from the cache
+            if self.mainMenu.listeners.get_listener_module(listenerName) == 'redirector':
+                # remove the listener object from the internal cache
+                del self.activeListeners[listenerName]
+                self.conn.row_factory = None
+                cur = self.conn.cursor()
+                cur.execute("DELETE FROM listeners WHERE name=?", [listenerName])
+                cur.close()
+                continue
+
             self.shutdown_listener(listenerName)
 
             # remove the listener from the database
@@ -286,6 +358,36 @@ class Listeners:
             cur.execute("DELETE FROM listeners WHERE name=?", [listenerName])
             cur.close()
 
+    def delete_listener(self, listener_name):
+        """
+        Delete listener(s) from database.
+        """
+
+        try:
+            old_factory = self.conn.row_factory
+            self.conn.row_factory = helpers.dict_factory
+            cur = self.conn.cursor()
+            cur.execute("SELECT name FROM listeners")
+            db_names = map(lambda x: x['name'], cur.fetchall())
+            if listener_name.lower() == "all":
+                names = db_names
+            else:
+                names = [listener_name]
+
+            for name in names:
+                if not name in db_names:
+                    print helpers.color("[!] Listener '%s' does not exist!" % name)
+                    return False
+
+                if name in self.activeListeners.keys():
+                    self.shutdown_listener(name)
+                cur.execute("DELETE FROM listeners WHERE name=?", [name])
+
+        except Exception, e:
+            print helpers.color("[!] Error deleting listener '%s'" % name)
+
+        cur.close()
+        self.conn.row_factory = old_factory
 
     def shutdown_listener(self, listenerName):
         """
@@ -307,11 +409,34 @@ class Listeners:
             activeListenerModuleName = self.activeListeners[listenerName]['moduleName']
             activeListenerModule = self.loadedListeners[activeListenerModuleName]
 
+            if activeListenerModuleName == 'redirector':
+                print helpers.color("[!] skipping redirector listener %s. Start/Stop actions can only initiated by the user." % (listenerName))
+                continue
+
             # signal the listener module to shut down the thread for this particular listener instance
             activeListenerModule.shutdown(name=listenerName)
 
             # remove the listener object from the internal cache
             del self.activeListeners[listenerName]
+
+    def disable_listener(self, listenerName):
+        "Wrapper for shutdown_listener(), also marks listener as 'disabled' so it won't autostart"
+
+        activeListenerModuleName = self.activeListeners[listenerName]['moduleName']
+        cur = self.conn.cursor()
+        if listenerName.lower() == "all":
+            cur.execute("UPDATE listeners SET enabled=? WHERE NOT module=?", [False, "redirector"])
+        else:
+            cur.execute("UPDATE listeners SET enabled=? WHERE name=? AND NOT module=?", [False, listenerName.lower(), "redirector"])
+        cur.close()
+        self.shutdown_listener(listenerName)
+        # dispatch this event
+        message = "[*] Listener {} killed".format(listenerName)
+        signal = json.dumps({
+            'print': True,
+            'message': message
+        })
+        dispatcher.send(signal, sender="listeners/{}/{}".format(activeListenerModuleName, listenerName))
 
 
     def is_listener_valid(self, name):
@@ -385,3 +510,43 @@ class Listeners:
         Return all current listener names.
         """
         return self.activeListeners.keys()
+
+    def get_inactive_listeners(self):
+        """
+        Returns any listeners that are not currently running
+        """
+
+        oldFactory = self.conn.row_factory
+        self.conn.row_factory = helpers.dict_factory
+        cur = self.conn.cursor()
+
+        cur.execute("SELECT name,module,options FROM listeners")
+        db_listeners = cur.fetchall()
+
+        inactive_listeners = {}
+        for listener in filter((lambda x: x['name'] not in self.activeListeners.keys()), db_listeners):
+            inactive_listeners[listener['name']] = {'moduleName': listener['module'],
+                                                    'options': pickle.loads(listener['options'])}
+
+        cur.close()
+        self.conn.row_factory = oldFactory
+        return inactive_listeners
+
+
+    def update_listener_options(self, listener_name, option_name, option_value):
+        "Updates a listener option in the database"
+
+        try:
+            cur = self.conn.cursor()
+            cur.execute('SELECT id,options FROM listeners WHERE name=?', [listener_name])
+            listener_id, result = cur.fetchone()
+            options = pickle.loads(result)
+            if not option_name in options.keys():
+                print helpers.color("[!] Listener %s does not have the option %s" % (listener_name, option_name))
+                return
+            options[option_name]['Value'] = option_value
+            pickled_options = pickle.dumps(options)
+            cur.execute('UPDATE listeners SET options=? WHERE id=?', [pickled_options, listener_id])
+        except ValueError:
+            print helpers.color("[!] Listener %s not found" % listenerName)
+        cur.close()

@@ -360,7 +360,6 @@ http://www.danielbohannon.com
         # Build up the full command-line string.
         If($PSBoundParameters['Wow64'])
         {
-            # A hard-coded WinDir is less flexible, but avoids making Windows-specific calls and allows for cross-platform execution
             $CommandLineOutput = "C:\WINDOWS\SysWOW64\WindowsPowerShell\v1.0\powershell.exe $($CommandlineOptions) `"$NewScript`""
         }
         Else

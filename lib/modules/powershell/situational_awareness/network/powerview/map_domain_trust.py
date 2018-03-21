@@ -5,7 +5,7 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Invoke-MapDomainTrust',
+            'Name': 'Get-DomainTrustMapping',
 
             'Author': ['@harmj0y'],
 
@@ -37,13 +37,58 @@ class Module:
                 'Required'      :   True,
                 'Value'         :   ''
             },
-            'LDAP' : {
-                'Description'   :   'Switch. Use LDAP for domain queries (less accurate).',
+            'API' : {
+                'Description'   :   'Switch. Use an api call (DsEnumerateDomainTrusts) to enumerate the trusts instead of the built-in LDAP method',
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'DomainController' : {
-                'Description'   :   'Domain controller to reflect LDAP queries through.',
+            'NET' : {
+                'Description'   :   'Switch. Use .NET queries to enumerate trusts instead of the default LDAP method',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'LDAPFilter' : {
+                'Description'   :   'Specifies an LDAP query string that is used to filter Active Directory objects.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'Properties' : {
+                'Description'   :   'Specifies the properties of the output object to retrieve from the server.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'SearchBase' : {
+                'Description'   :   'The LDAP source to search through, e.g. "LDAP://OU=secret,DC=testlab,DC=local" Useful for OU queries.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'Server' : {
+                'Description'   :   'Specifies an active directory server (domain controller) to bind to',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'SearchScope' : {
+                'Description'   :   'Specifies the scope to search under, Base/OneLevel/Subtree (default of Subtree)',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'ResultPageSize' : {
+                'Description'   :   'Specifies the PageSize to set for the LDAP searcher object.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'ServerTimeLimit' : {
+                'Description'   :   'Specifies the maximum amount of time the server spends searching. Default of 120 seconds.',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'SecurityMasks' : {
+                'Description'   :   'Specifies an option for examining security information of a directory object. One of "Dacl", "Group", "None", "Owner", "Sacl".',
+                'Required'      :   False,
+                'Value'         :   ''
+            },
+            'Tombstone' : {
+                'Description'   :   'Switch. Specifies that the search should also return deleted/tombstoned objects.',
                 'Required'      :   False,
                 'Value'         :   ''
             }
@@ -77,9 +122,9 @@ class Module:
         f.close()
 
         # get just the code needed for the specified function
-        script = helpers.generate_dynamic_powershell_script(moduleCode, moduleName)
+        script = helpers.strip_powershell_comments(moduleCode)
 
-        script += moduleName + " "
+        script += "\n" + moduleName + " "
 
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
@@ -92,5 +137,5 @@ class Module:
 
         script += '| ConvertTo-Csv -NoTypeInformation | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
         return script

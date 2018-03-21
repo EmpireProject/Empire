@@ -18,7 +18,7 @@ then
 	rm ../data/empire.db
 fi
 
-./setup_database.py
+python ./setup_database.py
 cd ..
 
 # remove the debug file if it exists
@@ -33,6 +33,9 @@ then
 	rm -rf ./downloads/
 fi
 
-# start up Empire
-# ./empire --debug 2
-./empire
+# start up Empire if not in docker otherwise return
+if [ -f /.dockerenv ]; then
+    echo " [*] Empire reset complete returning back to Docker"
+else
+    ./empire
+fi

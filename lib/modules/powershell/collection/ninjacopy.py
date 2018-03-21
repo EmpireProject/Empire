@@ -103,6 +103,6 @@ class Module:
                     
         scriptEnd += "; Write-Output 'Invoke-NinjaCopy Completed'"
         if obfuscate:
-            scriptEnd = helpers.obfuscate(psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
+            scriptEnd = helpers.obfuscate(self.mainMenu.installPath, psScript=scriptEnd, obfuscationCommand=obfuscationCommand)
         script += scriptEnd
         return script

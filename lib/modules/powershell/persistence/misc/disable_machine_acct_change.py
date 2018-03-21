@@ -61,10 +61,10 @@ class Module:
         if cleanup.lower() == 'true':
             script = "$null=Set-ItemProperty -Force -Path HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters -Name DisablePasswordChange -Value 0; 'Machine account password change re-enabled.'"
             if obfuscate:
-                script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
+                script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
             return script
         
         script = "$null=Set-ItemProperty -Force -Path HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters -Name DisablePasswordChange -Value 1; 'Machine account password change disabled.'"
         if obfuscate:
-            script = helpers.obfuscate(psScript=script, obfuscationCommand=obfuscationCommand)
+            script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
         return script

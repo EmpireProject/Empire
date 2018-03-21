@@ -1,3 +1,85 @@
+
+03/15/2018
+------------
+- Version 2.5 Master Release
+	- Patched launcher generation bug 
+	- Added OSX Mic record module #893 (@s0lst1c3)
+	- More robust password handling in ssh_command and ssh_launcher modules (@retro-engineer)
+	- Updated server responses for http listener (@xorrior) 
+	- Template search bug fix (@DakotaNelson)
+	- bug fix to properly assign taskIDs (@shakagoolu)
+	- Kali & powershell install fix (@SadProcessor)
+	- Overhaul events system to provide more descriptive messages and accurate logging of events (@DakotaNelson)
+	- Added macro that backdoors lnk files (@G0ldenGunSec)
+	- Bug fix for invoke_psexec module when using custom commands (@ThePirateWhoSmellsOfSunflowers)
+	- Added capability to generate a vs studio project file to compile a csharp executable/launcher (@elitest)
+	- Added capability to enable/disable/delete listeners (@mr64bit)
+	- Added report generation (@bneg)
+	- Updated http_com listener to server IIS7 default page and added response headers to evade nessus scans (@s0lst1c3)
+	- Fixed script generation bug for all powerview modules (@xorrior)
+	- Modify the minidump module to allow for non-admin users to dump memory (@ThePirateWhoSmellsOfSunflowers)
+	- Removed background downloads feature for powershell agent 
+	- Added linux persistence module via the ~/.config/autostart directory (@jarrodcoulter)
+	- Added download command to REST API (@shakagoolu)
+	- Added support for '&&' and ';' characters in shell commands for python agent (@cleb-sfdcsec)
+	- Added wireless network information to the osx/situational_awareness/host module. (@import-au)
+	- Added keychain dump module that uses the security utility (@import-au)
+	- Added shellcode stagers and the 'shinject' module (@xorrior, @monoxgas)
+	- Added a sleep and jitter parameter to the Invoke-Kerberoast module (@Retrospected)
+	- Added capability to update agent comms dynamically (@xorrior)
+	- Added onedrive listener for powershell agent (@mr64bit)
+	- Added opsec-safe aliases for ls, pwd, rm, mkdir, whoami, and getuid in the python agent 
+	- Updated office macro stager for python agent (@import-au)
+	
+
+
+01/04/2018
+------------
+- Version 2.4 Master Release
+	- Added Kevin Robertson's Invoke-SMBExec.ps1
+	- Update Invoke-DCOM
+	- Added Dockerfile, Docker Hub images, Build/Release scripts (@killswitch-gui)
+	- Updated README for cleaner install instructions with new options
+	- Support for plugins (@DakotaNelson)
+	- Fixed module output bug #792 (@clr2of8)
+	- Added MSBuild XML Launcher (@p3nt4)
+	- Added module to extract private keys (@mlinton)
+	- Added cross-platform macro (@malcomvetter)
+	- Proxy settings fix #788 (@m7x)
+	- Updated mimikatz binary in Invoke-Mimikatz to version 2.1.1 20171106
+	- Updated install.sh
+	- Updated PowerView.ps1 source and all related modules 
+	- powershell install fix, Invoke-obfuscation updates, Improve ScriptBlockLogging bypass (@cobbr)
+	- Custom header support for http_com listener (@leeloobeek)
+	- Allow for distinct values between the Host and Port options (@jetsecurity) 
+	- Added pwd and cat aliases for the python agent (@xorrior)
+	- Added redirector listener, formerly known as the redirector module (@xorrior)
+	- Added exception handling for wmi call in powershell stager #827
+	- Get Agent Results REST API call returns taskID #854 (@byt3bl33d3r)
+	- Added templating engine (@DakotaNelson)
+	- Removed pyCrypto dependencies (@elitest)
+	- http listener update: Updated defaults response logic and default page to match IIS 7.5 #890 (@s0lst1c3)
+	- Added module for nix aws ec2 metadata (@TweekFawkes)
+
+10/29/2017
+------------
+- Version 2.3 Master Release
+	— Fix for #755
+	— Merge PR from byt3bl33d3r for TLS version
+	— Removed option to set chunk size for file downloads
+	— Fix for #729 (Unable to download files with spaces)
+	— Fix renegotiation in powershell agent. Patched python agent to exit on 401 response.
+	— Fix for #774 (Fix pyinstaller module)
+	— Added resource scripts capability (Carrie Roberts)
+	— Fix for #749 (Fix external agent modules)
+	— Fix for #369 (Fixed http_hop listener with ssl and self-signed certificate)
+	— Merge Invoke-PowerDump fix
+	— Merge fixes for 718 (Fix generate function signature for module @nikaiw)
+	— Merge fixes for 762 (Code cleanup from EmPyre @elitest)
+	— Merge ntds execution module (@hightopfade)
+	— Updated generate function signatures in all modules
+	— Fixed stagerURI option (rvrsh3ll)
+
 10/12/2017
 --------
 - Version 2.2 Master Release
