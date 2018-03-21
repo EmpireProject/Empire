@@ -5,7 +5,7 @@ class Module:
     def __init__(self, mainMenu, params=[]):
 
         self.info = {
-            'Name': 'Get-SubnetRanges'
+            'Name': 'Get-SubnetRanges',
 
             'Author': ['@benichmt1'],
 
