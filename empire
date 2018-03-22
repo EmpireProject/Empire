@@ -186,10 +186,13 @@ def handle_event(signal, sender):
     """
     Function to handle events from pydispatcher
     """
+
+
     global empireMenu
     if sender == "Agents":
-        if "[+] Initial agent" in signal:
-            send({'Agents': signal})
+	if "[+] Initial agent" in signal:
+    	    print signal
+            emit('agents',{'Result':signal})
 
         if "returned results." in signal:
             agentName = signal.split("[*] Agent")[-1].split(" ")[0]
@@ -312,12 +315,11 @@ def start_restful_api(empireMenu, user_handler, suppress=False, username=None, p
         """
         Authenticate clients. Should be called before anything else, after connecting
         """
-        data = json.loads(data)
-        if data['username'] and data['password']:
-            if users.authenticate_user(request.id, data['username'], data['password']):
-                emit('user_login', {'Result': "{0} has logged in".format(data['username'])})
+	if data['username'] and data['password']:
+            if users.authenticate_user(request.sid, data['username'], data['password']):
+		emit('user_login', {"Result":"Logon success"})
             else:
-                emit('user_login',{"Result":"Logon failure"})
+                emit('user_login', {"Result":"Logon failure"})
         else:
             emit('user_login',{"Result":"missing username and/or password"})
 
@@ -327,16 +329,17 @@ def start_restful_api(empireMenu, user_handler, suppress=False, username=None, p
         """
         Handle when new clients connect. Authentication is not required here. Only when accessing any of the custom events
         """
-        emit('new_session', {"message": "New session from {0}".format(request.id)})
+        print "New session from %s" % request.sid
+	emit('new_session', {"message": "New session from {0}".format(request.sid)})
 
     
     @socketio.on('disconnect')
-    def handle_disconnect(data):
+    def handle_disconnect():
         """
         Handle when a client disconnects
         """
-        users.remove_user(request.id)
-        emit('user_disconnected', {"message": "Session from {0} has disconnected".format(request.id)})
+        users.remove_user(request.sid)
+        emit('message', {"message": "Session from {0} has disconnected".format(request.sid)})
 
 
     @app.errorhandler(Exception)
@@ -433,9 +436,8 @@ def start_restful_api(empireMenu, user_handler, suppress=False, username=None, p
                 for activeAgent in activeAgentsRaw:
                     [ID, session_id, listener, name, language, language_version, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results] = activeAgent
 
-                    agents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
-
-                send({"Result" : agents})
+                    agents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
+                emit('agents',{'Result':agents})
             
             elif data['Action'] and data['Action'] == 'VIEW' and data['Arguments']['Name']:
                 agent_name = data['Arguments']['Name']
@@ -448,9 +450,9 @@ def start_restful_api(empireMenu, user_handler, suppress=False, username=None, p
 
                 for activeAgent in activeAgentsRaw:
                     [ID, session_id, listener, name, language, language_version, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results] = activeAgent
-                    activeAgents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key, "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
+                    activeAgents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
 
-                send({'Result' : activeAgents})
+                emit('agents',{'Result': activeAgents})
 
             elif data['Action'] and data['Action'] == 'KILL' and data['Arguments']['Name']:
                 agent_name = data['Arguments']['Name']
@@ -536,11 +538,11 @@ def start_restful_api(empireMenu, user_handler, suppress=False, username=None, p
                 listeners = []
 
 
-                for activeListeners in activeListenersRaw:
+                for activeListener in activeListenersRaw:
                     [ID, name, module, listener_type, listener_category, options] = activeListener
                     listeners.append({'ID':ID, 'name':name, 'module':module, 'listener_type':listener_type, 'listener_category':listener_category, 'options':pickle.loads(activeListener[5]) })
 
-                send({'Result':listeners})
+                emit('listeners',{'Result':listeners})
 
             elif data['Action'] and data['Action'] == 'VIEW' and data['Arguments']['Name']:
                 listener_name = data['Arguments']['Name']
@@ -553,17 +555,23 @@ def start_restful_api(empireMenu, user_handler, suppress=False, username=None, p
                         listeners.append({'ID':ID, 'name':name, 'module':module, 'listener_type':listener_type, 'listener_category':listener_category, 'options':pickle.loads(activeListener[5]) })
 
                 
-                send({'Result':listeners})
+                emit('listeners',{'Result':listeners})
 
-            elif data['Action'] and data['Action'] == 'OPTIONS' and data['Arguments']['Type']:
+            elif data['Action'] and data['Action'] == 'OPTIONS':
+                options = {}
+		for ltype in main.listeners.loadedListeners:
+		    options[ltype] = main.listeners.loadedListeners[ltype].options
+ 		emit('listenerOptions',{'Result':options}) 
+            
+
+	    elif data['Action'] and data['Action'] == 'OPTIONS' and data['Arguments']['Type']:
                 listener_type = data['Arguments']['Type']
 
                 if listener_type.lower() not in main.listeners.loadedListeners:
-                    send({'Result':'listener type %s not found' % (listener_type)})
+                    emit('listenerOptions',{'Result':'listener type %s not found' % (listener_type)})
 
-                
                 options = main.listeners.loadedListeners[listener_type].options
-                send({'Result':options})
+                emit('listenerOptions',{'Result':options})
 
             elif data['Action'] and data['Action'] == 'KILL' and data['Arguments']['Name']:
                 listener_name = data['Arguments']['Name']
@@ -574,20 +582,20 @@ def start_restful_api(empireMenu, user_handler, suppress=False, username=None, p
                         [ID, name, module, listener_type, listener_category, options] = activeListener
                         main.listeners.kill_listener(name)
 
-                    send({'Result':'Success'})
+                    emit('listeners',{'Result':'Success'})
 
                 else:
                     if listener_name != "" and main.listeners.is_listener_valid(listener_name):
                         main.listeners.kill_listener(listener_name)
-                        send({'Result': 'Success'})
+                        emit('listeners',{'Result': 'Success'})
                     else:
-                        send({'Result':'listener name %s not found' % (listener_name)})
+                        emit('listeners',{'Result':'listener name %s not found' % (listener_name)})
 
             elif data['Action'] and data['Action'] == 'EXECUTE' and data['Arguments']['Type']:
                 listener_type = data['Arguments']['Type']
 
                 if listener_type.lower() not in main.listeners.loadedListeners:
-                    send({'Result':'listener type %s not found' % (listener_type)})
+                    emit('listeners',{'Result':'listener type %s not found' % (listener_type)})
 
                 listenerObject = main.listeners.loadedListeners[listener_type]
 
@@ -599,22 +607,22 @@ def start_restful_api(empireMenu, user_handler, suppress=False, username=None, p
 
                         returnVal = main.listeners.set_listener_option(listener_type, option, values)
                         if not returnVal:
-                            send({'Result':'error setting listener value %s with option %s' % (option, values)})
+                            emit('listeners',{'Result':'error setting listener value %s with option %s' % (option, values)})
                     
                 
                 main.listeners.start_listener(listener_type, listenerObject)
 
                 listenerID = main.listeners.get_listener_id(listenerName)
                 if listenerID:
-                    send({'Result':'listener %s successfully started' % (listenerName)})
+                    emit('listeners',{'Result':'listener %s successfully started' % (listenerName)})
                 else:
-                    send({'Result': 'failed to start listener %s' % (listenerName)})
+                    emit('listeners',{'Result': 'failed to start listener %s' % (listenerName)})
 
             else:
-                send({'Result':'Missing or incorrect listener action'})
+                emit('listeners',{'Result':'Missing or incorrect listener action'})
         
         else:
-            send({'Result':'Authorization required'})
+            emit('listeners',{'Result':'Authorization required'})
 
 
     @app.route('/api/stagers', methods=['GET'])
@@ -1643,9 +1651,9 @@ def start_restful_api(empireMenu, user_handler, suppress=False, username=None, p
 
     context = ssl.SSLContext(proto)
     context.load_cert_chain("%s/empire-chain.pem" % (certPath), "%s/empire-priv.key" % (certPath))
+    #socketio.run(app, host='0.0.0.0', port=int(port), ssl_context=context)
+    socketio.run(app, host='0.0.0.0', port=int(port))
     response_thread = socketio.start_background_task(target=responseThread)
-    socketio.run(app, host='0.0.0.0', port=int(port), ssl_context=context)
-
 
 
 if __name__ == '__main__':
