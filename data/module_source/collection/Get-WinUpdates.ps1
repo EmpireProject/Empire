@@ -28,8 +28,7 @@ Function Get-WinUpdates
         $ComputerName = $env:computername
         )
         Begin
-        {
-                write-host "hij start" | Out-File c:\test.txt
+        {             
                 function Test-ElevatedShell
                 {
                         $user = [Security.Principal.WindowsIdentity]::GetCurrent()
