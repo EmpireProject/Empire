@@ -2,7 +2,9 @@
 
 import sqlite3, argparse, sys, argparse, logging, json, string, subprocess
 import os, re, time, signal, copy, base64, pickle, random
-from flask import Flask, request, jsonify, make_response, abort, url_for
+from flask import Flask, request, jsonify, make_response, abort, url_for, render_template
+from flask_socketio import SocketIO, join_room, leave_room, disconnect, send, emit
+from flask_login import current_user, login_manager, login_required, login_user, logout_user, UserMixin, LoginManager
 from time import localtime, strftime, sleep
 import hashlib
 from OpenSSL import SSL
@@ -10,7 +12,7 @@ import ssl
 import ast
 
 # Empire imports
-from lib.common import empire, helpers
+from lib.common import empire, helpers, users
 
 global serverExitCommand
 serverExitCommand = 'restart'
@@ -152,9 +154,99 @@ def get_permanent_token(conn):
 #    GET      http://localhost:1337/api/admin/shutdown       shutdown the RESTful API
 #    GET      http://localhost:1337/api/admin/restart        restart the RESTful API
 #
+#    Websockets Server guide:
+#       
+#    - Any client may connect to the server but all custom events require authentication.
+#    - Clients can emit the 'login' custom event to do so. The data should be json (serialized) and include both a username and password field.
+#    - Once the disconnect event occurs on the user is removed from the users table
+#
+#   
+#    - There are custom events for each menu/class per se:
+#    - listeners, modules, agents, stagers
+#    - Data sent from the client for any custom event should be in the following json format
+#    * - required arguments
+#
+#   Event - listeners
+#         - Action: VIEW, KILL, OPTIONS, EXECUTE
+#         - Arguments _____________
+#           -VIEW    --- Name
+#           -KILL    --- Name*
+#           -OPTIONS --- Type*
+#           -EXECUTE --- Type*,Options
+#
+#   Event - modules
+#         - Action: VIEW, EXECUTE
+#         - Arguments: arguments can vary per action, per event.
+#   
+#   Event - agents
+#         - Action: VIEW, KILL, INTERACT, EXECUTE, RETURN
+#         - Arguments ______________
+#           - VIEW   --- Name
+#           - KILL   --- Name*
+#           - INTERACT --- Name*
+#           - EXECUTE --- Name*,Command*
+#           - RETURN --- Name*
+#
+#
+#   Event - stagers
+#         - Action: VIEW, EXECUTE
+#         - Arguments: arguments can vary per action, per event.
 ####################################################################
 
-def start_restful_api(empireMenu, suppress=False, username=None, password=None, port=1337):
+def handle_event(signal, sender):
+    """
+    Function to handle events from pydispatcher
+    """
+
+
+    global empireMenu
+    if sender == "Agents":
+	if "[+] Initial agent" in signal:
+    	    print signal
+            emit('agents',{'Result':signal})
+
+        if "returned results." in signal:
+            agentName = signal.split("[*] Agent")[-1].split(" ")[0]
+            results = empireMenu.agents.get_agent_results_db(agentName)
+            if results:
+                send({'Agents':results}, room=agentName)
+
+        if ("[+] Listener for" in signal) and ("updated to" in signal):
+            send({'Listeners': signal})
+
+        elif "[!] Agent" in signal and "exiting" in signal:
+            send({'Agents': signal})
+
+        elif "WARNING" in signal or "attempted overwrite" in signal:
+            send({'Empire': signal})
+
+        elif "on the blacklist" in signal:
+            send({'Empire':signal})
+
+    elif sender == "EmpireServer":
+        if "[!] Error starting listener" in signal:
+            send({'Empire':signal})
+
+    elif sender == "Listeners":
+        send({'Empire':signal})
+
+    elif sender == "Users":
+        send({'Users':signal})
+
+
+def responseThread():
+    """
+    Background thread used to send messages to clients using emit or send
+    """
+    from pydispatch import dispatcher
+    from time import sleep
+    dispatcher.connect(handle_event, sender=dispatcher.Any)
+
+    while True:
+        sleep(1)
+
+
+def start_restful_api(empireMenu, user_handler, suppress=False, username=None, password=None, port=1337):
     """
     Kick off the RESTful API with the given parameters.
 
@@ -169,7 +261,11 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
     conn = database_connect()
 
+    socketio = SocketIO(app)
+
     main = empireMenu
+
+    users = user_handler
 
     global serverExitCommand
 
@@ -225,10 +321,43 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
             if (token != apiToken) and (token != permanentApiToken):
                 return make_response('', 401)
 
+<<<<<<< HEAD
     @app.after_request
     def add_cors(response):
         response.headers['Access-Control-Allow-Origin'] = '*'
         return response
+=======
+    @socketio.on('login')
+    def handle_login(data):
+        """
+        Authenticate clients. Should be called before anything else, after connecting
+        """
+	if data['username'] and data['password']:
+            if users.authenticate_user(request.sid, data['username'], data['password']):
+		emit('user_login', {"Result":"Logon success"})
+            else:
+                emit('user_login', {"Result":"Logon failure"})
+        else:
+            emit('user_login',{"Result":"missing username and/or password"})
+
+
+    @socketio.on('connect')
+    def handle_connect():
+        """
+        Handle when new clients connect. Authentication is not required here. Only when accessing any of the custom events
+        """
+        print "New session from %s" % request.sid
+	emit('new_session', {"message": "New session from {0}".format(request.sid)})
+
+    
+    @socketio.on('disconnect')
+    def handle_disconnect():
+        """
+        Handle when a client disconnects
+        """
+        users.remove_user(request.sid)
+        emit('message', {"message": "Session from {0} has disconnected".format(request.sid)})
+>>>>>>> websockets-multiuser
 
 
     @app.errorhandler(Exception)
@@ -290,6 +419,228 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         config = [{"api_password":api_password, "api_username":api_username, "autorun_command":autorun_command, "autorun_data":autorun_data, "current_api_token":api_current_token, "install_path":install_path, "ip_blacklist":ip_blacklist, "ip_whitelist":ip_whitelist, "permanent_api_token":api_permanent_token, "staging_key":staging_key, "version":empire.VERSION}]
 
         return jsonify({'config': config})
+
+    @socketio.on('stagers')
+    def handle_stagers_event(data):
+        """
+        Handles all client messages for 'stagers' event
+        """
+
+        if users.is_authenticated(request.sid):
+            stagers = ""
+            if data['Action'] and data['Action'] == 'VIEW':
+                if data['Arguments'] and data['Arguments']['path'] == '':
+                    stagers = get_stagers()
+                elif data['Arguments'] and data['Arguments']['path'] != '':
+                    stagers = get_stagers_name(data['Arguments']['path'])
+
+            send({"Result": stagers})
+        else:
+            send({"Result": "Failed"})
+
+    @socketio.on('agents')
+    def handle_agents_event(data):
+        """
+        Handles all client messages for 'agents' event
+        """
+
+        if users.is_authenticated(request.sid):
+            if data['Action'] and data['Action'] == 'VIEW':
+                activeAgentsRaw = execute_db_query(conn, 'SELECT id, session_id, listener, name, language, language_version, delay, jitter, external_ip, '+
+                    'internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, '+
+                    'lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results FROM agents')
+                agents = []
+
+                for activeAgent in activeAgentsRaw:
+                    [ID, session_id, listener, name, language, language_version, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results] = activeAgent
+
+                    agents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
+                emit('agents',{'Result':agents})
+            
+            elif data['Action'] and data['Action'] == 'VIEW' and data['Arguments']['Name']:
+                agent_name = data['Arguments']['Name']
+
+                activeAgentsRaw = execute_db_query(conn, 'SELECT id, session_id, listener, name, language, language_version, delay, jitter, external_ip, '+
+                    'internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, '+
+                    'lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results FROM agents ' +
+                    'WHERE name=? OR session_id=?', [agent_name, agent_name])
+                activeAgents = []
+
+                for activeAgent in activeAgentsRaw:
+                    [ID, session_id, listener, name, language, language_version, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results] = activeAgent
+                    activeAgents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
+
+                emit('agents',{'Result': activeAgents})
+
+            elif data['Action'] and data['Action'] == 'KILL' and data['Arguments']['Name']:
+                agent_name = data['Arguments']['Name']
+
+                if agent_name.lower() == "all":
+                # enumerate all target agent sessionIDs
+                    agentNameIDs = execute_db_query(conn, "SELECT name,session_id FROM agents WHERE name like '%' OR session_id like '%'")
+                else:
+                    agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+
+                if not agentNameIDs or len(agentNameIDs) == 0:
+                    send({'Result': 'agent name %s not found' %(agent_name)})
+
+                for agentNameID in agentNameIDs:
+                    (agentName, agentSessionID) = agentNameID
+
+                    # task the agent to exit
+                    msg = "tasked agent %s to exit" %(agentSessionID)
+                    main.agents.save_agent_log(agentSessionID, msg)
+                    main.agents.add_agent_task_db(agentSessionID, 'TASK_EXIT')
+
+                send({'Result': 'success'})
+
+            elif data['Action'] and data['Action'] == 'EXECUTE' and data['Arguments']['Name']:
+                agent_name = data['Arguments']['Name']
+
+                if agent_name.lower() == "all":
+                        # enumerate all target agent sessionIDs
+                    agentNameIDs = execute_db_query(conn, "SELECT name,session_id FROM agents WHERE name like '%' OR session_id like '%'")
+                else:
+                    agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+
+                if not agentNameIDs or len(agentNameIDs) == 0:
+                    send({'Result': 'agent name %s not found' %(agent_name)})                
+
+                if not data['Arguments']['Command']:
+                    send({'Result':'Failed. Missing command argument'})
+
+                command = data['Arguments']['Command']
+
+                for agentNameID in agentNameIDs:
+                    (agentName, agentSessionID) = agentNameID
+
+                    # add task command to agent taskings
+                    msg = "tasked agent %s to run command %s" %(agentSessionID, command)
+                    main.agents.save_agent_log(agentSessionID, msg)
+                    taskID = main.agents.add_agent_task_db(agentSessionID, "TASK_SHELL", command)
+
+                send({'Result': 'Success - TaskID: %s' % (taskID)})
+
+            elif data['Action'] and data['Action'] == 'INTERACT' and data['Arguments']['Name']:
+                agent_name = data['Arguments']['Name']
+                agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+
+                if not agentNameIDs or len(agentNameIDs) == 0:
+                    send({'Result': 'agent name %s not found' %(agent_name)})
+
+                else:
+                    join_room(agentNameIDs)
+                    send({'Result': 'interacting with %s' % (agentNameIDs)})
+
+            elif data['Action'] and data['Action'] == 'RETURN' and data['Arguments']['Name']:
+                agent_name = data['Arguments']['Name']
+                agentNameIDs = execute_db_query(conn, 'SELECT name,session_id FROM agents WHERE name like ? OR session_id like ?', [agent_name, agent_name])
+
+                if not agentNameIDs or len(agentNameIDs) == 0:
+                    send({'Result': 'agent name %s not found' %(agent_name)})
+
+                else:
+                    leave_room(agentNameIDs)
+                    send({'Result': 'No longer interacting with agent %s' % (agentNameIDs)})
+
+    @socketio.on('listeners')
+    def handle_listener_event(data):
+        """
+        Handles all client messages for 'listeners' event
+        """
+
+        if users.is_authenticated(request.sid):
+            listeners = ""
+            if data['Action'] and data['Action'] == 'VIEW':
+                activeListenersRaw = execute_db_query(conn, 'SELECT id, name, module, listener_type, listener_category, options FROM listeners')
+                listeners = []
+
+
+                for activeListener in activeListenersRaw:
+                    [ID, name, module, listener_type, listener_category, options] = activeListener
+                    listeners.append({'ID':ID, 'name':name, 'module':module, 'listener_type':listener_type, 'listener_category':listener_category, 'options':pickle.loads(activeListener[5]) })
+
+                emit('listeners',{'Result':listeners})
+
+            elif data['Action'] and data['Action'] == 'VIEW' and data['Arguments']['Name']:
+                listener_name = data['Arguments']['Name']
+                activeListenersRaw = execute_db_query(conn, 'SELECT id, name, module, listener_type, listener_category, options FROM listeners WHERE name=?', [listener_name])
+                listeners = []
+
+                for activeListener in activeListenersRaw:
+                    [ID, name, module, listener_type, listener_category, options] = activeListener
+                    if name == listener_name:
+                        listeners.append({'ID':ID, 'name':name, 'module':module, 'listener_type':listener_type, 'listener_category':listener_category, 'options':pickle.loads(activeListener[5]) })
+
+                
+                emit('listeners',{'Result':listeners})
+
+            elif data['Action'] and data['Action'] == 'OPTIONS':
+                options = {}
+		for ltype in main.listeners.loadedListeners:
+		    options[ltype] = main.listeners.loadedListeners[ltype].options
+ 		emit('listenerOptions',{'Result':options}) 
+            
+
+	    elif data['Action'] and data['Action'] == 'OPTIONS' and data['Arguments']['Type']:
+                listener_type = data['Arguments']['Type']
+
+                if listener_type.lower() not in main.listeners.loadedListeners:
+                    emit('listenerOptions',{'Result':'listener type %s not found' % (listener_type)})
+
+                options = main.listeners.loadedListeners[listener_type].options
+                emit('listenerOptions',{'Result':options})
+
+            elif data['Action'] and data['Action'] == 'KILL' and data['Arguments']['Name']:
+                listener_name = data['Arguments']['Name']
+
+                if listener_name.lower() == "all":
+                    activeListenersRaw = execute_db_query(conn, 'SELECT id, name, module, listener_type, listener_category, options FROM listeners')
+                    for activeListener in activeListenersRaw:
+                        [ID, name, module, listener_type, listener_category, options] = activeListener
+                        main.listeners.kill_listener(name)
+
+                    emit('listeners',{'Result':'Success'})
+
+                else:
+                    if listener_name != "" and main.listeners.is_listener_valid(listener_name):
+                        main.listeners.kill_listener(listener_name)
+                        emit('listeners',{'Result': 'Success'})
+                    else:
+                        emit('listeners',{'Result':'listener name %s not found' % (listener_name)})
+
+            elif data['Action'] and data['Action'] == 'EXECUTE' and data['Arguments']['Type']:
+                listener_type = data['Arguments']['Type']
+
+                if listener_type.lower() not in main.listeners.loadedListeners:
+                    emit('listeners',{'Result':'listener type %s not found' % (listener_type)})
+
+                listenerObject = main.listeners.loadedListeners[listener_type]
+
+                if data['Arguments']['Options']:
+                    # Options aren't required
+                    for option, values in data['Arguments']['Options'].iteritems():
+                        if option == "Name":
+                            listenerName = values
+
+                        returnVal = main.listeners.set_listener_option(listener_type, option, values)
+                        if not returnVal:
+                            emit('listeners',{'Result':'error setting listener value %s with option %s' % (option, values)})
+                    
+                
+                main.listeners.start_listener(listener_type, listenerObject)
+
+                listenerID = main.listeners.get_listener_id(listenerName)
+                if listenerID:
+                    emit('listeners',{'Result':'listener %s successfully started' % (listenerName)})
+                else:
+                    emit('listeners',{'Result': 'failed to start listener %s' % (listenerName)})
+
+            else:
+                emit('listeners',{'Result':'Missing or incorrect listener action'})
+        
+        else:
+            emit('listeners',{'Result':'Authorization required'})
 
 
     @app.route('/api/stagers', methods=['GET'])
@@ -1273,6 +1624,7 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
         return jsonify({'success': True})
 
 
+
     if not os.path.exists('./data/empire-chain.pem'):
         print "[!] Error: cannot find certificate ./data/empire-chain.pem"
         sys.exit()
@@ -1352,7 +1704,9 @@ def start_restful_api(empireMenu, suppress=False, username=None, password=None, 
 
     context = ssl.SSLContext(proto)
     context.load_cert_chain("%s/empire-chain.pem" % (certPath), "%s/empire-priv.key" % (certPath))
-    app.run(host='0.0.0.0', port=int(port), ssl_context=context, threaded=True)
+    #socketio.run(app, host='0.0.0.0', port=int(port), ssl_context=context)
+    socketio.run(app, host='0.0.0.0', port=int(port))
+    response_thread = socketio.start_background_task(target=responseThread)
 
 
 if __name__ == '__main__':
@@ -1391,10 +1745,11 @@ if __name__ == '__main__':
     elif args.rest:
          # start an Empire instance and RESTful API
         main = empire.MainMenu(args=args)
+        users = users.Users(main, args=args)
         def thread_api(empireMenu):
 
             try:
-                start_restful_api(empireMenu=empireMenu, suppress=False, username=args.username, password=args.password, port=args.restport)
+                start_restful_api(empireMenu=empireMenu, user_handler=users, suppress=False, username=args.username, password=args.password, port=args.restport)
             except SystemExit as e:
                 pass
 
@@ -1407,9 +1762,13 @@ if __name__ == '__main__':
     elif args.headless:
         # start an Empire instance and RESTful API and suppress output
         main = empire.MainMenu(args=args)
+<<<<<<< HEAD
 
+=======
+        users = users.Users(main, args=args)
+>>>>>>> websockets-multiuser
         try:
-            start_restful_api(empireMenu=main, suppress=True, username=args.username, password=args.password, port=args.restport)
+            start_restful_api(empireMenu=main, user_handler=users, suppress=True, username=args.username, password=args.password, port=args.restport)
         except SystemExit as e:
             pass
 
