@@ -2,6 +2,9 @@ import sys
 import base64
 import sqlite3
 import datetime
+import threading
+import helpers
+import json
 from pydispatch import dispatcher
 
 class Users():
@@ -13,18 +16,45 @@ class Users():
 
         self.conn = self.mainMenu.conn
 
+        self.lock = threading.Lock()
+
         self.args = args
 
         self.users = {}
+
+
+    def get_db_connection(self):
+        """
+        Returns a handle to the DB
+        """
+        self.lock.acquire()
+        self.mainMenu.conn.row_factory = None 
+        self.lock.release()
+        return self.mainMenu.conn
 
 
     def add_new_user(self, sid, username):
         """
         Add new user to cache
         """
-        lastlogon = datetime.datetime.utcnow()
-        self.users[sid] = {"username": username, "lastlogon": lastlogon, "authenticated": True, "active": True}
-        dispatcher.send("%s connected" % (username), sender="Users")
+        lastlogon = helpers.get_datetime()
+        conn = self.get_db_connection()
+        try:
+            self.lock.acquire()
+            cur = conn.cursor()
+            cur.execute("INSERT INTO users (id, username, lastlogon_time, authenticated) VALUES (?,?,?,?,?)", (sid, username, lastlogon, True, True))
+            cur.close()
+
+            self.users[sid] = {"username": username, "authenticated": True}
+            #dispatch the event
+            signal = json.dumps({
+                'print':True,
+                'message': "{} connected".format(username)
+            })
+            dispatcher.send(signal, sender="Users")
+        finally:
+            self.lock.release()
+        
 
 
     def authenticate_user(self, sid, username, password):
@@ -33,10 +63,17 @@ class Users():
         """
         if sid in self.users:
             if password == self.args.password[0]:
+                #change this to a database update
                 self.update_lastlogon(sid)
-                self.users[sid]['active'] = True
-                dispatcher.send("%s connected" % (username), sender="Users")
+                signal = json.dumps({
+                    'print':True,
+                    'message': "{} logged in".format(username)
+                })
+                dispatcher.send(signal, sender="Users")
                 return True
+
+            else:
+                return False
         
         else:
             if password == self.args.password[0]:
@@ -50,24 +87,52 @@ class Users():
 
         if sid in self.users:
             return self.users[sid]['authenticated']
+        else:
+            return False
 
     def deauthenticate_user(self, sid):
         """
-        Mark a user as unauthenticated
+        Change user state to unauthenticated in the database and the cache
         """
-        if sid in self.users:
-            self.users[sid]['authenticated'] = False
+        conn = self.get_db_connection()
+
+        try:
+            self.lock.acquire()
+            cur = conn.cursor()
+
+            cur.execute("UPDATE users SET authenticated=? WHERE id=?", [False, sid])
+            cur.close()
+
             username = self.get_user_from_sid(sid)
-            dispatcher.send("%s disconnected" % (username), sender="Users")
-            return True
+            signal = json.dumps({
+                'print': True,
+                'message': "{} logged out.".format(username)
+            })
+            dispatcher.send(signal, sender="Users")
+        finally:
+            self.lock.release()
+            
+            
+        return True
 
     
     def update_lastlogon(self, sid):
         """
         Update the last logon timestamp for a user
         """
-        lastlogon = datetime.datetime.utcnow()
-        self.users[sid]["lastlogon"] = lastlogon
+        lastlogon = helpers.get_datetime()
+        conn = self.get_db_connection()
+
+        try:
+            self.lock.acquire()
+            cur = conn.cursor()
+
+            cur.execute("UPDATE users SET lastlogon_time=?, authenticated=? WHERE id=?", [lastlogon, True, sid])
+            cur.close()
+
+            self.users[sid]['authenticated'] = True
+        finally:
+            self.lock.release()
 
     def get_sid_from_user(self, username):
         """
@@ -86,10 +151,11 @@ class Users():
 
     def remove_user(self, sid):
         """
-        Remove a user from the usercache
+        Remove a user from the usercache 
         """
         try:
             del self.users[sid]
+            self.deauthenticate_user(sid)
         except:
             pass
         

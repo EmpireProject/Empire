@@ -84,7 +84,7 @@ c.execute('''CREATE TABLE config (
     )''')
 
 # kick off the config component of the database
-c.execute("INSERT INTO config VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", (STAGING_KEY, INSTALL_PATH, IP_WHITELIST, IP_BLACKLIST, '', '', False, API_USERNAME, API_PASSWORD, '', API_PERMANENT_TOKEN, OBFUSCATE, OBFUSCATE_COMMAND))
+c.execute("INSERT INTO config VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (STAGING_KEY, INSTALL_PATH, IP_WHITELIST, IP_BLACKLIST, '', '', False, API_USERNAME, API_PASSWORD, '', API_PERMANENT_TOKEN, OBFUSCATE, OBFUSCATE_COMMAND))
 
 c.execute('''CREATE TABLE "agents" (
     "id" integer PRIMARY KEY,
@@ -158,6 +158,14 @@ c.execute( '''CREATE TABLE "results" (
     "data" text,
     "agent" text,
     PRIMARY KEY(id, agent)
+)''')
+
+# users
+c.execute('''CREATE TABLE "users" (
+    "id" integer PRIMARY KEY,
+    "username" text,
+    "lastlogon_time" text,
+    "authenticated" boolean
 )''')
 
 # event_types -> checkin, task, result, rename
