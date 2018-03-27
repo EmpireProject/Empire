@@ -67,7 +67,6 @@ class Server():
 
         self.lock = threading.Lock() 
         (self.isroot, self.installPath, self.ipWhiteList, self.ipBlackList, self.obfuscate, self.obfuscateCommand) = helpers.get_config('rootuser, install_path,ip_whitelist,ip_blacklist,obfuscate,obfuscate_command')
-        print helpers.color("install path: {}".format(self.installPath))
         self.args = args
         # instantiate the agents, listeners, and stagers objects
         self.agents = agents.Agents(self, args=args)
