@@ -44,15 +44,12 @@ RUN apt-get update && apt-get install -qy \
     sudo \
     apt-utils \
     lsb-core \
-    python2.7
-
-# cleanup image
-RUN apt-get -qy clean \
-    autoremove
+    python2.7 \
+  && rm -rf /var/lib/apt/lists/*
 
 # build empire from source
 # TODO: When we merge to master set branch to master
-RUN git clone -b dev https://github.com/EmpireProject/Empire.git /opt/Empire && \
+RUN git clone --depth=1 -b dev https://github.com/EmpireProject/Empire.git /opt/Empire && \
     cd /opt/Empire/setup/ && \
     ./install.sh && \
     rm -rf /opt/Empire/data/empire*

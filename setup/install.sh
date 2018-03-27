@@ -19,7 +19,7 @@ function install_powershell() {
 			# Import the public repository GPG keys
 			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
 			# Register the Microsoft Product feed
-			sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-jessie-prod jessie main" > /etc/apt/sources.list.d/microsoft.list'
+			sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-stretch-prod stretch main" > /etc/apt/sources.list.d/microsoft.list'
 			# Update the list of products
 			sudo apt-get update
 			# Install PowerShell
@@ -33,7 +33,7 @@ function install_powershell() {
 			# Import the public repository GPG keys
 			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
 			# Register the Microsoft Product feed
-			sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-stretch-prod stretch main" > /etc/apt/sources.list.d/microsoft.list'
+			sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-jessie-prod jessie main" > /etc/apt/sources.list.d/microsoft.list'
 			# Update the list of products
 			sudo apt-get update
 			# Install PowerShell
@@ -84,12 +84,17 @@ function install_powershell() {
 		#Kali Linux
 		if cat /etc/lsb-release | grep -i 'Kali'; then
 			# Install prerequisites
-			apt-get install libunwind8 libicu55
-			wget http://security.debian.org/debian-security/pool/updates/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
-			dpkg -i libssl1.0.0_1.0.1t-1+deb8u6_amd64.deb
-			# Install PowerShell
-			dpkg -i powershell_6.0.0-rc.2-1.ubuntu.16.04_amd64.deb
-       		fi
+                        apt-get update
+                        apt-get install -y curl gnupg apt-transport-https
+                        # Import the public repository GPG keys
+                        curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
+                        # Register the Microsoft Product feed
+                        sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-stretch-prod stretch main" > /etc/apt/sources.list.d/microsoft.list'
+                        # Update the list of products
+                        apt-get update
+                        # Install PowerShell
+                        apt-get install -y powershell
+                fi
 	 fi
         if ls /opt/microsoft/powershell/*/DELETE_ME_TO_DISABLE_CONSOLEHOST_TELEMETRY; then
             rm /opt/microsoft/powershell/*/DELETE_ME_TO_DISABLE_CONSOLEHOST_TELEMETRY
@@ -133,7 +138,11 @@ else
 		sudo pip install -r requirements.txt 
 	elif lsb_release -d | grep -q "Kali"; then
 		Release=Kali
-		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libssl1.0.0 libssl-dev build-essential libssl1.0-dev libxml2-dev zlib1g-dev
+                apt-get update
+                apt-get install -y multiarch-support
+		wget http://ftp.us.debian.org/debian/pool/main/o/openssl/libssl1.0.0_1.0.1t-1+deb8u7_amd64.deb
+		dpkg -i libssl1.0.0_1.0.1t-1+deb8u7_amd64.deb
+		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk zlib1g-dev libssl1.0-dev build-essential libssl1.0-dev libxml2-dev zlib1g-dev
 		pip install --upgrade pip
 		sudo pip install -r requirements.txt 
 		install_powershell
@@ -170,7 +179,7 @@ fi
 chmod 755 bomutils/build/bin/mkbom && sudo cp bomutils/build/bin/mkbom /usr/local/bin/.
 
 # set up the database schema
-./setup_database.py
+python ./setup_database.py
 
 # generate a cert
 ./cert.sh

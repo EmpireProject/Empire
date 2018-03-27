@@ -3,7 +3,7 @@
 HTTP related methods used by Empire.
 
 Includes URI validation/checksums, as well as the base
-http server (EmpireServer) and its modified request 
+http server (EmpireServer) and its modified request
 handler (RequestHandler).
 
 These are the first places URI requests are processed.
@@ -14,6 +14,7 @@ from BaseHTTPServer import BaseHTTPRequestHandler
 import BaseHTTPServer, threading, ssl, os, string, random
 from pydispatch import dispatcher
 import re
+import json
 
 # Empire imports
 import encryption
@@ -97,7 +98,17 @@ class RequestHandler(BaseHTTPRequestHandler):
                     name, sessionID = part.split("=", 1)
 
         # fire off an event for this GET (for logging)
-        dispatcher.send("[*] "+resource+" requested from "+str(sessionID)+" at "+clientIP, sender="HttpHandler")
+        message = "[*] {resource} requested from {session_id} at {client_ip}".format(
+            resource=resource,
+            session_id=sessionID,
+            client_ip=clientIP
+        )
+
+        signal = json.dumps({
+            'print': True,
+            'message': message
+        })
+        dispatcher.send(signal, sender="empire")
 
         # get the appropriate response from the agent handler
         (code, responsedata) = self.server.agents.process_get(self.server.server_port, clientIP, sessionID, resource)
@@ -125,7 +136,17 @@ class RequestHandler(BaseHTTPRequestHandler):
                     name, sessionID = part.split("=", 1)
 
         # fire off an event for this POST (for logging)
-        dispatcher.send("[*] Post to "+resource+" from "+str(sessionID)+" at "+clientIP, sender="HttpHandler")
+        message = "[*] Post to {resource} from {session_id} at {client_ip}".format(
+            resource=resource,
+            session_id=sessionID,
+            client_ip=clientIP
+        )
+
+        signal = json.dumps({
+            'print': True,
+            'message': message
+        })
+        dispatcher.send(signal, sender="empire")
 
         # read in the length of the POST data
         if self.headers.getheader('content-length'):
@@ -141,12 +162,12 @@ class RequestHandler(BaseHTTPRequestHandler):
             self.wfile.write(responsedata)
             self.wfile.flush()
         # self.wfile.close() # causes an error with HTTP comms
-    
+
     # supress all the stupid default stdout/stderr output
     def log_message(*arg):
         pass
 
- 
+
 class EmpireServer(threading.Thread):
     """
     Version of a simple HTTP[S] Server with specifiable port and
@@ -165,7 +186,7 @@ class EmpireServer(threading.Thread):
             self.server = None
 
             self.server = BaseHTTPServer.HTTPServer((lhost, int(port)), RequestHandler)
-            
+
             # pass the agent handler object along for the RequestHandler
             self.server.agents = handler
 
@@ -179,14 +200,25 @@ class EmpireServer(threading.Thread):
 
                 self.server.socket = ssl.wrap_socket(self.server.socket, certfile=cert, server_side=True)
 
-                dispatcher.send("[*] Initializing HTTPS server on "+str(port), sender="EmpireServer")
+                message = "[*] Initializing HTTPS server on {port}".format(port=port)
             else:
-                dispatcher.send("[*] Initializing HTTP server on "+str(port), sender="EmpireServer")
+                message = "[*] Initializing HTTP server on {port}".format(port=port)
+
+            signal = json.dumps({
+                'print': True,
+                'message': message
+            })
+            dispatcher.send(signal, sender="empire")
 
         except Exception as e:
             self.success = False
             # shoot off an error if the listener doesn't stand up
-            dispatcher.send("[!] Error starting listener on port "+str(port)+": "+str(e), sender="EmpireServer")
+            message = "[!] Error starting listener on port {}: {}".format(port, e)
+            signal = json.dumps({
+                'print': True,
+                'message': message
+            })
+            dispatcher.send(signal, sender="empire")
 
 
     def base_server(self):

@@ -53,7 +53,7 @@ import threading
 import pickle
 import netifaces
 import random
-from time import localtime, strftime
+from datetime import datetime
 import subprocess
 import fnmatch
 import urllib, urllib2
@@ -618,14 +618,22 @@ def get_datetime():
     """
     Return the current date/time
     """
-    return strftime("%Y-%m-%d %H:%M:%S", localtime())
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+
+def utc_to_local(utc):
+    """
+    Converts a datetime object in UTC to local time
+    """
+
+    offset = datetime.now() - datetime.utcnow()
+    return (utc + offset).strftime("%Y-%m-%d %H:%M:%S")
 
 def get_file_datetime():
     """
     Return the current date/time in a format workable for a file name.
     """
-    return strftime("%Y-%m-%d_%H-%M-%S", localtime())
+    return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 
 def get_file_size(file):
