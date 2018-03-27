@@ -36,7 +36,8 @@ Includes:
     dict_factory() - helper that returns the SQLite query results as a dictionary
     KThread() - a subclass of threading.Thread, with a kill() method
     slackMessage() - send notifications to the Slack API
-
+    split_up_strings() - use in powershell script to split up strings or stringable objects
+    generate_random_script_var_name() - use in scripts to generate random variable names
 """
 
 import re
@@ -168,9 +169,9 @@ def split_up_strings(data):
 """
 Randomize the name of variables in any script and have them return the same value repeatably
 """
-def generate_random_script_var_name(orig_vari_name):
-    variname_refined=hashlib.sha1(orig_vari_name+globentropy)
-    return variname_refined[:-datetime.datetime.today().day]
+def generate_random_script_var_name(origvariname):
+    hash_object=hashlib.sha1(str(origvariname)+str(globentropy)).hexdigest()
+    return hash_object[:-datetime.datetime.today().day]
 
 def randomize_capitalization(data):
     """
