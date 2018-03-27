@@ -54,15 +54,24 @@ class Users():
             dispatcher.send(signal, sender="Users")
         finally:
             self.lock.release()
-        
+    
+    def log_user_event(self, message):
+        """
+        Log a user event
+        """
 
+        signal = json.dumps({
+            'print':False,
+            'message':message
+        })
+        dispatcher.send(signal, sender="Users")
 
     def authenticate_user(self, sid, username, password):
         """
         Authenticate a user given their username and password
         """
         if sid in self.users:
-            if password == self.args.password[0]:
+            if password == self.args.shared_password[0]:
                 #change this to a database update
                 self.update_lastlogon(sid)
                 signal = json.dumps({
@@ -76,7 +85,7 @@ class Users():
                 return False
         
         else:
-            if password == self.args.password[0]:
+            if password == self.args.shared_password[0]:
                 self.add_new_user(sid, username)
                 return True
 

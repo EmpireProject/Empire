@@ -35,13 +35,14 @@ import threading
 import json
 import StringIO
 import copy
+import ssl
 from flask_socketio import SocketIO, join_room, leave_room, disconnect, send, emit
 from flask import Flask, request
 
 
-class MainMenu():
+class Server():
     """
-    The MainMenu class for the server is responsible for maintaining client connections and managing empire
+    The Server class for the server is responsible for maintaining client connections and managing empire
     """
 
     def __init__(self, args=None):
@@ -64,14 +65,10 @@ class MainMenu():
         self.conn = self.database_connect()
         time.sleep(1)
 
-        self.app = Flask(__name__)
-
-        self.socketio = SocketIO(self.app)
-
         self.lock = threading.Lock() 
         (self.isroot, self.installPath, self.ipWhiteList, self.ipBlackList, self.obfuscate, self.obfuscateCommand) = helpers.get_config('rootuser, install_path,ip_whitelist,ip_blacklist,obfuscate,obfuscate_command')
-
-        self.args = args 
+        print helpers.color("install path: {}".format(self.installPath))
+        self.args = args
         # instantiate the agents, listeners, and stagers objects
         self.agents = agents.Agents(self, args=args)
         self.credentials = credentials.Credentials(self, args=args)
@@ -179,8 +176,8 @@ class MainMenu():
             self.conn.isolation_level = None
             return self.conn
 
-        except Exception:
-            print helpers.color("[!] Could not connect to database")
+        except Exception as e:
+            print helpers.color("[!] Could not connect to database: {}".format(str(e)))
             print helpers.color("[!] Please run database_setup.py")
             sys.exit()
 
@@ -268,7 +265,7 @@ class MainMenu():
             Handle when a client disconnects
             """
             self.users.remove_user(request.sid)
-            emit('message', {"message": "Session closed"})
+            emit('message', {"message": "Session disconnected"})
 
         @socketio.on('stagers')
         def handle_stagers_event(data):
@@ -316,7 +313,8 @@ class MainMenu():
                             for option, values in data['Arguments'].iteritems():
                                 if option != 'StagerName':
                                     if option not in stager.options:
-                                        send({'Result': 'Invalid option {}, check capitalization.'.format(option)
+                                        send({'Result': 'Invalid option {}, check capitalization.'.format(option)})
+
                                     stager.options[option]['Value'] = values
                             
                             # validate stager options
@@ -343,3 +341,242 @@ class MainMenu():
 
             else:
                 send({"Result": "Unauthenticated"})
+
+
+        @socketio.on('agents')
+        def handle_agents_event(data):
+            """
+            Handle all client messages for the agents event
+            """
+
+            if self.users.is_authenticated(request.sid):
+                if data['Action'] and data['Action'] == 'VIEW':
+                    agents = []
+                    results = self.agents.get_agents_db()
+
+                    for activeAgent in results:
+                        [ID, session_id, listener, name, language, language_version, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results] = activeAgent.values()
+                        agents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key.decode('latin-1').encode("utf-8"), "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
+
+                    emit('agents',{'Result':agents})
+
+                elif data['Action'] and data['Action'] == 'VIEW' and data['Arguments']['Name']:
+                    agent_name = data['Arguments']['Name']
+                    agents = []
+
+                    results = self.agents.get_agent_db(agent_name)
+                    for activeAgent in results:
+                        [ID, session_id, listener, name, language, language_version, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results] = activeAgent.values()
+                        agents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key.decode('latin-1').encode("utf-8"), "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
+
+                    emit('agents',{'Results':agents})
+                
+                elif data['Action'] and data['Action'] == 'KILL' and data['Arguments']['Name']:
+                    agent_name = data['Arguments']['Name']
+                    if agent_name.lower() == "all":
+                        agentNameIDs = self.agents.get_agent_ids_db()
+                    else:
+                        agentNameIDs = self.agents.get_agent_id_db(agent_name)
+
+                    if not agentNameIDs or len(agentNameIDs) == 0:
+                        send({'Result': 'agent name {} not found'.format(agent_name)})
+
+                    for agentNameID in agentNameIDs:
+                        agentSessionID = agentNameID
+
+                        # task the agent to exit
+                        msg = "tasked agent {} to exit".format(agentSessionID)
+                        username = self.users.get_user_from_sid(request.sid)
+                        self.users.log_user_event("{} tasked agent {} to exit".format(username, agentNameID))
+                        self.agents.save_agent_log(agentSessionID, msg)
+                        self.agents.add_agent_task_db(agentSessionID, 'TASK_EXIT')
+
+                    send({'Result':'success'})
+
+                elif data['Action'] and data['Action'] == 'EXECUTE' and data['Arguments']['Name']:
+                    agent_name = data['Arguments']['Name']
+                    userName = self.users.get_user_from_sid(request.sid)
+
+                    if agent_name.lower() == "all":
+                        agentNameIDs = self.agents.get_agent_ids_db()
+                    else:
+                        agentNameIDs = self.agents.get_agent_id_db(agent_name)
+
+                    if not agentNameIDs or len(agentNameIDs) == 0:
+                        send({'Result': 'agent name {} not found'.format(agent_name)})                
+
+                    if not data['Arguments']['Command']:
+                        send({'Result':'Failed. Missing command argument'})
+
+                    command = data['Arguments']['Command']
+
+                    for agentNameID in agentNameIDs:
+
+                        # add task command to agent taskings
+                        msg = "tasked agent {} to run command {}".format(agentNameID, command)
+                        self.agents.save_agent_log(agentSessionID, msg)
+                        username = self.users.get_user_from_sid(request.sid)
+                        self.users.log_user_event("{} tasked agent {} to run command {}".format(username, agentNameID, command))
+                        taskID = self.agents.add_agent_task_db(agentNameID, "TASK_SHELL", command)
+
+                    send({'Result': 'Success - TaskID: {}'.format(taskID)})
+
+                elif data['Action'] and data['Action'] == 'INTERACT' and data['Arguments']['Name']:
+                    agent_name = data['Arguments']['Name']
+                    agentNameIDs = self.agents.get_agent_id_db(agent_name)
+
+                    if not agentNameIDs or len(agentNameIDs) == 0:
+                        send({'Result': 'agent name {} not found'.format(agent_name)})
+
+                    else:
+                        join_room(agentNameIDs)
+                        # Get the results history for this agent from the cache
+                        agentResults = self.historyBuffer[agentNameIDs].getvalue()
+                        result = json.dumps({
+                            'message':'interacting with {}'.format(agentNameIDs),
+                            'agentResultsCache':agentResults
+                        })
+                        send({'Result':result})
+
+                elif data['Action'] and data['Action'] == 'RETURN' and data['Arguments']['Name']:
+                    agent_name = data['Arguments']['Name']
+                    agentNameIDs = self.agents.get_agent_id_db(agent_name)
+
+                    if not agentNameIDs or len(agentNameIDs) == 0:
+                        send({'Result': 'agent name {} not found'.format(agent_name)})
+
+                    else:
+                        leave_room(agentNameIDs)
+                        send({'Result': 'No longer interacting with agent {}'.format(agentNameIDs)})
+
+        @socketio.on('listeners')
+        def handle_listener_event(data):
+            """
+            Handles all client messages for 'listeners' event
+            """
+
+            if self.users.is_authenticated(request.sid):
+                listeners = ""
+                if data['Action'] and data['Action'] == 'VIEW':
+                    activeListenersRaw = self.listeners.get_listener_names()
+                    listeners = []
+
+
+                    for activeListener in activeListenersRaw:
+                        listenerObject = self.listeners.activeListeners[activeListener]
+                        name = activeListener
+                        module = listenerObject['module']
+                        ID = self.listeners.get_listener_id(activeListener)
+                        options = self.listeners.get_listener_options(activeListener)
+                        listeners.append({'ID':ID, 'name':name, 'module':module, 'options':options })
+
+                    emit('listeners',{'Result':listeners})
+
+                elif data['Action'] and data['Action'] == 'VIEW' and data['Arguments']['Name']:
+                    listener_name = data['Arguments']['Name']
+                    activeListenersRaw = self.listeners.activeListeners[listener_name]
+                    activeListenersRaw = [activeListenersRaw]
+                    listeners = []
+
+                    for activeListener in activeListenersRaw:
+                        [name, module, options] = activeListener[listener_name].values()
+                        if name == listener_name:
+                            ID = self.listeners.get_listener_id(listener_name)
+                            listeners.append({'ID':ID, 'name':name, 'module':module, 'options':options })
+
+                    
+                    emit('listeners',{'Result':listeners})
+
+                elif data['Action'] and data['Action'] == 'OPTIONS':
+                    options = {}
+                    for ltype in self.listeners.loadedListeners:
+                        options[ltype] = self.listeners.loadedListeners[ltype].options
+
+                    emit('listenerOptions',{'Result':options}) 
+                
+                elif data['Action'] and data['Action'] == 'OPTIONS' and data['Arguments']['Type']:
+                    listener_type = data['Arguments']['Type']
+
+                    if listener_type.lower() not in self.listeners.loadedListeners:
+                        emit('listenerOptions',{'Result':'listener type {} not found'.format(listener_type)})
+
+                    options = self.listeners.loadedListeners[listener_type].options
+                    emit('listenerOptions',{'Result':options})
+
+                elif data['Action'] and data['Action'] == 'KILL' and data['Arguments']['Name']:
+                    listener_name = data['Arguments']['Name']
+
+                    if listener_name.lower() == "all":
+                        activeListenersRaw = self.listeners.get_listener_names()
+                        for activeListener in activeListenersRaw:
+                            username = self.users.get_user_from_sid(request.sid)
+                            self.users.log_user_event("{} killed listener {}".format(username, activeListener))
+                            self.listeners.kill_listener(activeListener)
+
+                        emit('listeners',{'Result':'Success'})
+
+                    else:
+                        if listener_name != "" and self.listeners.is_listener_valid(listener_name):
+                            self.listeners.kill_listener(listener_name)
+                            emit('listeners',{'Result': 'Success'})
+                        else:
+                            emit('listeners',{'Result':'listener name {} not found'.format(listener_name)})
+
+                elif data['Action'] and data['Action'] == 'EXECUTE' and data['Arguments']['Type']:
+                    listener_type = data['Arguments']['Type']
+
+                    if listener_type.lower() not in self.listeners.loadedListeners:
+                        emit('listeners',{'Result':'listener type {} not found'.format(listener_type)})
+
+                    listenerObject = self.listeners.loadedListeners[listener_type]
+
+                    if data['Arguments']['Options']:
+                        # Options aren't required
+                        for option, values in data['Arguments']['Options'].iteritems():
+                            if option == "Name":
+                                listenerName = values
+
+                            returnVal = self.listeners.set_listener_option(listener_type, option, values)
+                            if not returnVal:
+                                emit('listeners',{'Result':'error setting listener value {} with option {}'.format(option, values)})
+                        
+                    
+                        self.listeners.start_listener(listener_type, listenerObject)
+                        username = self.users.get_user_from_sid(request.sid)
+                        self.users.log_user_event("{} started listener {}".format(username, listenerName))
+
+                    listenerID = self.listeners.get_listener_id(listenerName)
+                    if listenerID:
+                        emit('listeners',{'Result':'listener {} successfully started'.format(listenerName)})
+                    else:
+                        emit('listeners',{'Result': 'failed to start listener {}'.format(listenerName)})
+
+                else:
+                    emit('listeners',{'Result':'Missing or incorrect listener action'})
+
+            else:
+                emit('listeners',{'Result':'Authorization required'})
+
+
+        # wrap the Flask connection in SSL and start it
+        certPath = os.path.abspath("./data/")
+
+        # support any version of tls
+        pyversion = sys.version_info
+        if pyversion[0] == 2 and pyversion[1] == 7 and pyversion[2] >= 13:
+            proto = ssl.PROTOCOL_TLS
+        elif pyversion[0] >= 3:
+            proto = ssl.PROTOCOL_TLS
+        else:
+            proto = ssl.PROTOCOL_SSLv23
+
+        try:
+            context = ssl.SSLContext(proto)
+            context.load_cert_chain("{}/empire-chain.pem".format(certPath), "{}/empire-priv.key".format(certPath))
+            #socketio.run(app, host='0.0.0.0', port=int(port), ssl_context=context)
+            print helpers.color("[+] Empire Collaboration Server started:\n Host => 0.0.0.0 \n Port => {} \n Password => {}".format(self.args.port, self.args.shared_password))
+            socketio.run(app, host='0.0.0.0', port=int(self.args.port))
+        except KeyboardInterrupt:
+            print helpers.color("[+] Shutting down server")
+            sys.exit()
+        
