@@ -163,7 +163,7 @@ def split_up_strings(data):
     max_num_of_loop = random.randint(min_num_of_loop,len(data))
     for i in range(min_num_of_loop,max_num_of_loop):
         if data[i] == re.sub('[^a-zZA-Z]') and data[i-1] == re.sub('[^a-zZA-Z]') and data[i+1] == re.sub('[^a-zZA-Z]'):
-            data=data[:i] +'+'+data[i:]
+            data='\''+data[:i] +'\'+\''+data[i:]+'\''
     return data
 
 """
