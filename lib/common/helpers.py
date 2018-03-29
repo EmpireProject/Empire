@@ -244,12 +244,6 @@ def strip_powershell_comments(data):
 
     return strippedCode
 
-def replace_double_to_single_quotes(data):
-    """
-    Replaces the standard ps launchers double quotes to single quotes. Mostly for use in js launcher code.
-    """
-    return data.replace("\"","'")
-
 ####################################################################################
 #
 # PowerView dynamic generation helpers
