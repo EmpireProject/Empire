@@ -32,7 +32,7 @@ def default_page(path_to_html_file="empty"):
         page += "</body></html>"
         return page
     else:
-        html = os.sysyem("cat " + path_to_html_file)
+        html = os.system("cat " + path_to_html_file)
         return html
 
 ###############################################################
