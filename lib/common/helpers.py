@@ -36,7 +36,6 @@ Includes:
     dict_factory() - helper that returns the SQLite query results as a dictionary
     KThread() - a subclass of threading.Thread, with a kill() method
     slackMessage() - send notifications to the Slack API
-    split_up_strings() - use in powershell script to split up strings or stringable objects
     generate_random_script_var_name() - use in scripts to generate random variable names
 """
 
@@ -69,7 +68,7 @@ import uuid
 ################################################################
 
 globentropy=random.randint(1,datetime.datetime.today().day)
-
+globDebug=false
 ###############################################################
 #
 # Validation methods
@@ -156,22 +155,14 @@ def random_string(length=-1, charset=string.ascii_letters):
     return random_string
 
 """
-Take in a powershell string or stringable object and split it un with plus chars
-"""
-def split_up_strings(data):
-    min_num_of_loop = random.randint(1,len(data))
-    max_num_of_loop = random.randint(min_num_of_loop,len(data))
-    for i in range(min_num_of_loop,max_num_of_loop):
-        if data[i] == re.sub('[^a-zZA-Z]') and data[i-1] == re.sub('[^a-zZA-Z]') and data[i+1] == re.sub('[^a-zZA-Z]'):
-            data='\''+data[:i] +'\'+\''+data[i:]+'\''
-    return data
-
-"""
 Randomize the name of variables in any script and have them return the same value repeatably
 """
-def generate_random_script_var_name(origvariname):
-    hash_object=hashlib.sha1(str(origvariname)+str(globentropy)).hexdigest()
-    return hash_object[:-datetime.datetime.today().day]
+def generate_random_script_var_name(origvariname,globDebug=false):
+    if globDebug = false:
+    	hash_object=hashlib.sha1(str(origvariname)+str(globentropy)).hexdigest()
+	return hash_object[:-datetime.datetime.today().day]
+    else:
+	return origvariname
 
 def randomize_capitalization(data):
     """
