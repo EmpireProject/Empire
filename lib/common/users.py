@@ -42,7 +42,7 @@ class Users():
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            cur.execute("INSERT INTO users (id, username, lastlogon_time, authenticated) VALUES (?,?,?,?,?)", (sid, username, lastlogon, True, True))
+	    cur.execute("INSERT INTO users (sid, username, lastlogon_time, authenticated) VALUES (?,?,?,?)", (sid, username, lastlogon, True))
             cur.close()
 
             self.users[sid] = {"username": username, "authenticated": True}
@@ -70,11 +70,11 @@ class Users():
         """
         Authenticate a user given their username and password
         """
-        if sid in self.users:
-            if password == self.args.shared_password[0]:
+	if sid in self.users:
+            if password == self.args.shared_password:
                 #change this to a database update
                 self.update_lastlogon(sid)
-                signal = json.dumps({
+		signal = json.dumps({
                     'print':True,
                     'message': "{} logged in".format(username)
                 })
@@ -85,7 +85,7 @@ class Users():
                 return False
         
         else:
-            if password == self.args.shared_password[0]:
+            if password == self.args.shared_password:
                 self.add_new_user(sid, username)
                 return True
 

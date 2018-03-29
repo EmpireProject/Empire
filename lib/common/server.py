@@ -237,6 +237,7 @@ class Server():
             """
             Authenticate clients. Should be called before anything else, after connecting
             """
+	    print data
             if data['username'] and data['password']:
                 if self.users.authenticate_user(request.sid, data['username'], data['password']):
                     emit('user_login', {"Result":"Logon success"})
@@ -575,7 +576,7 @@ class Server():
             #socketio.run(app, host='0.0.0.0', port=int(port), ssl_context=context)
             print helpers.color("[+] Empire Collaboration Server started:\n Host => 0.0.0.0 \n Port => {} \n Password => {}".format(self.args.port, self.args.shared_password))
             socketio.run(app, host='0.0.0.0', port=int(self.args.port))
-        except KeyboardInterrupt:
+	except KeyboardInterrupt:
             print helpers.color("[+] Shutting down server")
             sys.exit()
         
