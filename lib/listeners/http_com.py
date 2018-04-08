@@ -692,7 +692,7 @@ class Listener:
             listenerName = self.options['Name']['Value']
             message = "[*] GET request for {}/{} from {}".format(request.host, request_uri, clientIP)
             signal = json.dumps({
-                'print': True,
+                'print': False,
                 'message': message
             })
             dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))

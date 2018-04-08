@@ -521,7 +521,13 @@ class Listener:
             """
 
             clientIP = request.remote_addr
-            dispatcher.send("[*] GET request for %s/%s from %s" % (request.host, request_uri, clientIP), sender='listeners/http')
+            listenerName = self.options['Name']['Value']
+            message = "[*] GET request for {}/{} from {}".format(request.host, request_uri, clientIP)
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
             routingPacket = None
             cookie = request.headers.get('Cookie')
             if cookie and cookie != '':
