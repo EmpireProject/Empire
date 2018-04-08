@@ -106,10 +106,10 @@ class Listener:
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'ServerVersion' : {
-                'Description'   :   'Server header for the control server.',
+            'Headers' : {
+                'Description'   :   'Headers for the control server.',
                 'Required'      :   True,
-                'Value'         :   'Microsoft-IIS/7.5'
+                'Value'         :   'Server:Microsoft-IIS/7.5'
             },
             'StagerURI' : {
                 'Description'   :   'URI for the stager. Must use /download/. Example: /download/stager.php',
@@ -921,8 +921,11 @@ def send_message(packets=None):
 
         @app.after_request
         def change_header(response):
-            "Modify the default server version in the response."
-            response.headers['Server'] = listenerOptions['ServerVersion']['Value']
+            "Modify the headers response server."
+            headers = listenerOptions['Headers']['Value']
+            for key in headers.split("|"):
+               value = key.split(":")
+               response.headers[value[0]] = value[1]
             return response
 
 
