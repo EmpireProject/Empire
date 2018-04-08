@@ -45,6 +45,7 @@ RUN apt-get update && apt-get install -qy \
     apt-utils \
     lsb-core \
     python2.7 \
+    python-dev \ 
   && ln -s /usr/bin/python2.7 /usr/bin/python \
   && rm -rf /var/lib/apt/lists/*
 
