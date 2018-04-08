@@ -98,10 +98,10 @@ class Listener:
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'ServerVersion' : {
-                'Description'   :   'TServer header for the control server.',
+            'Headers' : {
+                'Description'   :   'Headers for the control server.',
                 'Required'      :   True,
-                'Value'         :   'Microsoft-IIS/7.5'
+                'Value'         :   'Server:Microsoft-IIS/7.5'
             },
             'Folder' : {
                 'Description'   :   'The hidden folder in Exchange to user',
@@ -431,7 +431,7 @@ class Listener:
                         catch {
 
                         }
-                        while(($fldel.Items | measure | %{$_.Count}) -gt 0 ){ $fldel.Items | %{$_.delete()};} 
+                        while(($fldel.Items | measure | %{$_.Count}) -gt 0 ){ $fldel.Items | %{$_.delete()};}
                     }
                 """
 
@@ -459,7 +459,7 @@ class Listener:
                                 }
                                 catch {
                                 }
-                                while(($fldel.Items | measure | %{$_.Count}) -gt 0 ){ $fldel.Items | %{$_.delete()};} 
+                                while(($fldel.Items | measure | %{$_.Count}) -gt 0 ){ $fldel.Items | %{$_.delete()};}
                         }
                     }
                 """
@@ -503,8 +503,11 @@ class Listener:
 
         @app.after_request
         def change_header(response):
-            "Modify the default server version in the response."
-            response.headers['Server'] = listenerOptions['ServerVersion']['Value']
+            "Modify the headers response server."
+            headers = listenerOptions['Headers']['Value']
+            for key in headers.split("|"):
+               value = key.split(":")
+               response.headers[value[0]] = value[1]
             return response
 
 
@@ -518,7 +521,13 @@ class Listener:
             """
 
             clientIP = request.remote_addr
-            dispatcher.send("[*] GET request for %s/%s from %s" % (request.host, request_uri, clientIP), sender='listeners/http')
+            listenerName = self.options['Name']['Value']
+            message = "[*] GET request for {}/{} from {}".format(request.host, request_uri, clientIP)
+            signal = json.dumps({
+                'print': False,
+                'message': message
+            })
+            dispatcher.send(signal, sender="listeners/http_com/{}".format(listenerName))
             routingPacket = None
             cookie = request.headers.get('Cookie')
             if cookie and cookie != '':
