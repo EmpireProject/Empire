@@ -45,8 +45,6 @@ RUN apt-get update && apt-get install -qy \
     apt-utils \
     lsb-core \
     python2.7 \
-    python-dev \ 
-  && ln -s /usr/bin/python2.7 /usr/bin/python \
   && rm -rf /var/lib/apt/lists/*
 
 # build empire from source
@@ -55,8 +53,6 @@ RUN git clone --depth=1 -b dev https://github.com/EmpireProject/Empire.git /opt/
     cd /opt/Empire/setup/ && \
     ./install.sh && \
     rm -rf /opt/Empire/data/empire*
-
+RUN python2.7 /opt/Empire/setup/setup_database.py
 WORKDIR "/opt/Empire"
-ENTRYPOINT ["./empire"]
-
-# -----END OF BUILD-----
+CMD ["python2.7", "empire"]
