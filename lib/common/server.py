@@ -65,6 +65,10 @@ class Server():
         self.conn = self.database_connect()
         time.sleep(1)
 
+	# initiate socketio
+        self.app = Flask(__name__)
+	self.socketio = SocketIO(self.app, async_mode='threading')
+
         self.lock = threading.Lock() 
         (self.isroot, self.installPath, self.ipWhiteList, self.ipBlackList, self.obfuscate, self.obfuscateCommand) = helpers.get_config('rootuser, install_path,ip_whitelist,ip_blacklist,obfuscate,obfuscate_command')
         self.args = args
@@ -119,21 +123,19 @@ class Server():
         event_data = json.dumps({'signal': signal_data, 'sender': sender})
 
         # emit any signal that should be printed
-
         if "agents" in sender:
             
             agentName = sender.split('/')[-1]
 
             if "[+] Initial agent" in signal:
-                emit('Agents', {'Result':signal_data['message']})
+		self.socketio.emit('agentNew', {'Result':signal_data['message']})
                 # create a new results buffer object whenever a new agent checks in
                 self.historyBuffer[agentName] = StringIO.StringIO()
             
             elif "returned results" in signal:
-                results = self.agents.get_agent_results_db(agentName)
-                if results:
-                    send({'Agents':results}, room=agentName)
-
+                results = {'Agent':agentName,'Result':self.agents.get_agent_results_db(agentName)}
+		if results:
+               	    self.socketio.emit('agentData', {'Result':results})
                 # check to make sure the size of the agent results will not exceed the limit when added to the buffer
                 if (self.historyBuffer[agentName].len + len(results)) <= 512000:
                     self.historyBuffer[agentName].write(results)
@@ -228,16 +230,12 @@ class Server():
         #           - EXECUTE --- stager_name*,Listener*
         ####################################################################
 
-        app = Flask(__name__)
-        socketio = SocketIO(app)
 
-
-        @socketio.on('login')
+        @self.socketio.on('login')
         def handle_login(data):
             """
             Authenticate clients. Should be called before anything else, after connecting
             """
-	    print data
             if data['username'] and data['password']:
                 if self.users.authenticate_user(request.sid, data['username'], data['password']):
                     emit('user_login', {"Result":"Logon success"})
@@ -247,9 +245,9 @@ class Server():
                 emit('user_login',{"Result":"missing username and/or password"})
 
 
-        @socketio.on('connect')
+        @self.socketio.on('connect')
         def handle_connect():
-            """
+	    """
             Handle when new clients connect. Authentication is not required here. Only when accessing any of the custom events
             """
             signal = json.dumps({
@@ -259,7 +257,7 @@ class Server():
             dispatcher.send(signal, sender="EmpireServer")
             emit('new_session', {"message": "Session initiated"})
 
-        @socketio.on('disconnect')
+        @self.socketio.on('disconnect')
         def handle_disconnect():
             """
             Handle when a client disconnects
@@ -267,7 +265,7 @@ class Server():
             self.users.remove_user(request.sid)
             emit('message', {"message": "Session disconnected"})
 
-        @socketio.on('stagers')
+        @self.socketio.on('stagers')
         def handle_stagers_event(data):
             """
             Handles all client messages for the 'stagers' event
@@ -343,7 +341,7 @@ class Server():
                 send({"Result": "Unauthenticated"})
 
 
-        @socketio.on('agents')
+        @self.socketio.on('agents')
         def handle_agents_event(data):
             """
             Handle all client messages for the agents event
@@ -355,9 +353,8 @@ class Server():
                     results = self.agents.get_agents_db()
 
                     for activeAgent in results:
-                        [ID, session_id, listener, name, language, language_version, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results] = activeAgent.values()
-                        agents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key.decode('latin-1').encode("utf-8"), "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
-
+                        [nonce, jitter, results, servers, internal_ip, working_hours, session_key, children, functions, checkin_time, hostname, ID, delay, username, kill_date, parent, process_name, listener, process_id, profile, os_details, lost_limit, taskings, name, language, external_ip, session_id, lastseen_time, language_version, high_integrity] = activeAgent.values()
+			agents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key.decode('latin-1').encode("utf-8"), "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
                     emit('agents',{'Result':agents})
 
                 elif data['Action'] and data['Action'] == 'VIEW' and data['Arguments']['Name']:
@@ -372,7 +369,7 @@ class Server():
                     emit('agents',{'Results':agents})
                 
                 elif data['Action'] and data['Action'] == 'KILL' and data['Arguments']['Name']:
-                    agent_name = data['Arguments']['Name']
+		    agent_name = data['Arguments']['Name']
                     if agent_name.lower() == "all":
                         agentNameIDs = self.agents.get_agent_ids_db()
                     else:
@@ -394,9 +391,8 @@ class Server():
                     send({'Result':'success'})
 
                 elif data['Action'] and data['Action'] == 'EXECUTE' and data['Arguments']['Name']:
-                    agent_name = data['Arguments']['Name']
+		    agent_name = data['Arguments']['Name']
                     userName = self.users.get_user_from_sid(request.sid)
-
                     if agent_name.lower() == "all":
                         agentNameIDs = self.agents.get_agent_ids_db()
                     else:
@@ -410,11 +406,14 @@ class Server():
 
                     command = data['Arguments']['Command']
 
-                    for agentNameID in agentNameIDs:
+                    if not isinstance(agentNameIDs,list):
+			agentNameIDs = agentNameIDs.split()
+
+		    for agentNameID in agentNameIDs:
 
                         # add task command to agent taskings
                         msg = "tasked agent {} to run command {}".format(agentNameID, command)
-                        self.agents.save_agent_log(agentSessionID, msg)
+                        self.agents.save_agent_log(agentNameID, msg)
                         username = self.users.get_user_from_sid(request.sid)
                         self.users.log_user_event("{} tasked agent {} to run command {}".format(username, agentNameID, command))
                         taskID = self.agents.add_agent_task_db(agentNameID, "TASK_SHELL", command)
@@ -449,7 +448,7 @@ class Server():
                         leave_room(agentNameIDs)
                         send({'Result': 'No longer interacting with agent {}'.format(agentNameIDs)})
 
-        @socketio.on('listeners')
+        @self.socketio.on('listeners')
         def handle_listener_event(data):
             """
             Handles all client messages for 'listeners' event
@@ -464,10 +463,10 @@ class Server():
 
                     for activeListener in activeListenersRaw:
                         listenerObject = self.listeners.activeListeners[activeListener]
-                        name = activeListener
-                        module = listenerObject['module']
+			name = activeListener
+                        module = listenerObject['moduleName']
                         ID = self.listeners.get_listener_id(activeListener)
-                        options = self.listeners.get_listener_options(activeListener)
+                        options = listenerObject['options']
                         listeners.append({'ID':ID, 'name':name, 'module':module, 'options':options })
 
                     emit('listeners',{'Result':listeners})
@@ -575,7 +574,7 @@ class Server():
             context.load_cert_chain("{}/empire-chain.pem".format(certPath), "{}/empire-priv.key".format(certPath))
             #socketio.run(app, host='0.0.0.0', port=int(port), ssl_context=context)
             print helpers.color("[+] Empire Collaboration Server started:\n Host => 0.0.0.0 \n Port => {} \n Password => {}".format(self.args.port, self.args.shared_password))
-            socketio.run(app, host='0.0.0.0', port=int(self.args.port))
+            self.socketio.run(self.app, host='0.0.0.0', port=int(self.args.port))
 	except KeyboardInterrupt:
             print helpers.color("[+] Shutting down server")
             sys.exit()
