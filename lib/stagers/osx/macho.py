@@ -78,6 +78,6 @@ class Stager:
 
         else:
 
-            launcher = launcher.strip('echo').strip(' | python &').strip("\"")
+            launcher = launcher.strip('echo').strip(' | /usr/bin/python &').strip("\"")
             macho = self.mainMenu.stagers.generate_macho(launcher)
             return macho
