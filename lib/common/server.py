@@ -572,9 +572,9 @@ class Server():
         try:
             context = ssl.SSLContext(proto)
             context.load_cert_chain("{}/empire-chain.pem".format(certPath), "{}/empire-priv.key".format(certPath))
-            #socketio.run(app, host='0.0.0.0', port=int(port), ssl_context=context)
             print helpers.color("[+] Empire Collaboration Server started:\n Host => 0.0.0.0 \n Port => {} \n Password => {}".format(self.args.port, self.args.shared_password))
-            self.socketio.run(self.app, host='0.0.0.0', port=int(self.args.port))
+            #self.socketio.run(self.app, host='0.0.0.0', port=int(self.args.port))
+            self.socketio.run(self.app, host='0.0.0.0', port=int(self.args.port), ssl_context=context)
 	except KeyboardInterrupt:
             print helpers.color("[+] Shutting down server")
             sys.exit()
