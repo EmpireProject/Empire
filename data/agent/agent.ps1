@@ -872,7 +872,7 @@ function Invoke-Empire {
                         } while($EncodedPart)
 
                         Encode-Packet -type 40 -data "[*] File download of $file completed" -ResultID $ResultID
-										}
+                    }
                 }
                 catch {
                     Encode-Packet -type 0 -data '[!] File does not exist or cannot be accessed' -ResultID $ResultID
