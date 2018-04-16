@@ -46,7 +46,7 @@ RUN apt-get update && apt-get install -qy \
     lsb-core \
     python2.7 \
     python-dev \ 
-  && ln -s /usr/bin/python2.7 /usr/bin/python \
+  && ln -sf /usr/bin/python2.7 /usr/bin/python \
   && rm -rf /var/lib/apt/lists/*
 
 # build empire from source
