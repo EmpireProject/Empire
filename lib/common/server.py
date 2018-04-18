@@ -68,8 +68,7 @@ class Server():
 	# initiate socketio
         self.app = Flask(__name__)
 	self.socketio = SocketIO(self.app, async_mode='threading')
-
-        self.lock = threading.Lock() 
+        self.lock = threading.Lock()
         (self.isroot, self.installPath, self.ipWhiteList, self.ipBlackList, self.obfuscate, self.obfuscateCommand) = helpers.get_config('rootuser, install_path,ip_whitelist,ip_blacklist,obfuscate,obfuscate_command')
         self.args = args
         # instantiate the agents, listeners, and stagers objects
@@ -135,7 +134,8 @@ class Server():
             elif "returned results" in signal:
                 results = {'Agent':agentName,'Result':self.agents.get_agent_results_db(agentName)}
 		if results:
-               	    self.socketio.emit('agentData', {'Result':results})
+               	    print results
+		    self.socketio.emit('agentData', {'Result':results})
                 # check to make sure the size of the agent results will not exceed the limit when added to the buffer
                 if (self.historyBuffer[agentName].len + len(results)) <= 512000:
                     self.historyBuffer[agentName].write(results)
@@ -238,9 +238,10 @@ class Server():
             """
             if data['username'] and data['password']:
                 if self.users.authenticate_user(request.sid, data['username'], data['password']):
-                    emit('user_login', {"Result":"Logon success"})
+                    emit('user_login', {"Result":"Logon success (%s)" % data['username']})
+                    self.socketio.emit('message', {"Result":"Logon success (%s)" % data['username']})
                 else:
-                    emit('user_login', {"Result":"Logon failure"})
+                    emit('user_login', {"Result":"Logon failure (%s)" % data['username']})
             else:
                 emit('user_login',{"Result":"missing username and/or password"})
 
