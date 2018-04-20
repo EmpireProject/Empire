@@ -12,6 +12,10 @@ import ast
 # Empire imports
 from lib.common import empire, helpers
 
+# set global utf8 encoding
+reload(sys)
+sys.setdefaultencoding('utf8')
+
 global serverExitCommand
 serverExitCommand = 'restart'
 
