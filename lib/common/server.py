@@ -134,7 +134,6 @@ class Server():
             elif "returned results" in signal:
                 results = {'Agent':agentName,'Result':self.agents.get_agent_results_db(agentName)}
 		if results:
-               	    print results
 		    self.socketio.emit('agentData', {'Result':results})
                 # check to make sure the size of the agent results will not exceed the limit when added to the buffer
                 if (self.historyBuffer[agentName].len + len(results)) <= 512000:
@@ -239,7 +238,7 @@ class Server():
             if data['username'] and data['password']:
                 if self.users.authenticate_user(request.sid, data['username'], data['password']):
                     emit('user_login', {"Result":"Logon success (%s)" % data['username']})
-                    self.socketio.emit('message', {"Result":"Logon success (%s)" % data['username']})
+                    self.socketio.emit('users', {"Result":"Logon success (%s)" % data['username']})
                 else:
                     emit('user_login', {"Result":"Logon failure (%s)" % data['username']})
             else:
@@ -266,7 +265,18 @@ class Server():
             self.users.remove_user(request.sid)
             emit('message', {"message": "Session disconnected"})
 
-        @self.socketio.on('stagers')
+        @self.socketio.on('users')
+        def handle_users_event(data):
+            """
+            Handle all client messages for the users event
+            """
+
+            if self.users.is_authenticated(request.sid):
+                if data['Action'] and data['Action'] == 'VIEW':
+		    users = self.users.get_users()
+		    emit('users', {"Result":users})
+        
+	@self.socketio.on('stagers')
         def handle_stagers_event(data):
             """
             Handles all client messages for the 'stagers' event
@@ -371,6 +381,7 @@ class Server():
                 
                 elif data['Action'] and data['Action'] == 'KILL' and data['Arguments']['Name']:
 		    agent_name = data['Arguments']['Name']
+                    userName = self.users.get_user_from_sid(request.sid)
                     if agent_name.lower() == "all":
                         agentNameIDs = self.agents.get_agent_ids_db()
                     else:
@@ -378,18 +389,21 @@ class Server():
 
                     if not agentNameIDs or len(agentNameIDs) == 0:
                         send({'Result': 'agent name {} not found'.format(agent_name)})
-
-                    for agentNameID in agentNameIDs:
+		   
+		    if isinstance(agentNameIDs,basestring):
+			agentNameIDs = agentNameIDs.split() 
+                   
+		    for agentNameID in agentNameIDs:
                         agentSessionID = agentNameID
 
                         # task the agent to exit
-                        msg = "tasked agent {} to exit".format(agentSessionID)
+                        msg = "{} tasked agent {} to exit".format(userName,agentSessionID)
                         username = self.users.get_user_from_sid(request.sid)
                         self.users.log_user_event("{} tasked agent {} to exit".format(username, agentNameID))
                         self.agents.save_agent_log(agentSessionID, msg)
                         self.agents.add_agent_task_db(agentSessionID, 'TASK_EXIT')
 
-                    send({'Result':'success'})
+                    send({'Result':msg})
 
                 elif data['Action'] and data['Action'] == 'EXECUTE' and data['Arguments']['Name']:
 		    agent_name = data['Arguments']['Name']
@@ -411,15 +425,18 @@ class Server():
 			agentNameIDs = agentNameIDs.split()
 
 		    for agentNameID in agentNameIDs:
-
                         # add task command to agent taskings
                         msg = "tasked agent {} to run command {}".format(agentNameID, command)
                         self.agents.save_agent_log(agentNameID, msg)
                         username = self.users.get_user_from_sid(request.sid)
                         self.users.log_user_event("{} tasked agent {} to run command {}".format(username, agentNameID, command))
-                        taskID = self.agents.add_agent_task_db(agentNameID, "TASK_SHELL", command)
+                    	self.socketio.emit('message', {"Result":"{} tasked agent {} to run command {}".format(username, agentNameID, command)})
+                        #Update other users console with the command
+                	results = {'Agent':agentNameID,"Result":command,"User":username}
+			self.socketio.emit('agentCommand', {"Result":results}, include_self=False)
+			taskID = self.agents.add_agent_task_db(agentNameID, "TASK_SHELL", command)
 
-                    send({'Result': 'Success - TaskID: {}'.format(taskID)})
+                    #self.socketio.emit('message', {"Result":"Success - TaskID: {}".format(taskID)})
 
                 elif data['Action'] and data['Action'] == 'INTERACT' and data['Arguments']['Name']:
                     agent_name = data['Arguments']['Name']
@@ -429,14 +446,19 @@ class Server():
                         send({'Result': 'agent name {} not found'.format(agent_name)})
 
                     else:
-                        join_room(agentNameIDs)
+			# Grab the agent log file                        
+			logPath = os.path.abspath("./downloads/%s/agent.log" % agentNameIDs)
+			logFile = open(logPath,'r')
+			logResults = unicode(logFile.read(), errors='replace')
+			self.socketio.emit('agentData', {'Result': {'Agent':agentNameIDs,'Result':logResults}})
+			#join_room(agentNameIDs)
                         # Get the results history for this agent from the cache
-                        agentResults = self.historyBuffer[agentNameIDs].getvalue()
-                        result = json.dumps({
-                            'message':'interacting with {}'.format(agentNameIDs),
-                            'agentResultsCache':agentResults
-                        })
-                        send({'Result':result})
+                        #agentResults = self.historyBuffer[agentNameIDs].getvalue()
+                        #result = json.dumps({
+                        #    'message':'interacting with {}'.format(agentNameIDs),
+                        #    'agentResultsCache':agentResults
+                        #})
+                        #send({'Result':result})
 
                 elif data['Action'] and data['Action'] == 'RETURN' and data['Arguments']['Name']:
                     agent_name = data['Arguments']['Name']
