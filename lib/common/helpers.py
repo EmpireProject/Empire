@@ -143,24 +143,6 @@ def generate_ip_list(s):
 # Randomizers/obfuscators
 #
 ####################################################################################
-def convert_IPv4_to_decimal(IPAddr):
-    """
-    Converts IPv4 to decimal value
-    """
-    ip=IPAddr.split(".")
-    IPAddr2=""
-    IPAddr2+=str(ip[3])
-    IPAddr2+='.'+str(ip[2])
-    IPAddr2+='.'+str(ip[1])
-    IPAddr2+='.'+str(ip[0])
-    return int((ipaddress.ip_address(IPAddr2)))
-    
-def convert_IPv4_from_decimal_in_powershell(IPAddr):
-    """
-    Converts decimal value of IPv4 value in powershell to IPv4 with 4 octets
-    """
-    return str('([ipaddress] '+convert_IPv4_to_decimal(IPAddr)+').ipaddresstostring')
-
 def random_string(length=-1, charset=string.ascii_letters):
     """
     Returns a random string of "length" characters.
