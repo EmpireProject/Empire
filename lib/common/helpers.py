@@ -148,7 +148,13 @@ def convert_IPv4_to_decimal(IPAddr)
     Converts IPv4 to decimal value
     """
     return int((ipaddress.ip_address(IPAddr)))
-	    
+
+def convert_IPv4_from_decimal_in_powershell(IPAddr)
+    """
+    Converts decimal value of IPv4 value in powershell to IPv4 with 4 octets
+    """
+    return str('([ipaddress] '+convert_IPv4_to_decimal(IPAddr)+').ipaddresstostring')
+
 def random_string(length=-1, charset=string.ascii_letters):
     """
     Returns a random string of "length" characters.
