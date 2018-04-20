@@ -143,13 +143,13 @@ def generate_ip_list(s):
 # Randomizers/obfuscators
 #
 ####################################################################################
-def convert_IPv4_to_decimal(IPAddr)
+def convert_IPv4_to_decimal(IPAddr):
     """
     Converts IPv4 to decimal value
     """
     return int((ipaddress.ip_address(IPAddr)))
 
-def convert_IPv4_from_decimal_in_powershell(IPAddr)
+def convert_IPv4_from_decimal_in_powershell(IPAddr):
     """
     Converts decimal value of IPv4 value in powershell to IPv4 with 4 octets
     """
