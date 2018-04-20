@@ -59,7 +59,7 @@ import urllib, urllib2
 import hashlib
 import datetime
 import uuid
-
+import ipaddress
 
 ###############################################################
 #
@@ -143,7 +143,12 @@ def generate_ip_list(s):
 # Randomizers/obfuscators
 #
 ####################################################################################
-
+def convert_IPv4_to_decimal(IPAddr)
+    """
+    Converts IPv4 to decimal value
+    """
+    return int((ipaddress.ip_address(IPAddr)))
+	    
 def random_string(length=-1, charset=string.ascii_letters):
     """
     Returns a random string of "length" characters.
