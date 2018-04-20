@@ -157,6 +157,9 @@ class Users():
         """
         if sid in self.users:
             return self.users[sid]['username']
+   
+    def get_users(self):
+	return self.users
 
     def remove_user(self, sid):
         """
