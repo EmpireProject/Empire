@@ -153,9 +153,7 @@ def random_string(length=-1, charset=string.ascii_letters):
     random_string = ''.join(random.choice(charset) for x in range(length))
     return random_string
 
-"""
-Randomize the name of variables in any script and have them return the same value repeatably
-"""
+
 def generate_random_script_var_name(origvariname,globDebug=false):
     if globDebug = false:
     	hash_object=hashlib.sha1(str(origvariname)+str(globentropy)).hexdigest()
