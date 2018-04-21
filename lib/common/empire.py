@@ -1280,18 +1280,18 @@ class AgentsMenu(SubMenu):
                 print ''
 
         else:
-            try:
-                choice = raw_input(helpers.color("[>] Kill agent '%s'? [y/N] " % (name), 'red'))
+            # extract the sessionID and clear the agent tasking
+            sessionID = self.mainMenu.agents.get_agent_id_db(name)
 
-                # extract the sessionID and clear the agent tasking
-                sessionID = self.mainMenu.agents.get_agent_id_db(name)
-
-                if sessionID and len(sessionID) != 0:
-                    self.mainMenu.agents.add_agent_task_db(sessionID, 'TASK_EXIT')
-                else:
-                    print helpers.color("[!] Invalid agent name")
-            except KeyboardInterrupt:
-                print ''
+            if sessionID and len(sessionID) != 0:
+                try:
+                    choice = raw_input(helpers.color("[>] Kill agent '%s'? [y/N] " % (name), 'red'))
+                    if choice.lower() != '' and choice.lower()[0] == 'y':
+                        self.mainMenu.agents.add_agent_task_db(sessionID, 'TASK_EXIT')
+                except KeyboardInterrupt:
+                    print ''
+            else:
+                print helpers.color("[!] Invalid agent name")
 
     def do_clear(self, line):
         "Clear one or more agent's taskings."
