@@ -36,7 +36,7 @@ class Stager:
                 'Value'         :   '0'
             },
             'OutFile' : {
-                'Description'   :   'File to output HTA to, otherwise displayed on the screen.',
+                'Description'   :   'File to output XSL to, otherwise displayed on the screen.',
                 'Required'      :   False,
                 'Value'         :   '/tmp/launcher.xsl'
             },
