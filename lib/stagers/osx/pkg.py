@@ -89,7 +89,7 @@ class Stager:
             if AppName == '':
                 AppName = "Update"
             Disarm=True
-            launcherCode = launcher.strip('echo').strip(' | python &').strip("\"")
+            launcherCode = launcher.strip('echo').strip(' | /usr/bin/python &').strip("\"")
             ApplicationZip = self.mainMenu.stagers.generate_appbundle(launcherCode=launcherCode,Arch=arch,icon=icnsPath,AppName=AppName,disarm=Disarm)
             pkginstaller = self.mainMenu.stagers.generate_pkg(launcher=launcher,bundleZip=ApplicationZip,AppName=AppName)
             return pkginstaller

