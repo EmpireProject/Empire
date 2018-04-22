@@ -290,8 +290,6 @@ class Listener:
                 listenerOptions['Cookie']['Value'] = generate
                 cookie = generate
 
-            print helpers.color(cookie,color="red")  
-
             if language.startswith('po'):
                 # PowerShell
 
