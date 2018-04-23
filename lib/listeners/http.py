@@ -571,15 +571,8 @@ class Listener:
                 host += "/"
 
             #Patch in custom Headers
-            remove = []
             if customHeaders != []:
-                for key in customHeaders:
-                    value = key.split(":")
-                    if 'cookie' in value[0].lower() and value[1]:
-                        continue
-                    remove += value    
-                headers = ','.join(remove)
-                #headers = ','.join(customHeaders)
+                headers = ','.join(customHeaders)
                 stager = stager.replace("$customHeaders = \"\";","$customHeaders = \""+headers+"\";")
 
             #patch in working hours, if any
