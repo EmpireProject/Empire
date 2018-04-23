@@ -287,9 +287,6 @@ class Listener:
         
             self.session_cookie = listenerOptions['Cookie']['Value']  
 
-            # generate new cookie if the current session cookie is empty to avoid empty cookie if create multiple listeners
-
-
             if language.startswith('po'):
                 # PowerShell
 
