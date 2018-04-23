@@ -9,7 +9,7 @@ menu loops.
 """
 
 # make version for Empire
-VERSION = "2.4"
+VERSION = "2.5"
 
 from pydispatch import dispatcher
 
@@ -157,6 +157,11 @@ class MainMenu(cmd.Cmd):
         if 'task_id' in signal_data:
             task_id = signal_data['task_id']
 
+        if 'event_type' in signal_data:
+            event_type = signal_data['event_type']
+        else:
+            event_type = 'dispatched_event'
+
         event_data = json.dumps({'signal': signal_data, 'sender': sender})
 
         # print any signal that indicates we should
@@ -166,7 +171,7 @@ class MainMenu(cmd.Cmd):
         # get a db cursor, log this event to the DB, then close the cursor
         cur = self.conn.cursor()
         # TODO instead of "dispatched_event" put something useful in the "event_type" column
-        log_event(cur, sender, 'dispatched_event', json.dumps(signal_data), signal_data['timestamp'], task_id=task_id)
+        log_event(cur, sender, event_type, json.dumps(signal_data), signal_data['timestamp'], task_id=task_id)
         cur.close()
 
         # if --debug X is passed, log out all dispatcher signals
@@ -1275,18 +1280,18 @@ class AgentsMenu(SubMenu):
                 print ''
 
         else:
-            try:
-                choice = raw_input(helpers.color("[>] Kill agent '%s'? [y/N] " % (name), 'red'))
+            # extract the sessionID and clear the agent tasking
+            sessionID = self.mainMenu.agents.get_agent_id_db(name)
 
-                # extract the sessionID and clear the agent tasking
-                sessionID = self.mainMenu.agents.get_agent_id_db(name)
-
-                if sessionID and len(sessionID) != 0:
-                    self.mainMenu.agents.add_agent_task_db(sessionID, 'TASK_EXIT')
-                else:
-                    print helpers.color("[!] Invalid agent name")
-            except KeyboardInterrupt:
-                print ''
+            if sessionID and len(sessionID) != 0:
+                try:
+                    choice = raw_input(helpers.color("[>] Kill agent '%s'? [y/N] " % (name), 'red'))
+                    if choice.lower() != '' and choice.lower()[0] == 'y':
+                        self.mainMenu.agents.add_agent_task_db(sessionID, 'TASK_EXIT')
+                except KeyboardInterrupt:
+                    print ''
+            else:
+                print helpers.color("[!] Invalid agent name")
 
     def do_clear(self, line):
         "Clear one or more agent's taskings."
@@ -4442,7 +4447,7 @@ class StagerMenu(SubMenu):
             signal = json.dumps({
                 'print': False,
                 'message': message,
-                'options': stager.options
+                'options': self.stager.options
             })
             dispatcher.send(signal, sender="empire")
         else:

