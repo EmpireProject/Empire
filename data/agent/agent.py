@@ -293,9 +293,9 @@ def process_packet(packetType, data, resultID):
                 for filename in files:
                     #dont care about symlinks
                     if os.path.exists(objPath):
-                        fileList.append(objPath)
+                        fileList.append(objPath + "/" + filename)
 
-				for filePath in fileList:
+        for filePath in fileList:
             offset = 0
             size = os.path.getsize(filePath)
             partIndex = 0
