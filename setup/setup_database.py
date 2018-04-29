@@ -169,6 +169,15 @@ c.execute('''CREATE TABLE "users" (
     "authenticated" boolean
 )''')
 
+# files
+c.execute('''CREATE TABLE "files" (
+    "id" integer PRIMARY KEY,
+    "session_id" text,
+    "path" text,
+    "type" text,
+    "timestamp" text
+)''')
+
 # event_types -> checkin, task, result, rename
 c.execute('''CREATE TABLE "reporting" (
     "id" integer PRIMARY KEY,

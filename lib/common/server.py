@@ -67,7 +67,7 @@ class Server():
 
 	# initiate socketio
         self.app = Flask(__name__)
-	self.socketio = SocketIO(self.app, async_mode='threading')
+        self.socketio = SocketIO(self.app, async_mode='threading')
         self.lock = threading.Lock()
         (self.isroot, self.installPath, self.ipWhiteList, self.ipBlackList, self.obfuscate, self.obfuscateCommand) = helpers.get_config('rootuser, install_path,ip_whitelist,ip_blacklist,obfuscate,obfuscate_command')
         self.args = args
@@ -213,12 +213,14 @@ class Server():
         #         - Arguments: arguments can vary per action, per event.
         #   
         #   Event - agents
-        #         - Action: VIEW, KILL, INTERACT, EXECUTE, RETURN
+        #         - Action: VIEW, KILL, INTERACT, EXECUTE, UPLOAD, DOWNLOAD, RETURN
         #         - Arguments ______________
         #           - VIEW   --- Name
         #           - KILL   --- Name*
         #           - INTERACT --- Name*
         #           - EXECUTE --- Name*,Command*
+        #           - UPLOAD --- Filename*, data (base64 encoded)*
+        #           - DOWNLOAD --- FileID*
         #           - RETURN --- Name*
         #
         #
@@ -273,10 +275,10 @@ class Server():
 
             if self.users.is_authenticated(request.sid):
                 if data['Action'] and data['Action'] == 'VIEW':
-		    users = self.users.get_users()
-		    emit('users', {"Result":users})
+                    users = self.users.get_users()
+                    emit('users', {"Result":users})
         
-	@self.socketio.on('stagers')
+        @self.socketio.on('stagers')
         def handle_stagers_event(data):
             """
             Handles all client messages for the 'stagers' event
@@ -365,7 +367,8 @@ class Server():
 
                     for activeAgent in results:
                         [nonce, jitter, results, servers, internal_ip, working_hours, session_key, children, functions, checkin_time, hostname, ID, delay, username, kill_date, parent, process_name, listener, process_id, profile, os_details, lost_limit, taskings, name, language, external_ip, session_id, lastseen_time, language_version, high_integrity] = activeAgent.values()
-			agents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key.decode('latin-1').encode("utf-8"), "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
+                        agents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key.decode('latin-1').encode("utf-8"), "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
+                    
                     emit('agents',{'Result':agents})
 
                 elif data['Action'] and data['Action'] == 'VIEW' and data['Arguments']['Name']:
@@ -380,7 +383,7 @@ class Server():
                     emit('agents',{'Results':agents})
                 
                 elif data['Action'] and data['Action'] == 'KILL' and data['Arguments']['Name']:
-		    agent_name = data['Arguments']['Name']
+                    agent_name = data['Arguments']['Name']
                     userName = self.users.get_user_from_sid(request.sid)
                     if agent_name.lower() == "all":
                         agentNameIDs = self.agents.get_agent_ids_db()
@@ -390,10 +393,10 @@ class Server():
                     if not agentNameIDs or len(agentNameIDs) == 0:
                         send({'Result': 'agent name {} not found'.format(agent_name)})
 		   
-		    if isinstance(agentNameIDs,basestring):
-			agentNameIDs = agentNameIDs.split() 
-                   
-		    for agentNameID in agentNameIDs:
+                    if isinstance(agentNameIDs,basestring):
+                        agentNameIDs = agentNameIDs.split() 
+                        
+                    for agentNameID in agentNameIDs:
                         agentSessionID = agentNameID
 
                         # task the agent to exit
@@ -403,10 +406,10 @@ class Server():
                         self.agents.save_agent_log(agentSessionID, msg)
                         self.agents.add_agent_task_db(agentSessionID, 'TASK_EXIT')
 
-                    send({'Result':msg})
+                        send({'Result':msg})
 
                 elif data['Action'] and data['Action'] == 'EXECUTE' and data['Arguments']['Name']:
-		    agent_name = data['Arguments']['Name']
+                    agent_name = data['Arguments']['Name']
                     userName = self.users.get_user_from_sid(request.sid)
                     if agent_name.lower() == "all":
                         agentNameIDs = self.agents.get_agent_ids_db()
@@ -422,7 +425,7 @@ class Server():
                     command = data['Arguments']['Command']
 
                     if not isinstance(agentNameIDs,list):
-			agentNameIDs = agentNameIDs.split()
+                        agentNameIDs = agentNameIDs.split()
 
 		    for agentNameID in agentNameIDs:
                         # add task command to agent taskings
