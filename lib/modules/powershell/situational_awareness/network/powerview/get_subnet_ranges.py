@@ -14,15 +14,15 @@ class Module:
             'Background' : True,
 
             'OutputExtension' : None,
-            
+
             'NeedsAdmin' : False,
 
             'OpsecSafe' : False,
-            
+
             'Language' : 'powershell',
 
             'MinLanguageVersion' : '2',
-            
+
             'Comments': [
                 'Uses Powerview to query AD computers'
             ]
@@ -36,6 +36,11 @@ class Module:
                 'Description'   :   'Agent to run module on.',
                 'Required'      :   True,
                 'Value'         :   ''
+            },
+            'IPs' : {
+                'Description'   :   'List the resolved individual IPs',
+                'Required'      :   False,
+                'Value'         :   'False'
             },
             'Domain' : {
                 'Description'   :   'The domain to use for the query, defaults to the current domain.',
@@ -56,9 +61,11 @@ class Module:
 
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
-        
-        moduleName = self.info["Name"]
-        
+
+
+        list_computers = self.options["IPs"]['Value']
+
+
         # read in the common powerview.ps1 module source code
         moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/network/powerview.ps1"
 
@@ -74,10 +81,11 @@ class Module:
         # get just the code needed for the specified function
         script = helpers.strip_powershell_comments(moduleCode)
 
-        script += 
-        """
-        $Servers = Get-DomainComputer"""
-        
+        script += "\n" + """$Servers = Get-DomainComputer | ForEach-Object {try{Resolve-DNSName $_.dnshostname -Type A -errorAction SilentlyContinue}catch{Write-Warning 'Computer Offline or Not Responding'} } | Select-Object -ExpandProperty IPAddress -ErrorAction SilentlyContinue; $count = 0; $subarry =@(); foreach($i in $Servers){$IPByte = $i.Split("."); $subarry += $IPByte[0..2] -join"."} $final = $subarry | group; Write-Output{The following subnetworks were discovered:}; $final | ForEach-Object {Write-Output "$($_.Name).0/24 - $($_.Count) Hosts"}; """
+
+        if list_computers.lower() == "true":
+            script += "$Servers;"
+
         for option,values in self.options.iteritems():
             if option.lower() != "agent":
                 if values['Value'] and values['Value'] != '':
@@ -85,15 +93,9 @@ class Module:
                         # if we're just adding a switch
                         script += " -" + str(option)
                     else:
-                        script += " -" + str(option) + " " + str(values['Value']) 
-        script += """| ForEach-Object {try{Resolve-DNSName $_.dnshostname -Type A -errorAction SilentlyContinue}catch{Write-Warning 'Computer Offline or Not Responding'} } | Select-Object -ExpandProperty IPAddress -ErrorAction SilentlyContinue; 
-        $count = 0; $subarry =@(); 
-        foreach($i in $Servers){$IPByte = $i.Split("."); 
-        $subarry += $IPByte[0..2] -join"."} $final = $subarry | group;
-        Write-Output{"The following subnetworks were discovered:"}; $final | ForEach-Object {Write-Host "$($_.Name).0/24" - "$($_.Count) Hosts"} 
-        """
+                        script += " -" + str(option) + " " + str(values['Value'])
 
-        script += ' | Out-String | %{$_ + \"`n\"};"`n'+str(moduleName)+' completed!"'
+        script += ' | Out-String | %{$_ + \"`n\"};"`n'+ "get_subnet_ranges"+' completed!"'
         if obfuscate:
             script = helpers.obfuscate(self.mainMenu.installPath, psScript=script, obfuscationCommand=obfuscationCommand)
-return script
+        return script
