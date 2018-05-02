@@ -15,7 +15,7 @@ import stagers
 import credentials
 import plugins
 import users
-import files
+from files import fetcher
 from events import log_event
 from zlib_wrapper import compress
 from zlib_wrapper import decompress
@@ -62,6 +62,8 @@ class Server():
         # Agent results cache/buffer
         self.historyBuffer = {}
 
+        
+
         # empty database object
         self.conn = self.database_connect()
         time.sleep(1)
@@ -82,6 +84,7 @@ class Server():
         self.resourceQueue = []
         #A hashtable of autruns based on agent language
         self.autoRuns = {}
+        self.fetcher = fetcher(self, args=args)
 
         # print the loading menu
         messages.loading()
@@ -593,8 +596,8 @@ class Server():
             Handles all client messages for the 'files' events
             """
             if self.users.is_authenticated(request.sid):
-                if data['ACTION'] and data['ACTION'] == 'VIEW':
-                    results = files.files.get_files_by_type
+                if data['ACTION'] and data['ACTION'] == 'VIEW' and (data['Arguments']['file_type']):
+                    results = self.fetcher.get_files_by_type(file_type=data['Arguments']['file_type'])
                     emit('files',{'Result':results})
 
                 elif (data['ACTION'] and data['ACTION'] == 'UPLOAD') and (data['Arguments']['file_data']):
@@ -634,6 +637,16 @@ class Server():
                         taskdata = filename + "|" + raw_data
                         self.agents.add_agent_task_db(sessionID, "TASK_UPLOAD", taskdata)
                         emit('files',{'Result':'Tasked agent to upload file'})
+
+                elif (data['ACTION'] and data['ACTION'] == 'DOWNLOAD') and (data['Arguments']['fileID']):
+                    """
+                    Download files shown in the files table from the server. Not directly from agents
+                    """
+                    enc_file = self.fetcher.get_file(fileID=data['Arguments']['fileID'])
+                    if enc_file != None:
+                        emit('files',{'Result':enc_file})
+                    else:
+                        emit('files',{'Result':""})
 
         # wrap the Flask connection in SSL and start it
         certPath = os.path.abspath("./data/")

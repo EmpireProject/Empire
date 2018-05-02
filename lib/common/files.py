@@ -11,7 +11,7 @@ import base64
 import threading
 
 
-class files:
+class fetcher():
     """
     Main class to handle file download and upload functionality for websocket clients
     """
@@ -52,7 +52,7 @@ class files:
             self.lock.release()
 
     
-    def get_file(self, ID):
+    def get_file(self, fileID):
         """
         Return base64 encoded file contents specified by file ID.
         """
@@ -61,14 +61,18 @@ class files:
         try:
             self.lock.acquire()
             cur = conn.cursor()
-            cur.execute("SELECT path FROM files WHERE id=?", [ID])
+            cur.execute("SELECT path FROM files WHERE id=?", [fileID])
             request_path = cur.fetchone()
             cur.close()
         finally:
             self.lock.release()
 
-        contents = open(request_path, 'rb').read()
-        return helpers.encode_base64(contents)
+        try:
+            contents = open(request_path, 'rb').read()
+            return helpers.encode_base64(contents)
+        except:
+            return None
+        
 
     def get_files_by_type(self, file_type):
         """
