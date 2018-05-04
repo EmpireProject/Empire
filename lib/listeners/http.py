@@ -106,15 +106,15 @@ class Listener:
                 'Description'   :   'Hours for the agent to operate (09:00-17:00).',
                 'Required'      :   False,
                 'Value'         :   ''
-            },
+            },         
             'Headers' : {
                 'Description'   :   'Headers for the control server.',
                 'Required'      :   True,
                 'Value'         :   'Server:Microsoft-IIS/7.5'
             },
             'Cookie' : {
-                'Description'   :   'Custom Cookie Name',
-                'Required'      :   False,
+                'Description'   :   'Custom Cookie Name.',
+                'Required'      :   True,
                 'Value'         :   ''
             },            
             'StagerURI' : {
@@ -173,78 +173,19 @@ class Listener:
         Returns an IIS 7.5 404 not found page.
         """
 
-        return '\n'.join([
-            '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
-            '<html xmlns="http://www.w3.org/1999/xhtml">',
-            '<head>',
-            '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>',
-            '<title>404 - File or directory not found.</title>',
-            '<style type="text/css">',
-            '<!--',
-            'body{margin:0;font-size:.7em;font-family:Verdana, Arial, Helvetica, sans-serif;background:#EEEEEE;}',
-            'fieldset{padding:0 15px 10px 15px;}',
-            'h1{font-size:2.4em;margin:0;color:#FFF;}',
-            'h2{font-size:1.7em;margin:0;color:#CC0000;}',
-            'h3{font-size:1.2em;margin:10px 0 0 0;color:#000000;}',
-            '#header{width:96%;margin:0 0 0 0;padding:6px 2% 6px 2%;font-family:"trebuchet MS", Verdana, sans-serif;color:#FFF;',
-            'background-color:#555555;}',
-            '#content{margin:0 0 0 2%;position:relative;}',
-            '.content-container{background:#FFF;width:96%;margin-top:8px;padding:10px;position:relative;}',
-            '-->',
-            '</style>',
-            '</head>',
-            '<body>',
-            '<div id="header"><h1>Server Error</h1></div>',
-            '<div id="content">',
-            ' <div class="content-container"><fieldset>',
-            '  <h2>404 - File or directory not found.</h2>',
-            '  <h3>The resource you are looking for might have been removed, had its name changed, or is temporarily unavailable.</h3>',
-            ' </fieldset></div>',
-            '</div>',
-            '</body>',
-            '</html>',
-            ' ' * self.header_offset,  # randomize the length of the header to evade signature based detection
-        ])
+        default_response = open("data/pages/default.html","r").read()
+        default_response +=  " " * self.header_offset
+
+        return default_response
 
     def index_page(self):
         """
         Returns a default HTTP server page.
         """
 
-        return '\n'.join([
-            '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">',
-            '<html xmlns="http://www.w3.org/1999/xhtml">',
-            '<head>',
-            '<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />',
-            '<title>IIS7</title>',
-            '<style type="text/css">',
-            '<!--',
-            'body {',
-            '    color:#000000;',
-            '    background-color:#B3B3B3;',
-            '    margin:0;',
-            '}',
-            '',
-            '#container {',
-            '    margin-left:auto;',
-            '    margin-right:auto;',
-            '    text-align:center;',
-            '    }',
-            '',
-            'a img {',
-            '    border:none;',
-            '}',
-            '',
-            '-->',
-            '</style>',
-            '</head>',
-            '<body>',
-            '<div id="container">',
-            '<a href="http://go.microsoft.com/fwlink/?linkid=66138&amp;clcid=0x409"><img src="welcome.png" alt="IIS7" width="571" height="411" /></a>',
-            '</div>',
-            '</body>',
-            '</html>',
-        ])
+        index_page = open("data/pages/index.html","r").read()
+
+        return index_page
 
     def validate_options(self):
         """
@@ -281,10 +222,6 @@ class Listener:
             stage0 = random.choice(uris)
             customHeaders = profile.split('|')[2:]
 
-
-            if listenerOptions['Cookie']['Value'] == '':
-                listenerOptions['Cookie']['Value'] = self.generate_cookie()
-        
             self.session_cookie = listenerOptions['Cookie']['Value']  
 
             if language.startswith('po'):
@@ -982,7 +919,8 @@ def send_message(packets=None):
 
             This is used during the first step of the staging process,
             and when the agent requests taskings.
-            """
+            """         
+
             clientIP = request.remote_addr
 
             listenerName = self.options['Name']['Value']
@@ -1018,7 +956,7 @@ def send_message(packets=None):
                                     routingPacket = base64.b64decode(base64RoutingPacket)
                 except Exception as e:
                     routingPacket = None
-                    pass
+                    pass 
 
             if routingPacket:
                 # parse the routing packet and process the results
@@ -1080,7 +1018,7 @@ def send_message(packets=None):
                     'message': message
                 })
                 dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
-                return make_response(self.default_response(), 200)
+                return make_response(self.default_response(), 200)    
 
         @app.route('/<path:request_uri>', methods=['POST'])
         def handle_post(request_uri):
