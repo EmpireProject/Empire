@@ -167,6 +167,11 @@ def randomize_capitalization(data):
     """
     return "".join( random.choice([k.upper(), k ]) for k in data )
 
+def obfuscate_call_home_address(data):
+    """
+    Poowershell script to base64 encode variable contents and execute on command as if clear text in powershell
+    """
+    return '$('+randomize_capitalization('[Text.Encoding]::Unicode.GetString([Convert]::FromBase64String(\'') + enc_powershell(data) +'\')))'
 
 def chunks(l, n):
     """

