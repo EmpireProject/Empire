@@ -9,7 +9,6 @@ import time
 import copy
 import json
 import sys
-import magic
 from pydispatch import dispatcher
 from flask import Flask, request, make_response, send_from_directory
 # Empire imports
