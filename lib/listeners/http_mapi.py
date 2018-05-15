@@ -56,7 +56,7 @@ class Listener:
             'Port' : {
                 'Description'   :   'Port for the listener.',
                 'Required'      :   True,
-                'Value'         :   80
+                'Value'         :   ''
             },
             'StagingKey' : {
                 'Description'   :   'Staging key for initial agent negotiation.',
