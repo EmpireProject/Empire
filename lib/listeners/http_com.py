@@ -58,7 +58,7 @@ class Listener:
             'Port' : {
                 'Description'   :   'Port for the listener.',
                 'Required'      :   True,
-                'Value'         :   80
+                'Value'         :   ''
             },
             'Launcher' : {
                 'Description'   :   'Launcher string.',
