@@ -50,7 +50,7 @@ class Listener:
             'Host' : {
                 'Description'   :   'Hostname/IP for staging.',
                 'Required'      :   True,
-                'Value'         :   "http://%s:%s" % (helpers.lhost(), 80)
+                'Value'         :   "http://%s" % (helpers.lhost())
             },
             'BindIP' : {
                 'Description'   :   'The IP to bind to on the control server.',
