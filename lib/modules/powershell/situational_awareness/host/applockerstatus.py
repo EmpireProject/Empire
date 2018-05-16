@@ -17,6 +17,9 @@ class Module:
             'OpsecSafe': True,
             'Language': 'powershell',
             'MinLanguageVersion': '2',
+            'Comments': [
+                'comment',
+                'https://github.com/matterpreter/misc/blob/master/Get-AppLockerConfig.ps1'
             ]
         }
 
@@ -38,8 +41,14 @@ class Module:
             }
         }
 
+        # Save off a copy of the mainMenu object to access external
+        #   functionality like listeners/agent handlers/etc.
         self.mainMenu = mainMenu
 
+        # During instantiation, any settable option parameters are passed as
+        #   an object set to the module and the options dictionary is
+        #   automatically set. This is mostly in case options are passed on
+        #   the command line.
         if params:
             for param in params:
                 # Parameter format is [Name, Value]
@@ -50,21 +59,69 @@ class Module:
 
     def generate(self, obfuscate=False, obfuscationCommand=""):
 
-        moduleSource = self.mainMenu.installPath + "/data/module_source/situational_awareness/host/Get-AppLockerConfig.ps1"
-        if obfuscate:
-            helpers.obfuscate_module(moduleSource=moduleSource, obfuscationCommand=obfuscationCommand)
-            moduleSource = moduleSource.replace("module_source", "obfuscated_module_source")
-        try:
-            f = open(moduleSource, 'r')
-        except:
-            print helpers.color("[!] Could not read module source path at: " + str(moduleSource))
-            return ""
+        script = """
+function Get-AppLockerConfig
+{
+    <#
+    .SYNOPSIS
 
-        moduleCode = f.read()
-        f.close()
+    This script is used to query the current AppLocker policy for a specified executable.
 
-        script = moduleCode
+    Author: Matt Hand (@matterpreter)
+    Required Dependencies: None
+    Optional Dependencies: None
+    Version: 1.0
 
+    .DESCRIPTION
+
+    This script is used to query the current AppLocker policy on the target and check the status of a user-defined executable or all executables in a path.
+
+    .PARAMETER Executable
+
+    Full filepath of the executable to test. This also supports wildcards (*) to test all executables in a directory.
+
+    .PARAMETER User
+
+    User to test the policy for. Default is "Everyone."
+
+    .EXAMPLE
+
+    Get-AppLockerStatus 'c:\windows\system32\calc.exe'
+    Tests the AppLocker policy for calc.exe for "Everyone."
+
+    Get-AppLockerStatus 'c:\users\jdoe\Desktop\*.exe' 'dguy'
+    Tests the AppLocker policy for "dguy" against every file ending in ".exe" in jdoe's Desktop folder.
+
+    #>
+    Param(
+          [Parameter(Mandatory=$true)]
+          [string]$Executable,
+          [string]$User = 'Everyone'
+    )
+
+    if (-NOT (test-path $Executable)){
+        Write-Host "[-] Executable not found or you do not have access to it. Exiting..."
+        Return
+        }
+
+    if (-NOT (Get-WmiObject Win32_UserAccount -Filter "LocalAccount='true' and Name='$User'")){
+        Write-Host "[-] User does not exist. Exiting..."
+        Return
+        }
+
+
+    $AppLockerCheck = Get-AppLockerPolicy -Effective | Test-AppLockerPolicy -Path $Executable -User $User
+    $AppLockerStatus = $AppLockerCheck | Select-String -InputObject {$_.PolicyDecision} -Pattern "Allowed"
+
+    if ($AppLockerStatus -Match 'Allowed') { $Result = "[+] $Executable - ALLOWED for $User!" }
+    else { $Result = "[-] $Executable - BLOCKED for $USER"}
+
+    $Result
+} Get-AppLockerConfig"""
+
+        scriptEnd = ""
+
+        # Add any arguments to the end execution of the script
         for option, values in self.options.iteritems():
             if option.lower() != "agent":
                 if values['Value'] and values['Value'] != '':
