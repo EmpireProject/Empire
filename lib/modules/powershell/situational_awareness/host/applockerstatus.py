@@ -100,12 +100,12 @@ function Get-AppLockerConfig
     )
 
     if (-NOT (test-path $Executable)){
-        Write-Host "[-] Executable not found or you do not have access to it. Exiting..."
+        Write-Output "[-] Executable not found or you do not have access to it. Exiting..."
         Return
         }
 
     if (-NOT (Get-WmiObject Win32_UserAccount -Filter "LocalAccount='true' and Name='$User'")){
-        Write-Host "[-] User does not exist. Exiting..."
+        Write-Output "[-] User does not exist. Exiting..."
         Return
         }
 
