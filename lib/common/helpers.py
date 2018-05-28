@@ -37,6 +37,7 @@ Includes:
     KThread() - a subclass of threading.Thread, with a kill() method
     slackMessage() - send notifications to the Slack API
     generate_random_script_var_name() - use in scripts to generate random variable names
+    get_listener_cookies() - to get all active cookies on listeners
 """
 
 import re
@@ -600,6 +601,23 @@ def get_listener_options(listenerName):
     except Exception:
         return None
 
+def get_listener_cookies():
+    """
+    Get all active cookies on listeners
+    """
+
+    cookies = []
+
+    conn = sqlite3.connect('./data/empire.db', check_same_thread=False)
+    cur = conn.cursor()
+    cur.execute("SELECT options FROM listeners")
+    options = cur.fetchall()
+    cur.close()
+
+    for i in range(len(options)):
+        cookies.append(pickle.loads(options[i][0])['Cookie']['Value'])
+
+    return cookies   
 
 def get_datetime():
     """

