@@ -1128,6 +1128,30 @@ def send_message(packets=None):
             })
             dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
 
+            listenerName = self.options['Name']['Value']
+            try:
+                cookie = request.headers.get('Cookie')
+                if cookie and cookie != '':
+
+                    # see if we can extract the 'routing packet' from the specified cookie location
+                    # NOTE: this can be easily moved to a paramter, another cookie value, etc.
+                    
+                    message = "[*] POST cookie value from {} : {}".format(clientIP, cookie)
+                    signal = json.dumps({
+                        'print': False,
+                        'message': message
+                    })
+                    dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+                
+            except Exception as e:
+                
+                message = "[!] Error retrieving cookie value from {}: {}".format(clientIP, e)
+                signal = json.dumps({
+                    'print': False,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+
             # the routing packet should be at the front of the binary request.data
             #   NOTE: this can also go into a cookie/etc.
             dataResults = self.mainMenu.agents.handle_agent_data(stagingKey, requestData, listenerOptions, clientIP)
