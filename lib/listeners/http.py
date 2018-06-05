@@ -50,7 +50,7 @@ class Listener:
             'Host' : {
                 'Description'   :   'Hostname/IP for staging.',
                 'Required'      :   True,
-                'Value'         :   "http://%s:%s" % (helpers.lhost(), 80)
+                'Value'         :   "http://%s" % (helpers.lhost())
             },
             'BindIP' : {
                 'Description'   :   'The IP to bind to on the control server.',
@@ -60,7 +60,7 @@ class Listener:
             'Port' : {
                 'Description'   :   'Port for the listener.',
                 'Required'      :   True,
-                'Value'         :   80
+                'Value'         :   ''
             },
             'Launcher' : {
                 'Description'   :   'Launcher string.',
@@ -393,7 +393,7 @@ class Listener:
                 b64RoutingPacket = base64.b64encode(routingPacket)
 
                 stager += "$ser="+helpers.obfuscate_call_home_address(host)+";$t='"+stage0+"';"
-                
+
                 #Add custom headers if any
                 if customHeaders != []:
                     for header in customHeaders:

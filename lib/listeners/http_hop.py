@@ -60,7 +60,7 @@ class Listener:
             'Port' : {
                 'Description'   :   'Port for the listener.',
                 'Required'      :   True,
-                'Value'         :   80
+                'Value'         :   ''
             },
             'DefaultProfile' : {
                 'Description'   :   'Default communication profile for the agent, extracted from RedirectListener automatically.',
@@ -293,7 +293,7 @@ class Listener:
 
                 # add the RC4 packet to a cookie
                 launcherBase += "o.addheaders=[('User-Agent',UA), (\"Cookie\", \"session=%s\")];\n" % (b64RoutingPacket)
-                
+
                 #install proxy and creds globally, so they can be used with urlopen.
                 launcherBase += "urllib2.install_opener(o);\n"
 

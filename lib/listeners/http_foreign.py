@@ -38,12 +38,12 @@ class Listener:
             'Host' : {
                 'Description'   :   'Hostname/IP for staging.',
                 'Required'      :   True,
-                'Value'         :   "http://%s:%s" % (helpers.lhost(), 80)
+                'Value'         :   "http://%s" % (helpers.lhost())
             },
             'Port' : {
                 'Description'   :   'Port for the listener.',
                 'Required'      :   True,
-                'Value'         :   80
+                'Value'         :   ''
             },
             'Launcher' : {
                 'Description'   :   'Launcher string.',
