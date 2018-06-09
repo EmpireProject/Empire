@@ -1161,7 +1161,7 @@ def send_message(packets=None):
                             listenerName = self.options['Name']['Value']
                             message = "[*] Valid results returned by {}".format(clientIP)
                             signal = json.dumps({
-                                'print': True,
+                                'print': False,
                                 'message': message
                             })
                             dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
