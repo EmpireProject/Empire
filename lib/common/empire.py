@@ -108,7 +108,6 @@ class MainMenu(cmd.Cmd):
         self.stagers = stagers.Stagers(self, args=args)
         self.modules = modules.Modules(self, args=args)
         self.listeners = listeners.Listeners(self, args=args)
-        self.fetcher = fetcher(self, args=args)
         self.resourceQueue = []
         #A hashtable of autruns based on agent language
         self.autoRuns = {}

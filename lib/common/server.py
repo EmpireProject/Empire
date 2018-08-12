@@ -46,7 +46,7 @@ class Server():
     The Server class for the server is responsible for maintaining client connections and managing empire
     """
 
-    def __init__(self, args=None):
+    def __init__(self, main):
         
         # Set up the event handling system
         dispatcher.connect(self.handle_event, sender=dispatcher.Any)
@@ -62,10 +62,10 @@ class Server():
         # Agent results cache/buffer
         self.historyBuffer = {}
 
-        
+        self.main = main
 
         # empty database object
-        self.conn = self.database_connect()
+        self.conn = self.main.conn
         time.sleep(1)
 
 	    # initiate socketio
@@ -73,21 +73,10 @@ class Server():
         self.socketio = SocketIO(self.app, async_mode='threading')
         self.lock = threading.Lock()
         (self.isroot, self.installPath, self.ipWhiteList, self.ipBlackList, self.obfuscate, self.obfuscateCommand) = helpers.get_config('rootuser, install_path,ip_whitelist,ip_blacklist,obfuscate,obfuscate_command')
-        self.args = args
-        # instantiate the agents, listeners, and stagers objects
-        self.agents = agents.Agents(self, args=args)
-        self.credentials = credentials.Credentials(self, args=args)
-        self.stagers = stagers.Stagers(self, args=args)
-        self.modules = modules.Modules(self, args=args)
-        self.listeners = listeners.Listeners(self, args=args)
-        self.users = users.Users(self, args=args)
-        self.resourceQueue = []
-        #A hashtable of autruns based on agent language
-        self.autoRuns = {}
-        self.fetcher = fetcher(self, args=args)
-
-        # print the loading menu
-        messages.loading()
+        self.args = self.main.args
+        # instantiate the users class
+        self.users = users.Users(self.main)
+        self.fetcher = fetcher(self.main)
 
     def get_db_connection(self):
         """
@@ -136,7 +125,7 @@ class Server():
                 self.historyBuffer[agentName] = StringIO.StringIO()
             
             elif "returned results" in signal:
-                results = {'Agent':agentName,'Result':self.agents.get_agent_results_db(agentName)}
+                results = {'Agent':agentName,'Result':self.main.agents.get_agent_results_db(agentName)}
 		if results:
 		    self.socketio.emit('agentData', {'Result':results})
                 # check to make sure the size of the agent results will not exceed the limit when added to the buffer
@@ -167,23 +156,6 @@ class Server():
 
         elif "Users" in sender:
             send({'Users':signal_data['message']})
-
-
-    def database_connect(self):
-        """
-        Connect to the default database at ./data/empire.db.
-        """
-        try:
-            # set the database connectiont to autocommit w/ isolation level
-            self.conn = sqlite3.connect('./data/empire.db', check_same_thread=False)
-            self.conn.text_factory = str
-            self.conn.isolation_level = None
-            return self.conn
-
-        except Exception as e:
-            print helpers.color("[!] Could not connect to database: {}".format(str(e)))
-            print helpers.color("[!] Please run database_setup.py")
-            sys.exit()
 
     
     def start_server(self):
@@ -297,7 +269,7 @@ class Server():
                 if data['Action'] and data['Action'] == 'VIEW':
                     if data['Arguments'] and data['Arguments']['stager_name'] == '':
                         stagers = []
-                        for stagerName, stager in self.stagers.stagers.iteritems():
+                        for stagerName, stager in self.main.stagers.stagers.iteritems():
                             info = copy.deepcopy(stager.info)
                             info['options'] = stager.options
                             info['Name'] = stagerName
@@ -305,10 +277,10 @@ class Server():
                     elif data['Arguments'] and data['Arguments']['stager_name'] != '':
                         stager_name = data['Arguments']['stager_name']
                         stagers = []
-                        if stager_name not in self.stagers.stagers:
+                        if stager_name not in self.main.stagers.stagers:
                             stagers.append("{} is not a valid stager name".format(stager_name))
                         else:
-                            for stagerName, stager in self.stagers.stagers.iteritems():
+                            for stagerName, stager in self.main.stagers.stagers.iteritems():
                                 if stagerName == stager_name:
                                     info = copy.deepcopy(stager.info)
                                     info['options'] = stager.options
@@ -324,10 +296,10 @@ class Server():
                         stager_name = data['Arguments']['stager_name']
                         listener = data['Arguments']['Listener']
                         stagers = []
-                        if stager_name not in self.stagers.stagers:
+                        if stager_name not in self.main.stagers.stagers:
                             stagers.append("{} is not a valid stager name".format(stager_name))
                         else:
-                            stager = self.stagers.stagers[stager_name]
+                            stager = self.main.stagers.stagers[stager_name]
                             # set all passed options
                             for option, values in data['Arguments'].iteritems():
                                 if option != 'StagerName':
@@ -371,7 +343,7 @@ class Server():
             if self.users.is_authenticated(request.sid):
                 if data['Action'] and data['Action'] == 'VIEW':
                     agents = []
-                    results = self.agents.get_agents_db()
+                    results = self.main.agents.get_agents_db()
 
                     for activeAgent in results:
                         [nonce, jitter, results, servers, internal_ip, working_hours, session_key, children, functions, checkin_time, hostname, ID, delay, username, kill_date, parent, process_name, listener, process_id, profile, os_details, lost_limit, taskings, name, language, external_ip, session_id, lastseen_time, language_version, high_integrity] = activeAgent.values()
@@ -383,7 +355,7 @@ class Server():
                     agent_name = data['Arguments']['Name']
                     agents = []
 
-                    results = self.agents.get_agent_db(agent_name)
+                    results = self.main.agents.get_agent_db(agent_name)
                     for activeAgent in results:
                         [ID, session_id, listener, name, language, language_version, delay, jitter, external_ip, internal_ip, username, high_integrity, process_name, process_id, hostname, os_details, session_key, nonce, checkin_time, lastseen_time, parent, children, servers, profile, functions, kill_date, working_hours, lost_limit, taskings, results] = activeAgent.values()
                         agents.append({"ID":ID, "session_id":session_id, "listener":listener, "name":name, "language":language, "language_version":language_version, "delay":delay, "jitter":jitter, "external_ip":external_ip, "internal_ip":internal_ip, "username":username, "high_integrity":high_integrity, "process_name":process_name, "process_id":process_id, "hostname":hostname, "os_details":os_details, "session_key":session_key.decode('latin-1').encode("utf-8"), "nonce":nonce, "checkin_time":checkin_time, "lastseen_time":lastseen_time, "parent":parent, "children":children, "servers":servers, "profile":profile,"functions":functions, "kill_date":kill_date, "working_hours":working_hours, "lost_limit":lost_limit, "taskings":taskings, "results":results})
@@ -394,9 +366,9 @@ class Server():
                     agent_name = data['Arguments']['Name']
                     userName = self.users.get_user_from_sid(request.sid)
                     if agent_name.lower() == "all":
-                        agentNameIDs = self.agents.get_agent_ids_db()
+                        agentNameIDs = self.main.agents.get_agent_ids_db()
                     else:
-                        agentNameIDs = self.agents.get_agent_id_db(agent_name)
+                        agentNameIDs = self.main.agents.get_agent_id_db(agent_name)
 
                     if not agentNameIDs or len(agentNameIDs) == 0:
                         send({'Result': 'agent name {} not found'.format(agent_name)})
@@ -411,8 +383,8 @@ class Server():
                         msg = "{} tasked agent {} to exit".format(userName,agentSessionID)
                         username = self.users.get_user_from_sid(request.sid)
                         self.users.log_user_event("{} tasked agent {} to exit".format(username, agentNameID))
-                        self.agents.save_agent_log(agentSessionID, msg)
-                        self.agents.add_agent_task_db(agentSessionID, 'TASK_EXIT')
+                        self.main.agents.save_agent_log(agentSessionID, msg)
+                        self.main.agents.add_agent_task_db(agentSessionID, 'TASK_EXIT')
 
                         send({'Result':msg})
 
@@ -420,9 +392,9 @@ class Server():
                     agent_name = data['Arguments']['Name']
                     userName = self.users.get_user_from_sid(request.sid)
                     if agent_name.lower() == "all":
-                        agentNameIDs = self.agents.get_agent_ids_db()
+                        agentNameIDs = self.main.agents.get_agent_ids_db()
                     else:
-                        agentNameIDs = self.agents.get_agent_id_db(agent_name)
+                        agentNameIDs = self.main.agents.get_agent_id_db(agent_name)
 
                     if not agentNameIDs or len(agentNameIDs) == 0:
                         send({'Result': 'agent name {} not found'.format(agent_name)})                
@@ -438,20 +410,20 @@ class Server():
                     for agentNameID in agentNameIDs:
                         # add task command to agent taskings
                         msg = "tasked agent {} to run command {}".format(agentNameID, command)
-                        self.agents.save_agent_log(agentNameID, msg)
+                        self.main.agents.save_agent_log(agentNameID, msg)
                         username = self.users.get_user_from_sid(request.sid)
                         self.users.log_user_event("{} tasked agent {} to run command {}".format(username, agentNameID, command))
                     	self.socketio.emit('message', {"Result":"{} tasked agent {} to run command {}".format(username, agentNameID, command)})
                         #Update other users console with the command
                         results = {'Agent':agentNameID,"Result":command,"User":username}
                         self.socketio.emit('agentCommand', {"Result":results}, include_self=False)
-                        taskID = self.agents.add_agent_task_db(agentNameID, "TASK_SHELL", command)
+                        taskID = self.main.agents.add_agent_task_db(agentNameID, "TASK_SHELL", command)
 
                     #self.socketio.emit('message', {"Result":"Success - TaskID: {}".format(taskID)})
 
                 elif data['Action'] and data['Action'] == 'INTERACT' and data['Arguments']['Name']:
                     agent_name = data['Arguments']['Name']
-                    agentNameIDs = self.agents.get_agent_id_db(agent_name)
+                    agentNameIDs = self.main.agents.get_agent_id_db(agent_name)
 
                     if not agentNameIDs or len(agentNameIDs) == 0:
                         send({'Result': 'agent name {} not found'.format(agent_name)})
@@ -473,7 +445,7 @@ class Server():
 
                 elif data['Action'] and data['Action'] == 'RETURN' and data['Arguments']['Name']:
                     agent_name = data['Arguments']['Name']
-                    agentNameIDs = self.agents.get_agent_id_db(agent_name)
+                    agentNameIDs = self.main.agents.get_agent_id_db(agent_name)
 
                     if not agentNameIDs or len(agentNameIDs) == 0:
                         send({'Result': 'agent name {} not found'.format(agent_name)})
@@ -491,15 +463,15 @@ class Server():
             if self.users.is_authenticated(request.sid):
                 listeners = ""
                 if data['Action'] and data['Action'] == 'VIEW':
-                    activeListenersRaw = self.listeners.get_listener_names()
+                    activeListenersRaw = self.main.listeners.get_listener_names()
                     listeners = []
 
 
                     for activeListener in activeListenersRaw:
-                        listenerObject = self.listeners.activeListeners[activeListener]
+                        listenerObject = self.main.listeners.activeListeners[activeListener]
                         name = activeListener
                         module = listenerObject['moduleName']
-                        ID = self.listeners.get_listener_id(activeListener)
+                        ID = self.main.listeners.get_listener_id(activeListener)
                         options = listenerObject['options']
                         listeners.append({'ID':ID, 'name':name, 'module':module, 'options':options })
 
@@ -507,14 +479,14 @@ class Server():
 
                 elif data['Action'] and data['Action'] == 'VIEW' and data['Arguments']['Name']:
                     listener_name = data['Arguments']['Name']
-                    activeListenersRaw = self.listeners.activeListeners[listener_name]
+                    activeListenersRaw = self.main.listeners.activeListeners[listener_name]
                     activeListenersRaw = [activeListenersRaw]
                     listeners = []
 
                     for activeListener in activeListenersRaw:
                         [name, module, options] = activeListener[listener_name].values()
                         if name == listener_name:
-                            ID = self.listeners.get_listener_id(listener_name)
+                            ID = self.main.listeners.get_listener_id(listener_name)
                             listeners.append({'ID':ID, 'name':name, 'module':module, 'options':options })
 
                     
@@ -522,35 +494,35 @@ class Server():
 
                 elif data['Action'] and data['Action'] == 'OPTIONS':
                     options = {}
-                    for ltype in self.listeners.loadedListeners:
-                        options[ltype] = self.listeners.loadedListeners[ltype].options
+                    for ltype in self.main.listeners.loadedListeners:
+                        options[ltype] = self.main.listeners.loadedListeners[ltype].options
 
                     emit('listenerOptions',{'Result':options}) 
                 
                 elif data['Action'] and data['Action'] == 'OPTIONS' and data['Arguments']['Type']:
                     listener_type = data['Arguments']['Type']
 
-                    if listener_type.lower() not in self.listeners.loadedListeners:
+                    if listener_type.lower() not in self.main.listeners.loadedListeners:
                         emit('listenerOptions',{'Result':'listener type {} not found'.format(listener_type)})
 
-                    options = self.listeners.loadedListeners[listener_type].options
+                    options = self.main.listeners.loadedListeners[listener_type].options
                     emit('listenerOptions',{'Result':options})
 
                 elif data['Action'] and data['Action'] == 'KILL' and data['Arguments']['Name']:
                     listener_name = data['Arguments']['Name']
 
                     if listener_name.lower() == "all":
-                        activeListenersRaw = self.listeners.get_listener_names()
+                        activeListenersRaw = self.main.listeners.get_listener_names()
                         for activeListener in activeListenersRaw:
                             username = self.users.get_user_from_sid(request.sid)
                             self.users.log_user_event("{} killed listener {}".format(username, activeListener))
-                            self.listeners.kill_listener(activeListener)
+                            self.main.listeners.kill_listener(activeListener)
 
                         emit('listeners',{'Result':'Success'})
 
                     else:
-                        if listener_name != "" and self.listeners.is_listener_valid(listener_name):
-                            self.listeners.kill_listener(listener_name)
+                        if listener_name != "" and self.main.listeners.is_listener_valid(listener_name):
+                            self.main.listeners.kill_listener(listener_name)
                             emit('listeners',{'Result': 'Success'})
                         else:
                             emit('listeners',{'Result':'listener name {} not found'.format(listener_name)})
@@ -558,10 +530,10 @@ class Server():
                 elif data['Action'] and data['Action'] == 'EXECUTE' and data['Arguments']['Type']:
                     listener_type = data['Arguments']['Type']
 
-                    if listener_type.lower() not in self.listeners.loadedListeners:
+                    if listener_type.lower() not in self.main.listeners.loadedListeners:
                         emit('listeners',{'Result':'listener type {} not found'.format(listener_type)})
 
-                    listenerObject = self.listeners.loadedListeners[listener_type]
+                    listenerObject = self.main.listeners.loadedListeners[listener_type]
 
                     if data['Arguments']['Options']:
                         # Options aren't required
@@ -569,16 +541,16 @@ class Server():
                             if option == "Name":
                                 listenerName = values
 
-                            returnVal = self.listeners.set_listener_option(listener_type, option, values)
+                            returnVal = self.main.listeners.set_listener_option(listener_type, option, values)
                             if not returnVal:
                                 emit('listeners',{'Result':'error setting listener value {} with option {}'.format(option, values)})
                         
                     
-                        self.listeners.start_listener(listener_type, listenerObject)
+                        self.main.listeners.start_listener(listener_type, listenerObject)
                         username = self.users.get_user_from_sid(request.sid)
                         self.users.log_user_event("{} started listener {}".format(username, listenerName))
 
-                    listenerID = self.listeners.get_listener_id(listenerName)
+                    listenerID = self.main.listeners.get_listener_id(listenerName)
                     if listenerID:
                         emit('listeners',{'Result':'listener {} successfully started'.format(listenerName)})
                     else:
@@ -605,8 +577,8 @@ class Server():
                     sessionID = data['Arguments']['sessionID']
                     filename = data['Arguments']['filename']
 
-                    if self.agents.is_agent_present(sessionID):
-                        lang = self.agents.get_language_db(sessionID)
+                    if self.main.agents.is_agent_present(sessionID):
+                        lang = self.main.agents.get_language_db(sessionID)
                     else:
                         emit('files',{'Result':'Agent doesn\'t exist'})
                     
@@ -619,7 +591,7 @@ class Server():
 
                         raw_data = helpers.encode_base64(raw_data)
                         taskdata = filename + "|" + raw_data
-                        self.agents.add_agent_task_db(sessionID, "TASK_UPLOAD", taskdata)
+                        self.main.agents.add_agent_task_db(sessionID, "TASK_UPLOAD", taskdata)
                         emit('files',{'Result':'Tasked agent to upload file'})
                     elif lang.startswith('py'):
                         username = self.users.get_user_from_sid(request.sid)
@@ -635,7 +607,7 @@ class Server():
 
                         # upload packets -> "filename | script data"
                         taskdata = filename + "|" + raw_data
-                        self.agents.add_agent_task_db(sessionID, "TASK_UPLOAD", taskdata)
+                        self.main.agents.add_agent_task_db(sessionID, "TASK_UPLOAD", taskdata)
                         emit('files',{'Result':'Tasked agent to upload file'})
 
                 elif (data['ACTION'] and data['ACTION'] == 'DOWNLOAD') and (data['Arguments']['fileID']):

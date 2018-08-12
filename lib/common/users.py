@@ -10,7 +10,7 @@ from pydispatch import dispatcher
 class Users():
     # This is a demo class for handling users
     # usercache represents the db
-    def __init__(self, mainMenu, args):
+    def __init__(self, mainMenu):
         
         self.mainMenu = mainMenu
 
@@ -18,7 +18,7 @@ class Users():
 
         self.lock = threading.Lock()
 
-        self.args = args
+        self.args = self.mainMenu.args
 
         self.users = {}
 

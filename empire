@@ -160,59 +160,7 @@ def get_permanent_token(conn):
 #
 
 
-def handle_event(signal, sender):
-    """
-    Function to handle events from pydispatcher
-    """
-
-
-    global empireMenu
-    if sender == "Agents":
-        if "[+] Initial agent" in signal:
-                print signal
-                emit('agents',{'Result':signal})
-
-        if "returned results." in signal:
-            agentName = signal.split("[*] Agent")[-1].split(" ")[0]
-            results = empireMenu.agents.get_agent_results_db(agentName)
-            if results:
-                send({'Agents':results}, room=agentName)
-
-        if ("[+] Listener for" in signal) and ("updated to" in signal):
-            send({'Listeners': signal})
-
-        elif "[!] Agent" in signal and "exiting" in signal:
-            send({'Agents': signal})
-
-        elif "WARNING" in signal or "attempted overwrite" in signal:
-            send({'Empire': signal})
-
-        elif "on the blacklist" in signal:
-            send({'Empire':signal})
-
-    elif sender == "EmpireServer":
-        if "[!] Error starting listener" in signal:
-            send({'Empire':signal})
-
-    elif sender == "Listeners":
-        send({'Empire':signal})
-
-    elif sender == "Users":
-        send({'Users':signal})
-
-
-def responseThread():
-    """
-    Background thread used to send messages to clients using emit or send
-    """
-    from pydispatch import dispatcher
-    from time import sleep
-    dispatcher.connect(handle_event, sender=dispatcher.Any)
-
-    while True:
-        sleep(1)
-
-def start_collabloration_server(args=None):
+def start_collabloration_server(main):
     """
     Start the collab/team server
     """
@@ -220,7 +168,7 @@ def start_collabloration_server(args=None):
         print helpers.color("[!] Error starting team server")
         sys.exit()
 
-    collab_server = server.Server(args)
+    collab_server = server.Server(main)
     collab_server.start_server()
 
 def start_restful_api(empireMenu, suppress=False, username=None, password=None, port=1337):
@@ -1491,8 +1439,18 @@ if __name__ == '__main__':
             pass
     elif args.server:
         # Start an empire instance in server mode. Supress output.launchGroup
-        #main = empire.MainMenu(args=args)
-        start_collabloration_server(args)
+        main = empire.MainMenu(args=args)
+        def thread_server(empireMenu):
+            try:
+                start_collabloration_server(empireMenu)
+            except Exception as e:
+                print "Error starting collaboration server: {}".format(str(e))
+        
+        thread = helpers.KThread(target=thread_server, args=(main,))
+        thread.daemon = True
+        thread.start()
+        sleep(5)
+        main.cmdloop()
     else:
         # normal execution
         main = empire.MainMenu(args=args)

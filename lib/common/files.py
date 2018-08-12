@@ -15,11 +15,11 @@ class fetcher():
     """
     Main class to handle file download and upload functionality for websocket clients
     """
-    def __init__(self, MainMenu, args=None):
+    def __init__(self, MainMenu):
         # pull out the controller objects
         self.mainMenu = MainMenu
         self.installPath = self.mainMenu.installPath
-        self.args = args
+        self.args = self.mainMenu.args
 
 
         self.lock = threading.Lock()

@@ -18,3 +18,5 @@ cryptography
 pyminifier==2.1
 xlutils
 pycrypto
+gevent
+gevent-websocket
