@@ -59,6 +59,7 @@ import hashlib
 import datetime
 import uuid
 import ipaddress
+from datetime import datetime
 
 ###############################################################
 #
@@ -66,7 +67,7 @@ import ipaddress
 #
 ################################################################
 
-globentropy=random.randint(1,datetime.datetime.today().day)
+globentropy=random.randint(1,datetime.today().day)
 globDebug=False
 ###############################################################
 #
@@ -155,10 +156,10 @@ def random_string(length=-1, charset=string.ascii_letters):
 
 def generate_random_script_var_name(origvariname,globDebug=False):
     if globDebug:
-    	hash_object=hashlib.sha1(str(origvariname)+str(globentropy)).hexdigest()
-	return hash_object[:-datetime.datetime.today().day]
-    else:
 	return origvariname
+    else:
+	hash_object=hashlib.sha1(str(origvariname)+str(globentropy)).hexdigest()
+	return hash_object[:(3+(globentropy%3))]
 
 def randomize_capitalization(data):
     """
@@ -604,7 +605,7 @@ def get_datetime():
     """
     Return the current date/time
     """
-    return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
 def utc_to_local(utc):
@@ -612,14 +613,14 @@ def utc_to_local(utc):
     Converts a datetime object in UTC to local time
     """
 
-    offset = datetime.datetime.now() - datetime.datetime.utcnow()
+    offset = datetime.now() - datetime.utcnow()
     return (utc + offset).strftime("%Y-%m-%d %H:%M:%S")
 
 def get_file_datetime():
     """
     Return the current date/time in a format workable for a file name.
     """
-    return datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
 
 def get_file_size(file):
@@ -699,6 +700,8 @@ def color(string, color=None):
             attr.append('31')
         elif color.lower() == "green":
             attr.append('32')
+        elif color.lower() == "yellow":
+            attr.append('33')
         elif color.lower() == "blue":
             attr.append('34')
         return '\x1b[%sm%s\x1b[0m' % (';'.join(attr), string)
@@ -716,6 +719,20 @@ def color(string, color=None):
         else:
             return string
 
+def lastseen(stamp, delay, jitter):
+    """
+    Colorize the Last Seen field based on measured delays
+    """
+    try:
+        delta = datetime.now() - datetime.strptime(stamp, "%Y-%m-%d %H:%M:%S")
+        if delta.seconds > delay * (jitter + 1) * 5:
+            return color(stamp, "red")
+        elif delta.seconds > delay * (jitter + 1):
+            return color(stamp, "yellow")
+        else:
+            return color(stamp, "green")
+    except Exception:
+        return stamp
 
 def unique(seq, idfun=None):
     """

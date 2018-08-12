@@ -46,7 +46,7 @@ class Listener:
             'Host' : {
                 'Description'   :   'Hostname/IP for staging.',
                 'Required'      :   True,
-                'Value'         :   "http://%s:%s" % (helpers.lhost(), 80)
+                'Value'         :   "http://%s" % (helpers.lhost())
             },
             'BindIP' : {
                 'Description'   :   'The IP to bind to on the control server.',
@@ -56,7 +56,7 @@ class Listener:
             'Port' : {
                 'Description'   :   'Port for the listener.',
                 'Required'      :   True,
-                'Value'         :   80
+                'Value'         :   ''
             },
             'StagingKey' : {
                 'Description'   :   'Staging key for initial agent negotiation.',
@@ -159,6 +159,10 @@ class Listener:
             if self.options[key]['Required'] and (str(self.options[key]['Value']).strip() == ''):
                 print helpers.color("[!] Option \"%s\" is required." % (key))
                 return False
+        # If we've selected an HTTPS listener without specifying CertPath, let us know.
+        if self.options['Host']['Value'].startswith('https') and self.options['CertPath']['Value'] == '':
+            print helpers.color("[!] HTTPS selected but no CertPath specified.")
+            return False
 
         return True
 

