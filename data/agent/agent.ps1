@@ -140,7 +140,6 @@ function Invoke-Empire {
     # keep track of all background jobs
     #   format: {'RandomJobName' : @{'Alias'=$RandName; 'AppDomain'=$AppDomain; 'PSHost'=$PSHost; 'Job'=$Job; 'Buffer'=$Buffer}, ... }
     $Script:Jobs = @{}
-    $Script:Downloads = @{}
     # the currently imported script held in memory
     $script:ImportedScript = ''
 
@@ -281,11 +280,11 @@ function Invoke-Empire {
             switch -regex ($cmd) {
                 '(ls|^dir)' {
                     if ($cmdargs.length -eq "") {
-                        $output = Get-ChildItem -force | select mode,lastwritetime,length,name
+                        $output = Get-ChildItem -force | select mode,@{Name="Owner";Expression={(Get-Acl $_.FullName).Owner }},lastwritetime,length,name
                     }
                     else {
                         try{
-                            $output = IEX "$cmd $cmdargs -Force -ErrorAction Stop | select lastwritetime,length,name"
+                            $output = IEX "$cmd $cmdargs -Force -ErrorAction Stop" | select mode,@{Name="Owner";Expression={ (Get-Acl $_.FullName).Owner }},lastwritetime,length,name
                         }
                         catch [System.Management.Automation.ActionPreferenceStopException] {
                             $output = "[!] Error: $_ (or cannot be accessed)."

@@ -48,12 +48,9 @@ for headerRaw in headersRaw:
     try:
         headerKey = headerRaw.split(":")[0]
         headerValue = headerRaw.split(":")[1]
-        if headerKey.lower() == "cookie":
-            headers['Cookie'] = "%s;%s" % (headers['Cookie'], headerValue)
-        else:
-            headers[headerKey] = headerValue
-    except:
-        pass
+        headers[headerKey] = headerValue
+    except Exception as e:
+        print e
 
 # stage 3 of negotiation -> client generates DH key, and POSTs HMAC(AESn(PUBc)) back to server
 clientPub = DiffieHellman()
