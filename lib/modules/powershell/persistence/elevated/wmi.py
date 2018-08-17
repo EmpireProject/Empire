@@ -8,7 +8,7 @@ class Module:
         self.info = {
             'Name': 'Invoke-WMI',
 
-            'Author': ['@mattifestation', '@harmj0y'],
+            'Author': ['@mattifestation', '@harmj0y', '@jbooz1'],
 
             'Description': (
             'Persist a stager (or script) using a permanent WMI subscription. This has a difficult detection/removal rating.'),
