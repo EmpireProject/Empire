@@ -1,4 +1,3 @@
-<#
 
     # Fox-IT
     # Written by Rindert Kramer
@@ -384,7 +383,7 @@ function Invoke-CredentialPhisher {
         }
     }
 
-    function Run-Test ([string]$ToastTitle, [string]$ToastMessage, [string]$Application, [string]$CredBoxTitle, [string]$CredBoxMessage, [string]$ToastType, [bool]$VerifyCreds, [bool]$HideProcesses) {
+    function Invoke-Prompt ([string]$ToastTitle, [string]$ToastMessage, [string]$Application, [string]$CredBoxTitle, [string]$CredBoxMessage, [string]$ToastType, [bool]$VerifyCreds, [bool]$HideProcesses) {
         $global:credential = $null
         $global:VerifyCreds = $VerifyCreds
 
@@ -615,5 +614,5 @@ function Invoke-CredentialPhisher {
         $outData | Out-String 
     }
 
-    Run-Test $ToastTitle $ToastMessage $Application $CredBoxTitle $CredBoxMessage $ToastType $VerifyCreds $HideProcesses
+    Invoke-Prompt $ToastTitle $ToastMessage $Application $CredBoxTitle $CredBoxMessage $ToastType $VerifyCreds $HideProcesses
 }
