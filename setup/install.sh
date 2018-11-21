@@ -43,7 +43,7 @@ function install_powershell() {
 		if cat /etc/lsb-release | grep 'DISTRIB_RELEASE=14'; then
 			# Install system components
 			sudo apt-get update
-			sudo apt-get install -y apt-transport-https curl 
+			sudo apt-get install -y apt-transport-https curl
 			# Import the public repository GPG keys
 			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
 			# Register the Microsoft Ubuntu repository
@@ -57,7 +57,7 @@ function install_powershell() {
 		if cat /etc/lsb-release | grep 'DISTRIB_RELEASE=16'; then
 			# Install system components
 			sudo apt-get update
-			sudo apt-get install -y apt-transport-https curl 
+			sudo apt-get install -y apt-transport-https curl
 			# Import the public repository GPG keys
 			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
 			# Register the Microsoft Ubuntu repository
@@ -71,7 +71,7 @@ function install_powershell() {
 		if  cat /etc/lsb-release | grep 'DISTRIB_RELEASE=17'; then
 			# Install system components
 			sudo apt-get update
-			sudo apt-get install -y apt-transport-https curl 
+			sudo apt-get install -y apt-transport-https curl
 			# Import the public repository GPG keys
 			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
 			# Register the Microsoft Ubuntu repository
@@ -125,7 +125,7 @@ if uname | grep -q "Darwin"; then
 	sudo pip install -r requirements.txt --global-option=build_ext \
 		--global-option="-L/usr/local/opt/openssl/lib" \
 		--global-option="-I/usr/local/opt/openssl/include"
-	# In order to build dependencies these should be exproted. 
+	# In order to build dependencies these should be exproted.
 	export LDFLAGS=-L/usr/local/opt/openssl/lib
 	export CPPFLAGS=-I/usr/local/opt/openssl/include
 else
@@ -135,7 +135,7 @@ else
 		Release=Fedora
 		sudo dnf install -y make g++ python-devel m2crypto python-m2ext swig python-iptools python3-iptools libxml2-devel default-jdk openssl-devel libssl1.0.0 libssl-dev build-essential
 		pip install --upgrade pip
-		sudo pip install -r requirements.txt 
+		sudo pip install -r requirements.txt
 	elif lsb_release -d | grep -q "Kali"; then
 		Release=Kali
 		wget --no-check-certificate https://ftp.us.debian.org/debian/pool/main/o/openssl/libssl1.0.0_1.0.1t-1%2Bdeb8u8_amd64.deb
@@ -147,19 +147,19 @@ else
         pip install urllib3==1.22
 		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk zlib1g-dev libssl1.0-dev build-essential libssl1.0-dev libxml2-dev zlib1g-dev
 		pip install --upgrade pip
-		sudo pip install -r requirements.txt 
+		sudo pip install -r requirements.txt
 		install_powershell
 	elif lsb_release -d | grep -q "Ubuntu"; then
 		Release=Ubuntu
 		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libssl1.0.0 libssl-dev build-essential
 		pip install --upgrade pip
-		sudo pip install -r requirements.txt 
+		sudo pip install -r requirements.txt
 		install_powershell
 	else
 		echo "Unknown distro - Debian/Ubuntu Fallback"
 		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libffi-dev libssl1.0.0 libssl-dev build-essential
 		pip install --upgrade pip
-		sudo pip install -r requirements.txt 
+		sudo pip install -r requirements.txt
 		install_powershell
 	fi
 fi
@@ -175,7 +175,7 @@ git clone https://github.com/hogliux/bomutils.git
 (cd bomutils && make)
 (cd bomutils && make install)
 
-# NIT: This fails on OSX. Leaving it only on Linux instances. 
+# NIT: This fails on OSX. Leaving it only on Linux instances.
 if uname | grep -q "Linux"; then
 	(cd bomutils && make install)
 fi
