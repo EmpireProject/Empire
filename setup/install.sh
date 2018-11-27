@@ -14,7 +14,6 @@ function install_powershell() {
 		# Deb 9.x
 		if cat /etc/debian_version | grep 9.* ; then
 			# Install system components
-			sudo apt-get update
 			sudo apt-get install -y apt-transport-https curl
 			# Import the public repository GPG keys
 			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
@@ -28,7 +27,6 @@ function install_powershell() {
 		# Deb 8.x
 		if cat /etc/debian_version | grep 8.* ; then
 			# Install system components
-			sudo apt-get update
 			sudo apt-get install -y apt-transport-https curl gnupg
 			# Import the public repository GPG keys
 			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
@@ -42,7 +40,6 @@ function install_powershell() {
 		#Ubuntu 14.x
 		if cat /etc/lsb-release | grep 'DISTRIB_RELEASE=14'; then
 			# Install system components
-			sudo apt-get update
 			sudo apt-get install -y apt-transport-https curl
 			# Import the public repository GPG keys
 			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
@@ -56,7 +53,6 @@ function install_powershell() {
 		#Ubuntu 16.x
 		if cat /etc/lsb-release | grep 'DISTRIB_RELEASE=16'; then
 			# Install system components
-			sudo apt-get update
 			sudo apt-get install -y apt-transport-https curl
 			# Import the public repository GPG keys
 			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
@@ -70,7 +66,6 @@ function install_powershell() {
 		#Ubuntu 17.x
 		if  cat /etc/lsb-release | grep 'DISTRIB_RELEASE=17'; then
 			# Install system components
-			sudo apt-get update
 			sudo apt-get install -y apt-transport-https curl
 			# Import the public repository GPG keys
 			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
@@ -84,7 +79,6 @@ function install_powershell() {
 		#Kali Linux
 		if cat /etc/lsb-release | grep -i 'Kali'; then
 			# Install prerequisites
-			apt-get update
 			apt-get install -y curl gnupg apt-transport-https
 			# Import the public repository GPG keys
 			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
@@ -138,6 +132,7 @@ else
 		sudo pip install -r requirements.txt
 	elif lsb_release -d | grep -q "Kali"; then
 		Release=Kali
+		apt-get update
 		wget --no-check-certificate https://ftp.us.debian.org/debian/pool/main/o/openssl/libssl1.0.0_1.0.1t-1%2Bdeb8u8_amd64.deb
 		dpkg -i libssl1.0.0_1.0.1t-1+deb8u8_amd64.deb
         # Kali currently uses libicu60, but PowerShell needs 57.
@@ -151,12 +146,14 @@ else
 		install_powershell
 	elif lsb_release -d | grep -q "Ubuntu"; then
 		Release=Ubuntu
+		sudo apt-get update
 		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libssl1.0.0 libssl-dev build-essential
 		pip install --upgrade pip
 		sudo pip install -r requirements.txt
 		install_powershell
 	else
 		echo "Unknown distro - Debian/Ubuntu Fallback"
+		sudo apt-get update
 		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libffi-dev libssl1.0.0 libssl-dev build-essential
 		pip install --upgrade pip
 		sudo pip install -r requirements.txt
