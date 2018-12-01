@@ -35,7 +35,12 @@ class Listener:
                 'Value'         :   'onedrive'
             },
             'ClientID' : {
-                'Description'   :   'Client ID of the OAuth App.',
+                'Description'   :   'Application ID of the OAuth App.',
+                'Required'      :   True,
+                'Value'         :   ''
+            },
+            'ClientSecret' : {
+                'Description'   :   'Client secret of the OAuth App.',
                 'Required'      :   True,
                 'Value'         :   ''
             },
@@ -484,8 +489,9 @@ class Listener:
     def start_server(self, listenerOptions):
 
         # Utility functions to handle auth tasks and initial setup
-        def get_token(client_id, code):
+        def get_token(client_id, client_secret, code):
             params = {'client_id': client_id,
+                      'client_secret': client_secret,
                       'grant_type': 'authorization_code',
                       'scope': 'files.readwrite offline_access',
                       'code': code,
@@ -500,8 +506,9 @@ class Listener:
                 print helpers.color("[!] Something went wrong, HTTP response %d, error code %s: %s" % (r.status_code, r.json()['error_codes'], r.json()['error_description']))
                 raise
 
-        def renew_token(client_id, refresh_token):
+        def renew_token(client_id, client_secret, refresh_token):
             params = {'client_id': client_id,
+                      'client_secret': client_secret,
                       'grant_type': 'refresh_token',
                       'scope': 'files.readwrite offline_access',
                       'refresh_token': refresh_token,
@@ -596,6 +603,7 @@ class Listener:
         staging_key = listener_options['StagingKey']['Value']
         poll_interval = listener_options['PollInterval']['Value']
         client_id = listener_options['ClientID']['Value']
+        client_secret = listener_options['ClientSecret']['Value']
         auth_code = listener_options['AuthCode']['Value']
         refresh_token = listener_options['RefreshToken']['Value']
         base_folder = listener_options['BaseFolder']['Value']
@@ -608,7 +616,7 @@ class Listener:
         s = Session()
 
         if refresh_token:
-            token = renew_token(client_id, refresh_token)
+            token = renew_token(client_id, client_secret, refresh_token)
             message = "[*] Refreshed auth token"
             signal = json.dumps({
                 'print' : True,
@@ -616,7 +624,7 @@ class Listener:
             })
             dispatcher.send(signal, sender="listeners/onedrive/{}".format(listener_name))
         else:
-            token = get_token(client_id, auth_code)
+            token = get_token(client_id, client_secret, auth_code)
             message = "[*] Got new auth token"
             signal = json.dumps({
                 'print' : True,
