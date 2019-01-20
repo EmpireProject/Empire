@@ -840,7 +840,10 @@ def send_message(packets=None):
                     print helpers.color("[!] Unable to determine the language for the agent")
 
             else:
-                print helpers.color("[!] Agent is not present in the cache")
+                if not isElevated:
+                    print helpers.color("[!] Agent must be elevated to run a redirector")
+                else:
+                    print helpers.color("[!] Agent is not present in the cache")
                 return False
 
 
