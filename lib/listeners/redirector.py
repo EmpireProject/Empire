@@ -20,7 +20,7 @@ class Listener:
 
             'Author': ['@xorrior'],
 
-            'Description': ("Internal redirector listener. Active agent required. Listener options will be copied from another existing agent."),
+            'Description': ("Internal redirector listener. Active agent required. Listener options will be copied from another existing agent. Requires the active agent to be in an elevated context."),
 
             # categories - client_server, peer_to_peer, broadcast, third_party
             'Category' : ('peer_to_peer'),
@@ -840,7 +840,10 @@ def send_message(packets=None):
                     print helpers.color("[!] Unable to determine the language for the agent")
 
             else:
-                print helpers.color("[!] Agent is not present in the cache")
+                if not isElevated:
+                    print helpers.color("[!] Agent must be elevated to run a redirector")
+                else:
+                    print helpers.color("[!] Agent is not present in the cache")
                 return False
 
 
