@@ -23,9 +23,8 @@ function install_powershell() {
 			sudo apt-get update
 			# Install PowerShell
 			sudo apt-get install -y powershell
-		fi
 		# Deb 8.x
-		if cat /etc/debian_version | grep 8.* ; then
+		elif cat /etc/debian_version | grep 8.* ; then
 			# Install system components
 			sudo apt-get install -y apt-transport-https curl gnupg
 			# Import the public repository GPG keys
@@ -36,48 +35,22 @@ function install_powershell() {
 			sudo apt-get update
 			# Install PowerShell
 			sudo apt-get install -y powershell
-		fi
-		#Ubuntu 14.x
-		if cat /etc/lsb-release | grep 'DISTRIB_RELEASE=14'; then
+		#Ubuntu
+        elif lsb_release -d | grep -q "Ubuntu"; then
+			# Read Ubuntu version
+			local ubuntu_version=$( grep 'DISTRIB_RELEASE=' /etc/lsb-release | grep -o -E [[:digit:]]+\\.[[:digit:]]+ )
 			# Install system components
 			sudo apt-get install -y apt-transport-https curl
 			# Import the public repository GPG keys
 			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
 			# Register the Microsoft Ubuntu repository
-			curl https://packages.microsoft.com/config/ubuntu/14.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
+			curl https://packages.microsoft.com/config/ubuntu/$ubuntu_version/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
 			# Update the list of products
 			sudo apt-get update
 			# Install PowerShell
 			sudo apt-get install -y powershell
-		fi
-		#Ubuntu 16.x
-		if cat /etc/lsb-release | grep 'DISTRIB_RELEASE=16'; then
-			# Install system components
-			sudo apt-get install -y apt-transport-https curl
-			# Import the public repository GPG keys
-			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
-			# Register the Microsoft Ubuntu repository
-			curl https://packages.microsoft.com/config/ubuntu/16.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
-			# Update the list of products
-			sudo apt-get update
-			# Install PowerShell
-			sudo apt-get install -y powershell
-		fi
-		#Ubuntu 17.x
-		if  cat /etc/lsb-release | grep 'DISTRIB_RELEASE=17'; then
-			# Install system components
-			sudo apt-get install -y apt-transport-https curl
-			# Import the public repository GPG keys
-			curl https://packages.microsoft.com/keys/microsoft.asc | sudo apt-key add -
-			# Register the Microsoft Ubuntu repository
-			curl https://packages.microsoft.com/config/ubuntu/17.04/prod.list | sudo tee /etc/apt/sources.list.d/microsoft.list
-			# Update the list of products
-			sudo apt-get update
-			# Install PowerShell
-			sudo apt-get install -y powershell
-		fi
 		#Kali Linux
-		if cat /etc/lsb-release | grep -i 'Kali'; then
+		elif cat /etc/lsb-release | grep -i 'Kali'; then
 			# Install prerequisites
 			apt-get install -y curl gnupg apt-transport-https
 			# Import the public repository GPG keys
