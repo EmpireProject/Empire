@@ -108,12 +108,6 @@ then
     cd ./setup
 fi
 
-# Check for PIP otherwise install it
-if ! which pip > /dev/null; then
-	wget https://bootstrap.pypa.io/get-pip.py
-	python get-pip.py
-fi
-
 if uname | grep -q "Darwin"; then
 	install_powershell
 	sudo pip install -r requirements.txt --global-option=build_ext \
@@ -127,36 +121,39 @@ else
 	version=$( lsb_release -r | grep -oP "[0-9]+" | head -1 )
 	if lsb_release -d | grep -q "Fedora"; then
 		Release=Fedora
-		sudo dnf install -y make g++ python-devel m2crypto python-m2ext swig python-iptools python3-iptools libxml2-devel default-jdk openssl-devel libssl1.0.0 libssl-dev build-essential
-		pip install --upgrade pip
+		sudo dnf install -y make automake gcc gcc-c++  python-devel m2crypto python-m2ext swig libxml2-devel java-openjdk-headless openssl-devel openssl libffi-devel redhat-rpm-config
 		sudo pip install -r requirements.txt
 	elif lsb_release -d | grep -q "Kali"; then
 		Release=Kali
 		apt-get update
-		wget --no-check-certificate https://ftp.us.debian.org/debian/pool/main/o/openssl/libssl1.0.0_1.0.1t-1%2Bdeb8u8_amd64.deb
-		dpkg -i libssl1.0.0_1.0.1t-1+deb8u8_amd64.deb
-        # Kali currently uses libicu60, but PowerShell needs 57.
-        wget http://archive.ubuntu.com/ubuntu/pool/main/i/icu/libicu57_57.1-6_amd64.deb
-        dpkg -i libicu57_57.1-6_amd64.deb
-        # Downgrade urllib3 to version 1.22
-        pip install urllib3==1.22
-		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk zlib1g-dev libssl1.0-dev build-essential libssl1.0-dev libxml2-dev zlib1g-dev
-		pip install --upgrade pip
+		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk zlib1g-dev libssl1.1 build-essential libssl-dev libxml2-dev zlib1g-dev
 		sudo pip install -r requirements.txt
 		install_powershell
 	elif lsb_release -d | grep -q "Ubuntu"; then
 		Release=Ubuntu
 		sudo apt-get update
-		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libssl1.0.0 libssl-dev build-essential
-		pip install --upgrade pip
-		sudo pip install -r requirements.txt
+        if [ $(lsb_release -rs | cut -d "." -f 1) -ge 18 ]; then
+            LibSSL_pkgs="libssl1.1 libssl-dev"
+            Pip_file="requirements.txt"
+        else
+            LibSSL_pkgs="libssl1.0.0 libssl-dev"
+            Pip_file="requirements_libssl1.0.txt"
+        fi
+		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk $LibSSL_pkgs build-essential
+		sudo pip install -r $Pip_file
 		install_powershell
 	else
 		echo "Unknown distro - Debian/Ubuntu Fallback"
 		sudo apt-get update
-		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libffi-dev libssl1.0.0 libssl-dev build-essential
-		pip install --upgrade pip
-		sudo pip install -r requirements.txt
+        if [ $(cut -d "." -f 1 /etc/debian_version) -ge 9 ]; then
+            LibSSL_pkgs="libssl1.1 libssl-dev"
+            Pip_file="requirements.txt"
+        else
+            LibSSL_pkgs="libssl1.0.0 libssl-dev"
+            Pip_file="requirements_libssl1.0.txt"
+        fi
+		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libffi-dev $LibSSL_pkgs build-essential
+		sudo pip install -r $Pip_file
 		install_powershell
 	fi
 fi
