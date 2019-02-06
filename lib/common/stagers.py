@@ -87,7 +87,7 @@ class Stagers:
             return stager
 
 
-    def generate_launcher(self, listenerName, language=None, encode=True, obfuscate=False, obfuscationCommand="", userAgent='default', proxy='default', proxyCreds='default', stagerRetries='0', safeChecks='true', scriptLogBypass='true', AMSIBypass='true', AMSIBypass2='false'):
+    def generate_launcher(self, listenerName, language=None, encode=True, obfuscate=False, obfuscationCommand="", userAgent='default', proxy='default', proxyCreds='default', stagerRetries='0', safeChecks='true', scriptLogBypass=True, AMSIBypass=True, AMSIBypass2=False):
         """
         Abstracted functionality that invokes the generate_launcher() method for a given listener,
         if it exists.

