@@ -86,6 +86,8 @@ function install_powershell() {
 			sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/microsoft-debian-stretch-prod stretch main" > /etc/apt/sources.list.d/microsoft.list'
 			# Update the list of products
 			apt-get update
+            wget http://archive.ubuntu.com/ubuntu/pool/main/i/icu/libicu57_57.1-6_amd64.deb
+            dpkg -i libicu57_57.1-6_amd64.deb
 			# Install PowerShell
 			apt-get install -y powershell
 		fi
@@ -109,6 +111,7 @@ then
 fi
 
 if uname | grep -q "Darwin"; then
+    Xar_version="xar-1.5.2"
 	install_powershell
 	sudo pip install -r requirements.txt --global-option=build_ext \
 		--global-option="-L/usr/local/opt/openssl/lib" \
@@ -121,10 +124,12 @@ else
 	version=$( lsb_release -r | grep -oP "[0-9]+" | head -1 )
 	if lsb_release -d | grep -q "Fedora"; then
 		Release=Fedora
+        Xar_version="xar-1.5.2"
 		sudo dnf install -y make automake gcc gcc-c++  python-devel m2crypto python-m2ext swig libxml2-devel java-openjdk-headless openssl-devel openssl libffi-devel redhat-rpm-config
 		sudo pip install -r requirements.txt
 	elif lsb_release -d | grep -q "Kali"; then
 		Release=Kali
+        Xar_version="xar-1.6.1"
 		apt-get update
 		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk zlib1g-dev libssl1.1 build-essential libssl-dev libxml2-dev zlib1g-dev
 		sudo pip install -r requirements.txt
@@ -135,9 +140,11 @@ else
         if [ $(lsb_release -rs | cut -d "." -f 1) -ge 18 ]; then
             LibSSL_pkgs="libssl1.1 libssl-dev"
             Pip_file="requirements.txt"
+            Xar_version="xar-1.6.1"
         else
             LibSSL_pkgs="libssl1.0.0 libssl-dev"
             Pip_file="requirements_libssl1.0.txt"
+            Xar_version="xar-1.5.2"
         fi
 		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk $LibSSL_pkgs build-essential
 		sudo pip install -r $Pip_file
@@ -148,9 +155,11 @@ else
         if [ $(cut -d "." -f 1 /etc/debian_version) -ge 9 ]; then
             LibSSL_pkgs="libssl1.1 libssl-dev"
             Pip_file="requirements.txt"
+            Xar_version="xar-1.6.1"
         else
             LibSSL_pkgs="libssl1.0.0 libssl-dev"
             Pip_file="requirements_libssl1.0.txt"
+            Xar_version="xar-1.5.2"
         fi
 		sudo apt-get install -y make g++ python-dev python-m2crypto swig python-pip libxml2-dev default-jdk libffi-dev $LibSSL_pkgs build-essential
 		sudo pip install -r $Pip_file
@@ -159,10 +168,10 @@ else
 fi
 
 # Installing xar
-tar -xvf ../data/misc/xar-1.5.2.tar.gz
-(cd xar-1.5.2 && ./configure)
-(cd xar-1.5.2 && make)
-(cd xar-1.5.2 && sudo make install)
+tar -xvf ../data/misc/$Xar_version.tar.gz
+(cd $Xar_version && ./configure)
+(cd $Xar_version && make)
+(cd $Xar_version && sudo make install)
 
 #Installing bomutils
 git clone https://github.com/hogliux/bomutils.git
